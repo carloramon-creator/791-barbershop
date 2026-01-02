@@ -35,3 +35,4 @@ export const MaskedInput = React.forwardRef<HTMLInputElement, MaskedInputProps>(
         };
 
   return (<Input ref={ref} onChange={handleChange} className={className} value={value} {...props} />);
+    });
