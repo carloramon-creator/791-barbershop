@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-
+import { Input } from './input';
 interface MaskedInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   mask: string;
         onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
