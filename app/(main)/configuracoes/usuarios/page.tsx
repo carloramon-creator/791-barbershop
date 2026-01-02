@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon, MapPin, Phone, CreditCard as CardIcon, Copy, Loader2 } from 'lucide-react';
+import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon, MapPin, Phone, CreditCard as CardIcon, Copy, Loader2, Link as LinkIcon, Key } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -167,6 +167,23 @@ export default function UsersPage() {
       fetchUsers();
     } catch (error: any) {
       alert('Erro ao remover usuário: ' + error.message);
+    }
+  };
+
+  const handleGenerateLink = async (userId: string) => {
+    try {
+      setInviteLoading(true);
+      const result = await Api.generateInviteLink(userId);
+      if (result.inviteLink) {
+        setGeneratedLink(result.inviteLink);
+        setIsInviteOpen(true); // Re-use the dialog to show the link
+      } else {
+        alert('Falha ao gerar o link. Tente novamente.');
+      }
+    } catch (error: any) {
+      alert('Erro: ' + error.message);
+    } finally {
+      setInviteLoading(false);
     }
   };
 
@@ -394,6 +411,11 @@ export default function UsersPage() {
                                 Tornar Funcionário
                               </DropdownMenuItem>
                             )}
+                            <DropdownMenuSeparator className="bg-slate-800" />
+                            <DropdownMenuItem onClick={() => handleGenerateLink(u.id)} className="text-blue-400 focus:text-blue-400">
+                              <Key className="mr-2 h-4 w-4" />
+                              Gerar Link de Convite
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-slate-800" />
                             <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => handleRemoveUser(u.id)}>
                               <Trash2 className="mr-2 h-4 w-4" />

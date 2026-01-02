@@ -93,7 +93,12 @@ export const Api = {
     getUsers: () => apiFetch('/api/barbershop/users'),
     inviteUser: (payload: any) => apiFetch('/api/barbershop/users', { method: 'POST', body: JSON.stringify(payload) }),
     updateUser: (id: string, payload: any) => apiFetch(`/api/barbershop/users/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
-    removeUser: (id: string) => apiFetch(`/api/barbershop/users/${id}`, { method: 'DELETE' }),
+    removeUser: (id: string) => apiFetch(`/api/barbershop/users?id=${id}`, { method: 'DELETE' }),
+
+    generateInviteLink: (userId: string) => apiFetch('/api/barbershop/users', {
+        method: 'POST',
+        body: JSON.stringify({ userId, generateInvite: true })
+    }),
 
     // Plan
     getPlan: () => apiFetch('/api/barbershop/plan'),
