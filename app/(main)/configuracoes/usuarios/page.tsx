@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon, MapPin, Phone, CreditCard as CardIcon, Copy, Loader2, Link as LinkIcon, Key } from 'lucide-react';
+import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon, MapPin, Phone, CreditCard as CardIcon, Copy, Loader2, Link as LinkIcon, Key, Pencil } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,6 +62,7 @@ export default function UsersPage() {
   const [inviteCity, setInviteCity] = useState('');
   const [inviteState, setInviteState] = useState('');
   const [generatedLink, setGeneratedLink] = useState('');
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
   const fetchUsers = async () => {
     try {
@@ -84,7 +85,8 @@ export default function UsersPage() {
     setInviteLoading(true);
     setGeneratedLink('');
     try {
-      const result = await Api.inviteUser({
+      const payload = {
+        id: editingUserId,
         name: inviteName,
         email: inviteEmail,
         role: inviteRole,
@@ -97,20 +99,27 @@ export default function UsersPage() {
         neighborhood: inviteNeighborhood,
         city: inviteCity,
         state: inviteState,
-        generateInvite: true
-      });
+        generateInvite: !editingUserId
+      };
 
-      if (result.inviteLink) {
-        setGeneratedLink(result.inviteLink);
-      } else {
+      if (editingUserId) {
+        await Api.updateUser(payload);
         setIsInviteOpen(false);
-        resetForm();
+        alert('Usuário atualizado com sucesso!');
+      } else {
+        const result = await Api.inviteUser(payload);
+        if (result.inviteLink) {
+          setGeneratedLink(result.inviteLink);
+        } else {
+          setIsInviteOpen(false);
+          resetForm();
+          alert('Usuário adicionado com sucesso!');
+        }
       }
 
       fetchUsers();
-      if (!result.inviteLink) alert('Usuário adicionado com sucesso!');
     } catch (error: any) {
-      alert('Erro ao adicionar usuário: ' + error.message);
+      alert('Erro: ' + error.message);
     } finally {
       setInviteLoading(false);
     }
@@ -130,6 +139,24 @@ export default function UsersPage() {
     setInviteCity('');
     setInviteState('');
     setGeneratedLink('');
+    setEditingUserId(null);
+  };
+
+  const handleEditClick = (u: any) => {
+    setEditingUserId(u.id);
+    setInviteName(u.name || '');
+    setInviteEmail(u.email || '');
+    setInviteRole(u.role || 'staff');
+    setInvitePhone(u.phone || '');
+    setInviteCpf(u.cpf || '');
+    setInviteCep(u.cep || '');
+    setInviteStreet(u.street || '');
+    setInviteNumber(u.number || '');
+    setInviteComplement(u.complement || '');
+    setInviteNeighborhood(u.neighborhood || '');
+    setInviteCity(u.city || '');
+    setInviteState(u.state || '');
+    setIsInviteOpen(true);
   };
 
   const handleCepBlur = async () => {
@@ -244,9 +271,9 @@ export default function UsersPage() {
             </DialogTrigger>
             <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
               <DialogHeader>
-                <DialogTitle>Adicionar novo usuário</DialogTitle>
+                <DialogTitle>{editingUserId ? 'Editar Usuário' : 'Adicionar novo usuário'}</DialogTitle>
                 <DialogDescription className="text-slate-400">
-                  Preencha os dados e gere um link de convite para o colaborador.
+                  {editingUserId ? 'Atualize as informações do colaborador.' : 'Preencha os dados e gere um link de convite para o colaborador.'}
                 </DialogDescription>
               </DialogHeader>
 
@@ -275,7 +302,16 @@ export default function UsersPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email">E-mail</Label>
-                      <Input id="email" type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} className="bg-slate-950 border-slate-800" placeholder="nome@email.com" required />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={inviteEmail}
+                        onChange={e => setInviteEmail(e.target.value)}
+                        className="bg-slate-950 border-slate-800"
+                        placeholder="nome@email.com"
+                        disabled={!!editingUserId}
+                        required
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="phone">Telefone / WhatsApp</Label>
@@ -338,8 +374,8 @@ export default function UsersPage() {
 
                   <DialogFooter className="pt-4 border-t border-slate-800">
                     <Button type="submit" disabled={inviteLoading} className="bg-blue-600 hover:bg-blue-700 w-full md:w-auto min-w-[200px]">
-                      {inviteLoading ? <Loader2 className="animate-spin mr-2" /> : <Shield className="mr-2 w-4 h-4" />}
-                      Salvar e Gerar Link de Convite
+                      {inviteLoading ? <Loader2 className="animate-spin mr-2" /> : editingUserId ? <Save className="mr-2 w-4 h-4" /> : <Shield className="mr-2 w-4 h-4" />}
+                      {editingUserId ? 'Salvar Alterações' : 'Salvar e Gerar Link de Convite'}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -392,6 +428,12 @@ export default function UsersPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-200">
+                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => handleEditClick(u)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Editar Usuário
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="bg-slate-800" />
                             <DropdownMenuLabel>Alterar Função</DropdownMenuLabel>
                             {u.role !== 'owner' && (
                               <DropdownMenuItem onClick={() => handleRoleUpdate(u.id, 'owner')}>
