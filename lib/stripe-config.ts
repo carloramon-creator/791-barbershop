@@ -13,7 +13,7 @@ export const PLANS: Record<string, PlanConfig> = {
         id: 'basic',
         name: 'Básico',
         price: 49,
-        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_BASIC || '',
+        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_BASIC || 'price_1SlEJ2LzRSgzMHRZERmJwYgH',
         features: [
             'Até 3 barbeiros',
             '50 agendamentos/mês',
@@ -24,7 +24,7 @@ export const PLANS: Record<string, PlanConfig> = {
         id: 'complete',
         name: 'Completo',
         price: 99,
-        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_COMPLETE || '',
+        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_COMPLETE || 'price_1SlEJbLzRSgzMHRZAleKdO0C',
         features: [
             'Até 10 barbeiros',
             '200 agendamentos/mês',
@@ -35,7 +35,7 @@ export const PLANS: Record<string, PlanConfig> = {
         id: 'premium',
         name: 'Premium',
         price: 169,
-        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM || '',
+        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM || 'price_1SlEK9LzRSgzMHRZuw1ZcbwS',
         features: [
             'Barbeiros ilimitados',
             'Agendamentos ilimitados',
