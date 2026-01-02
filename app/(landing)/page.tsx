@@ -12,6 +12,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from '@/components/ui/dialog';
+import { CheckCircle } from 'lucide-react';
 import { supabaseClient } from '@/lib/supabase-client';
 
 // Use env var or default to backend URL for signup
