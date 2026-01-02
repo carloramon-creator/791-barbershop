@@ -1,7 +1,10 @@
+export type Plan = 'basic' | 'intermediate' | 'complete' | 'premium';
+export type UserRole = 'owner' | 'barber' | 'client' | 'staff';
+
 export interface Tenant {
     id: string;
     name: string;
-    plan: string;
+    plan: string; // Keeping as string to avoid strict enum conflicts for now, or match Plan type
     stripe_id?: string;
     cnpj?: string;
     phone?: string;
@@ -14,5 +17,15 @@ export interface Tenant {
     city?: string;
     state?: string;
     logo_url?: string;
+    created_at: string;
+}
+
+export interface User {
+    id: string;
+    tenant_id: string;
+    role: UserRole;
+    name?: string;
+    email: string;
+    photo_url?: string;
     created_at: string;
 }

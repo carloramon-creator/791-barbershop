@@ -251,7 +251,6 @@ export default function BarbershopSettingsPage() {
                             <div className="space-y-2">
                                 <Label htmlFor="phone" className="text-slate-200">Telefone / WhatsApp</Label>
                                 <MaskedInput
-                                    id="phone"
                                     mask="(99) 99999-9999"
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
@@ -263,7 +262,6 @@ export default function BarbershopSettingsPage() {
                             <div className="space-y-2">
                                 <Label htmlFor="cnpj" className="text-slate-200">CNPJ</Label>
                                 <MaskedInput
-                                    id="cnpj"
                                     mask="99.999.999/9999-99"
                                     value={cnpj}
                                     onChange={(e) => setCnpj(e.target.value)}
@@ -281,7 +279,6 @@ export default function BarbershopSettingsPage() {
                                 <div className="space-y-2">
                                     <Label htmlFor="cep" className="text-slate-200">CEP</Label>
                                     <MaskedInput
-                                        id="cep"
                                         mask="99999-999"
                                         value={cep}
                                         onChange={(e) => setCep(e.target.value)}

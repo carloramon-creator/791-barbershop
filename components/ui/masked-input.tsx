@@ -1,10 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { Input, InputProps } from './input';
+import { Input } from './input';
 
-interface MaskedInputProps extends InputProps {
+interface MaskedInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
     mask: string;
+    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const MaskedInput = React.forwardRef<HTMLInputElement, MaskedInputProps>(
