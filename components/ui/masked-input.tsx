@@ -7,6 +7,7 @@ interface MaskedInputProps extends InputProps {
     mask: string;
       value?: string;
       onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+      placeholder?: string;
 }
 
 export const MaskedInput = React.forwardRef<HTMLInputElement, MaskedInputProps>(
