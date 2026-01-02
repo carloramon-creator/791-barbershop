@@ -1,5 +1,3 @@
-'use client';
-
 export function NotFound() {
   return (
     <div style={{ textAlign: 'center', padding: '50px' }}>
