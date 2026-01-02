@@ -20,6 +20,7 @@ export default function BarbershopSettingsPage() {
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
 
     // Form state
     const [name, setName] = useState('');
@@ -141,12 +142,12 @@ export default function BarbershopSettingsPage() {
                 complement,
                 neighborhood,
                 city,
-                state,
-                address: `${street}, ${number} - ${neighborhood}, ${city}/${state}` // Legacy field fallback
+                state
             };
 
             await Api.updateBarbershop(payload);
             await refresh(); // Update global context to refresh sidebar logo
+            setIsEditing(false);
             alert('Barbearia atualizada com sucesso!');
         } catch (error: any) {
             alert('Erro ao salvar: ' + error.message);
@@ -219,7 +220,8 @@ export default function BarbershopSettingsPage() {
                                         type="file"
                                         accept="image/*"
                                         onChange={handleLogoUpload}
-                                        className="bg-slate-950 border-slate-800 text-slate-300 file:text-blue-500 file:bg-blue-500/10 file:rounded-md file:border-0 file:mr-4 file:px-4 file:py-2 hover:file:bg-blue-500/20 cursor-pointer w-full max-w-sm"
+                                        disabled={!isEditing}
+                                        className="bg-slate-950 border-slate-800 text-slate-300 file:text-blue-500 file:bg-blue-500/10 file:rounded-md file:border-0 file:mr-4 file:px-4 file:py-2 hover:file:bg-blue-500/20 cursor-pointer w-full max-w-sm disabled:opacity-50"
                                     />
                                     {uploadError ? (
                                         <div className="flex items-center gap-2 text-red-400 text-xs">
@@ -245,7 +247,8 @@ export default function BarbershopSettingsPage() {
                                     onChange={(e) => setName(e.target.value)}
                                     placeholder="Ex: Minha Barbearia"
                                     required
-                                    className="bg-slate-950 border-slate-800 text-slate-100"
+                                    disabled={!isEditing}
+                                    className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400"
                                 />
                             </div>
 
@@ -256,7 +259,8 @@ export default function BarbershopSettingsPage() {
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
                                     placeholder="(00) 00000-0000"
-                                    className="bg-slate-950 border-slate-800 text-slate-100"
+                                    disabled={!isEditing}
+                                    className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400"
                                 />
                             </div>
 
@@ -267,7 +271,8 @@ export default function BarbershopSettingsPage() {
                                     value={cnpj}
                                     onChange={(e) => setCnpj(e.target.value)}
                                     placeholder="00.000.000/0000-00"
-                                    className="bg-slate-950 border-slate-800 text-slate-100"
+                                    disabled={!isEditing}
+                                    className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400"
                                 />
                             </div>
                         </div>
@@ -286,7 +291,8 @@ export default function BarbershopSettingsPage() {
                                         onBlur={handleCepBlur}
                                         required
                                         placeholder="00000-000"
-                                        className="bg-slate-950 border-slate-800 text-slate-100"
+                                        disabled={!isEditing}
+                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400"
                                     />
                                 </div>
                                 <div className="space-y-2 md:col-span-2">
@@ -296,7 +302,8 @@ export default function BarbershopSettingsPage() {
                                         value={street}
                                         onChange={(e) => setStreet(e.target.value)}
                                         required
-                                        className="bg-slate-950 border-slate-800 text-slate-100"
+                                        disabled={!isEditing}
+                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400"
                                     />
                                 </div>
                             </div>
@@ -310,7 +317,8 @@ export default function BarbershopSettingsPage() {
                                         onChange={(e) => setNumber(e.target.value)}
                                         placeholder="123"
                                         required
-                                        className="bg-slate-950 border-slate-800 text-slate-100"
+                                        disabled={!isEditing}
+                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400"
                                     />
                                 </div>
                                 <div className="space-y-2 md:col-span-2">
@@ -320,7 +328,8 @@ export default function BarbershopSettingsPage() {
                                         value={complement}
                                         onChange={(e) => setComplement(e.target.value)}
                                         placeholder="Sala 1, Bloco B"
-                                        className="bg-slate-950 border-slate-800 text-slate-100"
+                                        disabled={!isEditing}
+                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400"
                                     />
                                 </div>
                             </div>
@@ -333,7 +342,8 @@ export default function BarbershopSettingsPage() {
                                         value={neighborhood}
                                         onChange={(e) => setNeighborhood(e.target.value)}
                                         required
-                                        className="bg-slate-950 border-slate-800 text-slate-100"
+                                        disabled={!isEditing}
+                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -343,7 +353,8 @@ export default function BarbershopSettingsPage() {
                                         value={city}
                                         onChange={(e) => setCity(e.target.value)}
                                         required
-                                        className="bg-slate-950 border-slate-800 text-slate-100"
+                                        disabled={!isEditing}
+                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -355,21 +366,42 @@ export default function BarbershopSettingsPage() {
                                         required
                                         maxLength={2}
                                         placeholder="SP"
-                                        className="bg-slate-950 border-slate-800 text-slate-100 uppercase"
+                                        disabled={!isEditing}
+                                        className="bg-slate-950 border-slate-800 text-slate-100 uppercase disabled:bg-slate-900 disabled:text-slate-400"
                                     />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="pt-4 flex justify-end">
-                            <Button
-                                type="submit"
-                                disabled={loading || uploading}
-                                className="bg-blue-600 hover:bg-blue-700 text-white min-w-[150px]"
-                            >
-                                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                                {loading ? 'Salvando...' : 'Salvar Alterações'}
-                            </Button>
+                        <div className="pt-4 flex justify-end gap-3">
+                            {isEditing ? (
+                                <>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setIsEditing(false)}
+                                        className="border-slate-800 text-slate-400 hover:bg-slate-800"
+                                    >
+                                        Cancelar
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        disabled={loading || uploading}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white min-w-[150px]"
+                                    >
+                                        {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                                        {loading ? 'Salvando...' : 'Salvar Alterações'}
+                                    </Button>
+                                </>
+                            ) : (
+                                <Button
+                                    type="button"
+                                    onClick={() => setIsEditing(true)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white min-w-[150px]"
+                                >
+                                    Editar Informações
+                                </Button>
+                            )}
                         </div>
                     </form>
                 </CardContent>

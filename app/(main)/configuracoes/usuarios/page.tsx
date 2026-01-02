@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon } from 'lucide-react';
+import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon, MapPin, Phone, CreditCard as CardIcon, Copy, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +38,7 @@ import { cn } from '@/lib/utils';
 import { Api } from '@/lib/api';
 import { User } from '@/lib/types';
 import { useAuth } from '@/lib/auth-provider';
+import { MaskedInput } from '@/components/ui/masked-input';
 
 export default function UsersPage() {
   const pathname = usePathname();
@@ -51,6 +52,16 @@ export default function UsersPage() {
   const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('staff');
+  const [invitePhone, setInvitePhone] = useState('');
+  const [inviteCpf, setInviteCpf] = useState('');
+  const [inviteCep, setInviteCep] = useState('');
+  const [inviteStreet, setInviteStreet] = useState('');
+  const [inviteNumber, setInviteNumber] = useState('');
+  const [inviteComplement, setInviteComplement] = useState('');
+  const [inviteNeighborhood, setInviteNeighborhood] = useState('');
+  const [inviteCity, setInviteCity] = useState('');
+  const [inviteState, setInviteState] = useState('');
+  const [generatedLink, setGeneratedLink] = useState('');
 
   const fetchUsers = async () => {
     try {
@@ -71,22 +82,71 @@ export default function UsersPage() {
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     setInviteLoading(true);
+    setGeneratedLink('');
     try {
-      await Api.inviteUser({
+      const result = await Api.inviteUser({
         name: inviteName,
         email: inviteEmail,
-        role: inviteRole
+        role: inviteRole,
+        phone: invitePhone,
+        cpf: inviteCpf,
+        cep: inviteCep,
+        street: inviteStreet,
+        number: inviteNumber,
+        complement: inviteComplement,
+        neighborhood: inviteNeighborhood,
+        city: inviteCity,
+        state: inviteState,
+        generateInvite: true
       });
-      setIsInviteOpen(false);
-      setInviteName('');
-      setInviteEmail('');
-      setInviteRole('staff');
+
+      if (result.inviteLink) {
+        setGeneratedLink(result.inviteLink);
+      } else {
+        setIsInviteOpen(false);
+        resetForm();
+      }
+
       fetchUsers();
-      alert('Usuário adicionado com sucesso!');
+      if (!result.inviteLink) alert('Usuário adicionado com sucesso!');
     } catch (error: any) {
       alert('Erro ao adicionar usuário: ' + error.message);
     } finally {
       setInviteLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setInviteName('');
+    setInviteEmail('');
+    setInviteRole('staff');
+    setInvitePhone('');
+    setInviteCpf('');
+    setInviteCep('');
+    setInviteStreet('');
+    setInviteNumber('');
+    setInviteComplement('');
+    setInviteNeighborhood('');
+    setInviteCity('');
+    setInviteState('');
+    setGeneratedLink('');
+  };
+
+  const handleCepBlur = async () => {
+    const cleanCep = inviteCep.replace(/\D/g, '');
+    if (cleanCep.length !== 8) return;
+
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await res.json();
+      if (data.erro) return;
+
+      setInviteStreet(data.logradouro);
+      setInviteNeighborhood(data.bairro);
+      setInviteCity(data.localidade);
+      setInviteState(data.uf);
+    } catch (error) {
+      console.error('Erro ao buscar CEP', error);
     }
   };
 
@@ -158,63 +218,115 @@ export default function UsersPage() {
             </CardDescription>
           </div>
 
-          <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
+          <Dialog open={isInviteOpen} onOpenChange={(val) => { setIsInviteOpen(val); if (!val) resetForm(); }}>
             <DialogTrigger asChild>
               <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
                 <Plus className="w-4 h-4" />
                 Adicionar Usuário
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
+            <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
               <DialogHeader>
                 <DialogTitle>Adicionar novo usuário</DialogTitle>
                 <DialogDescription className="text-slate-400">
-                  O usuário receberá acesso imediato à barbearia.
+                  Preencha os dados e gere um link de convite para o colaborador.
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleInvite} className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome Completo</Label>
-                  <Input
-                    id="name"
-                    value={inviteName}
-                    onChange={e => setInviteName(e.target.value)}
-                    className="bg-slate-950 border-slate-800"
-                    placeholder="Ex: João da Silva"
-                    required
-                  />
+
+              {generatedLink ? (
+                <div className="py-6 space-y-4">
+                  <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-sm italic">
+                    Usuário criado com sucesso! Copie o link abaixo e envie para que ele defina a senha e acesse o sistema.
+                  </div>
+                  <div className="flex gap-2">
+                    <Input readOnly value={generatedLink} className="bg-slate-950 border-slate-800 text-xs" />
+                    <Button
+                      onClick={() => { navigator.clipboard.writeText(generatedLink); alert('Copiado!'); }}
+                      className="bg-slate-800 hover:bg-slate-700"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <Button onClick={() => setIsInviteOpen(false)} className="w-full bg-blue-600 hover:bg-blue-700">Concluir</Button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">E-mail</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={inviteEmail}
-                    onChange={e => setInviteEmail(e.target.value)}
-                    className="bg-slate-950 border-slate-800"
-                    placeholder="nome@email.com"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Função</Label>
-                  <Select value={inviteRole} onValueChange={setInviteRole}>
-                    <SelectTrigger className="bg-slate-950 border-slate-800">
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                      <SelectItem value="owner">Proprietário</SelectItem>
-                      <SelectItem value="barber">Barbeiro</SelectItem>
-                      <SelectItem value="staff">Funcionário</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <DialogFooter>
-                  <Button type="submit" disabled={inviteLoading} className="bg-blue-600 hover:bg-blue-700">
-                    {inviteLoading ? 'Adicionando...' : 'Adicionar Usuário'}
-                  </Button>
-                </DialogFooter>
-              </form>
+              ) : (
+                <form onSubmit={handleInvite} className="space-y-6 py-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Nome Completo</Label>
+                      <Input id="name" value={inviteName} onChange={e => setInviteName(e.target.value)} className="bg-slate-950 border-slate-800" placeholder="Ex: João da Silva" required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">E-mail</Label>
+                      <Input id="email" type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} className="bg-slate-950 border-slate-800" placeholder="nome@email.com" required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Telefone / WhatsApp</Label>
+                      <MaskedInput mask="(99) 99999-9999" value={invitePhone} onChange={e => setInvitePhone(e.target.value)} className="bg-slate-950 border-slate-800" placeholder="(00) 00000-0000" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cpf">CPF</Label>
+                      <MaskedInput mask="999.999.999-99" value={inviteCpf} onChange={e => setInviteCpf(e.target.value)} className="bg-slate-950 border-slate-800" placeholder="000.000.000-00" />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="role">Função / Cargo</Label>
+                      <Select value={inviteRole} onValueChange={setInviteRole}>
+                        <SelectTrigger className="bg-slate-950 border-slate-800">
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                          <SelectItem value="owner">Proprietário (Acesso Total)</SelectItem>
+                          <SelectItem value="barber">Barbeiro (Ver própria fila)</SelectItem>
+                          <SelectItem value="staff">Funcionário (Ver todas as filas)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 pt-4 border-t border-slate-800">
+                    <h3 className="text-sm font-bold text-slate-400 flex items-center gap-2 uppercase tracking-wider">
+                      <MapPin className="w-4 h-4" /> Endereço Residencial
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="cep">CEP</Label>
+                        <MaskedInput mask="99999-999" value={inviteCep} onChange={e => setInviteCep(e.target.value)} onBlur={handleCepBlur} className="bg-slate-950 border-slate-800" placeholder="00000-000" />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="street">Rua</Label>
+                        <Input value={inviteStreet} onChange={e => setInviteStreet(e.target.value)} className="bg-slate-950 border-slate-800" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="number">Número</Label>
+                        <Input value={inviteNumber} onChange={e => setInviteNumber(e.target.value)} className="bg-slate-950 border-slate-800" />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="complement">Complemento</Label>
+                        <Input value={inviteComplement} onChange={e => setInviteComplement(e.target.value)} className="bg-slate-950 border-slate-800" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="neighborhood">Bairro</Label>
+                        <Input value={inviteNeighborhood} onChange={e => setInviteNeighborhood(e.target.value)} className="bg-slate-950 border-slate-800" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="city">Cidade</Label>
+                        <Input value={inviteCity} onChange={e => setInviteCity(e.target.value)} className="bg-slate-950 border-slate-800" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="state">UF</Label>
+                        <Input value={inviteState} onChange={e => setInviteState(e.target.value)} maxLength={2} className="bg-slate-950 border-slate-800 uppercase" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <DialogFooter className="pt-4 border-t border-slate-800">
+                    <Button type="submit" disabled={inviteLoading} className="bg-blue-600 hover:bg-blue-700 w-full md:w-auto min-w-[200px]">
+                      {inviteLoading ? <Loader2 className="animate-spin mr-2" /> : <Shield className="mr-2 w-4 h-4" />}
+                      Salvar e Gerar Link de Convite
+                    </Button>
+                  </DialogFooter>
+                </form>
+              )}
             </DialogContent>
           </Dialog>
         </CardHeader>
