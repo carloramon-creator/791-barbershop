@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon, MapPin, Phone, CreditCard as CardIcon, Copy, Loader2, Link as LinkIcon, Key, Pencil } from 'lucide-react';
+import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon, MapPin, Phone, CreditCard as CardIcon, Copy, Loader2, Link as LinkIcon, Key, Pencil, Save, MessageCircle, Clock, Percent, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,6 +61,9 @@ export default function UsersPage() {
   const [inviteNeighborhood, setInviteNeighborhood] = useState('');
   const [inviteCity, setInviteCity] = useState('');
   const [inviteState, setInviteState] = useState('');
+  const [inviteAvgTime, setInviteAvgTime] = useState('30');
+  const [inviteCommType, setInviteCommType] = useState<'fixed' | 'percentage'>('percentage');
+  const [inviteCommValue, setInviteCommValue] = useState('50');
   const [generatedLink, setGeneratedLink] = useState('');
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
@@ -99,6 +102,9 @@ export default function UsersPage() {
         neighborhood: inviteNeighborhood,
         city: inviteCity,
         state: inviteState,
+        avg_service_time: parseInt(inviteAvgTime),
+        commission_type: inviteCommType,
+        commission_value: parseFloat(inviteCommValue),
         generateInvite: !editingUserId
       };
 
@@ -138,6 +144,9 @@ export default function UsersPage() {
     setInviteNeighborhood('');
     setInviteCity('');
     setInviteState('');
+    setInviteAvgTime('30');
+    setInviteCommType('percentage');
+    setInviteCommValue('50');
     setGeneratedLink('');
     setEditingUserId(null);
   };
@@ -156,6 +165,9 @@ export default function UsersPage() {
     setInviteNeighborhood(u.neighborhood || '');
     setInviteCity(u.city || '');
     setInviteState(u.state || '');
+    setInviteAvgTime(u.avg_service_time?.toString() || '30');
+    setInviteCommType(u.commission_type || 'percentage');
+    setInviteCommValue(u.commission_value?.toString() || '50');
     setIsInviteOpen(true);
   };
 
@@ -280,18 +292,47 @@ export default function UsersPage() {
               {generatedLink ? (
                 <div className="py-6 space-y-4">
                   <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-sm italic">
-                    Usuário criado com sucesso! Copie o link abaixo e envie para que ele defina a senha e acesse o sistema.
+                    Usuário criado com sucesso! Escolha como deseja enviar o convite abaixo:
                   </div>
-                  <div className="flex gap-2">
-                    <Input readOnly value={generatedLink} className="bg-slate-950 border-slate-800 text-xs" />
+                  <div className="space-y-3">
+                    <Label className="text-slate-400 text-xs uppercase font-bold tracking-wider">Link de Acesso</Label>
+                    <div className="flex gap-2">
+                      <Input readOnly value={generatedLink} className="bg-slate-950 border-slate-800 text-xs" />
+                      <Button
+                        onClick={() => { navigator.clipboard.writeText(generatedLink); alert('Copiado!'); }}
+                        className="bg-slate-800 hover:bg-slate-700"
+                        title="Copiar Link"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 pt-2">
                     <Button
-                      onClick={() => { navigator.clipboard.writeText(generatedLink); alert('Copiado!'); }}
-                      className="bg-slate-800 hover:bg-slate-700"
+                      onClick={() => {
+                        const message = encodeURIComponent(`Olá ${inviteName}! Seja bem-vindo à nossa barbearia. Clique no link abaixo para definir sua senha e acessar o sistema: ${generatedLink}`);
+                        const phone = invitePhone.replace(/\D/g, '');
+                        window.open(`https://wa.me/55${phone}?text=${message}`, '_blank');
+                      }}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
                     >
-                      <Copy className="w-4 h-4" />
+                      <MessageCircle className="w-4 h-4" />
+                      WhatsApp
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        const subject = encodeURIComponent('Convite: Acesso ao Sistema 791 Barber');
+                        const body = encodeURIComponent(`Olá ${inviteName}!\n\nSeja bem-vindo. Sua conta foi criada.\nClique no link abaixo para configurar sua senha:\n\n${generatedLink}`);
+                        window.location.href = `mailto:${inviteEmail}?subject=${subject}&body=${body}`;
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                    >
+                      <Loader2 className="w-4 h-4" />
+                      E-mail
                     </Button>
                   </div>
-                  <Button onClick={() => setIsInviteOpen(false)} className="w-full bg-blue-600 hover:bg-blue-700">Concluir</Button>
+                  <Button onClick={() => setIsInviteOpen(false)} variant="ghost" className="w-full text-slate-500 hover:text-slate-300">Fechar</Button>
                 </div>
               ) : (
                 <form onSubmit={handleInvite} className="space-y-6 py-4">
@@ -329,11 +370,42 @@ export default function UsersPage() {
                         </SelectTrigger>
                         <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
                           <SelectItem value="owner">Proprietário (Acesso Total)</SelectItem>
-                          <SelectItem value="barber">Barbeiro (Ver própria fila)</SelectItem>
-                          <SelectItem value="staff">Funcionário (Ver todas as filas)</SelectItem>
+                          <SelectItem value="barber">Barbeiro (Cortes e Fila)</SelectItem>
+                          <SelectItem value="staff">Funcionário (Administrativo)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {inviteRole === 'barber' && (
+                      <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-blue-500/5 border border-blue-500/10 rounded-xl animate-in fade-in slide-in-from-top-2">
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2 text-blue-400">
+                            <Clock className="w-3 h-3" /> Tempo Médio (min)
+                          </Label>
+                          <Input type="number" value={inviteAvgTime} onChange={e => setInviteAvgTime(e.target.value)} className="bg-slate-950 border-slate-800" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2 text-blue-400">
+                            <Percent className="w-3 h-3" /> Tipo de Comissão
+                          </Label>
+                          <Select value={inviteCommType} onValueChange={(v: any) => setInviteCommType(v)}>
+                            <SelectTrigger className="bg-slate-950 border-slate-800">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                              <SelectItem value="percentage">Percentual (%)</SelectItem>
+                              <SelectItem value="fixed">Valor Fixo (R$)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2 text-blue-400">
+                            <DollarSign className="w-3 h-3" /> Valor da Comissão
+                          </Label>
+                          <Input type="number" value={inviteCommValue} onChange={e => setInviteCommValue(e.target.value)} className="bg-slate-950 border-slate-800" />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-4 pt-4 border-t border-slate-800">
