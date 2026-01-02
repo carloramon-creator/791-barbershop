@@ -3,11 +3,9 @@
 import * as React from 'react';
 import { Input, InputProps } from './input';
 
-interface MaskedInputProps extends InputProps {
-    mask: string;
+interface MaskedInputProps extends Omit<InputProps, 'onChange'> {    mask: string;
       value?: string;
-      onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-      placeholder?: string;
+         placeholder?: string;
 }
 
 export const MaskedInput = React.forwardRef<HTMLInputElement, MaskedInputProps>(
