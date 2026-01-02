@@ -191,7 +191,7 @@ export default function UsersPage() {
 
   const handleRoleUpdate = async (userId: string, newRole: string) => {
     try {
-      await Api.updateUser(userId, { role: newRole });
+      await Api.updateUser({ id: userId, role: newRole });
       fetchUsers();
     } catch (error: any) {
       alert('Erro ao atualizar função: ' + error.message);
