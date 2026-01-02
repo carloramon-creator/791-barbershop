@@ -7,14 +7,33 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { Topbar } from '@/components/layout/topbar';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-    const { session, loading } = useAuth();
+    const { session, loading, tenant } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
         if (!loading && !session) {
             router.push('/login');
+            return;
         }
-    }, [session, loading, router]);
+
+        if (!loading && session && tenant) {
+            const isTrial = tenant.subscription_status === 'trial';
+            const isExpired = tenant.subscription_current_period_end && new Date() > new Date(tenant.subscription_current_period_end);
+            const isCanceled = tenant.subscription_status === 'canceled';
+            const isPastDue = tenant.subscription_status === 'past_due';
+
+            // Páginas que NÃO devem ser bloqueadas
+            const isWhiteListed =
+                window.location.pathname.startsWith('/checkout') ||
+                window.location.pathname === '/configuracoes/plano';
+
+            if (!isWhiteListed) {
+                if ((isTrial && isExpired) || (isCanceled && isExpired) || isPastDue) {
+                    router.push('/checkout/trial-expired');
+                }
+            }
+        }
+    }, [session, loading, tenant, router]);
 
     if (loading) {
         return (

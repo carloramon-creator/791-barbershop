@@ -17,6 +17,8 @@ export interface Tenant {
     city?: string;
     state?: string;
     logo_url?: string;
+    subscription_status?: 'trial' | 'active' | 'canceled' | 'past_due' | 'expired';
+    subscription_current_period_end?: string;
     created_at: string;
 }
 

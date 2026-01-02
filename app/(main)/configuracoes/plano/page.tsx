@@ -103,22 +103,29 @@ export default function PlanPage() {
         try {
             setSaving(true);
             setError(null);
-            const res = await fetch(`${API_URL}/api/barbershop/plan?tenant_id=${TENANT_ID}`, {
+
+            // Chamar API de checkout do Stripe
+            const res = await fetch(`${API_URL}/api/checkout`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ newPlan: selectedPlan }),
+                body: JSON.stringify({ plan: selectedPlan }),
             });
+
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
-            setCurrentPlan(data.currentPlan);
-            setOpenDialog(false);
-            setSelectedPlan(null);
+
+            // Redirecionar para Stripe Checkout
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                throw new Error('URL de checkout não retornada');
+            }
         } catch (err: any) {
             setError(err.message);
-        } finally {
             setSaving(false);
         }
+        // Não resetar setSaving(false) aqui pois vamos redirecionar
     }
 
     return (
