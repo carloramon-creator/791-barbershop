@@ -1,0 +1,309 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import { Api } from '@/lib/api';
+import { User } from '@/lib/types';
+import { useAuth } from '@/lib/auth-provider';
+
+export default function UsersPage() {
+  const pathname = usePathname();
+  const { user: currentUser } = useAuth();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(false);
+
+  // Invite Form
+  const [inviteName, setInviteName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('staff');
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const data = await Api.getUsers();
+      setUsers(data);
+    } catch (error) {
+      console.error('Failed to fetch users', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInviteLoading(true);
+    try {
+      await Api.inviteUser({
+        name: inviteName,
+        email: inviteEmail,
+        role: inviteRole
+      });
+      setIsInviteOpen(false);
+      setInviteName('');
+      setInviteEmail('');
+      setInviteRole('staff');
+      fetchUsers();
+      alert('Usuário adicionado com sucesso!');
+    } catch (error: any) {
+      alert('Erro ao adicionar usuário: ' + error.message);
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  const handleRoleUpdate = async (userId: string, newRole: string) => {
+    try {
+      await Api.updateUser(userId, { role: newRole });
+      fetchUsers();
+    } catch (error: any) {
+      alert('Erro ao atualizar função: ' + error.message);
+    }
+  };
+
+  const handleRemoveUser = async (userId: string) => {
+    if (!confirm('Tem certeza que deseja remover este usuário da barbearia? Esta ação não pode ser desfeita.')) return;
+
+    try {
+      await Api.removeUser(userId);
+      fetchUsers();
+    } catch (error: any) {
+      alert('Erro ao remover usuário: ' + error.message);
+    }
+  };
+
+  const tabs = [
+    { name: 'Geral', href: '/configuracoes/barbearia', icon: Building2 },
+    { name: 'Usuários', href: '/configuracoes/usuarios', icon: Users },
+    { name: 'Plano', href: '/configuracoes/plano', icon: CreditCard },
+  ];
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'owner': return 'Proprietário';
+      case 'barber': return 'Barbeiro';
+      case 'staff': return 'Funcionário';
+      default: return role;
+    }
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div className="flex flex-col gap-4">
+        <h1 className="text-3xl font-bold text-slate-100">Configurações</h1>
+        <div className="flex space-x-1 border-b border-slate-800">
+          {tabs.map((tab) => (
+            <Link
+              key={tab.name}
+              href={tab.href}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                pathname === tab.href
+                  ? "border-blue-500 text-blue-500"
+                  : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700"
+              )}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.name}
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      <Card className="bg-slate-900 border-slate-800">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-slate-100">Usuários e Permissões</CardTitle>
+            <CardDescription className="text-slate-500">
+              Gerencie quem tem acesso ao sistema.
+            </CardDescription>
+          </div>
+
+          <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+                <Plus className="w-4 h-4" />
+                Adicionar Usuário
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
+              <DialogHeader>
+                <DialogTitle>Adicionar novo usuário</DialogTitle>
+                <DialogDescription className="text-slate-400">
+                  O usuário receberá acesso imediato à barbearia.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleInvite} className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nome Completo</Label>
+                  <Input
+                    id="name"
+                    value={inviteName}
+                    onChange={e => setInviteName(e.target.value)}
+                    className="bg-slate-950 border-slate-800"
+                    placeholder="Ex: João da Silva"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={inviteEmail}
+                    onChange={e => setInviteEmail(e.target.value)}
+                    className="bg-slate-950 border-slate-800"
+                    placeholder="nome@email.com"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Função</Label>
+                  <Select value={inviteRole} onValueChange={setInviteRole}>
+                    <SelectTrigger className="bg-slate-950 border-slate-800">
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                      <SelectItem value="owner">Proprietário</SelectItem>
+                      <SelectItem value="barber">Barbeiro</SelectItem>
+                      <SelectItem value="staff">Funcionário</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={inviteLoading} className="bg-blue-600 hover:bg-blue-700">
+                    {inviteLoading ? 'Adicionando...' : 'Adicionar Usuário'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-10 text-slate-500">Carregando usuários...</div>
+          ) : (
+            <div className="rounded-md border border-slate-800">
+              <Table>
+                <TableHeader className="bg-slate-950">
+                  <TableRow className="border-slate-800 hover:bg-slate-900">
+                    <TableHead className="text-slate-400">Nome</TableHead>
+                    <TableHead className="text-slate-400">E-mail</TableHead>
+                    <TableHead className="text-slate-400">Função</TableHead>
+                    <TableHead className="text-right text-slate-400">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((u) => (
+                    <TableRow key={u.id} className="border-slate-800 hover:bg-slate-900/50">
+                      <TableCell className="font-medium text-slate-200">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
+                            <UserIcon className="w-4 h-4" />
+                          </div>
+                          {u.name || 'Sem nome'}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-slate-400">{u.email}</TableCell>
+                      <TableCell>
+                        <span className={cn(
+                          "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                          u.role === 'owner' ? "bg-purple-500/10 text-purple-500" :
+                            u.role === 'barber' ? "bg-blue-500/10 text-blue-500" :
+                              "bg-slate-500/10 text-slate-500"
+                        )}>
+                          {getRoleLabel(u.role)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-slate-200">
+                              <span className="sr-only">Abrir menu</span>
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-200">
+                            <DropdownMenuLabel>Alterar Função</DropdownMenuLabel>
+                            {u.role !== 'owner' && (
+                              <DropdownMenuItem onClick={() => handleRoleUpdate(u.id, 'owner')}>
+                                <Shield className="mr-2 h-4 w-4" />
+                                Tornar Proprietário
+                              </DropdownMenuItem>
+                            )}
+                            {u.role !== 'barber' && (
+                              <DropdownMenuItem onClick={() => handleRoleUpdate(u.id, 'barber')}>
+                                <UserIcon className="mr-2 h-4 w-4" />
+                                Tornar Barbeiro
+                              </DropdownMenuItem>
+                            )}
+                            {u.role !== 'staff' && (
+                              <DropdownMenuItem onClick={() => handleRoleUpdate(u.id, 'staff')}>
+                                <UserIcon className="mr-2 h-4 w-4" />
+                                Tornar Funcionário
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator className="bg-slate-800" />
+                            <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => handleRemoveUser(u.id)}>
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Remover da Barbearia
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {users.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-24 text-center text-slate-500">
+                        Nenhum usuário encontrado.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

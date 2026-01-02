@@ -1,0 +1,101 @@
+import { supabaseClient } from './supabase-client';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+
+async function apiFetch(path: string, options: RequestInit = {}) {
+    // Buscar sessão atual para pegar o JWT
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const token = session?.access_token;
+
+    // Timeout de 30 segundos
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 30000);
+
+    try {
+        const res = await fetch(`${BACKEND_URL}${path}`, {
+            ...options,
+            signal: controller.signal,
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                ...(options.headers || {}),
+            },
+            cache: 'no-store',
+        });
+
+        clearTimeout(id);
+
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.error || `Erro ${res.status} em ${path}: ${res.statusText}`);
+        }
+        return res.json();
+    } catch (err: any) {
+        clearTimeout(id);
+        console.error(`[API ERROR] Failure fetching ${path}:`, err);
+        if (err.name === 'AbortError') {
+            throw new Error(`O servidor demorou muito para responder em ${path} (Timeout de 30s).`);
+        }
+        throw new Error(`Falha na conexão com o servidor (${path}): ${err.message}`);
+    }
+}
+
+export const Api = {
+    // Queues
+    getQueueStatus: () => apiFetch('/api/queue/status'),
+    barberNext: (barberId: string) =>
+        apiFetch(`/api/barbers/${barberId}/next`, { method: 'PUT' }),
+    finishService: (queueId: string) =>
+        apiFetch(`/api/queue/${queueId}/finish`, { method: 'PUT' }),
+
+    // Sales
+    createSale: (queueId: string, payload: any) =>
+        apiFetch(`/api/queue/${queueId}/sale`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        }),
+    getSales: () => apiFetch('/api/sales'),
+
+    // Catalog
+    getServices: () => apiFetch('/api/services'),
+    createService: (payload: any) => apiFetch('/api/services', { method: 'POST', body: JSON.stringify(payload) }),
+    updateService: (id: string, payload: any) => apiFetch(`/api/services/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+    deleteService: (id: string) => apiFetch(`/api/services/${id}`, { method: 'DELETE' }),
+
+    getProducts: () => apiFetch('/api/products'),
+    createProduct: (payload: any) => apiFetch('/api/products', { method: 'POST', body: JSON.stringify(payload) }),
+    updateProduct: (id: string, payload: any) => apiFetch(`/api/products/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+    deleteProduct: (id: string) => apiFetch(`/api/products/${id}`, { method: 'DELETE' }),
+
+    // Finance
+    getDre: (start: string, end: string) =>
+        apiFetch(`/api/finance/dre?start=${start}&end=${end}`),
+
+    // Analytics
+    getDashboardSummary: () => apiFetch('/api/analytics/summary'),
+    getDashboardMetrics: () => apiFetch('/api/analytics/dashboard'),
+
+    // Finance Records
+    getFinanceRecords: () => apiFetch('/api/finance'),
+    createFinanceRecord: (payload: any) => apiFetch('/api/finance', { method: 'POST', body: JSON.stringify(payload) }),
+
+    // Management
+    getBarbers: () => apiFetch('/api/barbers'),
+    createBarber: (payload: any) => apiFetch('/api/barbers', { method: 'POST', body: JSON.stringify(payload) }),
+    updateBarber: (id: string, payload: any) => apiFetch(`/api/barbers/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+    deleteBarber: (id: string) => apiFetch(`/api/barbers/${id}`, { method: 'DELETE' }),
+
+    // Settings
+    getBarbershop: () => apiFetch('/api/barbershop'),
+    updateBarbershop: (payload: any) => apiFetch('/api/barbershop', { method: 'PUT', body: JSON.stringify(payload) }),
+
+    // Users
+    getUsers: () => apiFetch('/api/barbershop/users'),
+    inviteUser: (payload: any) => apiFetch('/api/barbershop/users', { method: 'POST', body: JSON.stringify(payload) }),
+    updateUser: (id: string, payload: any) => apiFetch(`/api/barbershop/users/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+    removeUser: (id: string) => apiFetch(`/api/barbershop/users/${id}`, { method: 'DELETE' }),
+
+    // Plan
+    getPlan: () => apiFetch('/api/barbershop/plan'),
+    updatePlan: (payload: any) => apiFetch('/api/barbershop/plan', { method: 'PUT', body: JSON.stringify(payload) }),
+};
