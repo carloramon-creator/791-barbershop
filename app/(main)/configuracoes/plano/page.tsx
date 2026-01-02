@@ -16,9 +16,10 @@ import {
     DialogFooter,
 } from '@/components/ui/dialog';
 
+import { supabaseClient } from '@/lib/supabase-client';
+
 // Use NEXT_PUBLIC_BACKEND_URL if set, else fallback. Note user code used 3002 hardcoded so we trust new config
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
-const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || 'test'; // Ensure this env is set or fallback
 
 interface PlanInfo {
     id: string;
@@ -82,13 +83,18 @@ export default function PlanPage() {
     async function fetchCurrentPlan() {
         try {
             setLoading(true);
-            // Ensure we use the correct query param
-            const res = await fetch(`${API_URL}/api/barbershop/plan?tenant_id=${TENANT_ID}`, {
-                credentials: 'include',
+
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) throw new Error('Usuário não autenticado');
+
+            const res = await fetch(`${API_URL}/api/barbershop/plan`, {
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`
+                }
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
-            setCurrentPlan(data.currentPlan || 'basic');
+            setCurrentPlan(data.currentPlan || 'trial');
         } catch (err: any) {
             console.error('Erro ao buscar plano:', err.message);
             setError(err.message);
@@ -104,11 +110,16 @@ export default function PlanPage() {
             setSaving(true);
             setError(null);
 
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) throw new Error('Usuário não autenticado ou sessão expirada');
+
             // Chamar API de checkout do Stripe
             const res = await fetch(`${API_URL}/api/checkout`, {
                 method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
                 body: JSON.stringify({ plan: selectedPlan }),
             });
 
