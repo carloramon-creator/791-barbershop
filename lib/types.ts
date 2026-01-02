@@ -16,3 +16,21 @@ export interface Tenant {
     logo_url?: string;
     created_at: string;
 }
+
+export type UserRole = 'owner' | 'barber' | 'client' | 'staff';
+
+export type Plan = 'free' | 'premium' | 'business';
+
+export interface User {
+  id: string;
+  tenant_id: string;
+  role: UserRole;
+  name: string;
+  email: string;
+  phone?: string;
+  avatar_url?: string;
+  plan?: Plan;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
