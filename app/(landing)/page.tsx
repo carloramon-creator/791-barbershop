@@ -12,7 +12,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from '@/components/ui/dialog';
-import { CheckCircle } from 'lucide-react';
+import { supabaseClient } from '@/lib/supabase-client';
 
 // Use env var or default to backend URL for signup
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
@@ -23,14 +23,20 @@ export default function LandingPage() {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
+        password: '',
         barbershopName: '',
     });
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
     async function handleSignUp() {
-        if (!formData.name || !formData.email || !formData.barbershopName) {
-            setError('Preencha todos os campos');
+        if (!formData.name || !formData.email || !formData.barbershopName || !formData.password) {
+            setError('Preencha todos os campos inclusive a senha');
+            return;
+        }
+
+        if (formData.password.length < 6) {
+            setError('A senha deve ter pelo menos 6 caracteres');
             return;
         }
 
@@ -38,7 +44,7 @@ export default function LandingPage() {
             setLoading(true);
             setError(null);
 
-            // Chamar API de signup
+            // 1. Chamar API de signup do backend
             const res = await fetch(`${API_URL}/api/auth/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -48,10 +54,16 @@ export default function LandingPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Erro ao cadastrar');
 
+            // 2. Login automático com a senha escolhida
+            const { error: signInError } = await supabaseClient.auth.signInWithPassword({
+                email: formData.email,
+                password: formData.password,
+            });
+
+            if (signInError) throw signInError;
+
             setSuccess(true);
             setTimeout(() => {
-                // Redirect to dashboard or login
-                // Assuming dashboard is the main entry after login
                 window.location.href = '/configuracoes/barbearia';
             }, 2000);
         } catch (err: any) {
@@ -168,6 +180,18 @@ export default function LandingPage() {
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     placeholder="seu@email.com"
+                                    className="bg-slate-950 border-slate-800"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="password">Senha</Label>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    value={formData.password}
+                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    placeholder="Escolha uma senha"
                                     className="bg-slate-950 border-slate-800"
                                 />
                             </div>
