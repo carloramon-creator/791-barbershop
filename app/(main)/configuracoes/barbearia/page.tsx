@@ -251,6 +251,7 @@ export default function BarbershopSettingsPage() {
                             <div className="space-y-2">
                                 <Label htmlFor="phone" className="text-slate-200">Telefone / WhatsApp</Label>
                                 <MaskedInput
+                                                id="phone"
                                     
                                     mask="(99) 99999-9999"
                                     value={phone}
