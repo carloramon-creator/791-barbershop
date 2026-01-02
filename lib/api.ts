@@ -93,13 +93,15 @@ export const Api = {
     getUsers: () => apiFetch('/api/barbershop/users'),
     inviteUser: (payload: any) => apiFetch('/api/barbershop/users', { method: 'POST', body: JSON.stringify(payload) }),
     async updateUser(payload: any) {
-        return apiFetch('/api/barbershop/users/update', {
+        return apiFetch('/api/barbershop/users', {
             method: 'PUT',
             body: JSON.stringify(payload)
         });
     },
 
-    removeUser: (id: string) => apiFetch(`/api/barbershop/users?id=${id}`, { method: 'DELETE' }),
+    async removeUser(id: string) {
+        return apiFetch(`/api/barbershop/users?id=${id}`, { method: 'DELETE' });
+    },
 
     generateInviteLink: (userId: string) => apiFetch('/api/barbershop/users', {
         method: 'POST',

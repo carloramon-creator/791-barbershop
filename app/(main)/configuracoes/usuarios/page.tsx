@@ -111,6 +111,7 @@ export default function UsersPage() {
       if (editingUserId) {
         await Api.updateUser(payload);
         setIsInviteOpen(false);
+        resetForm();
         alert('Usuário atualizado com sucesso!');
       } else {
         const result = await Api.inviteUser(payload);
@@ -210,14 +211,19 @@ export default function UsersPage() {
   };
 
   const handleGenerateLink = async (userId: string) => {
+    setInviteLoading(true);
     try {
-      setInviteLoading(true);
       const result = await Api.generateInviteLink(userId);
       if (result.inviteLink) {
         setGeneratedLink(result.inviteLink);
-        setIsInviteOpen(true); // Re-use the dialog to show the link
-      } else {
-        alert('Falha ao gerar o link. Tente novamente.');
+        // Precisamos abrir o modal se ele estiver fechado
+        const targetUser = users.find(u => u.id === userId);
+        if (targetUser) {
+          setInviteName(targetUser.name || '');
+          setInviteEmail(targetUser.email || '');
+          setInvitePhone(targetUser.phone || '');
+        }
+        setIsInviteOpen(true);
       }
     } catch (error: any) {
       alert('Erro: ' + error.message);
