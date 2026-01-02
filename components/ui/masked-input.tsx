@@ -5,11 +5,11 @@ import { Input, InputProps } from './input';
 
 interface MaskedInputProps extends InputProps {
     mask: string;
+      value?: string;
 }
 
 export const MaskedInput = React.forwardRef<HTMLInputElement, MaskedInputProps>(
-    ({ mask, className, onChange, ...props }, ref) => {
-
+({ mask, className, onChange, value, ...props }, ref) => {
         const applyMask = (value: string, mask: string) => {
             let i = 0;
             const cleanValue = value.replace(/\D/g, '');
@@ -34,8 +34,4 @@ export const MaskedInput = React.forwardRef<HTMLInputElement, MaskedInputProps>(
             if (onChange) onChange(e);
         };
 
-        return <Input ref={ref} onChange={handleChange} className={className} {...props} />;
-    }
-);
-
-MaskedInput.displayName = 'MaskedInput';
+        <Input ref={ref} onChange={handleChange} className={className} value={value} {...props} />;
