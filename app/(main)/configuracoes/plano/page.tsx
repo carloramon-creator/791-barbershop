@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, Building2, CreditCard, Check } from 'lucide-react';
+import { Users, Building2, CreditCard, Check, Shield } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -73,6 +73,7 @@ export default function PlanPage() {
     const tabs = [
         { name: 'Geral', href: '/configuracoes/barbearia', icon: Building2 },
         { name: 'Usuários', href: '/configuracoes/usuarios', icon: Users },
+        { name: 'Permissões', href: '/configuracoes/permissoes', icon: Shield },
         { name: 'Plano', href: '/configuracoes/plano', icon: CreditCard },
     ];
 

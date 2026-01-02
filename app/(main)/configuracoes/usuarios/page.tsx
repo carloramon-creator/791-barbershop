@@ -113,6 +113,7 @@ export default function UsersPage() {
   const tabs = [
     { name: 'Geral', href: '/configuracoes/barbearia', icon: Building2 },
     { name: 'Usuários', href: '/configuracoes/usuarios', icon: Users },
+    { name: 'Permissões', href: '/configuracoes/permissoes', icon: Shield },
     { name: 'Plano', href: '/configuracoes/plano', icon: CreditCard },
   ];
 

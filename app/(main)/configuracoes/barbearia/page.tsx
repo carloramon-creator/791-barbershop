@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Loader2, Save, Users, CreditCard, Building2, AlertTriangle } from 'lucide-react';
+import { Upload, Loader2, Save, Users, CreditCard, Building2, AlertTriangle, Shield } from 'lucide-react';
 import { MaskedInput } from '@/components/ui/masked-input';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -158,6 +158,7 @@ export default function BarbershopSettingsPage() {
     const tabs = [
         { name: 'Geral', href: '/configuracoes/barbearia', icon: Building2 },
         { name: 'Usuários', href: '/configuracoes/usuarios', icon: Users },
+        { name: 'Permissões', href: '/configuracoes/permissoes', icon: Shield },
         { name: 'Plano', href: '/configuracoes/plano', icon: CreditCard },
     ];
 

@@ -25,6 +25,7 @@ import { Label } from '@/components/ui/label';
 import { Plus, Trash2, Edit, Camera, Check, X, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabaseClient } from '@/lib/supabase-client';
+import { PLAN_CONFIG } from '@/lib/constants';
 
 export default function BarbeirosPage() {
     const [barbeiros, setBarbeiros] = useState<any[]>([]);
@@ -40,7 +41,10 @@ export default function BarbeirosPage() {
         commission_percentage: 0,
         is_active: true
     });
-    const { role } = useAuth();
+    const { role, tenant } = useAuth();
+
+    const planConfig = PLAN_CONFIG[(tenant?.plan as keyof typeof PLAN_CONFIG) || 'basic'];
+    const reachLimit = barbeiros.length >= planConfig.maxBarbers;
 
     const fetchBarbeiros = async () => {
         try {
@@ -154,12 +158,19 @@ export default function BarbeirosPage() {
                         Atualizar
                     </Button>
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="bg-blue-600 hover:bg-blue-700">
+                        {reachLimit ? (
+                            <Button className="bg-slate-800 text-slate-500 cursor-not-allowed border-slate-700" onClick={() => alert(`Seu plano (${tenant?.plan}) permite no máximo ${planConfig.maxBarbers} barbeiros. Faça upgrade para aumentar o limite.`)}>
                                 <Plus className="w-4 h-4 mr-2" />
-                                Novo Barbeiro
+                                Limite Atingido
                             </Button>
-                        </DialogTrigger>
+                        ) : (
+                            <DialogTrigger asChild>
+                                <Button className="bg-blue-600 hover:bg-blue-700">
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Novo Barbeiro
+                                </Button>
+                            </DialogTrigger>
+                        )}
                         <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-md">
                             <DialogHeader>
                                 <DialogTitle>Adicionar Barbeiro</DialogTitle>

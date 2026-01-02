@@ -15,22 +15,35 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { PLAN_CONFIG } from '@/lib/constants';
 
 export function Sidebar() {
     const pathname = usePathname();
-    const { role, signOut } = useAuth();
+    const { role, tenant, signOut } = useAuth();
+    const planConfig = PLAN_CONFIG[(tenant?.plan as keyof typeof PLAN_CONFIG) || 'basic'];
 
     const menuItems = [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['owner'] },
-        { name: 'Fila (Barbeiro)', href: '/barbeiro', icon: UserCheck, roles: ['owner', 'barber'] },
-        { name: 'Barbeiros', href: '/barbeiros', icon: Users, roles: ['owner'] },
-        { name: 'Serviços', href: '/servicos', icon: Scissors, roles: ['owner'] },
-        { name: 'Produtos', href: '/produtos', icon: ShoppingBag, roles: ['owner'] },
-        { name: 'Financeiro', href: '/financeiro', icon: BarChart3, roles: ['owner'] },
-        { name: 'Configurações', href: '/configuracoes/barbearia', icon: Settings, roles: ['owner'] },
+        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['owner', 'staff'], feature: 'queue' },
+        { name: 'Fila (Barbeiro)', href: '/barbeiro', icon: UserCheck, roles: ['owner', 'barber', 'staff'], feature: 'queue' },
+        { name: 'Barbeiros', href: '/barbeiros', icon: Users, roles: ['owner'], feature: 'queue' },
+        { name: 'Serviços', href: '/servicos', icon: Scissors, roles: ['owner'], feature: 'queue' },
+        { name: 'Produtos', href: '/produtos', icon: ShoppingBag, roles: ['owner'], feature: 'queue' },
+        { name: 'Financeiro', href: '/financeiro', icon: BarChart3, roles: ['owner'], feature: 'finance' },
+        { name: 'Configurações', href: '/configuracoes/barbearia', icon: Settings, roles: ['owner'], feature: 'queue' },
     ];
 
-    const filteredMenu = menuItems.filter(item => !item.roles || (role && item.roles.includes(role)));
+    const filteredMenu = menuItems.filter(item => {
+        // Filter by role
+        const roleAllowed = !item.roles || (role && item.roles.includes(role));
+        if (!roleAllowed) return false;
+
+        // Filter by plan feature
+        if (item.feature === 'finance') {
+            return planConfig.features.includes('finance') || planConfig.features.includes('all');
+        }
+
+        return true;
+    });
 
     return (
         <div className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col h-screen sticky top-0">
