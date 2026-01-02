@@ -37,23 +37,35 @@ export default function BarbershopSettingsPage() {
     const [city, setCity] = useState('');
     const [state, setState] = useState('');
 
-    useEffect(() => {
-        if (tenant) {
-            setName(tenant.name || '');
-            setCnpj(tenant.cnpj || '');
-            setPhone(tenant.phone || '');
-            setLogoUrl(tenant.logo_url || '');
+    const loadBarbershop = async () => {
+        try {
+            setLoading(true);
+            const data = await Api.getBarbershop();
+            if (data) {
+                setName(data.name || '');
+                setCnpj(data.cnpj || '');
+                setPhone(data.phone || '');
+                setLogoUrl(data.logo_url || '');
 
-            // Address fields
-            setCep(tenant.cep || '');
-            setStreet(tenant.street || '');
-            setNumber(tenant.number || '');
-            setComplement(tenant.complement || '');
-            setNeighborhood(tenant.neighborhood || '');
-            setCity(tenant.city || '');
-            setState(tenant.state || '');
+                // Address fields
+                setCep(data.cep || '');
+                setStreet(data.street || '');
+                setNumber(data.number || '');
+                setComplement(data.complement || '');
+                setNeighborhood(data.neighborhood || '');
+                setCity(data.city || '');
+                setState(data.state || '');
+            }
+        } catch (error) {
+            console.error('Failed to load barbershop data', error);
+        } finally {
+            setLoading(false);
         }
-    }, [tenant]);
+    };
+
+    useEffect(() => {
+        loadBarbershop();
+    }, []);
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
