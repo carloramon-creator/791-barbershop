@@ -158,7 +158,8 @@ export default function BarbershopSettingsPage() {
             };
 
             await Api.updateBarbershop(payload);
-            await refresh(); // Update global context to refresh sidebar logo
+            await refresh(); // Global context refresh
+            await loadBarbershop(); // Local state refresh from DB
             setIsEditing(false);
             alert('Barbearia atualizada com sucesso!');
         } catch (error: any) {
