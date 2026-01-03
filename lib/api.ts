@@ -34,9 +34,9 @@ async function apiFetch(path: string, options: RequestInit = {}) {
         clearTimeout(id);
         console.error(`[API ERROR] Failure fetching ${path}:`, err);
         if (err.name === 'AbortError') {
-            throw new Error(`O servidor demorou muito para responder em ${path} (Timeout de 30s).`);
+            throw new Error(`O servidor demorou muito para responder (Timeout).`);
         }
-        throw new Error(`Falha na conexão com o servidor (${path}): ${err.message}`);
+        throw new Error(err.message);
     }
 }
 

@@ -30,6 +30,7 @@ export default function BarberPage() {
     const [loading, setLoading] = useState(true);
     const [showSaleDialog, setShowSaleDialog] = useState(false);
     const [finishedQueueId, setFinishedQueueId] = useState<string | null>(null);
+    const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
 
     const { user, role, roles } = useAuth();
 
@@ -38,22 +39,24 @@ export default function BarberPage() {
             const allQueues = await Api.getQueueStatus();
             setAllBarbers(allQueues);
 
-            // Se já tivermos um selecionado, atualizar os dados dele
-            if (currentBarber) {
-                const updated = allQueues.find((b: any) => b.barber_id === currentBarber.barber_id);
-                if (updated) {
-                    setCurrentBarber(updated);
-                    setQueue(updated.queue);
-                    return;
+            // Determinar qual ID usar (já selecionado ou inicial)
+            let barberIdToFetch = selectedBarberId;
+
+            if (!barberIdToFetch) {
+                // Primeiro load: Tentar achar pelo email ou pegar o primeiro disponível
+                const myQueue = allQueues.find((b: any) => b.barber_name === user?.email) || allQueues[0];
+                if (myQueue) {
+                    barberIdToFetch = myQueue.barber_id;
+                    setSelectedBarberId(myQueue.barber_id);
                 }
             }
 
-            // Se não tiver selecionado (primeiro load)
-            // Tentar achar pelo email ou pegar o primeiro disponível
-            const myQueue = allQueues.find((b: any) => b.barber_name === user?.email) || allQueues[0];
-            if (myQueue) {
-                setCurrentBarber(myQueue);
-                setQueue(myQueue.queue);
+            if (barberIdToFetch) {
+                const updated = allQueues.find((b: any) => b.barber_id === barberIdToFetch);
+                if (updated) {
+                    setCurrentBarber(updated);
+                    setQueue(updated.queue);
+                }
             }
         } catch (error) {
             console.error(error);
@@ -89,7 +92,7 @@ export default function BarberPage() {
                 setQueue(updated.queue);
             }
         } catch (error: any) {
-            alert('Erro ao atualizar status: ' + error.message);
+            alert(error.message);
             fetchStatus(); // Reverte em caso de erro
         }
     };
@@ -98,7 +101,7 @@ export default function BarberPage() {
         if (user) fetchStatus();
         const interval = setInterval(fetchStatus, 5000);
         return () => clearInterval(interval);
-    }, [user, currentBarber?.barber_id]); // Recarregar se o barbeiro selecionado mudar
+    }, [user, selectedBarberId]); // Recarregar se o barbeiro selecionado mudar
 
 
     const handleCallNext = async () => {
@@ -143,6 +146,7 @@ export default function BarberPage() {
                             <div key={barber.barber_id} className="flex flex-col gap-2">
                                 <button
                                     onClick={() => {
+                                        setSelectedBarberId(barber.barber_id);
                                         setCurrentBarber(barber);
                                         setQueue(barber.queue);
                                     }}
