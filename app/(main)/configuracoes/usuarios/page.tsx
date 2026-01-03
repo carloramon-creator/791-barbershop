@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon, MapPin, Phone, CreditCard as CardIcon, Copy, Loader2, Link as LinkIcon, Key, Pencil, Save, MessageCircle, Clock, Percent, DollarSign } from 'lucide-react';
+import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon, MapPin, Phone, CreditCard as CardIcon, Copy, Loader2, Link as LinkIcon, Key, Pencil, Save, MessageCircle, Clock, Percent, DollarSign, Eye } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -502,51 +502,62 @@ export default function UsersPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-slate-200">
-                              <span className="sr-only">Abrir menu</span>
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-200">
-                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => handleEditClick(u)}>
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Editar Usuário
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator className="bg-slate-800" />
-                            <DropdownMenuLabel>Alterar Função</DropdownMenuLabel>
-                            {u.role !== 'owner' && (
-                              <DropdownMenuItem onClick={() => handleRoleUpdate(u.id, 'owner')}>
-                                <Shield className="mr-2 h-4 w-4" />
-                                Tornar Proprietário
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-blue-400 hover:bg-blue-400/10"
+                            onClick={() => handleEditClick(u)}
+                            title="Visualizar Detalhes"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-slate-200">
+                                <span className="sr-only">Abrir menu</span>
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-200">
+                              <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                              <DropdownMenuItem onClick={() => handleEditClick(u)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Editar Usuário
                               </DropdownMenuItem>
-                            )}
-                            {u.role !== 'barber' && (
-                              <DropdownMenuItem onClick={() => handleRoleUpdate(u.id, 'barber')}>
-                                <UserIcon className="mr-2 h-4 w-4" />
-                                Tornar Barbeiro
+                              <DropdownMenuSeparator className="bg-slate-800" />
+                              <DropdownMenuLabel>Alterar Função</DropdownMenuLabel>
+                              {u.role !== 'owner' && (
+                                <DropdownMenuItem onClick={() => handleRoleUpdate(u.id, 'owner')}>
+                                  <Shield className="mr-2 h-4 w-4" />
+                                  Tornar Proprietário
+                                </DropdownMenuItem>
+                              )}
+                              {u.role !== 'barber' && (
+                                <DropdownMenuItem onClick={() => handleRoleUpdate(u.id, 'barber')}>
+                                  <UserIcon className="mr-2 h-4 w-4" />
+                                  Tornar Barbeiro
+                                </DropdownMenuItem>
+                              )}
+                              {u.role !== 'staff' && (
+                                <DropdownMenuItem onClick={() => handleRoleUpdate(u.id, 'staff')}>
+                                  <UserIcon className="mr-2 h-4 w-4" />
+                                  Tornar Funcionário
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator className="bg-slate-800" />
+                              <DropdownMenuItem onClick={() => handleGenerateLink(u.id)} className="text-blue-400 focus:text-blue-400">
+                                <Key className="mr-2 h-4 w-4" />
+                                Gerar Link de Convite
                               </DropdownMenuItem>
-                            )}
-                            {u.role !== 'staff' && (
-                              <DropdownMenuItem onClick={() => handleRoleUpdate(u.id, 'staff')}>
-                                <UserIcon className="mr-2 h-4 w-4" />
-                                Tornar Funcionário
+                              <DropdownMenuSeparator className="bg-slate-800" />
+                              <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => handleRemoveUser(u.id)}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Remover da Barbearia
                               </DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator className="bg-slate-800" />
-                            <DropdownMenuItem onClick={() => handleGenerateLink(u.id)} className="text-blue-400 focus:text-blue-400">
-                              <Key className="mr-2 h-4 w-4" />
-                              Gerar Link de Convite
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator className="bg-slate-800" />
-                            <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => handleRemoveUser(u.id)}>
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Remover da Barbearia
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
