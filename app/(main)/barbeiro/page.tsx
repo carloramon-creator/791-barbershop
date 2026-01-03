@@ -62,6 +62,38 @@ export default function BarberPage() {
         }
     };
 
+    const handleUpdateStatus = async (barberId: string, status: string) => {
+        // Atualização otimista no estado local para resposta instantânea
+        setAllBarbers(prev => prev.map(b =>
+            b.barber_id === barberId ? { ...b, status } : b
+        ));
+
+        if (currentBarber?.barber_id === barberId) {
+            setCurrentBarber((prev: any) => ({ ...prev, status }));
+        }
+
+        try {
+            // Se for dono, pode atualizar qualquer um via API de gerenciamento
+            if (role === 'owner') {
+                await Api.updateBarber(barberId, { status });
+            } else {
+                // Se for barbeiro, atualiza o seu próprio
+                await Api.updateMyBarberStatus(status);
+            }
+            // Refresh silencioso para garantir sincronia com o banco
+            const updatedQueues = await Api.getQueueStatus();
+            setAllBarbers(updatedQueues);
+            const updated = updatedQueues.find((b: any) => b.barber_id === currentBarber?.barber_id);
+            if (updated) {
+                setCurrentBarber(updated);
+                setQueue(updated.queue);
+            }
+        } catch (error: any) {
+            alert('Erro ao atualizar status: ' + error.message);
+            fetchStatus(); // Reverte em caso de erro
+        }
+    };
+
     useEffect(() => {
         if (user) fetchStatus();
         const interval = setInterval(fetchStatus, 5000);
@@ -108,41 +140,76 @@ export default function BarberPage() {
                 <div className="flex gap-2">
                     {role === 'owner' ? (
                         allBarbers.map(barber => (
-                            <button
-                                key={barber.barber_id}
-                                onClick={() => setCurrentBarber(barber)}
-                                className={cn(
-                                    "bg-slate-900 border p-3 rounded-xl flex items-center gap-3 transition-all",
-                                    currentBarber?.barber_id === barber.barber_id
-                                        ? "border-blue-500 ring-1 ring-blue-500/50 scale-105"
-                                        : "border-slate-800 opacity-60 hover:opacity-100"
-                                )}
-                            >
-                                <div className={cn(
-                                    "w-10 h-10 rounded-full flex items-center justify-center font-bold border overflow-hidden",
-                                    currentBarber?.barber_id === barber.barber_id ? "bg-blue-600 text-white border-blue-400" : "bg-slate-800 text-slate-500 border-slate-700"
-                                )}>
-                                    {barber.photo_url ? (
-                                        <img src={barber.photo_url} alt={barber.barber_name} className="w-full h-full object-cover" />
-                                    ) : (
-                                        barber.barber_name?.charAt(0)
+                            <div key={barber.barber_id} className="flex flex-col gap-2">
+                                <button
+                                    onClick={() => {
+                                        setCurrentBarber(barber);
+                                        setQueue(barber.queue);
+                                    }}
+                                    className={cn(
+                                        "bg-slate-900 border p-3 rounded-xl flex items-center gap-3 transition-all",
+                                        currentBarber?.barber_id === barber.barber_id
+                                            ? "border-blue-500 ring-1 ring-blue-500/50 scale-105"
+                                            : "border-slate-800 opacity-60 hover:opacity-100"
                                     )}
-                                </div>
-                                <div className="text-left hidden md:block">
-                                    <div className="text-slate-100 text-sm font-bold">{barber.barber_name}</div>
-                                    <div className="flex items-center gap-1">
-                                        <span className={cn(
-                                            "w-1.5 h-1.5 rounded-full",
-                                            barber.status === 'online' ? "bg-emerald-500 animate-pulse" :
-                                                barber.status === 'busy' ? "bg-yellow-500" : "bg-red-500"
-                                        )}></span>
-                                        <span className="text-[10px] text-slate-400 uppercase tracking-tighter">
-                                            {barber.status === 'online' ? 'Livre' :
-                                                barber.status === 'busy' ? 'Atendendo' : 'Offline'}
-                                        </span>
+                                >
+                                    <div className={cn(
+                                        "w-10 h-10 rounded-full flex items-center justify-center font-bold border overflow-hidden",
+                                        currentBarber?.barber_id === barber.barber_id ? "bg-blue-600 text-white border-blue-400" : "bg-slate-800 text-slate-500 border-slate-700"
+                                    )}>
+                                        {barber.photo_url ? (
+                                            <img src={barber.photo_url} alt={barber.barber_name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            barber.barber_name?.charAt(0)
+                                        )}
                                     </div>
-                                </div>
-                            </button>
+                                    <div className="text-left hidden md:block">
+                                        <div className="text-slate-100 text-sm font-bold">{barber.barber_name}</div>
+                                        <div className="flex items-center gap-1">
+                                            <span className={cn(
+                                                "w-1.5 h-1.5 rounded-full",
+                                                barber.status === 'online' ? "bg-emerald-500 animate-pulse" :
+                                                    barber.status === 'busy' ? "bg-yellow-500" : "bg-red-500"
+                                            )}></span>
+                                            <span className="text-[10px] text-slate-400 uppercase tracking-tighter">
+                                                {barber.status === 'online' ? 'Livre' :
+                                                    barber.status === 'busy' ? 'Atendendo' : 'Offline'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                {currentBarber?.barber_id === barber.barber_id && (
+                                    <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-lg justify-center gap-1 shadow-lg ring-1 ring-slate-800/50 scale-90">
+                                        <Button
+                                            onClick={() => handleUpdateStatus(barber.barber_id, 'online')}
+                                            variant="ghost"
+                                            size="sm"
+                                            className={cn(
+                                                "h-7 px-2 rounded font-bold transition-all text-[10px]",
+                                                (barber?.status === 'online' || barber?.status === 'busy')
+                                                    ? "bg-emerald-500/10 text-emerald-500"
+                                                    : "text-slate-500 hover:text-slate-300"
+                                            )}
+                                        >
+                                            Online
+                                        </Button>
+                                        <Button
+                                            onClick={() => handleUpdateStatus(barber.barber_id, 'offline')}
+                                            variant="ghost"
+                                            size="sm"
+                                            className={cn(
+                                                "h-7 px-2 rounded font-bold transition-all text-[10px]",
+                                                barber?.status === 'offline'
+                                                    ? "bg-red-500/10 text-red-500"
+                                                    : "text-slate-500 hover:text-slate-300"
+                                            )}
+                                        >
+                                            Offline
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
                         ))
                     ) : (
                         <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center gap-3">
@@ -171,10 +238,10 @@ export default function BarberPage() {
                     )}
                 </div>
 
-                {roles?.includes('barber') && (
+                {roles?.includes('barber') && role !== 'owner' && (
                     <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-xl shadow-lg ring-1 ring-slate-800/50">
                         <Button
-                            onClick={() => Api.updateMyBarberStatus('online').then(fetchStatus)}
+                            onClick={() => handleUpdateStatus(currentBarber.barber_id, 'online')}
                             variant="ghost"
                             className={cn(
                                 "h-9 px-4 rounded-lg font-bold transition-all text-sm",
@@ -187,7 +254,7 @@ export default function BarberPage() {
                             Online
                         </Button>
                         <Button
-                            onClick={() => Api.updateMyBarberStatus('offline').then(fetchStatus)}
+                            onClick={() => handleUpdateStatus(currentBarber.barber_id, 'offline')}
                             variant="ghost"
                             className={cn(
                                 "h-9 px-4 rounded-lg font-bold transition-all text-sm",
