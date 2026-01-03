@@ -74,10 +74,10 @@ function SetupPasswordForm() {
 
             // Delay para mostrar mensagem de sucesso
             setTimeout(() => {
-                if (userData.role === 'owner') {
+                if (userData.role === 'owner' || userData.role === 'staff') {
                     router.push('/dashboard');
-                } else if (userData.role === 'barber' || userData.role === 'staff') {
-                    // Se for barbeiro ou staff, vai para a página do barbeiro (fila)
+                } else if (userData.role === 'barber') {
+                    // Se for barbeiro, vai para a página do barbeiro (fila)
                     router.push('/barbeiro');
                 } else {
                     router.push('/');

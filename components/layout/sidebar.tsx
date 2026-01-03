@@ -25,9 +25,9 @@ export function Sidebar() {
     const menuItems = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['owner', 'staff'], feature: 'queue' },
         { name: 'Fila (Barbeiro)', href: '/barbeiro', icon: UserCheck, roles: ['owner', 'barber', 'staff'], feature: 'queue' },
-        { name: 'Barbeiros', href: '/barbeiros', icon: Users, roles: ['owner'], feature: 'queue' },
-        { name: 'Serviços', href: '/servicos', icon: Scissors, roles: ['owner'], feature: 'queue' },
-        { name: 'Produtos', href: '/produtos', icon: ShoppingBag, roles: ['owner'], feature: 'queue' },
+        { name: 'Barbeiros', href: '/barbeiros', icon: Users, roles: ['owner', 'staff'], feature: 'queue' },
+        { name: 'Serviços', href: '/servicos', icon: Scissors, roles: ['owner', 'staff'], feature: 'queue' },
+        { name: 'Produtos', href: '/produtos', icon: ShoppingBag, roles: ['owner', 'staff'], feature: 'queue' },
         { name: 'Financeiro', href: '/financeiro', icon: BarChart3, roles: ['owner'], feature: 'finance' },
         { name: 'Configurações', href: '/configuracoes/barbearia', icon: Settings, roles: ['owner'], feature: 'queue' },
     ];

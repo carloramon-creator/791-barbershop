@@ -110,7 +110,7 @@ export default function LoginPage() {
                 throw new Error('Perfil não encontrado. Sua conta pode não estar vinculada a uma barbearia.');
             }
 
-            if (userData.role === 'owner') {
+            if (userData.role === 'owner' || userData.role === 'staff') {
                 router.push('/dashboard');
             } else if (userData.role === 'barber') {
                 router.push('/barbeiro');

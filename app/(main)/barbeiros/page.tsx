@@ -106,7 +106,7 @@ export default function BarbeirosPage() {
         }
     };
 
-    if (role !== 'owner') return <div className="p-8 text-red-500">Acesso restrito ao proprietário.</div>;
+    if (role !== 'owner' && role !== 'staff') return <div className="p-8 text-red-500">Acesso restrito.</div>;
 
     return (
         <div className="space-y-6">
