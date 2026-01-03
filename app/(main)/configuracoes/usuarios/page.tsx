@@ -216,25 +216,26 @@ export default function UsersPage() {
 
   const handleGenerateLink = async (userId: string) => {
     setInviteLoading(true);
-    setGeneratedLink(''); // Limpa link anterior
+    setGeneratedLink('');
     try {
       const result = await Api.generateInviteLink(userId);
-      if (result.inviteLink) {
+      if (result && result.inviteLink) {
         setGeneratedLink(result.inviteLink);
 
-        // Carrega os dados do usuário no modal para contexto
+        // Tenta preencher o nome se encontrar na lista local apenas para o Whats
         const targetUser = users.find(u => u.id === userId);
         if (targetUser) {
-          setIsViewOnly(true);
-          setEditingUserId(targetUser.id);
           setInviteName(targetUser.name || '');
           setInviteEmail(targetUser.email || '');
-          setInviteRole(targetUser.role || 'staff');
+          setInvitePhone(targetUser.phone || '');
         }
+
         setIsInviteOpen(true);
+      } else {
+        throw new Error('O servidor não retornou um link de convite.');
       }
     } catch (error: any) {
-      alert('Erro: ' + error.message);
+      alert('Erro ao gerar link: ' + error.message);
     } finally {
       setInviteLoading(false);
     }
