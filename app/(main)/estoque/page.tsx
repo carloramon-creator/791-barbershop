@@ -55,12 +55,26 @@ export default function EstoquePage() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [prods, moves] = await Promise.all([
-                Api.getProducts(),
-                Api.getInventory()
-            ]);
-            setProducts(prods || []);
-            setMovements(moves || []);
+
+            // Fetch products
+            try {
+                const prods = await Api.getProducts();
+                console.log('[DEBUG] Products fetched:', prods?.length);
+                setProducts(prods || []);
+            } catch (err: any) {
+                console.error("Erro ao buscar produtos:", err);
+            }
+
+            // Fetch inventory
+            try {
+                const moves = await Api.getInventory();
+                console.log('[DEBUG] Movements fetched:', moves?.length);
+                setMovements(moves || []);
+            } catch (err: any) {
+                console.error("Erro ao buscar inventário:", err);
+                // Se falhar o inventário (provavelmente SQL não rodado ou plano), 
+                // mantemos movimentos como vazio mas não travamos a página.
+            }
         } catch (err) {
             console.error(err);
         } finally {
@@ -193,9 +207,7 @@ export default function EstoquePage() {
                                                 </SelectTrigger>
                                                 <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
                                                     {products.length === 0 ? (
-                                                        <div className="p-4 text-center text-slate-500 text-sm">
-                                                            Nenhum produto encontrado.
-                                                        </div>
+                                                        <SelectItem value="no-products" disabled>Nenhum produto encontrado</SelectItem>
                                                     ) : (
                                                         products.map(p => (
                                                             <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
