@@ -101,6 +101,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     const signOut = async () => {
+        try {
+            if (roles?.includes('barber')) {
+                await Api.updateMyBarberStatus('offline');
+            }
+        } catch (e) {
+            console.error("Failed to set barber offline during logout", e);
+        }
         await supabaseClient.auth.signOut();
         setRole(null);
         setRoles(null);
