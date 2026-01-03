@@ -47,8 +47,8 @@ const PLANS: Record<string, PlanInfo> = {
         price: 99,
         barbers: 'Até 10 barbeiros',
         appointments: '200 agendamentos/mês',
-        support: 'Suporte prioritário',
-        features: ['Até 10 barbeiros', '200 agendamentos/mês', 'Suporte prioritário']
+        support: 'Suporte por email e chat',
+        features: ['Até 10 barbeiros', '200 agendamentos/mês', 'Suporte por email e chat', 'Módulo financeiro']
     },
     premium: {
         id: 'premium',
@@ -56,8 +56,8 @@ const PLANS: Record<string, PlanInfo> = {
         price: 169,
         barbers: 'Barbeiros ilimitados',
         appointments: 'Agendamentos ilimitados',
-        support: 'Suporte 24/7',
-        features: ['Barbeiros ilimitados', 'Agendamentos ilimitados', 'Suporte 24/7']
+        support: 'Suporte prioritário',
+        features: ['Barbeiros ilimitados', 'Agendamentos ilimitados', 'Suporte prioritário', 'Módulo financeiro completo', 'Módulo de estoque']
     }
 };
 

@@ -28,6 +28,7 @@ export function Sidebar() {
         { name: 'Barbeiros', href: '/barbeiros', icon: Users, roles: ['owner', 'staff'], feature: 'queue' },
         { name: 'Serviços', href: '/servicos', icon: Scissors, roles: ['owner', 'staff'], feature: 'queue' },
         { name: 'Produtos', href: '/produtos', icon: ShoppingBag, roles: ['owner', 'staff'], feature: 'queue' },
+        { name: 'Estoque', href: '/estoque', icon: ShoppingBag, roles: ['owner', 'staff'], feature: 'inventory' },
         { name: 'Financeiro', href: '/financeiro', icon: BarChart3, roles: ['owner'], feature: 'finance' },
         { name: 'Configurações', href: '/configuracoes/barbearia', icon: Settings, roles: ['owner'], feature: 'queue' },
     ];
@@ -40,6 +41,10 @@ export function Sidebar() {
         // Filter by plan feature
         if (item.feature === 'finance') {
             return planConfig.features.includes('finance') || planConfig.features.includes('all');
+        }
+
+        if (item.feature === 'inventory') {
+            return planConfig.features.includes('all'); // Only premium has 'all' which includes inventory
         }
 
         return true;

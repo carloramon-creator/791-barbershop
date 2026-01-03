@@ -111,4 +111,8 @@ export const Api = {
     // Plan
     getPlan: () => apiFetch('/api/barbershop/plan'),
     updatePlan: (payload: any) => apiFetch('/api/barbershop/plan', { method: 'PUT', body: JSON.stringify(payload) }),
+
+    // Inventory
+    getInventory: () => apiFetch('/api/inventory'),
+    createMovement: (payload: any) => apiFetch('/api/inventory', { method: 'POST', body: JSON.stringify(payload) }),
 };
