@@ -98,13 +98,13 @@ export default function UsersPage() {
         cep: inviteCep,
         street: inviteStreet,
         number: inviteNumber,
-        complement: inviteComplement,
+        complement: inviteComplement || '',
         neighborhood: inviteNeighborhood,
         city: inviteCity,
         state: inviteState,
-        avg_service_time: parseInt(inviteAvgTime),
+        avg_service_time: parseInt(inviteAvgTime) || 30,
         commission_type: inviteCommType,
-        commission_value: parseFloat(inviteCommValue),
+        commission_value: parseFloat(inviteCommValue) || 0,
         generateInvite: !editingUserId
       };
 
