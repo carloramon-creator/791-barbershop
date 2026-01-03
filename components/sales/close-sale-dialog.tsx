@@ -18,11 +18,9 @@ import {
     QrCode,
     Check,
     Copy,
-    Plus,
     X
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { Service, Product } from '@/lib/types';
 
 interface CloseSaleDialogProps {
     isOpen: boolean;
@@ -32,8 +30,8 @@ interface CloseSaleDialogProps {
 
 export function CloseSaleDialog({ isOpen, onOpenChange, queueId }: CloseSaleDialogProps) {
     const [step, setStep] = useState<'selection' | 'pix'>('selection');
-    const [services, setServices] = useState<any[]>([]);
-    const [products, setProducts] = useState<any[]>([]);
+    const [services, setServices] = useState<Service[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
     const [selectedItems, setSelectedItems] = useState<{ id: string; name: string; price: number; type: 'service' | 'product'; qty: number }[]>([]);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'pix'>('cash');
     const [loading, setLoading] = useState(false);
@@ -46,16 +44,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId }: CloseSaleDial
                 setServices(s || []);
                 setProducts(p || []);
             } catch (err) {
-                // Fallback for demo if endpoints aren't ready
-                setServices([
-                    { id: '1', name: 'Corte Social', price: 40 },
-                    { id: '2', name: 'Barba Terapia', price: 35 },
-                    { id: '3', name: 'Corte + Barba', price: 70 },
-                ]);
-                setProducts([
-                    { id: 'p1', name: 'Pomada Efeito Seco', price: 45 },
-                    { id: 'p2', name: 'Óleo para Barba', price: 30 },
-                ]);
+                console.error('Erro ao buscar dados para venda:', err);
             }
         };
         if (isOpen) fetchData();

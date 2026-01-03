@@ -54,17 +54,17 @@ export function Sidebar() {
         <div className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col h-screen sticky top-0">
             <div className="p-6">
                 <div className="flex items-center gap-3 text-blue-500 font-bold text-xl">
-                    {useAuth().tenant?.logo_url ? (
+                    {tenant?.logo_url ? (
                         <>
-                            <img src={useAuth().tenant?.logo_url} alt={useAuth().tenant?.name} className="w-8 h-8 rounded-lg object-cover" />
-                            {useAuth().tenant?.name || 'My Barber'}
+                            <img src={tenant.logo_url} alt={tenant.name || 'Logo'} className="w-8 h-8 rounded-lg object-cover" />
+                            {tenant.name || 'My Barber'}
                         </>
                     ) : (
                         <>
                             <div className="bg-blue-600 p-1.5 rounded-lg text-white">
                                 <Scissors className="w-6 h-6" />
                             </div>
-                            {useAuth().tenant?.name || '791 Barber'}
+                            {tenant?.name || '791 Barber'}
                         </>
                     )}
                 </div>

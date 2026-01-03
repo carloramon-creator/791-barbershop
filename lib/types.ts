@@ -87,6 +87,9 @@ export interface Product {
     tenant_id: string;
     name: string;
     price: number;
+    cost_price?: number;
+    stock_quantity?: number;
+    min_stock?: number;
     created_at: string;
 }
 

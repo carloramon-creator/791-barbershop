@@ -24,11 +24,13 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
+import { Service } from '@/lib/types';
+
 export default function ServicosPage() {
-    const [servicos, setServicos] = useState<any[]>([]);
+    const [servicos, setServicos] = useState<Service[]>([]);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [editingService, setEditingService] = useState<any>(null);
+    const [editingService, setEditingService] = useState<Service | null>(null);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [newService, setNewService] = useState({ name: '', price: '' });
     const { role } = useAuth();
@@ -65,16 +67,17 @@ export default function ServicosPage() {
 
     const handleUpdateService = async () => {
         try {
-            if (!editingService.name || !editingService.price) return alert('Preecha todos os campos');
+            if (!editingService || !editingService.name || !editingService.price) return alert('Preecha todos os campos');
             await Api.updateService(editingService.id, {
                 name: editingService.name,
-                price: parseFloat(editingService.price)
+                price: parseFloat(editingService.price.toString())
             });
             setIsEditOpen(false);
             setEditingService(null);
             fetchServicos();
-        } catch (error: any) {
-            alert('Erro ao atualizar serviço: ' + error.message);
+        } catch (error: unknown) {
+            const err = error as Error;
+            alert('Erro ao atualizar serviço: ' + err.message);
         }
     };
 
@@ -168,7 +171,7 @@ export default function ServicosPage() {
                                     id="edit-price"
                                     type="number"
                                     value={editingService.price}
-                                    onChange={(e) => setEditingService({ ...editingService, price: e.target.value })}
+                                    onChange={(e) => setEditingService({ ...editingService, price: Number(e.target.value) })}
                                     className="bg-slate-800 border-slate-700"
                                 />
                             </div>

@@ -27,9 +27,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
+import { Product } from '@/lib/types';
+
 export default function EstoquePage() {
-    const [products, setProducts] = useState<any[]>([]);
-    const [movements, setMovements] = useState<any[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [movements, setMovements] = useState<any[]>([]); // movements logic is complex, keep any for now if needed or use record
     const [loading, setLoading] = useState(true);
     const [isEntryDialogOpen, setIsEntryDialogOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);

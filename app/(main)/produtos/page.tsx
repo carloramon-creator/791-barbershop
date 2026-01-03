@@ -24,11 +24,13 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
+import { Product } from '@/lib/types';
+
 export default function ProdutosPage() {
-    const [produtos, setProdutos] = useState<any[]>([]);
+    const [produtos, setProdutos] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [editingProduct, setEditingProduct] = useState<any>(null);
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [newProduct, setNewProduct] = useState({ name: '', price: '' });
     const { role } = useAuth();
@@ -62,19 +64,19 @@ export default function ProdutosPage() {
             alert('Erro ao criar produto: ' + error.message);
         }
     };
-
     const handleUpdateProduct = async () => {
         try {
-            if (!editingProduct.name || !editingProduct.price) return alert('Preencha todos os campos');
+            if (!editingProduct || !editingProduct.name || !editingProduct.price) return alert('Preencha todos os campos');
             await Api.updateProduct(editingProduct.id, {
                 name: editingProduct.name,
-                price: parseFloat(editingProduct.price)
+                price: parseFloat(editingProduct.price.toString())
             });
             setIsEditOpen(false);
             setEditingProduct(null);
             fetchProdutos();
-        } catch (error: any) {
-            alert('Erro ao atualizar produto: ' + error.message);
+        } catch (error: unknown) {
+            const err = error as Error;
+            alert('Erro ao atualizar produto: ' + err.message);
         }
     };
 
@@ -168,7 +170,7 @@ export default function ProdutosPage() {
                                     id="edit-price"
                                     type="number"
                                     value={editingProduct.price}
-                                    onChange={(e) => setEditingProduct({ ...editingProduct, price: e.target.value })}
+                                    onChange={(e) => setEditingProduct({ ...editingProduct, price: Number(e.target.value) })}
                                     className="bg-slate-800 border-slate-700"
                                 />
                             </div>

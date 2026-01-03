@@ -27,16 +27,19 @@ async function apiFetch(path: string, options: RequestInit = {}) {
 
         if (!res.ok) {
             const errorData = await res.json().catch(() => ({}));
-            throw new Error(errorData.error || `Erro ${res.status} em ${path}: ${res.statusText}`);
+            // Lógica para retornar apenas a mensagem pura do servidor
+            const errorMessage = errorData.error || errorData.message || res.statusText;
+            throw new Error(errorMessage);
         }
         return res.json();
-    } catch (err: any) {
+    } catch (err: unknown) {
         clearTimeout(id);
-        console.error(`[API ERROR] Failure fetching ${path}:`, err);
-        if (err.name === 'AbortError') {
+        const error = err as Error;
+        console.error(`[API ERROR] Failure fetching ${path}:`, error);
+        if (error.name === 'AbortError') {
             throw new Error(`O servidor demorou muito para responder (Timeout).`);
         }
-        throw new Error(err.message);
+        throw error;
     }
 }
 
@@ -49,7 +52,7 @@ export const Api = {
         apiFetch(`/api/queue/${queueId}/finish`, { method: 'PUT' }),
 
     // Sales
-    createSale: (queueId: string, payload: any) =>
+    createSale: (queueId: string, payload: Record<string, unknown>) =>
         apiFetch(`/api/queue/${queueId}/sale`, {
             method: 'POST',
             body: JSON.stringify(payload),
@@ -58,13 +61,13 @@ export const Api = {
 
     // Catalog
     getServices: () => apiFetch('/api/services'),
-    createService: (payload: any) => apiFetch('/api/services', { method: 'POST', body: JSON.stringify(payload) }),
-    updateService: (id: string, payload: any) => apiFetch(`/api/services/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+    createService: (payload: Record<string, unknown>) => apiFetch('/api/services', { method: 'POST', body: JSON.stringify(payload) }),
+    updateService: (id: string, payload: Record<string, unknown>) => apiFetch(`/api/services/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
     deleteService: (id: string) => apiFetch(`/api/services/${id}`, { method: 'DELETE' }),
 
     getProducts: () => apiFetch('/api/products'),
-    createProduct: (payload: any) => apiFetch('/api/products', { method: 'POST', body: JSON.stringify(payload) }),
-    updateProduct: (id: string, payload: any) => apiFetch(`/api/products/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+    createProduct: (payload: Record<string, unknown>) => apiFetch('/api/products', { method: 'POST', body: JSON.stringify(payload) }),
+    updateProduct: (id: string, payload: Record<string, unknown>) => apiFetch(`/api/products/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
     deleteProduct: (id: string) => apiFetch(`/api/products/${id}`, { method: 'DELETE' }),
 
     // Finance
@@ -77,24 +80,24 @@ export const Api = {
 
     // Finance Records
     getFinanceRecords: () => apiFetch('/api/finance'),
-    createFinanceRecord: (payload: any) => apiFetch('/api/finance', { method: 'POST', body: JSON.stringify(payload) }),
+    createFinanceRecord: (payload: Record<string, unknown>) => apiFetch('/api/finance', { method: 'POST', body: JSON.stringify(payload) }),
     getFinanceCategories: () => apiFetch('/api/finance/categories'),
-    createFinanceCategory: (payload: any) => apiFetch('/api/finance/categories', { method: 'POST', body: JSON.stringify(payload) }),
+    createFinanceCategory: (payload: Record<string, unknown>) => apiFetch('/api/finance/categories', { method: 'POST', body: JSON.stringify(payload) }),
 
     // Management
     getBarbers: () => apiFetch('/api/barbers'),
-    createBarber: (payload: any) => apiFetch('/api/barbers', { method: 'POST', body: JSON.stringify(payload) }),
-    updateBarber: (id: string, payload: any) => apiFetch(`/api/barbers/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+    createBarber: (payload: Record<string, unknown>) => apiFetch('/api/barbers', { method: 'POST', body: JSON.stringify(payload) }),
+    updateBarber: (id: string, payload: Record<string, unknown>) => apiFetch(`/api/barbers/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
     deleteBarber: (id: string) => apiFetch(`/api/barbers/${id}`, { method: 'DELETE' }),
 
     // Settings
     getBarbershop: () => apiFetch('/api/barbershop'),
-    updateBarbershop: (payload: any) => apiFetch('/api/barbershop', { method: 'PUT', body: JSON.stringify(payload) }),
+    updateBarbershop: (payload: Record<string, unknown>) => apiFetch('/api/barbershop', { method: 'PUT', body: JSON.stringify(payload) }),
 
     // Users
     getUsers: () => apiFetch('/api/barbershop/users'),
-    inviteUser: (payload: any) => apiFetch('/api/barbershop/users', { method: 'POST', body: JSON.stringify(payload) }),
-    async updateUser(payload: any) {
+    inviteUser: (payload: Record<string, unknown>) => apiFetch('/api/barbershop/users', { method: 'POST', body: JSON.stringify(payload) }),
+    async updateUser(payload: Record<string, unknown>) {
         return apiFetch('/api/barbershop/users', {
             method: 'PUT',
             body: JSON.stringify(payload)
@@ -112,11 +115,11 @@ export const Api = {
 
     // Plan
     getPlan: () => apiFetch('/api/barbershop/plan'),
-    updatePlan: (payload: any) => apiFetch('/api/barbershop/plan', { method: 'PUT', body: JSON.stringify(payload) }),
+    updatePlan: (payload: Record<string, unknown>) => apiFetch('/api/barbershop/plan', { method: 'PUT', body: JSON.stringify(payload) }),
 
     // Inventory
     getInventory: () => apiFetch('/api/inventory'),
-    createMovement: (payload: any) => apiFetch('/api/inventory', { method: 'POST', body: JSON.stringify(payload) }),
+    createMovement: (payload: Record<string, unknown>) => apiFetch('/api/inventory', { method: 'POST', body: JSON.stringify(payload) }),
 
     // Barber Status
     getMyBarberStatus: () => apiFetch('/api/barbers/me/status'),

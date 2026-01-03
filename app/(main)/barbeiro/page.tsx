@@ -39,11 +39,10 @@ export default function BarberPage() {
             const allQueues = await Api.getQueueStatus();
             setAllBarbers(allQueues);
 
-            // Determinar qual ID usar (já selecionado ou inicial)
+            // Determinar qual ID usar (prioridade: selectedBarberId > email do logado > primeiro da lista)
             let barberIdToFetch = selectedBarberId;
 
-            if (!barberIdToFetch) {
-                // Primeiro load: Tentar achar pelo email ou pegar o primeiro disponível
+            if (!barberIdToFetch && allQueues.length > 0) {
                 const myQueue = allQueues.find((b: any) => b.barber_name === user?.email) || allQueues[0];
                 if (myQueue) {
                     barberIdToFetch = myQueue.barber_id;
@@ -83,17 +82,11 @@ export default function BarberPage() {
                 // Se for barbeiro, atualiza o seu próprio
                 await Api.updateMyBarberStatus(status);
             }
-            // Refresh silencioso para garantir sincronia com o banco
-            const updatedQueues = await Api.getQueueStatus();
-            setAllBarbers(updatedQueues);
-            const updated = updatedQueues.find((b: any) => b.barber_id === currentBarber?.barber_id);
-            if (updated) {
-                setCurrentBarber(updated);
-                setQueue(updated.queue);
-            }
+            // Refresh silencioso
+            fetchStatus();
         } catch (error: any) {
             alert(error.message);
-            fetchStatus(); // Reverte em caso de erro
+            fetchStatus();
         }
     };
 
