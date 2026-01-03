@@ -47,6 +47,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [inviteLoading, setInviteLoading] = useState(false);
+  const [showAuditMode, setShowAuditMode] = useState(false);
 
   // Invite Form
   const [inviteName, setInviteName] = useState('');
@@ -212,16 +213,19 @@ export default function UsersPage() {
 
   const handleGenerateLink = async (userId: string) => {
     setInviteLoading(true);
+    setGeneratedLink(''); // Limpa link anterior
     try {
       const result = await Api.generateInviteLink(userId);
       if (result.inviteLink) {
         setGeneratedLink(result.inviteLink);
-        // Precisamos abrir o modal se ele estiver fechado
+
+        // Carrega os dados do usuário no modal para contexto
         const targetUser = users.find(u => u.id === userId);
         if (targetUser) {
+          setEditingUserId(targetUser.id);
           setInviteName(targetUser.name || '');
           setInviteEmail(targetUser.email || '');
-          setInvitePhone(targetUser.phone || '');
+          setInviteRole(targetUser.role || 'staff');
         }
         setIsInviteOpen(true);
       }
