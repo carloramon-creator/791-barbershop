@@ -45,6 +45,7 @@ export interface User {
     avg_service_time?: number;
     commission_type?: 'fixed' | 'percentage';
     commission_value?: number;
+    last_seen_at?: string;
     created_at: string;
 }
 

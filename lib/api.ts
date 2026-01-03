@@ -78,6 +78,8 @@ export const Api = {
     // Finance Records
     getFinanceRecords: () => apiFetch('/api/finance'),
     createFinanceRecord: (payload: any) => apiFetch('/api/finance', { method: 'POST', body: JSON.stringify(payload) }),
+    getFinanceCategories: () => apiFetch('/api/finance/categories'),
+    createFinanceCategory: (payload: any) => apiFetch('/api/finance/categories', { method: 'POST', body: JSON.stringify(payload) }),
 
     // Management
     getBarbers: () => apiFetch('/api/barbers'),

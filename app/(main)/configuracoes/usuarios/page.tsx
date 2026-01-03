@@ -601,15 +601,41 @@ export default function UsersPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-slate-400 hover:text-blue-400 hover:bg-blue-400/10"
-                            onClick={() => handleEditClick(u, true)}
-                            title="Visualizar Detalhes"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
+                          <div className="flex items-center gap-1 group relative">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-slate-400 hover:text-blue-400 hover:bg-blue-400/10"
+                              onClick={() => handleEditClick(u, true)}
+                              title="Visualizar Detalhes"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+
+                            {/* Presence Dot */}
+                            {(() => {
+                              const lastSeen = u.last_seen_at ? new Date(u.last_seen_at) : null;
+                              const now = new Date();
+                              const diffMinutes = lastSeen ? (now.getTime() - lastSeen.getTime()) / 60000 : Infinity;
+
+                              let color = "bg-red-500"; // Offline
+                              let label = "Deslogado";
+
+                              if (diffMinutes < 5) {
+                                color = "bg-emerald-500 animate-pulse";
+                                label = "Ativo agora";
+                              } else if (diffMinutes < 15) {
+                                color = "bg-yellow-500";
+                                label = "Inativo (+10 min)";
+                              }
+
+                              return (
+                                <div className="relative flex items-center h-8" title={label}>
+                                  <div className={cn("w-2.5 h-2.5 rounded-full ring-2 ring-slate-900", color)} />
+                                </div>
+                              );
+                            })()}
+                          </div>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-slate-200">
