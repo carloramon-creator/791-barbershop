@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon, MapPin, Phone, CreditCard as CardIcon, Copy, Loader2, Link as LinkIcon, Key, Pencil, Save, MessageCircle, Clock, Percent, DollarSign, Eye } from 'lucide-react';
+import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon, MapPin, Phone, CreditCard as CardIcon, Copy, Loader2, Link as LinkIcon, Key, Pencil, Save, MessageCircle, Clock, Percent, DollarSign, Eye, Camera } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +32,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,7 @@ import { Api } from '@/lib/api';
 import { User } from '@/lib/types';
 import { useAuth } from '@/lib/auth-provider';
 import { MaskedInput } from '@/components/ui/masked-input';
+import { supabaseClient } from '@/lib/supabase-client';
 
 export default function UsersPage() {
   const pathname = usePathname();
@@ -48,11 +50,13 @@ export default function UsersPage() {
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [inviteLoading, setInviteLoading] = useState(false);
   const [showAuditMode, setShowAuditMode] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  // Invite Form
+  // Form State
   const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('staff');
+  const [inviteRoles, setInviteRoles] = useState<string[]>(['staff']);
+  const [invitePhotoUrl, setInvitePhotoUrl] = useState('');
   const [invitePhone, setInvitePhone] = useState('');
   const [inviteCpf, setInviteCpf] = useState('');
   const [inviteCep, setInviteCep] = useState('');
@@ -85,6 +89,53 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
+  const resetForm = () => {
+    setInviteName('');
+    setInviteEmail('');
+    setInviteRoles(['staff']);
+    setInvitePhotoUrl('');
+    setInvitePhone('');
+    setInviteCpf('');
+    setInviteCep('');
+    setInviteStreet('');
+    setInviteNumber('');
+    setInviteComplement('');
+    setInviteNeighborhood('');
+    setInviteCity('');
+    setInviteState('');
+    setInviteAvgTime('30');
+    setInviteCommType('percentage');
+    setInviteCommValue('50');
+    setGeneratedLink('');
+    setEditingUserId(null);
+    setIsViewOnly(false);
+  };
+
+  const handlePhotoUpload = async (file: File) => {
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `user-photos/${fileName}`;
+
+      const { error: uploadError } = await supabaseClient.storage
+        .from('barber-photos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabaseClient.storage
+        .from('barber-photos')
+        .getPublicUrl(filePath);
+
+      setInvitePhotoUrl(publicUrl);
+    } catch (error: any) {
+      alert('Erro no upload: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     setInviteLoading(true);
@@ -94,7 +145,9 @@ export default function UsersPage() {
         id: editingUserId,
         name: inviteName,
         email: inviteEmail,
-        role: inviteRole,
+        roles: inviteRoles,
+        role: inviteRoles[0] || 'staff',
+        photo_url: invitePhotoUrl,
         phone: invitePhone,
         cpf: inviteCpf,
         cep: inviteCep,
@@ -134,33 +187,13 @@ export default function UsersPage() {
     }
   };
 
-  const resetForm = () => {
-    setInviteName('');
-    setInviteEmail('');
-    setInviteRole('staff');
-    setInvitePhone('');
-    setInviteCpf('');
-    setInviteCep('');
-    setInviteStreet('');
-    setInviteNumber('');
-    setInviteComplement('');
-    setInviteNeighborhood('');
-    setInviteCity('');
-    setInviteState('');
-    setInviteAvgTime('30');
-    setInviteCommType('percentage');
-    setInviteCommValue('50');
-    setGeneratedLink('');
-    setEditingUserId(null);
-    setIsViewOnly(false);
-  };
-
   const handleEditClick = (u: any, viewOnly: boolean = false) => {
     setIsViewOnly(viewOnly);
     setEditingUserId(u.id);
     setInviteName(u.name || '');
     setInviteEmail(u.email || '');
-    setInviteRole(u.role || 'staff');
+    setInviteRoles(u.roles || [u.role || 'staff']);
+    setInvitePhotoUrl(u.photo_url || '');
     setInvitePhone(u.phone || '');
     setInviteCpf(u.cpf || '');
     setInviteCep(u.cep || '');
@@ -196,7 +229,7 @@ export default function UsersPage() {
 
   const handleRoleUpdate = async (userId: string, newRole: string) => {
     try {
-      await Api.updateUser({ id: userId, role: newRole });
+      await Api.updateUser({ id: userId, role: newRole, roles: [newRole] });
       fetchUsers();
     } catch (error: any) {
       alert('Erro ao atualizar função: ' + error.message);
@@ -221,15 +254,12 @@ export default function UsersPage() {
       const result = await Api.generateInviteLink(userId);
       if (result && result.inviteLink) {
         setGeneratedLink(result.inviteLink);
-
-        // Tenta preencher o nome se encontrar na lista local apenas para o Whats
         const targetUser = users.find(u => u.id === userId);
         if (targetUser) {
           setInviteName(targetUser.name || '');
           setInviteEmail(targetUser.email || '');
           setInvitePhone(targetUser.phone || '');
         }
-
         setIsInviteOpen(true);
       } else {
         throw new Error('O servidor não retornou um link de convite.');
@@ -361,6 +391,28 @@ export default function UsersPage() {
                   </div>
                 ) : (
                   <form onSubmit={handleInvite} className="space-y-6 py-4">
+                    <div className="flex justify-center">
+                      <div className="relative group cursor-pointer" onClick={() => !isViewOnly && document.getElementById('user-photo-input')?.click()}>
+                        <div className="w-24 h-24 rounded-full bg-slate-800 border-2 border-dashed border-slate-700 flex items-center justify-center overflow-hidden">
+                          {invitePhotoUrl ? (
+                            <img src={invitePhotoUrl} alt="Preview" className="w-full h-full object-cover" />
+                          ) : (
+                            <Camera size={24} className="text-slate-600 group-hover:text-blue-500 transition-colors" />
+                          )}
+                        </div>
+                        {!isViewOnly && (
+                          <input
+                            id="user-photo-input"
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0])}
+                          />
+                        )}
+                        {uploading && <div className="absolute inset-0 bg-slate-900/50 flex items-center justify-center rounded-full"><Loader2 className="animate-spin" /></div>}
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="name">Nome Completo</Label>
@@ -388,20 +440,33 @@ export default function UsersPage() {
                         <MaskedInput disabled={isViewOnly} mask="999.999.999-99" value={inviteCpf} onChange={e => setInviteCpf(e.target.value)} className="bg-slate-950 border-slate-800" placeholder="000.000.000-00" />
                       </div>
                       <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="role">Função / Cargo</Label>
-                        <Select disabled={isViewOnly} value={inviteRole} onValueChange={setInviteRole}>
-                          <SelectTrigger className="bg-slate-950 border-slate-800">
-                            <SelectValue placeholder="Selecione..." />
-                          </SelectTrigger>
-                          <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                            <SelectItem value="owner">Proprietário (Acesso Total)</SelectItem>
-                            <SelectItem value="barber">Barbeiro (Cortes e Fila)</SelectItem>
-                            <SelectItem value="staff">Funcionário (Administrativo)</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Label>Funções / Cargos (Multi-seleção)</Label>
+                        <div className="grid grid-cols-3 gap-4 pt-2">
+                          {[
+                            { id: 'owner', label: 'Proprietário' },
+                            { id: 'barber', label: 'Barbeiro' },
+                            { id: 'staff', label: 'Funcionário' }
+                          ].map(role => (
+                            <div key={role.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`role-${role.id}`}
+                                disabled={isViewOnly}
+                                checked={inviteRoles.includes(role.id)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setInviteRoles([...inviteRoles, role.id]);
+                                  } else {
+                                    setInviteRoles(inviteRoles.filter(r => r !== role.id));
+                                  }
+                                }}
+                              />
+                              <Label htmlFor={`role-${role.id}`} className="cursor-pointer">{role.label}</Label>
+                            </div>
+                          ))}
+                        </div>
                       </div>
 
-                      {inviteRole === 'barber' && (
+                      {inviteRoles.includes('barber') && (
                         <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-blue-500/5 border border-blue-500/10 rounded-xl animate-in fade-in slide-in-from-top-2">
                           <div className="space-y-2">
                             <Label className="flex items-center gap-2 text-blue-400">
@@ -509,22 +574,30 @@ export default function UsersPage() {
                     <TableRow key={u.id} className="border-slate-800 hover:bg-slate-900/50">
                       <TableCell className="font-medium text-slate-200">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
-                            <UserIcon className="w-4 h-4" />
+                          <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 overflow-hidden">
+                            {u.photo_url ? (
+                              <img src={u.photo_url} alt={u.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <UserIcon className="w-4 h-4" />
+                            )}
                           </div>
                           {u.name || 'Sem nome'}
                         </div>
                       </TableCell>
                       <TableCell className="text-slate-400">{u.email}</TableCell>
                       <TableCell>
-                        <span className={cn(
-                          "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                          u.role === 'owner' ? "bg-purple-500/10 text-purple-500" :
-                            u.role === 'barber' ? "bg-blue-500/10 text-blue-500" :
-                              "bg-slate-500/10 text-slate-500"
-                        )}>
-                          {getRoleLabel(u.role)}
-                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {(u.roles || [u.role]).map((r: string) => (
+                            <span key={r} className={cn(
+                              "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium uppercase",
+                              r === 'owner' ? "bg-purple-500/10 text-purple-500" :
+                                r === 'barber' ? "bg-blue-500/10 text-blue-500" :
+                                  "bg-slate-500/10 text-slate-500"
+                            )}>
+                              {getRoleLabel(r)}
+                            </span>
+                          ))}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">

@@ -31,6 +31,7 @@ export interface User {
     email: string;
     name: string;
     role: UserRole;
+    roles?: UserRole[];
     phone?: string;
     cpf?: string;
     cep?: string;
