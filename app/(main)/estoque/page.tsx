@@ -390,7 +390,7 @@ export default function EstoquePage() {
                                     <TableRow key={p.id} className="border-slate-800 group hover:bg-slate-800/30 transition-colors">
                                         <TableCell className="font-bold text-slate-100 uppercase tracking-tighter py-4">
                                             {p.name}
-                                            {p.stock_quantity <= 5 && (
+                                            {(p.stock_quantity || 0) <= 5 && (
                                                 <div className="text-[10px] text-red-500 font-bold mt-1">ESTOQUE BAIXO</div>
                                             )}
                                         </TableCell>
