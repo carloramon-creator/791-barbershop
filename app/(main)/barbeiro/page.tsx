@@ -39,11 +39,12 @@ export default function BarberPage() {
             const allQueues = await Api.getQueueStatus();
             setAllBarbers(allQueues);
 
-            // Determinar qual ID usar (prioridade: selectedBarberId > email do logado > primeiro da lista)
+            // Determinar qual ID usar (prioridade: selectedBarberId > user_id do logado > primeiro da lista)
             let barberIdToFetch = selectedBarberId;
 
             if (!barberIdToFetch && allQueues.length > 0) {
-                const myQueue = allQueues.find((b: any) => b.barber_name === user?.email) || allQueues[0];
+                // Buscar pelo user_id ao invés de email para evitar alternância
+                const myQueue = allQueues.find((b: any) => b.user_id === user?.id) || allQueues[0];
                 if (myQueue) {
                     barberIdToFetch = myQueue.barber_id;
                     setSelectedBarberId(myQueue.barber_id);
@@ -85,7 +86,9 @@ export default function BarberPage() {
             // Refresh silencioso
             fetchStatus();
         } catch (error: any) {
-            alert(error.message);
+            // Exibir apenas a mensagem de erro limpa, sem detalhes técnicos
+            const errorMsg = error.message || 'Erro ao atualizar status';
+            alert(errorMsg);
             fetchStatus();
         }
     };
