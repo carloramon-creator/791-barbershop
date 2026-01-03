@@ -231,25 +231,24 @@ export default function BarbeirosPage() {
                                 </div>
                             </TableCell>
                             <TableCell>
-                                <button
-                                    onClick={() => toggleStatus(b)}
-                                    className={cn(
-                                        "flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all",
-                                        b.is_active
-                                            ? "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20"
-                                            : "bg-red-500/10 text-red-500 hover:bg-red-500/20"
-                                    )}
-                                >
-                                    {b.is_active ? <Check size={10} /> : <X size={10} />}
-                                    {b.is_active ? 'Online' : 'Pausa / Almoço'}
-                                </button>
+                                <div className={cn(
+                                    "flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase w-fit",
+                                    (b.status === 'online' || b.status === 'busy')
+                                        ? "bg-emerald-500/10 text-emerald-500"
+                                        : "bg-red-500/10 text-red-500"
+                                )}>
+                                    <div className={cn("w-1.5 h-1.5 rounded-full", (b.status === 'online' || b.status === 'busy') ? "bg-emerald-500" : "bg-red-500")} />
+                                    {(b.status === 'online' || b.status === 'busy') ? 'Online' : 'Offline'}
+                                </div>
                             </TableCell>
                             <TableCell>
                                 <span className={cn(
                                     "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
-                                    b.status === 'available' ? "text-slate-500" : "bg-blue-500/10 text-blue-500"
+                                    b.status === 'online' ? "text-slate-500" :
+                                        b.status === 'busy' ? "bg-yellow-500/10 text-yellow-500" : "text-slate-600"
                                 )}>
-                                    {b.status === 'available' ? 'Livre' : 'Ocupado'}
+                                    {b.status === 'online' ? 'Livre' :
+                                        b.status === 'busy' ? 'Atendendo' : '---'}
                                 </span>
                             </TableCell>
                             <TableCell className="text-right space-x-2">

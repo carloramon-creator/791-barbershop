@@ -117,4 +117,8 @@ export const Api = {
     // Inventory
     getInventory: () => apiFetch('/api/inventory'),
     createMovement: (payload: any) => apiFetch('/api/inventory', { method: 'POST', body: JSON.stringify(payload) }),
+
+    // Barber Status
+    getMyBarberStatus: () => apiFetch('/api/barbers/me/status'),
+    updateMyBarberStatus: (status: string) => apiFetch('/api/barbers/me/status', { method: 'PATCH', body: JSON.stringify({ status }) }),
 };

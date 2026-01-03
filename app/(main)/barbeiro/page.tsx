@@ -31,7 +31,7 @@ export default function BarberPage() {
     const [showSaleDialog, setShowSaleDialog] = useState(false);
     const [finishedQueueId, setFinishedQueueId] = useState<string | null>(null);
 
-    const { user, role } = useAuth();
+    const { user, role, roles } = useAuth();
 
     const fetchStatus = async () => {
         try {
@@ -131,32 +131,84 @@ export default function BarberPage() {
                                 <div className="text-left hidden md:block">
                                     <div className="text-slate-100 text-sm font-bold">{barber.barber_name}</div>
                                     <div className="flex items-center gap-1">
-                                        <span className={barber.status === 'busy' ? "w-1.5 h-1.5 rounded-full bg-green-500" : "w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"}></span>
-                                        <span className="text-[10px] text-slate-400 uppercase tracking-tighter">{barber.status === 'busy' ? 'Em Atendimento' : 'Livre'}</span>
+                                        <span className={cn(
+                                            "w-1.5 h-1.5 rounded-full",
+                                            barber.status === 'online' ? "bg-emerald-500 animate-pulse" :
+                                                barber.status === 'busy' ? "bg-yellow-500" : "bg-red-500"
+                                        )}></span>
+                                        <span className="text-[10px] text-slate-400 uppercase tracking-tighter">
+                                            {barber.status === 'online' ? 'Livre' :
+                                                barber.status === 'busy' ? 'Atendendo' : 'Offline'}
+                                        </span>
                                     </div>
                                 </div>
                             </button>
                         ))
                     ) : (
-                        <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-500 font-bold border border-blue-600/30 overflow-hidden">
+                        <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-500 font-bold border border-blue-600/30 overflow-hidden">
                                 {currentBarber?.photo_url ? (
                                     <img src={currentBarber.photo_url} alt={currentBarber.barber_name} className="w-full h-full object-cover" />
                                 ) : (
-                                    currentBarber?.barber_name?.charAt(0)
+                                    currentBarber?.barber_name?.charAt(0) || 'B'
                                 )}
                             </div>
                             <div>
-                                <div className="text-slate-100 font-bold">{currentBarber?.barber_name}</div>
+                                <div className="text-slate-100 font-bold text-sm">{currentBarber?.barber_name}</div>
                                 <div className="flex items-center gap-2">
-                                    <span className={currentBarber?.status === 'busy' ? "w-2 h-2 rounded-full bg-green-500" : "w-2 h-2 rounded-full bg-blue-500 animate-pulse"}></span>
-                                    <span className="text-xs text-slate-400 uppercase tracking-widest">{currentBarber?.status === 'busy' ? 'Em Atendimento' : 'Disponível'}</span>
+                                    <span className={cn(
+                                        "w-2 h-2 rounded-full",
+                                        currentBarber?.status === 'online' ? "bg-emerald-500 animate-pulse" :
+                                            currentBarber?.status === 'busy' ? "bg-yellow-500" : "bg-red-500"
+                                    )}></span>
+                                    <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">
+                                        {currentBarber?.status === 'online' ? 'Livre' :
+                                            currentBarber?.status === 'busy' ? 'Em Atendimento' : 'Offline'}
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     )}
                 </div>
+
+                {roles?.includes('barber') && (
+                    <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-xl shadow-lg ring-1 ring-slate-800/50">
+                        <Button
+                            onClick={() => Api.updateMyBarberStatus('online').then(fetchStatus)}
+                            variant="ghost"
+                            className={cn(
+                                "h-9 px-4 rounded-lg font-bold transition-all text-sm",
+                                (currentBarber?.status === 'online' || currentBarber?.status === 'busy')
+                                    ? "bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/20"
+                                    : "text-slate-500 hover:text-slate-300"
+                            )}
+                        >
+                            <span className={cn("w-2 h-2 rounded-full mr-2", (currentBarber?.status === 'online' || currentBarber?.status === 'busy') ? "bg-emerald-500 animate-pulse" : "bg-slate-700")}></span>
+                            Online
+                        </Button>
+                        <Button
+                            onClick={() => Api.updateMyBarberStatus('offline').then(fetchStatus)}
+                            variant="ghost"
+                            className={cn(
+                                "h-9 px-4 rounded-lg font-bold transition-all text-sm",
+                                currentBarber?.status === 'offline'
+                                    ? "bg-red-500/10 text-red-500 ring-1 ring-red-500/20"
+                                    : "text-slate-500 hover:text-slate-300"
+                            )}
+                        >
+                            <span className={cn("w-2 h-2 rounded-full mr-2", currentBarber?.status === 'offline' ? "bg-red-500" : "bg-slate-700")}></span>
+                            Offline
+                        </Button>
+                    </div>
+                )}
             </div>
+
+            {currentBarber?.status === 'offline' && (
+                <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex items-center gap-3 text-red-500 animate-in fade-in slide-in-from-top-2">
+                    <AlertCircle size={20} />
+                    <p className="text-sm font-bold uppercase tracking-wider">Você está <span className="underline">OFFLINE</span>. Os clientes não podem te escolher na recepção.</p>
+                </div>
+            )}
 
             <div className="grid lg:grid-cols-3 gap-8">
                 {/* Cliente Atual */}

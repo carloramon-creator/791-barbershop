@@ -13,6 +13,7 @@ interface AuthContextType {
     loading: boolean;
     signOut: () => Promise<void>;
     role: string | null;
+    roles: string[] | null;
     refresh: () => Promise<void>;
 }
 
@@ -23,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
     loading: true,
     signOut: async () => { },
     role: null,
+    roles: null,
     refresh: async () => { },
 });
 
@@ -32,6 +34,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [tenant, setTenant] = useState<Tenant | null>(null);
     const [loading, setLoading] = useState(true);
     const [role, setRole] = useState<string | null>(null);
+    const [roles, setRoles] = useState<string[] | null>(null);
 
     const fetchSession = async () => {
         try {
@@ -43,10 +46,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 // Obter role do usuário
                 const { data } = await supabaseClient
                     .from('users')
-                    .select('role')
+                    .select('role, roles')
                     .eq('id', session.user.id)
                     .single();
                 setRole(data?.role ?? null);
+                setRoles(data?.roles ?? (data?.role ? [data.role] : null));
 
                 // Obter tenant/branding
                 // Como Api.getBarbershop usa a session (que acabamos de pegar), 
@@ -61,6 +65,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 }
             } else {
                 setRole(null);
+                setRoles(null);
                 setTenant(null);
             }
         } catch (error) {
@@ -86,6 +91,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 fetchSession();
             } else {
                 setRole(null);
+                setRoles(null);
                 setTenant(null);
                 setLoading(false);
             }
@@ -97,13 +103,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const signOut = async () => {
         await supabaseClient.auth.signOut();
         setRole(null);
+        setRoles(null);
         setTenant(null);
         setUser(null);
         setSession(null);
     };
 
     return (
-        <AuthContext.Provider value={{ user, session, tenant, loading, signOut, role, refresh: fetchSession }}>
+        <AuthContext.Provider value={{ user, session, tenant, loading, signOut, role, roles, refresh: fetchSession }}>
             {children}
         </AuthContext.Provider>
     );
