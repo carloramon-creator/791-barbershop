@@ -144,19 +144,18 @@ export default function BarbershopSettingsPage() {
 
         try {
             const payload = {
-                name,
-                cnpj,
-                phone,
-                logo_url: logoUrl,
-                cep,
-                street,
-                number,
-                complement,
-                neighborhood,
-                city,
-                state
+                name: name,
+                cnpj: cnpj,
+                phone: phone,
+                cep: cep,
+                street: street,
+                number: number,
+                complement: complement || '',
+                neighborhood: neighborhood,
+                city: city,
+                state: state,
+                logo_url: logoUrl
             };
-
             await Api.updateBarbershop(payload);
             await refresh(); // Global context refresh
             await loadBarbershop(); // Local state refresh from DB
