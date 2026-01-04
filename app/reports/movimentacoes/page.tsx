@@ -46,6 +46,7 @@ function MvtContent() {
                         <thead>
                             <tr className="border-b-2 border-black">
                                 <th className="py-2">Data/Hora</th>
+                                <th className="py-2">Usuário</th>
                                 <th className="py-2">Produto</th>
                                 <th className="py-2">Tipo</th>
                                 <th className="py-2">Descrição</th>
@@ -57,6 +58,7 @@ function MvtContent() {
                             {movements.map(m => (
                                 <tr key={m.id}>
                                     <td className="py-2 text-gray-600">{new Date(m.created_at).toLocaleString('pt-BR')}</td>
+                                    <td className="py-2 text-gray-800 font-medium">{m.users?.name || '---'}</td>
                                     <td className="py-2 font-medium">{m.products?.name || '---'}</td>
                                     <td className="py-2">
                                         {m.type === 'entry'
@@ -78,7 +80,10 @@ function MvtContent() {
                                 <h3 className="text-lg font-bold uppercase text-slate-800">Resumo de Vendas por Produto</h3>
                                 <p className="text-sm text-gray-500">
                                     Período: {start ? new Date(start).toLocaleDateString('pt-BR') : 'Início'} até {end ? new Date(end).toLocaleDateString('pt-BR') : 'Hoje'}
-                                    {start && end && ` (${Math.ceil((new Date(end).getTime() - new Date(start).getTime()) / (1000 * 60 * 60 * 24)) + 1} dias)`}
+                                    {/* Cálculo de dias */}
+                                    {start && end
+                                        ? ` (${Math.ceil((new Date(end).getTime() - new Date(start).getTime()) / (1000 * 60 * 60 * 24)) + 1} dias)`
+                                        : ''}
                                 </p>
                             </div>
                         </div>

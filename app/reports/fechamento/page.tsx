@@ -74,78 +74,102 @@ function ClosingReportContent() {
     // ...
 
     return (
-        <div className="p-8 max-w-[80mm] mx-auto bg-white min-h-screen font-mono text-xs text-black leading-tight print:p-0 print:max-w-none print:w-[80mm]">
+        <div className="p-8 max-w-5xl mx-auto bg-white min-h-screen text-black print:p-8 print:max-w-none">
             {/* Header */}
-            <div className="mb-4">
+            <div className="mb-8">
                 <ReportHeader />
-                <div className="text-center border-b border-black pb-2 mt-2">
-                    <p className="font-bold uppercase">Fechamento de Caixa</p>
-                    <div className="mt-2 text-left text-[10px]">
-                        <p>Barbeiro: <span className="font-bold">{barber?.name}</span></p>
-                        <p>Data: {new Date().toLocaleDateString('pt-BR')} {new Date().toLocaleTimeString('pt-BR')}</p>
+                <div className="flex justify-between items-end border-b-2 border-black pb-4 mt-6">
+                    <div>
+                        <h1 className="text-2xl font-bold uppercase">Fechamento de Caixa / Comissões</h1>
+                        <p className="text-gray-600 mt-1">Barbeiro: <span className="font-bold text-lg">{barber?.name}</span></p>
+                    </div>
+                    <div className="text-right text-sm text-gray-500">
+                        <p>Data do Fechamento: {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')}</p>
                     </div>
                 </div>
             </div>
 
             {/* List */}
-            <div className="mb-4">
-                <div className="flex justify-between border-b border-black mb-1 font-bold">
-                    <span>Item/Cliente</span>
-                    <span>Valor</span>
-                </div>
-                {sales.map((sale) => (
-                    <div key={sale.id} className="flex justify-between py-1 border-b border-dashed border-gray-400">
-                        <div className="flex flex-col">
-                            <span>{new Date(sale.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} - {sale.client_queue?.client_name || 'Balcão'}</span>
-                            <span className="text-[10px] text-gray-600">Comissão: R$ {(sale.commission_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            <table className="w-full text-sm text-left mb-8">
+                <thead>
+                    <tr className="bg-gray-100 border-b border-gray-300">
+                        <th className="py-3 px-4 font-bold">Data</th>
+                        <th className="py-3 px-4 font-bold">Cliente / Serviço</th>
+                        <th className="py-3 px-4 text-right font-bold">Valor Venda</th>
+                        <th className="py-3 px-4 text-right font-bold">Comissão</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                    {sales.map((sale) => (
+                        <tr key={sale.id} className="hover:bg-gray-50">
+                            <td className="py-3 px-4 text-gray-600">
+                                {new Date(sale.created_at).toLocaleDateString('pt-BR')} <span className="text-xs">{new Date(sale.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                            </td>
+                            <td className="py-3 px-4">
+                                <span className="font-medium uppercase">{sale.client_queue?.client_name || 'Balcão'}</span>
+                            </td>
+                            <td className="py-3 px-4 text-right">R$ {(sale.total_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="py-3 px-4 text-right font-bold text-emerald-700">R$ {(sale.commission_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                    ))}
+                    {sales.length === 0 && (
+                        <tr>
+                            <td colSpan={4} className="py-8 text-center italic text-gray-400">Nenhum lançamento pendente para este fechamento.</td>
+                        </tr>
+                    )}
+                </tbody>
+            </table>
+
+            {/* Totals Section */}
+            <div className="flex justify-end mb-12 break-inside-avoid">
+                <div className="w-1/3 bg-gray-50 rounded-lg p-6 border border-gray-200">
+                    <h3 className="font-bold border-b border-gray-300 pb-2 mb-4 uppercase text-sm text-gray-500">Resumo do Fechamento</h3>
+
+                    <div className="flex justify-between py-1 text-sm">
+                        <span>Qtd Serviços:</span>
+                        <span className="font-mono">{sales.length}</span>
+                    </div>
+                    <div className="flex justify-between py-1 text-sm">
+                        <span>Faturamento Bruto:</span>
+                        <span className="font-mono">R$ {totalGross.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between py-1 text-base font-medium text-emerald-700">
+                        <span>Comissão Total:</span>
+                        <span className="font-mono">R$ {totalCommission.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    {bonus !== 0 && (
+                        <div className="flex justify-between py-1 text-sm text-blue-600">
+                            <span>Ajuste / Bônus:</span>
+                            <span className="font-mono">R$ {bonus.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                         </div>
-                        <span>R$ {(sale.total_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    )}
+
+                    <div className="border-t border-gray-300 mt-4 pt-4 flex justify-between items-center">
+                        <span className="font-bold text-lg uppercase text-slate-900">Total a Pagar</span>
+                        <span className="font-black text-2xl text-slate-900">R$ {totalPayable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                     </div>
-                ))}
-                {sales.length === 0 && <p className="text-center italic mt-2">Nenhum lançamento.</p>}
-            </div>
-
-            {/* Totals */}
-            <div className="border-t border-black pt-2 space-y-1">
-                <div className="flex justify-between">
-                    <span>Qtd Serviços:</span>
-                    <span>{sales.length}</span>
-                </div>
-                <div className="flex justify-between">
-                    <span>Faturamento Bruto:</span>
-                    <span>R$ {totalGross.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                </div>
-                <div className="flex justify-between">
-                    <span>Comissão Total:</span>
-                    <span>R$ {totalCommission.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                </div>
-                {bonus !== 0 && (
-                    <div className="flex justify-between">
-                        <span>Bônus/Ajuste:</span>
-                        <span>R$ {bonus.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                )}
-                <div className="flex justify-between text-sm font-bold border-t border-black mt-2 pt-2">
-                    <span>TOTAL A PAGAR:</span>
-                    <span>R$ {totalPayable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 </div>
             </div>
 
-            {/* Signature */}
-            <div className="mt-12 text-center">
-                <div className="border-t border-black w-3/4 mx-auto mb-2"></div>
-                <p className="uppercase font-bold">{barber?.name}</p>
-                <p className="text-[10px] italic">Assinatura</p>
+            {/* Signature Area */}
+            <div className="mt-16 flex justify-between px-16 break-inside-avoid">
+                <div className="text-center w-1/3">
+                    <div className="border-t border-black mb-2"></div>
+                    <p className="uppercase font-bold text-sm text-gray-700">Responsável (Caixa)</p>
+                </div>
+                <div className="text-center w-1/3">
+                    <div className="border-t border-black mb-2"></div>
+                    <p className="uppercase font-bold text-sm text-gray-700">{barber?.name}</p>
+                </div>
             </div>
 
-            <div className="mt-8 text-center print:hidden">
+            <div className="mt-12 text-center print:hidden">
                 <button
                     onClick={() => window.print()}
-                    className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-md hover:bg-slate-800 mx-auto"
+                    className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-lg hover:bg-slate-800 mx-auto font-bold shadow-lg"
                 >
-                    <Printer size={16} /> Imprimir Cupom
+                    <Printer size={18} /> Imprimir Relatório
                 </button>
-
             </div>
             <ReportFooter />
         </div >
