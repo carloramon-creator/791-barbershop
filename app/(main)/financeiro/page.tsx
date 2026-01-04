@@ -161,6 +161,10 @@ export default function FinanceiroPage() {
             await Api.updateFinanceRecord(recordId, { is_paid: !currentStatus });
             // Optimistic update
             setFinanceRecords(prev => prev.map(r => r.id === recordId ? { ...r, is_paid: !currentStatus } : r));
+
+            // Success feedback
+            const message = !currentStatus ? '✅ Despesa marcada como paga!' : '⚠️ Despesa desmarcada';
+            alert(message);
         } catch (err: unknown) {
             const error = err as Error;
             alert('Erro ao atualizar status: ' + error.message);
@@ -559,8 +563,12 @@ export default function FinanceiroPage() {
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="h-8 px-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                                                        onClick={() => handleRevertClosing(r.id, r.barber_id || '')} // Assumes barber_id is available in record
+                                                        className="h-8 px-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-900/20 transition-all"
+                                                        onClick={() => {
+                                                            if (confirm('Deseja reverter este fechamento de barbeiro? As vendas voltarão para "não pagas".')) {
+                                                                handleRevertClosing(r.id, r.barber_id || '');
+                                                            }
+                                                        }}
                                                         title="Reverter Fechamento (Desfazer)"
                                                     >
                                                         <History size={14} className="mr-1" /> Desfazer
@@ -569,10 +577,22 @@ export default function FinanceiroPage() {
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    className={cn("h-8 w-8 p-0", r.is_paid ? "text-slate-600" : "text-emerald-500 hover:bg-emerald-500/10")}
-                                                    onClick={() => handleTogglePaid(r.id, r.is_paid)}
+                                                    className={cn(
+                                                        "h-8 px-3 transition-all",
+                                                        r.is_paid
+                                                            ? "text-slate-500 hover:text-slate-400 hover:bg-slate-800/50"
+                                                            : "text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/20"
+                                                    )}
+                                                    onClick={() => {
+                                                        const action = r.is_paid ? 'desmarcar como pago' : 'marcar como pago';
+                                                        if (confirm(`Deseja ${action} esta despesa?`)) {
+                                                            handleTogglePaid(r.id, r.is_paid);
+                                                        }
+                                                    }}
+                                                    title={r.is_paid ? "Marcar como não pago" : "Marcar como pago"}
                                                 >
-                                                    <CheckCircle2 size={16} />
+                                                    <CheckCircle2 size={16} className="mr-1" />
+                                                    {r.is_paid ? 'Pago' : 'Pagar'}
                                                 </Button>
                                             </div>
                                         )}
