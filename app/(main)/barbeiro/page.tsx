@@ -39,7 +39,7 @@ export default function BarberPage() {
     const [finishedQueueId, setFinishedQueueId] = useState<string | null>(null);
     const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
 
-    const { user, role, roles } = useAuth();
+    const { user, role, roles, loading: authLoading } = useAuth();
 
     const fetchStatus = useCallback(async (idOverride?: string) => {
         try {
@@ -55,7 +55,12 @@ export default function BarberPage() {
                     setQueue(updated.queue);
                 }
             } else if (allQueues.length > 0) {
-                // Seleção automática se ainda não tem nada selecionado
+                // Se ainda estamos carregando o usuário, espera.
+                // Isso evita selecionar o primeiro barbeiro da lista (que pode estar offline)
+                // enquanto o usuário real (que pode estar online) ainda está sendo carregado.
+                if (authLoading && !user) return;
+
+                // Seleção automática
                 const myQueue = allQueues.find((b: BarberQueueStatus) => b.user_id === user?.id) || allQueues[0];
                 if (myQueue) {
                     setSelectedBarberId(myQueue.barber_id);
@@ -68,7 +73,7 @@ export default function BarberPage() {
         } finally {
             setLoading(false);
         }
-    }, [user?.id, selectedBarberId]);
+    }, [user?.id, selectedBarberId, authLoading]);
 
     // Supabase Realtime: Listen for changes in queue and barbers
     useEffect(() => {
