@@ -533,39 +533,72 @@ export default function BarbershopSettingsPage() {
                     <p className="text-sm text-slate-400 mb-4">
                         Se você notar dados faltando no painel ou erros estranhos, execute o reparo automático.
                     </p>
-                    <Button
-                        variant="outline"
-                        className="border-amber-500/50 text-amber-500 hover:bg-amber-500 hover:text-white"
-                        onClick={async () => {
-                            if (!confirm('Executar reparo do sistema? Isso pode levar alguns segundos.')) return;
-                            try {
-                                const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
-                                const { data: { session } } = await supabaseClient.auth.getSession();
-                                const token = session?.access_token;
+                    <div className="flex gap-3">
+                        <Button
+                            variant="outline"
+                            className="border-blue-500/50 text-blue-500 hover:bg-blue-500 hover:text-white"
+                            onClick={async () => {
+                                try {
+                                    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
+                                    const { data: { session } } = await supabaseClient.auth.getSession();
+                                    const token = session?.access_token;
 
-                                const res = await fetch(`${backendUrl}/api/system/repair`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Authorization': `Bearer ${token}`,
-                                        'Content-Type': 'application/json'
+                                    const res = await fetch(`${backendUrl}/api/debug/finance`, {
+                                        method: 'GET',
+                                        headers: {
+                                            'Authorization': `Bearer ${token}`,
+                                            'Content-Type': 'application/json'
+                                        }
+                                    });
+
+                                    if (!res.ok) {
+                                        const errorData = await res.json().catch(() => ({ error: 'Erro desconhecido' }));
+                                        throw new Error(errorData.error || res.statusText);
                                     }
-                                });
 
-                                if (!res.ok) {
-                                    const errorData = await res.json().catch(() => ({ error: 'Erro desconhecido' }));
-                                    throw new Error(errorData.error || res.statusText);
+                                    const data = await res.json();
+                                    alert('Diagnóstico:\n\n' + JSON.stringify(data, null, 2));
+                                } catch (e: any) {
+                                    alert('Erro no diagnóstico: ' + e.message);
                                 }
+                            }}
+                        >
+                            Ver Diagnóstico
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="border-amber-500/50 text-amber-500 hover:bg-amber-500 hover:text-white"
+                            onClick={async () => {
+                                if (!confirm('Executar reparo do sistema? Isso pode levar alguns segundos.')) return;
+                                try {
+                                    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
+                                    const { data: { session } } = await supabaseClient.auth.getSession();
+                                    const token = session?.access_token;
 
-                                const data = await res.json();
-                                alert('Reparo concluído!\n\nDetalhes:\n' + JSON.stringify(data, null, 2));
-                                window.location.reload();
-                            } catch (e: any) {
-                                alert('Erro ao reparar: ' + e.message);
-                            }
-                        }}
-                    >
-                        Executar Reparo de Dados
-                    </Button>
+                                    const res = await fetch(`${backendUrl}/api/system/repair`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Authorization': `Bearer ${token}`,
+                                            'Content-Type': 'application/json'
+                                        }
+                                    });
+
+                                    if (!res.ok) {
+                                        const errorData = await res.json().catch(() => ({ error: 'Erro desconhecido' }));
+                                        throw new Error(errorData.error || res.statusText);
+                                    }
+
+                                    const data = await res.json();
+                                    alert('Reparo concluído!\n\nDetalhes:\n' + JSON.stringify(data, null, 2));
+                                    window.location.reload();
+                                } catch (e: any) {
+                                    alert('Erro ao reparar: ' + e.message);
+                                }
+                            }}
+                        >
+                            Executar Reparo de Dados
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
         </div>
