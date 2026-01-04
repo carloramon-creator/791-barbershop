@@ -163,7 +163,7 @@ export function BarberClosingDialog({
                     </Button>
                     <Button
                         onClick={handleConfirm}
-                        disabled={loading || sales.length === 0}
+                        disabled={loading || (sales.length === 0 && bonus === 0)}
                         className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-12 px-8 rounded-xl shadow-lg shadow-blue-900/20"
                     >
                         {loading ? 'Processando...' : 'Confirmar Fechamento'}

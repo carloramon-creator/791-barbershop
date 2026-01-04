@@ -23,17 +23,33 @@ function ClosingReportContent() {
             if (!barberId) return;
             setLoading(true);
             try {
-                // 1. Fetch Barber info with its related user name
-                const { data: bData } = await supabaseClient
+                // 1. Fetch Barber info
+                console.log('[REPORT] Fetching barber name for ID:', barberId);
+
+                // Try fetching barber first
+                const { data: bData, error: bError } = await supabaseClient
                     .from('barbers')
-                    .select('name, user_id, users(name)')
+                    .select('name, user_id')
                     .eq('id', barberId)
                     .single();
 
-                const userName = (bData?.users as any)?.name;
-                const barberName = userName || bData?.name || 'Barbeiro';
+                let barberName = bData?.name;
+                let userId = bData?.user_id;
 
-                setBarber({ name: barberName });
+                if (!barberName || barberName === 'Barbeiro') {
+                    // Try to get name from user table
+                    const targetId = userId || barberId;
+                    const { data: uData } = await supabaseClient
+                        .from('users')
+                        .select('name')
+                        .eq('id', targetId)
+                        .single();
+
+                    if (uData?.name) barberName = uData.name;
+                }
+
+                console.log('[REPORT] Resolved name:', barberName);
+                setBarber({ name: barberName || 'Barbeiro' });
 
                 // 2. Fetch Pending Sales (Same logic as Closing Dialog)
                 // REMOVED TENANT FETCH - using ReportHeader

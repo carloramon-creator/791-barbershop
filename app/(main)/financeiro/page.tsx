@@ -60,16 +60,14 @@ export default function FinanceiroPage() {
             // Ideally backend route should be /api/closing/[financeId] but we strictly followed instructions to use [id]/closing.
             // Let's rely on the record having it.
 
-            const targetBarberId = barberId || 'unknown'; // This might fail if the route validation is strict.
+            const targetBarberId = barberId || 'unknown';
 
-            await fetch(`/api/barbers/${targetBarberId}/closing?financeId=${financeId}`, {
-                method: 'DELETE'
-            });
+            await Api.revertBarberClosing(targetBarberId, financeId);
 
             alert('Fechamento revertido com sucesso!');
             fetchData();
-        } catch (err) {
-            alert('Erro ao reverter fechamento.');
+        } catch (err: any) {
+            alert('Erro ao reverter fechamento: ' + (err.message || 'Erro desconhecido'));
             console.error(err);
         } finally {
             setLoading(false);
@@ -560,7 +558,7 @@ export default function FinanceiroPage() {
                                     <TableCell>
                                         {r.type === 'expense' && (
                                             <div className="flex items-center gap-2 justify-end">
-                                                {r.description.includes('Fechamento Barbeiro') && (
+                                                {r.description.includes('Fechamento Barbeiro') && !r.is_paid && (
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
