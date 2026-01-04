@@ -14,8 +14,14 @@ interface DreData {
         start: string;
         end: string;
     };
-    receitas: number;
-    despesas: number;
+    receitas: {
+        total: number;
+        breakdown: { name: string; value: number }[];
+    };
+    despesas: {
+        total: number;
+        breakdown: { name: string; value: number }[];
+    };
     lucro: number;
 }
 
@@ -33,7 +39,7 @@ export default function DrePage() {
             const data = await Api.getDre(dates.start, dates.end);
             setDre(data);
         } catch {
-            alert('Erro ao gerar DRE. Verifique se seu plano é o Completo.');
+            alert('Erro ao gerar DRE. Ocorreu um erro na requisição.');
         } finally {
             setLoading(false);
         }
@@ -92,11 +98,29 @@ export default function DrePage() {
                             <div className="divide-y divide-slate-800">
                                 <div className="p-6 flex justify-between items-center">
                                     <span className="text-lg text-slate-300">Total de Receitas</span>
-                                    <span className="text-xl font-bold text-emerald-500">R$ {dre.receitas.toFixed(2)}</span>
+                                    <span className="text-xl font-bold text-emerald-500">R$ {dre.receitas.total.toFixed(2)}</span>
+                                </div>
+                                <div className="p-6 bg-slate-950/20">
+                                    <p className="text-xs text-slate-500 uppercase font-bold mb-2">Detalhamento de Receitas</p>
+                                    {dre.receitas.breakdown.map((item, idx) => (
+                                        <div key={idx} className="flex justify-between text-sm text-slate-400 mb-1">
+                                            <span>{item.name}</span>
+                                            <span>R$ {item.value.toFixed(2)}</span>
+                                        </div>
+                                    ))}
                                 </div>
                                 <div className="p-6 flex justify-between items-center">
                                     <span className="text-lg text-slate-300">Total de Despesas</span>
-                                    <span className="text-xl font-bold text-red-500">R$ {dre.despesas.toFixed(2)}</span>
+                                    <span className="text-xl font-bold text-red-500">R$ {dre.despesas.total.toFixed(2)}</span>
+                                </div>
+                                <div className="p-6 bg-slate-950/20">
+                                    <p className="text-xs text-slate-500 uppercase font-bold mb-2">Detalhamento de Despesas</p>
+                                    {dre.despesas.breakdown.map((item, idx) => (
+                                        <div key={idx} className="flex justify-between text-sm text-slate-400 mb-1">
+                                            <span>{item.name}</span>
+                                            <span>R$ {item.value.toFixed(2)}</span>
+                                        </div>
+                                    ))}
                                 </div>
                                 <div className="p-8 flex justify-between items-center bg-blue-600/10">
                                     <span className="text-xl font-black text-slate-100 uppercase">Lucro Líquido</span>
@@ -110,8 +134,8 @@ export default function DrePage() {
                             </div>
                         </CardContent>
                         <div className="p-4 bg-slate-800/30 text-center">
-                            <Button variant="ghost" size="sm" className="text-slate-400 hover:text-slate-100 italic">
-                                <Download size={14} className="mr-2" /> Exportar em PDF
+                            <Button variant="ghost" size="sm" className="text-slate-400 hover:text-slate-100 italic" onClick={() => window.open(`/reports/dre?start=${dates.start}&end=${dates.end}`, '_blank')}>
+                                <Download size={14} className="mr-2" /> Versão de Impressão (PDF)
                             </Button>
                         </div>
                     </Card>
@@ -135,15 +159,20 @@ export default function DrePage() {
                             </div>
                             <div className="space-y-2">
                                 <div className="flex justify-between text-xs">
-                                    <span className="text-slate-500 italic">Despesas</span>
-                                    <span className="text-slate-300">0%</span>
+                                    <span className="text-slate-500 italic">Margem de Lucro</span>
+                                    <span className="text-slate-300">
+                                        {dre.receitas.total > 0 ? ((dre.lucro / dre.receitas.total) * 100).toFixed(1) : 0}%
+                                    </span>
                                 </div>
                                 <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                                    <div className="bg-red-500 h-full w-[1%]"></div>
+                                    <div
+                                        className={cn("h-full", dre.lucro >= 0 ? "bg-blue-500" : "bg-red-500")}
+                                        style={{ width: `${dre.receitas.total > 0 ? Math.max(0, Math.min(100, (dre.lucro / dre.receitas.total) * 100)) : 0}%` }}
+                                    ></div>
                                 </div>
                             </div>
                             <div className="pt-6 border-t border-slate-800 text-center">
-                                <p className="text-[10px] text-slate-600 uppercase font-bold">Análise Baseada no Plano Completo</p>
+                                <p className="text-[10px] text-slate-600 uppercase font-bold">Análise Financeira</p>
                             </div>
                         </CardContent>
                     </Card>

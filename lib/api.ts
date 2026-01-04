@@ -127,6 +127,7 @@ export const Api = {
     // Inventory
     getInventory: () => apiFetch('/api/inventory'),
     createMovement: (payload: Record<string, unknown>) => apiFetch('/api/inventory', { method: 'POST', body: JSON.stringify(payload) }),
+    getMovements: (start?: string, end?: string) => apiFetch(`/api/inventory/movements?start=${start || ''}&end=${end || ''}`),
 
     // Barber Status
     getMyBarberStatus: () => apiFetch('/api/barbers/me/status'),

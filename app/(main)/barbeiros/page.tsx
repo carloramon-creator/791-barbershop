@@ -17,11 +17,13 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogFooter
+    DialogFooter,
+    DialogTrigger
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Edit, Camera, RefreshCw, Users, ShieldAlert, FileText } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Edit, Camera, RefreshCw, Users, ShieldAlert, FileText, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabaseClient } from '@/lib/supabase-client';
 import Link from 'next/link';
@@ -42,6 +44,7 @@ export default function BarbeirosPage() {
     const [closingSales, setClosingSales] = useState<Sale[]>([]);
     const [closingLoading, setClosingLoading] = useState(false);
     const [closingBarber, setClosingBarber] = useState<Barber | null>(null);
+    const [reportBarbers, setReportBarbers] = useState<string[]>([]);
 
     const { role } = useAuth();
 
@@ -151,6 +154,63 @@ export default function BarbeirosPage() {
                         <RefreshCw size={16} className={cn("mr-2", loading && "animate-spin")} />
                         Atualizar
                     </Button>
+
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" className="border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-white">
+                                <History size={16} className="mr-2" /> Movimentação
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
+                            <DialogHeader>
+                                <DialogTitle>Relatório de Movimentação</DialogTitle>
+                            </DialogHeader>
+                            <div className="py-4 space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Data Inicial</Label>
+                                        <Input type="date" id="rep-start" className="bg-slate-800 border-slate-700" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Data Final</Label>
+                                        <Input type="date" id="rep-end" className="bg-slate-800 border-slate-700" />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="block mb-2">Barbeiros</Label>
+                                    <div className="flex flex-wrap gap-4 bg-slate-800/50 p-4 rounded-lg">
+                                        <div className="flex items-center space-x-2 w-full border-b border-slate-700 pb-2 mb-2">
+                                            <Checkbox id="all"
+                                                checked={reportBarbers.length === barbeiros.length && barbeiros.length > 0}
+                                                onCheckedChange={(c) => setReportBarbers(c ? barbeiros.map(b => b.id) : [])}
+                                            />
+                                            <Label htmlFor="all" className="font-bold">Todos</Label>
+                                        </div>
+                                        {barbeiros.map(b => (
+                                            <div key={b.id} className="flex items-center space-x-2">
+                                                <Checkbox id={`rb-${b.id}`}
+                                                    checked={reportBarbers.includes(b.id)}
+                                                    onCheckedChange={(c) => {
+                                                        if (c) setReportBarbers([...reportBarbers, b.id]);
+                                                        else setReportBarbers(reportBarbers.filter(id => id !== b.id));
+                                                    }}
+                                                />
+                                                <Label htmlFor={`rb-${b.id}`}>{b.name}</Label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => {
+                                    const s = (document.getElementById('rep-start') as HTMLInputElement).value;
+                                    const e = (document.getElementById('rep-end') as HTMLInputElement).value;
+                                    const ids = reportBarbers.join(',');
+                                    window.open(`/reports/barbeiros?start=${s}&end=${e}&ids=${ids}`, '_blank');
+                                }}>
+                                    Gerar Relatório PDF
+                                </Button>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
                     <Link href="/configuracoes/usuarios">
                         <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
                             <Users className="w-4 h-4" />

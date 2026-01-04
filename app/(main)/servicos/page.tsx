@@ -201,7 +201,7 @@ export default function ServicosPage() {
                     ) : servicos.map((s) => (
                         <TableRow key={s.id} className="border-slate-800 group hover:bg-slate-900/50 transition-colors">
                             <TableCell className="font-bold text-slate-100 uppercase tracking-tighter">{s.name}</TableCell>
-                            <TableCell className="text-emerald-400 font-mono font-bold">R$ {Number(s.price).toFixed(2)}</TableCell>
+                            <TableCell className="text-emerald-400 font-mono font-bold">R$ {Number(s.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
                             <TableCell className="text-right space-x-2">
                                 <Button
                                     variant="ghost"

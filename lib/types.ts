@@ -183,7 +183,7 @@ export interface BarberQueueStatus {
     barber_name: string;
     user_id?: string;
     photo_url?: string;
-    status: 'online' | 'offline' | 'busy';
+    status: 'available' | 'busy' | 'offline';
     is_active?: boolean;
     avg_time_minutes: number;
     queue: ClientQueue[];

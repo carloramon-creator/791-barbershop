@@ -238,22 +238,22 @@ export default function DashboardPage() {
                                         </TableCell>
                                         <TableCell>
                                             <Badge className={
-                                                barber.status === 'online' || barber.status === 'busy'
+                                                barber.status === 'available' || barber.status === 'busy'
                                                     ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/50'
                                                     : 'bg-red-500/10 text-red-500 border-red-500/50'
                                             }>
-                                                {barber.status === 'online' || barber.status === 'busy' ? 'Online' : 'Offline'}
+                                                {barber.status === 'available' || barber.status === 'busy' ? 'Online' : 'Offline'}
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant="outline" className={
                                                 barber.status === 'busy'
                                                     ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-                                                    : barber.status === 'online'
+                                                    : barber.status === 'available'
                                                         ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/10'
                                                         : 'text-slate-500 border-slate-800'
                                             }>
-                                                {barber.status === 'busy' ? 'Atendendo' : barber.status === 'online' ? 'Livre' : '---'}
+                                                {barber.status === 'busy' ? 'Atendendo' : barber.status === 'available' ? 'Livre' : '---'}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-center text-slate-300 font-bold">

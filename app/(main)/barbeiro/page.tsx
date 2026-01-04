@@ -110,11 +110,11 @@ export default function BarberPage() {
     const handleUpdateStatus = async (barberId: string, status: string) => {
         // Atualização otimista no estado local para resposta instantânea
         setAllBarbers(prev => prev.map(b =>
-            b.barber_id === barberId ? { ...b, status: status as 'online' | 'offline' | 'busy' } : b
+            b.barber_id === barberId ? { ...b, status: status as 'available' | 'offline' | 'busy' } : b
         ));
 
         if (currentBarber?.barber_id === barberId) {
-            setCurrentBarber((prev: BarberQueueStatus | null) => prev ? ({ ...prev, status: status as 'online' | 'offline' | 'busy' }) : null);
+            setCurrentBarber((prev: BarberQueueStatus | null) => prev ? ({ ...prev, status: status as 'available' | 'offline' | 'busy' }) : null);
         }
 
         try {
@@ -268,11 +268,11 @@ export default function BarberPage() {
                                         <div className="flex items-center gap-1">
                                             <span className={cn(
                                                 "w-1.5 h-1.5 rounded-full",
-                                                barber.status === 'online' ? "bg-emerald-500 animate-pulse" :
+                                                barber.status === 'available' ? "bg-emerald-500 animate-pulse" :
                                                     barber.status === 'busy' ? "bg-yellow-500" : "bg-red-500"
                                             )}></span>
                                             <span className="text-[10px] text-slate-400 uppercase tracking-tighter">
-                                                {barber.status === 'online' ? 'Livre' :
+                                                {barber.status === 'available' ? 'Livre' :
                                                     barber.status === 'busy' ? 'Atendendo' : 'Offline'}
                                             </span>
                                         </div>
@@ -282,12 +282,12 @@ export default function BarberPage() {
                                 {currentBarber?.barber_id === barber.barber_id && (
                                     <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-lg justify-center gap-1 shadow-lg ring-1 ring-slate-800/50 scale-90">
                                         <Button
-                                            onClick={() => handleUpdateStatus(barber.barber_id, 'online')}
+                                            onClick={() => handleUpdateStatus(barber.barber_id, 'available')}
                                             variant="ghost"
                                             size="sm"
                                             className={cn(
                                                 "h-7 px-2 rounded font-bold transition-all text-[10px]",
-                                                (barber?.status === 'online' || barber?.status === 'busy')
+                                                (barber?.status === 'available' || barber?.status === 'busy')
                                                     ? "bg-emerald-500/10 text-emerald-500"
                                                     : "text-slate-500 hover:text-slate-300"
                                             )}
@@ -325,11 +325,11 @@ export default function BarberPage() {
                                 <div className="flex items-center gap-2">
                                     <span className={cn(
                                         "w-2 h-2 rounded-full",
-                                        currentBarber?.status === 'online' ? "bg-emerald-500 animate-pulse" :
+                                        currentBarber?.status === 'available' ? "bg-emerald-500 animate-pulse" :
                                             currentBarber?.status === 'busy' ? "bg-yellow-500" : "bg-red-500"
                                     )}></span>
                                     <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">
-                                        {currentBarber?.status === 'online' ? 'Livre' :
+                                        {currentBarber?.status === 'available' ? 'Livre' :
                                             currentBarber?.status === 'busy' ? 'Em Atendimento' : 'Offline'}
                                     </span>
                                 </div>
@@ -341,16 +341,16 @@ export default function BarberPage() {
                 {roles?.includes('barber') && role !== 'owner' && (
                     <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-xl shadow-lg ring-1 ring-slate-800/50">
                         <Button
-                            onClick={() => currentBarber && handleUpdateStatus(currentBarber.barber_id, 'online')}
+                            onClick={() => currentBarber && handleUpdateStatus(currentBarber.barber_id, 'available')}
                             variant="ghost"
                             className={cn(
                                 "h-9 px-4 rounded-lg font-bold transition-all text-sm",
-                                (currentBarber?.status === 'online' || currentBarber?.status === 'busy')
+                                (currentBarber?.status === 'available' || currentBarber?.status === 'busy')
                                     ? "bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/20"
                                     : "text-slate-500 hover:text-slate-300"
                             )}
                         >
-                            <span className={cn("w-2 h-2 rounded-full mr-2", (currentBarber?.status === 'online' || currentBarber?.status === 'busy') ? "bg-emerald-500 animate-pulse" : "bg-slate-700")}></span>
+                            <span className={cn("w-2 h-2 rounded-full mr-2", (currentBarber?.status === 'available' || currentBarber?.status === 'busy') ? "bg-emerald-500 animate-pulse" : "bg-slate-700")}></span>
                             Online
                         </Button>
                         <Button

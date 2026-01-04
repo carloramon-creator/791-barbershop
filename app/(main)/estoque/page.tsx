@@ -173,7 +173,56 @@ export default function EstoquePage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            {/* Relatório para Impressão (Oculto na tela) */}
+            <div className="hidden print:block p-8 text-black bg-white min-h-screen">
+                <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
+                    <div>
+                        <h1 className="text-2xl font-black uppercase tracking-tighter">Relatório de Inventário</h1>
+                        <p className="text-sm text-slate-600">{tenant?.name}</p>
+                    </div>
+                    <div className="text-right text-xs text-slate-500">
+                        {new Date().toLocaleDateString('pt-BR')} {new Date().toLocaleTimeString('pt-BR')}
+                    </div>
+                </div>
+
+                <table className="w-full text-left border-collapse">
+                    <thead>
+                        <tr className="border-b-2 border-slate-300">
+                            <th className="py-2 font-bold uppercase text-[10px]">Produto</th>
+                            <th className="py-2 font-bold uppercase text-[10px] text-center">Estoque Atual</th>
+                            <th className="py-2 font-bold uppercase text-[10px] text-right">Preço Custo</th>
+                            <th className="py-2 font-bold uppercase text-[10px] text-right">Preço Venda</th>
+                            <th className="py-2 font-bold uppercase text-[10px] text-right">Total (Venda)</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-xs">
+                        {products.map((p) => (
+                            <tr key={p.id}>
+                                <td className="py-2 font-medium">{p.name}</td>
+                                <td className="py-2 text-center">{p.stock_quantity || 0} un</td>
+                                <td className="py-2 text-right">R$ {Number(p.cost_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                <td className="py-2 text-right">R$ {Number(p.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                <td className="py-2 text-right">R$ {((p.stock_quantity || 0) * (p.price || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+
+                <div className="mt-8 pt-4 border-t-2 border-slate-900 flex justify-end gap-12">
+                    <div className="text-right">
+                        <p className="text-[10px] uppercase text-slate-500 font-bold">Total Itens</p>
+                        <p className="text-lg font-black">{products.reduce((acc, p) => acc + (p.stock_quantity || 0), 0)}</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-[10px] uppercase text-slate-500 font-bold">Valor Total (Venda)</p>
+                        <p className="text-lg font-black text-blue-600">
+                            R$ {products.reduce((acc, p) => acc + ((p.stock_quantity || 0) * (p.price || 0)), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex justify-between items-center no-print">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-100 italic flex items-center gap-2">
                         <Package size={24} className="text-blue-500" /> Gestão de Estoque
@@ -182,13 +231,44 @@ export default function EstoquePage() {
                 </div>
 
                 <div className="flex gap-2 no-print">
-                    <Button
-                        variant="outline"
-                        onClick={handlePrintReport}
-                        className="border-slate-800 text-slate-400 hover:bg-slate-800"
-                    >
-                        <FileText size={16} className="mr-2" /> Gerar Relatório
+                    <Button variant="outline" className="border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-white" asChild>
+                        <a href="/reports/estoque" target="_blank" rel="noopener noreferrer">
+                            <FileText size={16} className="mr-2" /> Posição de Estoque
+                        </a>
                     </Button>
+
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" className="border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-white">
+                                <History size={16} className="mr-2" /> Relatório Movimentações
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
+                            <DialogHeader>
+                                <DialogTitle>Filtrar Movimentações</DialogTitle>
+                            </DialogHeader>
+                            <div className="py-4 space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Data Inicial</Label>
+                                        <Input type="date" id="mvt-start" className="bg-slate-800 border-slate-700" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Data Final</Label>
+                                        <Input type="date" id="mvt-end" className="bg-slate-800 border-slate-700" />
+                                    </div>
+                                </div>
+                                <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => {
+                                    const s = (document.getElementById('mvt-start') as HTMLInputElement).value;
+                                    const e = (document.getElementById('mvt-end') as HTMLInputElement).value;
+                                    window.open(`/reports/movimentacoes?start=${s}&end=${e}`, '_blank');
+                                }}>
+                                    Gerar Relatório
+                                </Button>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+
                     <Dialog open={isEntryDialogOpen} onOpenChange={(val) => {
                         setIsEntryDialogOpen(val);
                         if (!val) resetForms();
@@ -423,10 +503,10 @@ export default function EstoquePage() {
                                                     {p.stock_quantity || 0} un
                                                 </span>
                                             </TableCell>
-                                            <TableCell className="text-slate-400">R$ {Number(p.cost_price || 0).toFixed(2)}</TableCell>
-                                            <TableCell className="text-blue-400">R$ {Number(p.price || 0).toFixed(2)}</TableCell>
+                                            <TableCell className="text-slate-400">R$ {Number(p.cost_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
+                                            <TableCell className="text-blue-400">R$ {Number(p.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
                                             <TableCell className="text-right font-mono font-bold text-emerald-500 pr-6">
-                                                R$ {((p.stock_quantity || 0) * (p.cost_price || 0)).toFixed(2)}
+                                                R$ {((p.stock_quantity || 0) * (p.cost_price || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                             </TableCell>
                                         </TableRow>
                                     ))}
