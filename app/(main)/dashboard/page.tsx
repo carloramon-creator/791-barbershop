@@ -99,7 +99,7 @@ export default function DashboardPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-black text-slate-100">R$ {metrics.billingToday.toFixed(2)}</div>
+                        <div className="text-3xl font-black text-slate-100">{metrics.billingToday.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
                     </CardContent>
                 </Card>
             </div>

@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, Loader2, Save, Users, CreditCard, Building2, AlertTriangle, Shield } from 'lucide-react';
 import { MaskedInput } from '@/components/ui/masked-input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -37,6 +38,16 @@ export default function BarbershopSettingsPage() {
     const [city, setCity] = useState('');
     const [state, setState] = useState('');
 
+    // Bank & Pix State
+    const [pixKey, setPixKey] = useState('');
+    const [pixKeyType, setPixKeyType] = useState('cpf'); // cpf, cnpj, email, phone, random
+    const [bankCode, setBankCode] = useState('');
+    const [bankAgency, setBankAgency] = useState('');
+    const [bankAccount, setBankAccount] = useState('');
+    const [bankAccountDigit, setBankAccountDigit] = useState('');
+    const [bankAccountHolder, setBankAccountHolder] = useState('');
+    const [bankAccountDoc, setBankAccountDoc] = useState('');
+
     const loadBarbershop = async () => {
         try {
             setLoading(true);
@@ -55,6 +66,16 @@ export default function BarbershopSettingsPage() {
                 setNeighborhood(data.neighborhood || '');
                 setCity(data.city || '');
                 setState(data.state || '');
+
+                // Bank fields
+                setPixKey(data.pix_key || '');
+                setPixKeyType(data.pix_key_type || 'cpf');
+                setBankCode(data.bank_code || '');
+                setBankAgency(data.bank_agency || '');
+                setBankAccount(data.bank_account || '');
+                setBankAccountDigit(data.bank_account_digit || '');
+                setBankAccountHolder(data.bank_account_holder || data.name || '');
+                setBankAccountDoc(data.bank_account_doc || data.cnpj || '');
             }
         } catch (error) {
             console.error('Failed to load barbershop data', error);
@@ -132,35 +153,36 @@ export default function BarbershopSettingsPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        // Basic CNPJ validation (length)
-        const cleanCnpj = cnpj.replace(/\D/g, '');
-        if (cleanCnpj && cleanCnpj.length !== 14) {
-            alert('CNPJ inválido (deve ter 14 dígitos).');
-            return;
-        }
-
         setLoading(true);
 
         try {
             const payload = {
-                name: name,
-                cnpj: cnpj,
-                phone: phone,
-                cep: cep,
-                street: street,
-                number: number,
-                complement: complement || '',
-                neighborhood: neighborhood,
-                city: city,
-                state: state,
-                logo_url: logoUrl
+                name,
+                cnpj,
+                phone,
+                cep,
+                street,
+                number,
+                complement,
+                neighborhood,
+                city,
+                state,
+                logo_url: logoUrl,
+                // Bank Info
+                pix_key: pixKey,
+                pix_key_type: pixKeyType,
+                bank_code: bankCode,
+                bank_agency: bankAgency,
+                bank_account: bankAccount,
+                bank_account_digit: bankAccountDigit,
+                bank_account_holder: bankAccountHolder,
+                bank_account_doc: bankAccountDoc
             };
             await Api.updateBarbershop(payload);
             await refresh(); // Global context refresh
             await loadBarbershop(); // Local state refresh from DB
             setIsEditing(false);
-            alert('Barbearia atualizada com sucesso!');
+            alert('Configurações atualizadas com sucesso!');
         } catch (error: any) {
             alert('Erro ao salvar: ' + error.message);
         } finally {
@@ -178,19 +200,19 @@ export default function BarbershopSettingsPage() {
     const isCurrentTab = (href: string) => pathname === href;
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-4xl mx-auto space-y-6 pb-20">
             <div className="flex flex-col gap-4">
-                <h1 className="text-3xl font-bold text-slate-100">Configurações</h1>
-                <div className="flex space-x-1 border-b border-slate-800">
+                <h1 className="text-3xl font-bold text-slate-100 italic tracking-tighter">Configurações</h1>
+                <div className="flex space-x-1 border-b border-slate-800 bg-slate-900/50 p-1 rounded-t-lg overflow-x-auto">
                     {tabs.map((tab) => (
                         <Link
                             key={tab.name}
                             href={tab.href}
                             className={cn(
-                                "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                                "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all whitespace-nowrap",
                                 isCurrentTab(tab.href)
-                                    ? "border-blue-500 text-blue-500"
-                                    : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700"
+                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20"
+                                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
                             )}
                         >
                             <tab.icon className="w-4 h-4" />
@@ -200,9 +222,16 @@ export default function BarbershopSettingsPage() {
                 </div>
             </div>
 
-            <Card className="bg-slate-900 border-slate-800">
+            <Card className="bg-slate-900 border-slate-800 shadow-xl">
                 <CardHeader>
-                    <CardTitle className="text-slate-100">Dados da Barbearia</CardTitle>
+                    <CardTitle className="text-slate-100 flex justify-between items-center">
+                        <span>Dados da Barbearia</span>
+                        {!isEditing && (
+                            <Button onClick={() => setIsEditing(true)} variant="outline" size="sm" className="border-slate-700 hover:bg-slate-800">
+                                Editar
+                            </Button>
+                        )}
+                    </CardTitle>
                     <CardDescription className="text-slate-500">
                         Informações visíveis no seu perfil e para clientes.
                     </CardDescription>
@@ -210,12 +239,12 @@ export default function BarbershopSettingsPage() {
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-8">
                         {/* Logo Upload */}
-                        <div className="space-y-4">
-                            <Label className="text-slate-200">Logo e Branding</Label>
+                        <div className="space-y-4 bg-slate-950/50 p-6 rounded-lg border border-slate-800/50">
+                            <Label className="text-slate-200 font-bold uppercase text-xs tracking-wider">Logo e Branding</Label>
                             <div className="flex items-center gap-6">
-                                <div className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-700 bg-slate-800 flex items-center justify-center overflow-hidden relative shrink-0">
+                                <div className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-700 bg-slate-800 flex items-center justify-center overflow-hidden relative shrink-0 group">
                                     {logoUrl ? (
-                                        <img src={logoUrl} alt="Logo Preview" className="w-full h-full object-cover" />
+                                        <img src={logoUrl} alt="Logo Preview" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
                                     ) : (
                                         <Upload className="w-8 h-8 text-slate-600" />
                                     )}
@@ -233,7 +262,7 @@ export default function BarbershopSettingsPage() {
                                         accept="image/*"
                                         onChange={handleLogoUpload}
                                         disabled={!isEditing}
-                                        className="bg-slate-950 border-slate-800 text-slate-300 file:text-blue-500 file:bg-blue-500/10 file:rounded-md file:border-0 file:mr-4 file:px-4 file:py-2 hover:file:bg-blue-500/20 cursor-pointer w-full max-w-sm disabled:opacity-50"
+                                        className="bg-slate-900 border-slate-800 text-slate-300 file:text-blue-500 file:bg-blue-500/10 file:rounded-md file:border-0 file:mr-4 file:px-4 file:py-2 hover:file:bg-blue-500/20 cursor-pointer w-full max-w-sm disabled:opacity-50"
                                     />
                                     {uploadError ? (
                                         <div className="flex items-center gap-2 text-red-400 text-xs">
@@ -250,9 +279,9 @@ export default function BarbershopSettingsPage() {
                         </div>
 
                         {/* Basic Info */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="name" className="text-slate-200">Nome da Barbearia</Label>
+                                <Label htmlFor="name" className="text-slate-400 text-xs uppercase font-bold">Nome da Barbearia</Label>
                                 <Input
                                     id="name"
                                     value={name}
@@ -260,42 +289,44 @@ export default function BarbershopSettingsPage() {
                                     placeholder="Ex: Minha Barbearia"
                                     required
                                     disabled={!isEditing}
-                                    className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400"
+                                    className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-11"
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="phone" className="text-slate-200">Telefone / WhatsApp</Label>
+                                <Label htmlFor="phone" className="text-slate-400 text-xs uppercase font-bold">Telefone / WhatsApp</Label>
                                 <MaskedInput
                                     mask="(99) 99999-9999"
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
                                     placeholder="(00) 00000-0000"
                                     disabled={!isEditing}
-                                    className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400"
+                                    className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-11"
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="cnpj" className="text-slate-200">CNPJ</Label>
+                                <Label htmlFor="cnpj" className="text-slate-400 text-xs uppercase font-bold">CNPJ</Label>
                                 <MaskedInput
                                     mask="99.999.999/9999-99"
                                     value={cnpj}
                                     onChange={(e) => setCnpj(e.target.value)}
                                     placeholder="00.000.000/0000-00"
                                     disabled={!isEditing}
-                                    className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400"
+                                    className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-11"
                                 />
                             </div>
                         </div>
 
                         {/* Address Section */}
-                        <div className="space-y-4 pt-4 border-t border-slate-800">
-                            <h3 className="text-lg font-medium text-slate-200">Endereço</h3>
+                        <div className="space-y-4 pt-6 border-t border-slate-800/50">
+                            <h3 className="text-sm font-bold uppercase text-slate-400 flex items-center gap-2">
+                                <Building2 size={16} /> Endereço
+                            </h3>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="cep" className="text-slate-200">CEP</Label>
+                                    <Label htmlFor="cep" className="text-slate-400 text-xs uppercase font-bold">CEP</Label>
                                     <MaskedInput
                                         mask="99999-999"
                                         value={cep}
@@ -304,25 +335,25 @@ export default function BarbershopSettingsPage() {
                                         required
                                         placeholder="00000-000"
                                         disabled={!isEditing}
-                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400"
+                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10"
                                     />
                                 </div>
                                 <div className="space-y-2 md:col-span-2">
-                                    <Label htmlFor="street" className="text-slate-200">Rua / Logradouro</Label>
+                                    <Label htmlFor="street" className="text-slate-400 text-xs uppercase font-bold">Rua / Logradouro</Label>
                                     <Input
                                         id="street"
                                         value={street}
                                         onChange={(e) => setStreet(e.target.value)}
                                         required
                                         disabled={!isEditing}
-                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400"
+                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10"
                                     />
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="number" className="text-slate-200">Número</Label>
+                                    <Label htmlFor="number" className="text-slate-400 text-xs uppercase font-bold">Número</Label>
                                     <Input
                                         id="number"
                                         value={number}
@@ -330,47 +361,47 @@ export default function BarbershopSettingsPage() {
                                         placeholder="123"
                                         required
                                         disabled={!isEditing}
-                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400"
+                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10"
                                     />
                                 </div>
                                 <div className="space-y-2 md:col-span-2">
-                                    <Label htmlFor="complement" className="text-slate-200">Complemento (Opcional)</Label>
+                                    <Label htmlFor="complement" className="text-slate-400 text-xs uppercase font-bold">Complemento</Label>
                                     <Input
                                         id="complement"
                                         value={complement}
                                         onChange={(e) => setComplement(e.target.value)}
                                         placeholder="Sala 1, Bloco B"
                                         disabled={!isEditing}
-                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400"
+                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10"
                                     />
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="neighborhood" className="text-slate-200">Bairro</Label>
+                                    <Label htmlFor="neighborhood" className="text-slate-400 text-xs uppercase font-bold">Bairro</Label>
                                     <Input
                                         id="neighborhood"
                                         value={neighborhood}
                                         onChange={(e) => setNeighborhood(e.target.value)}
                                         required
                                         disabled={!isEditing}
-                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400"
+                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="city" className="text-slate-200">Cidade</Label>
+                                    <Label htmlFor="city" className="text-slate-400 text-xs uppercase font-bold">Cidade</Label>
                                     <Input
                                         id="city"
                                         value={city}
                                         onChange={(e) => setCity(e.target.value)}
                                         required
                                         disabled={!isEditing}
-                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400"
+                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="state" className="text-slate-200">UF</Label>
+                                    <Label htmlFor="state" className="text-slate-400 text-xs uppercase font-bold">UF</Label>
                                     <Input
                                         id="state"
                                         value={state}
@@ -379,42 +410,94 @@ export default function BarbershopSettingsPage() {
                                         maxLength={2}
                                         placeholder="SP"
                                         disabled={!isEditing}
-                                        className="bg-slate-950 border-slate-800 text-slate-100 uppercase disabled:bg-slate-900 disabled:text-slate-400"
+                                        className="bg-slate-950 border-slate-800 text-slate-100 uppercase disabled:bg-slate-900 disabled:text-slate-400 h-10"
                                     />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="pt-4 flex justify-end gap-3">
-                            {isEditing ? (
-                                <>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => setIsEditing(false)}
-                                        className="border-slate-800 text-slate-400 hover:bg-slate-800"
-                                    >
-                                        Cancelar
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        disabled={loading || uploading}
-                                        className="bg-blue-600 hover:bg-blue-700 text-white min-w-[150px]"
-                                    >
-                                        {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                                        {loading ? 'Salvando...' : 'Salvar Alterações'}
-                                    </Button>
-                                </>
-                            ) : (
+                        {/* Banking Section - NEW */}
+                        <div className="space-y-4 pt-6 border-t border-slate-800/50">
+                            <h3 className="text-sm font-bold uppercase text-slate-400 flex items-center gap-2">
+                                <CreditCard size={16} /> Dados Bancários e PIX
+                            </h3>
+                            <p className="text-xs text-slate-500 mb-4">
+                                Configure sua chave PIX para gerar QR Codes automaticamente no momento da venda.
+                            </p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-950/30 p-4 rounded-lg border border-slate-800/30">
+                                <div className="space-y-2">
+                                    <Label className="text-slate-200 text-xs uppercase font-bold">Chave PIX (Obrigatório)</Label>
+                                    <Input
+                                        value={pixKey}
+                                        onChange={e => setPixKey(e.target.value)}
+                                        placeholder="CPF, CNPJ, Email ou Telefone"
+                                        disabled={!isEditing}
+                                        className="bg-slate-900 border-slate-700 text-emerald-400 font-bold h-11"
+                                    />
+                                    <p className="text-[10px] text-slate-500">Esta chave aparecerá no QR Code para o cliente pagar.</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-slate-200 text-xs uppercase font-bold">Tipo da Chave</Label>
+                                    <Select value={pixKeyType} onValueChange={setPixKeyType} disabled={!isEditing}>
+                                        <SelectTrigger className="bg-slate-900 border-slate-700 h-11">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-slate-800 border-slate-700">
+                                            <SelectItem value="cpf">CPF</SelectItem>
+                                            <SelectItem value="cnpj">CNPJ</SelectItem>
+                                            <SelectItem value="email">E-mail</SelectItem>
+                                            <SelectItem value="phone">Telefone (Celular)</SelectItem>
+                                            <SelectItem value="random">Chave Aleatória</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 opacity-50 hover:opacity-100 transition-opacity">
+                                <div className="space-y-2">
+                                    <Label className="text-slate-500 text-[10px] uppercase font-bold">Banco (Código)</Label>
+                                    <Input value={bankCode} onChange={e => setBankCode(e.target.value)} disabled={!isEditing} className="h-9 text-xs bg-slate-950 border-slate-800" placeholder="Ex: 260 (Nubank)" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-slate-500 text-[10px] uppercase font-bold">Agência</Label>
+                                    <Input value={bankAgency} onChange={e => setBankAgency(e.target.value)} disabled={!isEditing} className="h-9 text-xs bg-slate-950 border-slate-800" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-slate-500 text-[10px] uppercase font-bold">Conta Corrente</Label>
+                                    <Input value={bankAccount} onChange={e => setBankAccount(e.target.value)} disabled={!isEditing} className="h-9 text-xs bg-slate-950 border-slate-800" />
+                                </div>
+                                <div className="space-y-2 md:col-span-2">
+                                    <Label className="text-slate-500 text-[10px] uppercase font-bold">Nome do Titular</Label>
+                                    <Input value={bankAccountHolder} onChange={e => setBankAccountHolder(e.target.value)} disabled={!isEditing} className="h-9 text-xs bg-slate-950 border-slate-800" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-slate-500 text-[10px] uppercase font-bold">CPF/CNPJ do Titular</Label>
+                                    <Input value={bankAccountDoc} onChange={e => setBankAccountDoc(e.target.value)} disabled={!isEditing} className="h-9 text-xs bg-slate-950 border-slate-800" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {isEditing && (
+                            <div className="pt-6 flex justify-end gap-4 sticky bottom-0 bg-slate-950/80 backdrop-blur-sm p-4 border-t border-slate-800 z-10">
                                 <Button
                                     type="button"
-                                    onClick={() => setIsEditing(true)}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white min-w-[150px]"
+                                    variant="outline"
+                                    onClick={() => { setIsEditing(false); loadBarbershop(); }}
+                                    className="border-slate-800 text-slate-400 hover:bg-slate-800"
                                 >
-                                    Editar Informações
+                                    Cancelar
                                 </Button>
-                            )}
-                        </div>
+                                <Button
+                                    type="submit"
+                                    disabled={loading || uploading}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white min-w-[200px] shadow-lg shadow-blue-900/40"
+                                >
+                                    {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                                    {loading ? 'Salvando...' : 'Salvar Alterações'}
+                                </Button>
+                            </div>
+                        )}
                     </form>
                 </CardContent>
             </Card>

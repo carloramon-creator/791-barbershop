@@ -130,7 +130,7 @@ export default function FinanceiroPage() {
 
     if (role !== 'owner') return <div className="p-8 text-red-500">Acesso restrito ao proprietário.</div>;
 
-    const totalRevenue = sales.reduce((acc, s) => acc + Number(s.total), 0) +
+    const totalRevenue = sales.reduce((acc, s) => acc + Number(s.total_amount), 0) +
         financeRecords.filter(r => r.type === 'revenue').reduce((acc, r) => acc + Number(r.value), 0);
 
     const totalExpenses = financeRecords.filter(r => r.type === 'expense').reduce((acc, r) => acc + Number(r.value), 0);
@@ -144,7 +144,7 @@ export default function FinanceiroPage() {
             description: `Venda #${s.id.slice(-4)}`,
             type: 'revenue',
             method: s.payment_method,
-            value: s.total,
+            value: s.total_amount,
             category: 'Vendas',
             is_recurring: false
         })),
@@ -332,7 +332,7 @@ export default function FinanceiroPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-black text-emerald-500 group-hover:scale-105 transition-transform origin-left">
-                            R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            {totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </div>
                     </CardContent>
                 </Card>
@@ -344,7 +344,7 @@ export default function FinanceiroPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-black text-red-500 group-hover:scale-105 transition-transform origin-left">
-                            R$ {totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            {totalExpenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </div>
                     </CardContent>
                 </Card>
@@ -356,7 +356,7 @@ export default function FinanceiroPage() {
                     </CardHeader>
                     <CardContent>
                         <div className={cn("text-3xl font-black group-hover:scale-105 transition-transform origin-left", netBalance >= 0 ? "text-slate-100" : "text-red-400")}>
-                            R$ {netBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            {netBalance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </div>
                     </CardContent>
                 </Card>
@@ -410,7 +410,7 @@ export default function FinanceiroPage() {
                                         </Badge>
                                     </TableCell>
                                     <TableCell className={cn("text-right font-black text-md pr-6", r.type === 'revenue' ? "text-emerald-400" : "text-red-400")}>
-                                        {r.type === 'revenue' ? '+' : '-'} R$ {Number(r.value).toFixed(2)}
+                                        {r.type === 'revenue' ? '+' : '-'} {Number(r.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                     </TableCell>
                                 </TableRow>
                             ))}
