@@ -119,6 +119,14 @@ export default function BarberPage() {
     };
 
     const handleStartClient = async (queueId: string) => {
+        // Verificar se é o dono operando a fila de outro
+        if (role === 'owner' && currentBarber?.user_id !== user?.id) {
+            const barberName = currentBarber?.barber_name || 'outro barbeiro';
+            if (!confirm(`ATENÇÃO: Você está iniciando um atendimento em nome de ${barberName}.\n\nO status dele mudará para Ocupado/Atendendo.\nDeseja continuar?`)) {
+                return;
+            }
+        }
+
         try {
             await Api.startSpecificClient(queueId);
             fetchStatus();
