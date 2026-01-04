@@ -343,19 +343,48 @@ export default function BarberPage() {
                                     </Button>
                                 </>
                             ) : (
-                                <div className="py-10 space-y-6">
-                                    <div className="text-slate-500 flex flex-col items-center gap-2">
-                                        <AlertCircle size={48} className="opacity-20" />
-                                        <p>Ninguém sendo atendido agora.</p>
-                                    </div>
-                                    <Button
-                                        className="w-full bg-blue-600 hover:bg-blue-700 h-14 text-lg font-bold"
-                                        onClick={handleCallNext}
-                                        disabled={waitingClients.length === 0}
-                                    >
-                                        <Play className="mr-2 fill-current" />
-                                        Próximo da Fila
-                                    </Button>
+                                <div className="py-6 space-y-4">
+                                    {waitingClients.length > 0 ? (
+                                        <div className="flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                            <div className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Sua Próxima Sessão</div>
+
+                                            <div className="relative w-full">
+                                                <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full opacity-20"></div>
+                                                <div className="relative flex items-center gap-4 bg-slate-800/80 backdrop-blur-sm p-4 rounded-xl border border-slate-700 w-full shadow-xl">
+                                                    <div className="w-14 h-14 rounded-full bg-indigo-500 flex items-center justify-center text-white font-black text-xl shadow-lg ring-2 ring-indigo-500/30">
+                                                        {waitingClients[0].client_name.charAt(0)}
+                                                    </div>
+                                                    <div className="flex-1 text-left min-w-0">
+                                                        <div className="text-lg font-black text-slate-100 truncate">{waitingClients[0].client_name}</div>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            {waitingClients[0].is_priority && (
+                                                                <Badge className="bg-amber-500 text-white hover:bg-amber-600 text-[9px] h-4 px-1.5 border-0">PRIORIDADE</Badge>
+                                                            )}
+                                                            <span className="text-xs text-slate-400 font-mono flex items-center gap-1">
+                                                                <Clock size={10} /> {waitingClients[0].estimated_time_minutes} min est.
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <Button
+                                                className="w-full bg-blue-600 hover:bg-blue-700 h-14 text-md font-bold uppercase tracking-widest shadow-lg shadow-blue-900/40 hover:scale-[1.02] transition-all active:scale-95"
+                                                onClick={handleCallNext}
+                                            >
+                                                <Play className="mr-2 fill-current" size={18} />
+                                                Chamar Agora
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="text-slate-500 flex flex-col items-center gap-3 py-10 opacity-50">
+                                            <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-2">
+                                                <User size={32} />
+                                            </div>
+                                            <p className="font-medium text-sm">Sua fila está vazia.</p>
+                                            <p className="text-xs max-w-[200px]">Aguarde novos clientes entrarem na recepção.</p>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </CardContent>

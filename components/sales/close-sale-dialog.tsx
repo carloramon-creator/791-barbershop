@@ -22,6 +22,7 @@ import {
     X
 } from 'lucide-react';
 import { Service, Product } from '@/lib/types';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface CloseSaleDialogProps {
     isOpen: boolean;
@@ -295,10 +296,12 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId }: CloseSaleDial
                             </div>
 
                             <div className="bg-white p-4 rounded-xl inline-block shadow-2xl shadow-emerald-500/10">
-                                {pixData?.qrBase64 ? (
+                                {pixData?.copyText ? (
+                                    <QRCodeSVG value={pixData.copyText} size={192} />
+                                ) : pixData?.qrBase64 ? (
                                     <img src={pixData.qrBase64} alt="QR Code PIX" className="w-48 h-48" />
                                 ) : (
-                                    <div className="w-48 h-48 bg-slate-100 flex items-center justify-center text-slate-400">QR Code</div>
+                                    <div className="w-48 h-48 bg-slate-100 flex items-center justify-center text-slate-400">QR Code Indisponível</div>
                                 )}
                             </div>
 
