@@ -120,13 +120,32 @@ function BarberReportContent() {
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {salesList.map(sale => (
-                                    <tr key={sale.id}>
-                                        <td className="py-2 px-2">{new Date(sale.created_at).toLocaleDateString('pt-BR')} {new Date(sale.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</td>
-                                        <td className="py-2 px-2 font-medium uppercase font-mono text-xs text-gray-600">CLIENTE (ID: {sale.client_id?.slice(0, 4)})</td>
-                                        <td className="py-2 px-2 capitalize">{sale.payment_method === 'credit_card' ? 'Cartão' : sale.payment_method}</td>
-                                        <td className="py-2 px-2 text-right font-bold">R$ {Number(sale.total_amount).toFixed(2)}</td>
-                                        <td className="py-2 px-2 text-right text-gray-500">R$ {Number(sale.commission_value || 0).toFixed(2)}</td>
-                                    </tr>
+                                    <>
+                                        <tr key={sale.id} className="bg-white">
+                                            <td className="py-2 px-2 border-t border-gray-100">{new Date(sale.created_at).toLocaleDateString('pt-BR')} {new Date(sale.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</td>
+                                            <td className="py-2 px-2 border-t border-gray-100 font-medium uppercase font-mono text-xs text-gray-600">
+                                                {sale.client_queue?.client_name || 'BALCÃO'}
+                                            </td>
+                                            <td className="py-2 px-2 border-t border-gray-100 capitalize">{sale.payment_method === 'credit_card' ? 'Cartão' : sale.payment_method}</td>
+                                            <td className="py-2 px-2 border-t border-gray-100 text-right font-bold">R$ {Number(sale.total_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                            <td className="py-2 px-2 border-t border-gray-100 text-right text-gray-500">R$ {Number(sale.commission_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                        </tr>
+                                        {/* Detalhes dos Itens */}
+                                        {sale.sale_items && sale.sale_items.length > 0 && (
+                                            <tr className="bg-gray-50/50">
+                                                <td colSpan={5} className="py-1 px-4 text-xs">
+                                                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-gray-500">
+                                                        {sale.sale_items.map((item: any, idx: number) => (
+                                                            <span key={idx} className="flex items-center gap-1">
+                                                                <span className="font-bold">• {item.products?.name || item.services?.name || 'Item'}</span>
+                                                                <span className="italic">({item.quantity}x R$ {Number(item.price).toFixed(2)})</span>
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </>
                                 ))}
                             </tbody>
                             <tfoot>

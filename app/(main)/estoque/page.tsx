@@ -458,7 +458,7 @@ export default function EstoquePage() {
 
             <div className="flex flex-col xl:flex-row gap-6 items-stretch">
                 <div className="flex-1 space-y-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl h-full flex flex-col">
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl flex flex-col h-[600px]">
                         <div className="p-4 border-b border-slate-800 bg-slate-800/50 flex items-center justify-between no-print">
                             <div className="flex items-center gap-2">
                                 <ShoppingBag size={18} className="text-blue-500" />
@@ -517,7 +517,7 @@ export default function EstoquePage() {
                 </div>
 
                 <div className="w-full xl:w-[400px]">
-                    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl h-full flex flex-col min-h-[500px]">
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl flex flex-col h-[600px]">
                         <div className="p-4 border-b border-slate-800 bg-slate-800/50 flex items-center justify-between no-print">
                             <div className="flex items-center gap-2">
                                 <History size={18} className="text-blue-500" />
