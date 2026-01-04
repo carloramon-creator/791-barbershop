@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Api } from '@/lib/api';
 import { Sale, Barber } from '@/lib/types';
 import { Loader2, Printer } from 'lucide-react';
+import { ReportHeader, ReportFooter } from '@/components/reports/report-header';
 
 // Auxiliar para decodificar items (serviços/produtos) se o backend não entregar mastigado
 // Assumindo que o endpoint /api/sales traga sales com sale_items.
@@ -169,6 +170,7 @@ function BarberReportContent() {
                     </div>
                 );
             })}
+            <ReportFooter />
         </div>
     );
 }

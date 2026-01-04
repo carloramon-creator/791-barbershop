@@ -53,7 +53,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
                     {children}
                     <footer className="mt-8 py-4 text-center text-xs text-slate-600">
-                        Powered by <span className="text-slate-500 font-semibold">791 Barber</span>
+                        Licensed by <span className="text-slate-500 font-semibold">791 Barber</span>
                     </footer>
                 </main>
             </div>

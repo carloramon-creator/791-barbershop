@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Api } from '@/lib/api';
 import { Loader2, Printer } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ReportHeader } from '@/components/reports/report-header';
+import { ReportHeader, ReportFooter } from '@/components/reports/report-header';
 
 // We duplicate the interface here to avoid cross-file dependency issues in this quick fix
 interface DreData {
@@ -74,12 +74,12 @@ function DreReportContent() {
                             {dre.receitas.breakdown.map((item, idx) => (
                                 <div key={idx} className="flex justify-between text-sm py-1 border-b border-gray-100">
                                     <span>{item.name}</span>
-                                    <span className="font-mono">{item.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                    <span className="font-mono">{item.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                                 </div>
                             ))}
                             <div className="flex justify-between font-bold pt-2 text-base">
                                 <span>Total Receitas</span>
-                                <span>R$ {dre.receitas.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                <span>{dre.receitas.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                             </div>
                         </div>
                     </div>
@@ -92,12 +92,12 @@ function DreReportContent() {
                             {dre.despesas.breakdown.map((item, idx) => (
                                 <div key={idx} className="flex justify-between text-sm py-1 border-b border-gray-100">
                                     <span>{item.name}</span>
-                                    <span className="font-mono text-red-600">({item.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})</span>
+                                    <span className="font-mono text-red-600">({item.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})</span>
                                 </div>
                             ))}
                             <div className="flex justify-between font-bold pt-2 text-base text-red-700">
                                 <span>Total Despesas</span>
-                                <span>(R$ {dre.despesas.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})</span>
+                                <span>({dre.despesas.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})</span>
                             </div>
                         </div>
                     </div>
@@ -107,14 +107,13 @@ function DreReportContent() {
                         <div className="flex justify-between items-center text-xl font-bold bg-gray-100 p-4 rounded">
                             <span className="uppercase">Resultado Líquido (Lucro/Prejuízo)</span>
                             <span className={cn(dre.lucro >= 0 ? "text-emerald-600" : "text-red-600")}>
-                                R$ {dre.lucro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                {dre.lucro.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                             </span>
                         </div>
                     </div>
 
-                    <div className="mt-12 text-center text-xs text-gray-400 print:absolute print:bottom-10 print:w-full print:left-0">
-                        Relatório gerado em {new Date().toLocaleString()} por 791 Barber Management.
-                    </div>
+                    {/* Footer */}
+                    <ReportFooter />
                 </div>
             )}
         </div>

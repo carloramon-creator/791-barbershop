@@ -22,6 +22,16 @@ export function ReportHeader() {
         fetchTenant();
     }, []);
 
+    // Se não carregar via auth, tenta pegar do localStorage (fallback)
+    useEffect(() => {
+        if (!tenant) {
+            const stored = localStorage.getItem('sb-tenant-branding');
+            if (stored) {
+                try { setTenant(JSON.parse(stored)); } catch { }
+            }
+        }
+    }, [tenant]);
+
     if (!tenant) return null;
 
     return (
@@ -38,6 +48,14 @@ export function ReportHeader() {
                 </div>
             )}
             <h1 className="text-2xl font-black uppercase tracking-widest text-slate-900 text-center">{tenant.name}</h1>
+        </div>
+    );
+}
+
+export function ReportFooter() {
+    return (
+        <div className="fixed bottom-0 left-0 w-full text-center text-[10px] text-gray-400 py-2 border-t border-gray-100 bg-white print:block hidden">
+            Licensed by <span className="font-bold">791 Barber</span>
         </div>
     );
 }

@@ -6,7 +6,7 @@ import { Api } from '@/lib/api';
 import { Loader2, Printer } from 'lucide-react';
 import { Sale, Barber } from '@/lib/types';
 import { supabaseClient } from '@/lib/supabase-client';
-import { ReportHeader } from '@/components/reports/report-header';
+import { ReportHeader, ReportFooter } from '@/components/reports/report-header';
 
 function ClosingReportContent() {
     const searchParams = useSearchParams();
@@ -145,8 +145,10 @@ function ClosingReportContent() {
                 >
                     <Printer size={16} /> Imprimir Cupom
                 </button>
+
             </div>
-        </div>
+            <ReportFooter />
+        </div >
     );
 }
 

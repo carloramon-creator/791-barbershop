@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-provider';
 import {
@@ -22,6 +23,13 @@ export function Sidebar() {
     const pathname = usePathname();
     const { role, tenant, signOut } = useAuth();
     const planConfig = PLAN_CONFIG[(tenant?.plan as keyof typeof PLAN_CONFIG) || 'basic'];
+
+    // Salvar tenant no localStorage para relatórios em novas abas
+    useEffect(() => {
+        if (tenant) {
+            localStorage.setItem('sb-tenant-branding', JSON.stringify({ name: tenant.name, logo_url: tenant.logo_url }));
+        }
+    }, [tenant]);
 
     const menuItems = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['owner', 'staff'], feature: 'queue' },
