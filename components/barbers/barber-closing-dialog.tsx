@@ -143,7 +143,9 @@ export function BarberClosingDialog({
                         <Button
                             variant="outline"
                             className="h-11 border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300"
-                            onClick={() => window.print()}
+                            onClick={() => {
+                                window.open(`/reports/fechamento?barberId=${barberId}&bonus=${bonus}`, '_blank');
+                            }}
                         >
                             <Download size={18} className="mr-2" />
                             Relatório
