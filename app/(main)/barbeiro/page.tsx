@@ -11,7 +11,8 @@ import {
     CheckCircle2,
     Clock,
     User,
-    AlertCircle
+    AlertCircle,
+    Trash2
 } from 'lucide-react';
 import {
     Table,
@@ -76,7 +77,7 @@ export default function BarberPage() {
         }
 
         try {
-            // Se for dono, pode atualizar qualquer um via API de gerenciamento
+            // Se for dono, pode atualizar qualquer uno via API de gerenciamento
             if (role === 'owner') {
                 await Api.updateBarber(barberId, { status });
             } else {
@@ -117,6 +118,25 @@ export default function BarberPage() {
                 setFinishedQueueId(id);
                 setShowSaleDialog(true);
             }
+            fetchStatus();
+        } catch (error: any) {
+            alert(error.message);
+        }
+    };
+
+    const handleStartClient = async (queueId: string) => {
+        try {
+            await Api.startSpecificClient(queueId);
+            fetchStatus();
+        } catch (error: any) {
+            alert(error.message);
+        }
+    };
+
+    const handleCancelClient = async (queueId: string, clientName: string) => {
+        if (!confirm(`Tem certeza que deseja marcar ${clientName} como AUSENTE/CANCELADO?`)) return;
+        try {
+            await Api.cancelClient(queueId);
             fetchStatus();
         } catch (error: any) {
             alert(error.message);
@@ -384,7 +404,14 @@ export default function BarberPage() {
                                                 </span>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="font-bold text-slate-100">{item.client_name}</div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="font-bold text-slate-100">{item.client_name}</div>
+                                                    {item.is_priority && (
+                                                        <Badge variant="secondary" className="bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] px-1.5 h-5 hover:bg-amber-500/20">
+                                                            PRIORIDADE
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                                 {item.client_phone && (
                                                     <div className="text-xs text-slate-500 font-mono">{item.client_phone}</div>
                                                 )}
@@ -398,7 +425,30 @@ export default function BarberPage() {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right font-mono text-slate-400">
-                                                {item.status === 'attending' ? '---' : `${item.estimated_time_minutes} min`}
+                                                {item.status === 'waiting' ? (
+                                                    <div className="flex gap-2 justify-end">
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => handleStartClient(item.id)}
+                                                            className="h-7 text-[10px] uppercase font-bold bg-blue-600/20 text-blue-500 hover:bg-blue-600 hover:text-white border border-blue-600/50 transition-all"
+                                                        >
+                                                            <Play size={10} className="mr-1.5" /> Chamar
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={() => handleCancelClient(item.id, item.client_name)}
+                                                            className="h-7 w-7 p-0 text-slate-500 hover:text-red-500 hover:bg-red-500/10"
+                                                            title="Cancelar/Ausente"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <span className={item.status === 'attending' ? "text-green-500 font-bold text-xs" : ""}>
+                                                        {item.status === 'attending' ? 'EM CURSO' : `${item.estimated_time_minutes} min`}
+                                                    </span>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     ))

@@ -50,6 +50,10 @@ export const Api = {
         apiFetch(`/api/barbers/${barberId}/next`, { method: 'PUT' }),
     finishService: (queueId: string) =>
         apiFetch(`/api/queue/${queueId}/finish`, { method: 'PUT' }),
+    startSpecificClient: (queueId: string) =>
+        apiFetch(`/api/queue/${queueId}/start`, { method: 'PUT' }),
+    cancelClient: (queueId: string) =>
+        apiFetch(`/api/queue/${queueId}/cancel`, { method: 'PUT' }),
 
     // Sales
     createSale: (queueId: string, payload: Record<string, unknown>) =>
