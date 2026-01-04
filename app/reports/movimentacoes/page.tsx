@@ -79,11 +79,15 @@ function MvtContent() {
                             <div>
                                 <h3 className="text-lg font-bold uppercase text-slate-800">Resumo de Vendas por Produto</h3>
                                 <p className="text-sm text-gray-500">
-                                    Período: {start ? new Date(start).toLocaleDateString('pt-BR') : 'Início'} até {end ? new Date(end).toLocaleDateString('pt-BR') : 'Hoje'}
+                                    Período: {start ? new Date(start + 'T00:00:00').toLocaleDateString('pt-BR') : 'Início'} até {end ? new Date(end + 'T00:00:00').toLocaleDateString('pt-BR') : 'Hoje'}
                                     {/* Cálculo de dias */}
-                                    {start && end
-                                        ? ` (${Math.ceil((new Date(end).getTime() - new Date(start).getTime()) / (1000 * 60 * 60 * 24)) + 1} dias)`
-                                        : ''}
+                                    {start ? (() => {
+                                        const startDate = new Date(start + 'T00:00:00');
+                                        const endDate = end ? new Date(end + 'T00:00:00') : new Date();
+                                        const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+                                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                        return ` (${diffDays + (end ? 1 : 0)} dias)`;
+                                    })() : ''}
                                 </p>
                             </div>
                         </div>
