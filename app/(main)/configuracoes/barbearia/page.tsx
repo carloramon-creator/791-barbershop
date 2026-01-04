@@ -521,6 +521,37 @@ export default function BarbershopSettingsPage() {
                     </form>
                 </CardContent>
             </Card>
+
+            {/* Repair Section */}
+            <Card className="bg-amber-900/10 border-amber-500/30 border">
+                <CardHeader>
+                    <CardTitle className="text-amber-500 flex items-center gap-2">
+                        <AlertTriangle size={20} /> Diagnóstico de Sistema
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-slate-400 mb-4">
+                        Se você notar dados faltando no painel ou erros estranhos, execute o reparo automático.
+                    </p>
+                    <Button
+                        variant="outline"
+                        className="border-amber-500/50 text-amber-500 hover:bg-amber-500 hover:text-white"
+                        onClick={async () => {
+                            if (!confirm('Executar reparo do sistema? Isso pode levar alguns segundos.')) return;
+                            try {
+                                const res = await fetch('/api/system/repair', { method: 'POST', headers: { 'Authorization': `Bearer ${(await supabaseClient.auth.getSession()).data.session?.access_token}` } });
+                                const data = await res.json();
+                                alert('Reparo concluído!\n\nDetalhes:\n' + JSON.stringify(data, null, 2));
+                                window.location.reload();
+                            } catch (e: any) {
+                                alert('Erro ao reparar: ' + e.message);
+                            }
+                        }}
+                    >
+                        Executar Reparo de Dados
+                    </Button>
+                </CardContent>
+            </Card>
         </div>
     );
 }
