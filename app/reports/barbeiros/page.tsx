@@ -25,12 +25,17 @@ function BarberReportContent() {
     useEffect(() => {
         const load = async () => {
             try {
+                console.log('[BARBER REPORT] Loading with params:', { start, end, ids });
+
                 // Buscamos todas as vendas (idealmente filtraríamos no backend)
                 // e todos os barbeiros para pegar nomes
                 const [allSales, allBarbers] = await Promise.all([
                     Api.getSales(),
                     Api.getBarbers()
                 ]);
+
+                console.log('[BARBER REPORT] Loaded sales:', allSales?.length || 0);
+                console.log('[BARBER REPORT] Loaded barbers:', allBarbers?.length || 0);
 
                 setBarbers(allBarbers || []);
 
@@ -42,21 +47,13 @@ function BarberReportContent() {
                     return barberMatch && dateMatch;
                 });
 
-                // Precisamos buscar os ITENS das vendas para detalhar "consumo do cliente"
-                // O endpoint getSales normal não traz items? 
-                // Assumindo que traga ou que faremos fetch individual é ruim.
-                // Vou assumir que o usuário aceita um sumário se o backend não der os itens.
-                // Mas o requisito é "consumo detalhado".
-                // Se o backend não der items, não temos como mostrar.
-                // Verifiquei getSales e ele faz `select('*, barbers(name)')`. Não traz items.
-                // SOLUÇÃO: Vou ter que hackear: Para cada venda filtrada, buscar os itens? Isso mataria a performance.
-                // MELHOR: Criar um endpoint novo ou alterar getSales para incluir items.
-                // Como sou Antigravity, vou alterar getSales para incluir sale_items.
+                console.log('[BARBER REPORT] Filtered sales:', filtered.length);
+                console.log('[BARBER REPORT] Sample sale:', filtered[0]);
 
                 setSales(filtered);
             } catch (e) {
-                console.error(e);
-                alert('Erro ao carregar dados.');
+                console.error('[BARBER REPORT] Error:', e);
+                alert('Erro ao carregar dados: ' + (e as Error).message);
             } finally {
                 setLoading(false);
             }
