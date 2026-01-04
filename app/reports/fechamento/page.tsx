@@ -37,7 +37,7 @@ function ClosingReportContent() {
                     .eq('id', barberId)
                     .single();
 
-                const barberName = bData?.name || bData?.users?.name || uData?.name || 'Barbeiro';
+                const barberName = bData?.name || uData?.name || 'Barbeiro'; // Removed tricky deep access since we query users(name)
                 setBarber({ name: barberName });
 
                 // 2. Fetch Pending Sales (Same logic as Closing Dialog)
