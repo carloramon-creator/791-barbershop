@@ -159,7 +159,7 @@ function BarberReportContent() {
 
                         <div className="bg-gray-50 p-4 rounded-lg flex justify-between items-center text-sm border border-gray-200">
                             <div>
-                                <span className="font-bold">Resumo:</span> {bSales.length} atendimentos realizados.
+                                <span className="font-bold">Resumo:</span> {salesList.length} atendimentos realizados.
                             </div>
                             <div className="flex gap-4">
                                 <div>Liquidado: <span className="font-bold">R$ {(totalValue - totalCommission).toFixed(2)}</span></div>

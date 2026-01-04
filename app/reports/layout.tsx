@@ -1,3 +1,5 @@
+'use client';
+
 export default function ReportsLayout({ children }: { children: React.ReactNode }) {
     return (
         <section className="min-h-screen bg-white text-black font-sans">
