@@ -23,33 +23,46 @@ function ClosingReportContent() {
             if (!barberId) return;
             setLoading(true);
             try {
-                // 1. Fetch Barber info
-                console.log('[REPORT] Fetching barber name for ID:', barberId);
+                // 1. Fetch Barber info with fallback to Users
+                console.log('[REPORT] Starting name resolution for ID:', barberId);
 
-                // Try fetching barber first
-                const { data: bData, error: bError } = await supabaseClient
+                // First attempt: Direct fetch from barbers with join
+                const { data: bData } = await supabaseClient
                     .from('barbers')
-                    .select('name, user_id')
+                    .select('name, user_id, users(name)')
                     .eq('id', barberId)
                     .single();
 
-                let barberName = bData?.name;
-                let userId = bData?.user_id;
+                console.log('[REPORT] bData result:', bData);
 
-                if (!barberName || barberName === 'Barbeiro') {
-                    // Try to get name from user table
-                    const targetId = userId || barberId;
+                let resolvedName = '';
+
+                // Try to get name from the linked user first (highest priority for real name)
+                if (bData?.users) {
+                    resolvedName = (bData.users as any).name;
+                }
+
+                // If no user name, use the barber name if it's not the generic one
+                if (!resolvedName || resolvedName === 'Barbeiro') {
+                    resolvedName = bData?.name !== 'Barbeiro' ? bData?.name : '';
+                }
+
+                // Final fallback: If still no name, query the users table directly using the ID 
+                // (maybe the barberId IS the userId)
+                if (!resolvedName || resolvedName === 'Barbeiro') {
                     const { data: uData } = await supabaseClient
                         .from('users')
                         .select('name')
-                        .eq('id', targetId)
+                        .eq('id', bData?.user_id || barberId)
                         .single();
 
-                    if (uData?.name) barberName = uData.name;
+                    if (uData?.name) resolvedName = uData.name;
                 }
 
-                console.log('[REPORT] Resolved name:', barberName);
-                setBarber({ name: barberName || 'Barbeiro' });
+                const finalName = resolvedName || 'Profissional';
+                console.log('[REPORT] Final name resolved to:', finalName);
+
+                setBarber({ name: finalName });
 
                 // 2. Fetch Pending Sales (Same logic as Closing Dialog)
                 // REMOVED TENANT FETCH - using ReportHeader
