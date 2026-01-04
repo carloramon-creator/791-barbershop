@@ -8,6 +8,7 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
+    DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -85,11 +86,27 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId }: CloseSaleDial
                 setPixData(res.pix);
                 setStep('pix');
             } else {
+                // Se não for PIX, finalizamos o atendimento e a venda agora
+                await Api.finishService(queueId);
                 alert('Venda finalizada com sucesso!');
                 onOpenChange(false);
             }
         } catch (err: any) {
             alert(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleJustFinish = async () => {
+        if (!confirm('Deseja finalizar o atendimento sem registrar nenhuma venda?')) return;
+        setLoading(true);
+        try {
+            await Api.finishService(queueId);
+            onOpenChange(false);
+            window.location.reload(); // Força um refresh para garantir status atualizado
+        } catch (error: any) {
+            alert(error.message);
         } finally {
             setLoading(false);
         }
@@ -104,6 +121,11 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId }: CloseSaleDial
                         {step === 'payment' && '2. Como vai pagar?'}
                         {step === 'pix' && '3. Pagamento PIX'}
                     </DialogTitle>
+                    <DialogDescription>
+                        {step === 'selection' && 'Selecione os serviços e produtos realizados.'}
+                        {step === 'payment' && 'Confira o total e escolha o método de pagamento.'}
+                        {step === 'pix' && 'Aguarde o cliente realizar o pagamento.'}
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="flex-1 flex flex-col">
@@ -180,8 +202,12 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId }: CloseSaleDial
                                     </div>
                                 </div>
                             </div>
-                            <DialogFooter className="p-6 bg-slate-900 border-t border-slate-800">
-                                <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+                            <DialogFooter className="p-6 bg-slate-900 border-t border-slate-800 flex justify-between sm:justify-between">
+                                <div className="flex gap-2">
+                                    <Button variant="ghost" className="text-slate-500 hover:text-slate-300" onClick={() => onOpenChange(false)}>Cancelar</Button>
+                                    <Button variant="ghost" className="text-red-500 hover:text-red-400 hover:bg-red-500/10 text-xs" onClick={handleJustFinish}>Fechar s/ Venda</Button>
+                                </div>
+
                                 <Button
                                     onClick={() => setStep('payment')}
                                     className="bg-blue-600 hover:bg-blue-700 min-w-32"
@@ -292,9 +318,14 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId }: CloseSaleDial
                                     </Button>
                                     <Button
                                         className="bg-emerald-600 hover:bg-emerald-700 flex-1"
-                                        onClick={() => {
-                                            alert('Atendimento concluído!');
-                                            onOpenChange(false);
+                                        onClick={async () => {
+                                            try {
+                                                await Api.finishService(queueId);
+                                                alert('Atendimento concluído!');
+                                                onOpenChange(false);
+                                            } catch (err: any) {
+                                                alert(err.message);
+                                            }
                                         }}
                                     >
                                         <Check size={16} className="mr-2" /> Já Recebi

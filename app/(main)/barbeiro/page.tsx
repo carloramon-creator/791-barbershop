@@ -112,16 +112,10 @@ export default function BarberPage() {
     };
 
     const handleFinish = async (id: string) => {
-        try {
-            const res = await Api.finishService(id);
-            if (res.canCreateSale) {
-                setFinishedQueueId(id);
-                setShowSaleDialog(true);
-            }
-            fetchStatus();
-        } catch (error: any) {
-            alert(error.message);
-        }
+        // Apenas abre o modal. A finalização real acontece lá dentro
+        // ou se o usuário explicitamente escolher finalizar sem venda.
+        setFinishedQueueId(id);
+        setShowSaleDialog(true);
     };
 
     const handleStartClient = async (queueId: string) => {
