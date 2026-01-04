@@ -12,7 +12,7 @@ import {
     TableRow
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Plus, ShoppingBag, History, TrendingUp, TrendingDown, DollarSign, Package, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { Plus, ShoppingBag, History, TrendingUp, TrendingDown, DollarSign, Package, Loader2, Sparkles, AlertCircle, FileText } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -144,6 +144,16 @@ export default function EstoquePage() {
         setShowNewProductForm(false);
     };
 
+    const handlePrintReport = () => {
+        window.print();
+    };
+
+    const currentMonthMovements = movements.filter(m => {
+        const moveDate = new Date(m.created_at);
+        const now = new Date();
+        return moveDate.getMonth() === now.getMonth() && moveDate.getFullYear() === now.getFullYear();
+    });
+
     if (!isPremium) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
@@ -171,7 +181,14 @@ export default function EstoquePage() {
                     <p className="text-slate-400 font-medium">Controle de entradas, saídas e custos de mercadoria.</p>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 no-print">
+                    <Button
+                        variant="outline"
+                        onClick={handlePrintReport}
+                        className="border-slate-800 text-slate-400 hover:bg-slate-800"
+                    >
+                        <FileText size={16} className="mr-2" /> Gerar Relatório
+                    </Button>
                     <Dialog open={isEntryDialogOpen} onOpenChange={(val) => {
                         setIsEntryDialogOpen(val);
                         if (!val) resetForms();
@@ -359,10 +376,10 @@ export default function EstoquePage() {
                 </Card>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div className="xl:col-span-2 space-y-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-                        <div className="p-4 border-b border-slate-800 bg-slate-800/50 flex items-center justify-between">
+            <div className="flex flex-col xl:flex-row gap-6 items-stretch">
+                <div className="flex-1 space-y-4">
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl h-full flex flex-col">
+                        <div className="p-4 border-b border-slate-800 bg-slate-800/50 flex items-center justify-between no-print">
                             <div className="flex items-center gap-2">
                                 <ShoppingBag size={18} className="text-blue-500" />
                                 <h2 className="font-bold text-slate-100 uppercase tracking-tighter">Inventário Detalhado</h2>
@@ -371,71 +388,75 @@ export default function EstoquePage() {
                                 <Loader2 className={cn("w-4 h-4 mr-2", loading && "animate-spin")} /> Atualizar Lista
                             </Button>
                         </div>
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="border-slate-800 hover:bg-transparent bg-slate-950/50">
-                                    <TableHead className="text-slate-400">Produto</TableHead>
-                                    <TableHead className="text-slate-400">Qtd.</TableHead>
-                                    <TableHead className="text-slate-400">Custo Unit.</TableHead>
-                                    <TableHead className="text-slate-400">Venda Unit.</TableHead>
-                                    <TableHead className="text-slate-400 text-right">Patrimônio</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {loading && products.length === 0 ? (
-                                    <TableRow><TableCell colSpan={5} className="text-center py-20 text-slate-500"><Loader2 className="animate-spin mx-auto w-8 h-8 opacity-20" /></TableCell></TableRow>
-                                ) : products.length === 0 ? (
-                                    <TableRow><TableCell colSpan={5} className="text-center py-20 text-slate-500">
-                                        <AlertCircle size={32} className="mx-auto mb-2 opacity-20" />
-                                        Nenhum produto cadastrado para gestão.
-                                    </TableCell></TableRow>
-                                ) : products.map((p) => (
-                                    <TableRow key={p.id} className="border-slate-800 group hover:bg-slate-800/30 transition-colors">
-                                        <TableCell className="font-bold text-slate-100 uppercase tracking-tighter py-4">
-                                            {p.name}
-                                            {(p.stock_quantity || 0) <= 5 && (
-                                                <div className="text-[10px] text-red-500 font-bold mt-1">ESTOQUE BAIXO</div>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className={cn(
-                                                "px-2.5 py-1 rounded-md text-xs font-bold",
-                                                (p.stock_quantity || 0) <= 5 ? "bg-red-500/10 text-red-500 border border-red-500/20" : "bg-blue-500/10 text-blue-500 border border-blue-500/20"
-                                            )}>
-                                                {p.stock_quantity || 0} un
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className="text-slate-400">R$ {Number(p.cost_price || 0).toFixed(2)}</TableCell>
-                                        <TableCell className="text-blue-400">R$ {Number(p.price || 0).toFixed(2)}</TableCell>
-                                        <TableCell className="text-right font-mono font-bold text-emerald-500 pr-6">
-                                            R$ {((p.stock_quantity || 0) * (p.cost_price || 0)).toFixed(2)}
-                                        </TableCell>
+                        <div className="flex-1 overflow-auto">
+                            <Table>
+                                <TableHeader className="sticky top-0 bg-slate-900 z-10">
+                                    <TableRow className="border-slate-800 hover:bg-transparent bg-slate-950/50">
+                                        <TableHead className="text-slate-400">Produto</TableHead>
+                                        <TableHead className="text-slate-400">Qtd.</TableHead>
+                                        <TableHead className="text-slate-400">Custo Unit.</TableHead>
+                                        <TableHead className="text-slate-400">Venda Unit.</TableHead>
+                                        <TableHead className="text-slate-400 text-right">Patrimônio</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {loading && products.length === 0 ? (
+                                        <TableRow><TableCell colSpan={5} className="text-center py-20 text-slate-500"><Loader2 className="animate-spin mx-auto w-8 h-8 opacity-20" /></TableCell></TableRow>
+                                    ) : products.length === 0 ? (
+                                        <TableRow><TableCell colSpan={5} className="text-center py-20 text-slate-500">
+                                            <AlertCircle size={32} className="mx-auto mb-2 opacity-20" />
+                                            Nenhum produto cadastrado para gestão.
+                                        </TableCell></TableRow>
+                                    ) : products.map((p) => (
+                                        <TableRow key={p.id} className="border-slate-800 group hover:bg-slate-800/30 transition-colors">
+                                            <TableCell className="font-bold text-slate-100 uppercase tracking-tighter py-4">
+                                                {p.name}
+                                                {(p.stock_quantity || 0) <= 5 && (
+                                                    <div className="text-[10px] text-red-500 font-bold mt-1">ESTOQUE BAIXO</div>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className={cn(
+                                                    "px-2.5 py-1 rounded-md text-xs font-bold",
+                                                    (p.stock_quantity || 0) <= 5 ? "bg-red-500/10 text-red-500 border border-red-500/20" : "bg-blue-500/10 text-blue-500 border border-blue-500/20"
+                                                )}>
+                                                    {p.stock_quantity || 0} un
+                                                </span>
+                                            </TableCell>
+                                            <TableCell className="text-slate-400">R$ {Number(p.cost_price || 0).toFixed(2)}</TableCell>
+                                            <TableCell className="text-blue-400">R$ {Number(p.price || 0).toFixed(2)}</TableCell>
+                                            <TableCell className="text-right font-mono font-bold text-emerald-500 pr-6">
+                                                R$ {((p.stock_quantity || 0) * (p.cost_price || 0)).toFixed(2)}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </div>
                 </div>
 
-                <div className="space-y-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-                        <div className="p-4 border-b border-slate-800 bg-slate-800/50 flex items-center gap-2">
-                            <History size={18} className="text-blue-500" />
-                            <h2 className="font-bold text-slate-100 uppercase tracking-tighter">Log de Movimentos</h2>
+                <div className="w-full xl:w-[400px]">
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl h-full flex flex-col min-h-[500px]">
+                        <div className="p-4 border-b border-slate-800 bg-slate-800/50 flex items-center justify-between no-print">
+                            <div className="flex items-center gap-2">
+                                <History size={18} className="text-blue-500" />
+                                <h2 className="font-bold text-slate-100 uppercase tracking-tighter">Movimentos (Mês Atual)</h2>
+                            </div>
                         </div>
-                        <div className="divide-y divide-slate-800 max-h-[600px] overflow-y-auto custom-scrollbar">
-                            {loading && movements.length === 0 ? (
+                        <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-slate-800 bg-slate-950/20">
+                            {loading && currentMonthMovements.length === 0 ? (
                                 <div className="p-8 text-center text-slate-500"><Loader2 className="animate-spin mx-auto opacity-20" /></div>
-                            ) : movements.length === 0 ? (
-                                <div className="p-12 text-center text-slate-500 text-sm">Nenhuma movimentação para exibir.</div>
-                            ) : movements.map((m) => (
+                            ) : currentMonthMovements.length === 0 ? (
+                                <div className="p-12 text-center text-slate-500 text-sm italic">Nenhuma movimentação este mês.</div>
+                            ) : currentMonthMovements.map((m) => (
                                 <div key={m.id} className="p-4 hover:bg-slate-800/30 transition-all border-l-2 border-transparent hover:border-blue-500">
                                     <div className="flex justify-between items-start mb-1">
-                                        <span className="text-sm font-bold text-slate-100 uppercase tracking-tighter truncate max-w-[150px]">
+                                        <span className="text-[11px] font-bold text-slate-100 uppercase tracking-tighter truncate max-w-[150px]">
                                             {m.products?.name}
                                         </span>
                                         <span className={cn(
-                                            "flex items-center gap-1 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded",
+                                            "flex items-center gap-1 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded",
                                             m.type === 'entry' ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
                                         )}>
                                             {m.type === 'entry' ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
@@ -446,23 +467,10 @@ export default function EstoquePage() {
                                         <div className="text-[10px] text-slate-500">
                                             {new Date(m.created_at).toLocaleDateString('pt-BR')} • {new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                         </div>
-                                        <div className={cn("text-sm font-bold", m.type === 'entry' ? "text-emerald-500" : "text-red-500")}>
+                                        <div className={cn("text-xs font-bold", m.type === 'entry' ? "text-emerald-500" : "text-red-500")}>
                                             {m.type === 'entry' ? '+' : '-'}{m.quantity} un
                                         </div>
                                     </div>
-                                    {m.type === 'entry' ? (
-                                        <div className="mt-2 text-[10px] text-slate-400 flex items-center gap-1 bg-slate-800/50 p-1.5 rounded border border-slate-700/50">
-                                            <div className="flex-1 flex items-center gap-1"><DollarSign size={8} /> Custo Unit: R$ {Number(m.cost_price || 0).toFixed(2)}</div>
-                                            <div className="text-slate-500">|</div>
-                                            <div className="flex-1 text-right">Total: R$ {Number((m.cost_price || 0) * m.quantity).toFixed(2)}</div>
-                                        </div>
-                                    ) : (
-                                        <div className="mt-2 text-[10px] text-slate-400 flex items-center gap-1 bg-slate-800/50 p-1.5 rounded border border-slate-700/50">
-                                            <div className="flex-1 flex items-center gap-1"><DollarSign size={8} /> Preço Venda: R$ {Number(m.price || 0).toFixed(2)}</div>
-                                            <div className="text-slate-500">|</div>
-                                            <div className="flex-1 text-right text-emerald-400">Total: R$ {Number((m.price || 0) * m.quantity).toFixed(2)}</div>
-                                        </div>
-                                    )}
                                 </div>
                             ))}
                         </div>

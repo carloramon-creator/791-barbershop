@@ -52,6 +52,7 @@ export default function FinanceiroPage() {
         recurrence_count: '1',
         is_paid: true
     });
+    const [view, setView] = useState<'main' | 'topay'>('main');
     const { role } = useAuth();
 
     const fetchData = async () => {
@@ -161,8 +162,6 @@ export default function FinanceiroPage() {
 
     const netBalance = totalRevenue - totalExpenses;
 
-    const [view, setView] = useState<'main' | 'topay'>('main');
-
     const filteredRecords = view === 'main'
         ? [
             ...sales.filter(s => s.created_at.split('T')[0] <= todayStr).map(s => ({
@@ -173,6 +172,7 @@ export default function FinanceiroPage() {
                 method: s.payment_method,
                 value: s.total_amount,
                 category: 'Vendas',
+                barber: s.barbers?.name || '-',
                 is_recurring: false,
                 is_paid: true
             })),
@@ -184,6 +184,7 @@ export default function FinanceiroPage() {
                 method: '-',
                 value: r.value,
                 category: r.finance_categories?.name || 'Diversos',
+                barber: r.barbers?.name || '-',
                 is_recurring: r.is_recurring,
                 is_paid: true
             }))
@@ -196,6 +197,7 @@ export default function FinanceiroPage() {
             method: '-',
             value: r.value,
             category: r.finance_categories?.name || 'Diversos',
+            barber: r.barbers?.name || '-',
             is_recurring: r.is_recurring,
             is_paid: false
         })).sort((a, b) => a.date.localeCompare(b.date));
@@ -440,6 +442,7 @@ export default function FinanceiroPage() {
                             <TableRow className="border-slate-800">
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px] w-32">Data</TableHead>
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px]">Lançamento / Categoria</TableHead>
+                                <TableHead className="text-slate-500 font-bold uppercase text-[10px]">Barbeiro</TableHead>
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px]">Status</TableHead>
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px] text-right pr-6">Valor</TableHead>
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px] w-20"></TableHead>
@@ -455,7 +458,7 @@ export default function FinanceiroPage() {
                                 </TableCell></TableRow>
                             ) : filteredRecords.length === 0 ? (
                                 <TableRow><TableCell colSpan={5} className="text-center py-20 text-slate-700 italic">Nenhum lançamento encontrado neste filtro.</TableCell></TableRow>
-                            ) : filteredRecords.map((r: any) => (
+                            ) : filteredRecords.map((r: { id: string; date: string; description: string; category: string; type: string; value: number; barber: string; is_paid: boolean }) => (
                                 <TableRow key={r.id} className="border-slate-800 hover:bg-slate-800/30 transition-colors group">
                                     <TableCell className="text-slate-500 font-mono text-[11px] py-4">
                                         {new Date(r.date).toLocaleDateString('pt-BR')}
@@ -467,6 +470,9 @@ export default function FinanceiroPage() {
                                                 <Tag size={10} className="text-blue-500/50" /> {r.category}
                                             </span>
                                         </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{r.barber}</span>
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant="secondary" className={cn(

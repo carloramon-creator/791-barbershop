@@ -14,8 +14,6 @@ import {
     User,
     AlertCircle,
     Trash2,
-    FileText,
-    DollarSign,
     RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -29,7 +27,6 @@ import {
     TableRow
 } from '@/components/ui/table';
 import { CloseSaleDialog } from '@/components/sales/close-sale-dialog';
-import { BarberClosingDialog } from '@/components/barbers/barber-closing-dialog';
 
 import { supabaseClient } from '@/lib/supabase-client';
 
@@ -41,9 +38,6 @@ export default function BarberPage() {
     const [showSaleDialog, setShowSaleDialog] = useState(false);
     const [finishedQueueId, setFinishedQueueId] = useState<string | null>(null);
     const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
-    const [showClosingDialog, setShowClosingDialog] = useState(false);
-    const [closingSales, setClosingSales] = useState<any[]>([]);
-    const [closingLoading, setClosingLoading] = useState(false);
 
     const { user, role, roles } = useAuth();
 
@@ -229,38 +223,6 @@ export default function BarberPage() {
         }
     };
 
-    const handleOpenClosing = async (barberId: string) => {
-        setClosingLoading(true);
-        try {
-            const sales = await Api.getBarberClosing(barberId);
-            setClosingSales(sales);
-            setShowClosingDialog(true);
-        } catch (error: any) {
-            alert('Erro ao carregar fechamento: ' + error.message);
-        } finally {
-            setClosingLoading(false);
-        }
-    };
-
-    const handleConfirmClosing = async (barberId: string, total: number, bonus: number, saleIds: string[]) => {
-        if (!confirm(`Confirmar o fechamento no valor de R$ ${total.toFixed(2)}?`)) return;
-        setClosingLoading(true);
-        try {
-            await Api.confirmBarberClosing(barberId, {
-                saleIds,
-                totalCommission: total - bonus,
-                bonus
-            });
-            setShowClosingDialog(false);
-            alert('Fechamento realizado com sucesso! Registro enviado ao Financeiro.');
-            fetchStatus();
-        } catch (error: any) {
-            alert('Erro ao confirmar fechamento: ' + error.message);
-        } finally {
-            setClosingLoading(false);
-        }
-    };
-
     const attendingClient = queue.find(q => q.status === 'attending');
     const waitingClients = queue.filter(q => q.status === 'waiting');
 
@@ -275,17 +237,6 @@ export default function BarberPage() {
                 </div>
 
                 <div className="flex gap-2">
-                    {role === 'owner' && (
-                        <Button
-                            variant="ghost"
-                            className="bg-blue-600/10 text-blue-500 border border-blue-500/20 font-bold hover:bg-blue-600/20"
-                            onClick={() => currentBarber && handleOpenClosing(currentBarber.barber_id)}
-                            disabled={closingLoading}
-                        >
-                            <FileText size={18} className="mr-2" />
-                            Fechar Caixa
-                        </Button>
-                    )}
                     {role === 'owner' ? (
                         allBarbers.map(barber => (
                             <div key={barber.barber_id} className="flex flex-col gap-2">
@@ -617,17 +568,6 @@ export default function BarberPage() {
                 </Card>
             </div>
 
-            {showClosingDialog && (
-                <BarberClosingDialog
-                    isOpen={showClosingDialog}
-                    onClose={() => setShowClosingDialog(false)}
-                    barberName={currentBarber?.barber_name || ''}
-                    barberId={currentBarber?.barber_id || ''}
-                    sales={closingSales}
-                    onConfirm={handleConfirmClosing}
-                    loading={closingLoading}
-                />
-            )}
 
             {showSaleDialog && finishedQueueId && (
                 <CloseSaleDialog

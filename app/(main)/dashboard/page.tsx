@@ -60,7 +60,7 @@ export default function DashboardPage() {
                 }
                 setSummary(sData);
                 setQueueStatus(sData.queueStatus || []);
-            } catch (error: any) {
+            } catch (error: unknown) {
                 console.error('[DASHBOARD] Fetch Error:', error);
             } finally {
                 setLoading(false);

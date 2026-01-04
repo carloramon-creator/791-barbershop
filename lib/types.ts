@@ -95,18 +95,7 @@ export interface Product {
     created_at: string;
 }
 
-export interface Sale {
-    id: string;
-    tenant_id: string;
-    client_queue_id: string;
-    services?: { id: string; qty: number }[];
-    products?: { id: string; qty: number }[];
-    total_amount: number;
-    payment_method: PaymentMethod;
-    pix_payload?: string;
-    paid: boolean;
-    created_at: string;
-}
+
 
 export interface FinanceCategory {
     id: string;
@@ -131,6 +120,10 @@ export interface FinanceRecord {
     recurrence_period?: 'day' | 'week' | 'month' | 'year' | null;
     recurrence_count?: number;
     is_paid: boolean;
+    barber_id?: string;
+    barbers?: {
+        name: string;
+    };
     created_at: string;
 }
 
@@ -141,12 +134,20 @@ export interface Sale {
     services?: { id: string; qty: number }[];
     products?: { id: string; qty: number }[];
     total_amount: number;
+    total_value?: number; // Alias used in some code
     payment_method: PaymentMethod;
     pix_payload?: string;
     paid: boolean;
     barber_id?: string;
-    barber_commission_paid?: boolean;
+    barbers?: {
+        name: string;
+    };
+    client_queue?: {
+        client_name: string;
+    };
+    barber_commission_paid: boolean;
     commission_value?: number;
+    barber_commission_value?: number; // Alias used in some code
     created_at: string;
 }
 

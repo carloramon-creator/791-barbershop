@@ -21,13 +21,14 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Edit, Camera, RefreshCw, Users, ShieldAlert } from 'lucide-react';
+import { Edit, Camera, RefreshCw, Users, ShieldAlert, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabaseClient } from '@/lib/supabase-client';
 import Link from 'next/link';
 import Image from 'next/image';
+import { BarberClosingDialog } from '@/components/barbers/barber-closing-dialog';
 
-import { Barber } from '@/lib/types';
+import { Barber, Sale } from '@/lib/types';
 
 export default function BarbeirosPage() {
     const [barbeiros, setBarbeiros] = useState<Barber[]>([]);
@@ -35,6 +36,13 @@ export default function BarbeirosPage() {
     const [uploading, setUploading] = useState(false);
     const [editingBarber, setEditingBarber] = useState<Barber | null>(null);
     const [isEditOpen, setIsEditOpen] = useState(false);
+
+    // Closing states
+    const [showClosingDialog, setShowClosingDialog] = useState(false);
+    const [closingSales, setClosingSales] = useState<Sale[]>([]);
+    const [closingLoading, setClosingLoading] = useState(false);
+    const [closingBarber, setClosingBarber] = useState<Barber | null>(null);
+
     const { role } = useAuth();
 
     const fetchBarbeiros = async () => {
@@ -88,6 +96,41 @@ export default function BarbeirosPage() {
         } catch (err: unknown) {
             const error = err as Error;
             alert('Erro ao atualizar barbeiro: ' + (error.message || 'Erro desconhecido'));
+        }
+    };
+
+    const handleOpenClosing = async (barber: Barber) => {
+        setClosingLoading(true);
+        setClosingBarber(barber);
+        try {
+            const sales = await Api.getBarberClosing(barber.id);
+            setClosingSales(sales);
+            setShowClosingDialog(true);
+        } catch (error: unknown) {
+            const err = error as Error;
+            alert('Erro ao carregar fechamento: ' + err.message);
+        } finally {
+            setClosingLoading(false);
+        }
+    };
+
+    const handleConfirmClosing = async (barberId: string, total: number, bonus: number, saleIds: string[]) => {
+        if (!confirm(`Confirmar o fechamento no valor de R$ ${total.toFixed(2)}?`)) return;
+        setClosingLoading(true);
+        try {
+            await Api.confirmBarberClosing(barberId, {
+                saleIds,
+                totalCommission: total - bonus,
+                bonus
+            });
+            setShowClosingDialog(false);
+            alert('Fechamento realizado com sucesso! Registro enviado ao Financeiro.');
+            fetchBarbeiros();
+        } catch (error: unknown) {
+            const err = error as Error;
+            alert('Erro ao confirmar fechamento: ' + err.message);
+        } finally {
+            setClosingLoading(false);
         }
     };
 
@@ -238,6 +281,15 @@ export default function BarbeirosPage() {
                             </TableCell>
                             <TableCell className="text-right space-x-2">
                                 <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleOpenClosing(b)}
+                                    className="bg-blue-600/10 text-blue-500 border-blue-500/20 hover:bg-blue-600 hover:text-white transition-all text-[10px] font-bold uppercase h-8"
+                                >
+                                    <FileText size={14} className="mr-1.5" />
+                                    Fechar Caixa
+                                </Button>
+                                <Button
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => {
@@ -253,6 +305,17 @@ export default function BarbeirosPage() {
                     ))}
                 </TableBody>
             </Table>
+            {showClosingDialog && closingBarber && (
+                <BarberClosingDialog
+                    isOpen={showClosingDialog}
+                    onClose={() => setShowClosingDialog(false)}
+                    barberName={closingBarber.name}
+                    barberId={closingBarber.id}
+                    sales={closingSales}
+                    onConfirm={handleConfirmClosing}
+                    loading={closingLoading}
+                />
+            )}
         </div>
     );
 }

@@ -20,13 +20,14 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { FileText, DollarSign, Download } from 'lucide-react';
+import { Sale } from '@/lib/types';
 
 interface BarberClosingDialogProps {
     isOpen: boolean;
     onClose: () => void;
     barberName: string;
     barberId: string;
-    sales: any[];
+    sales: Sale[];
     onConfirm: (barberId: string, total: number, bonus: number, saleIds: string[]) => void;
     loading: boolean;
 }
@@ -43,8 +44,8 @@ export function BarberClosingDialog({
     const [bonus, setBonus] = useState(0);
 
     const totals = useMemo(() => {
-        const gross = sales.reduce((acc, sale) => acc + (sale.total_value || 0), 0);
-        const commission = sales.reduce((acc, sale) => acc + (sale.barber_commission_value || 0), 0);
+        const gross = sales.reduce((acc, sale) => acc + (sale.total_amount || 0), 0);
+        const commission = sales.reduce((acc, sale) => acc + (sale.commission_value || 0), 0);
         return { gross, commission, net: commission + bonus };
     }, [sales, bonus]);
 
@@ -107,10 +108,10 @@ export function BarberClosingDialog({
                                             {sale.client_queue?.client_name || 'Balcão'}
                                         </TableCell>
                                         <TableCell className="text-right text-slate-400">
-                                            {sale.total_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                            {(sale.total_amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                         </TableCell>
                                         <TableCell className="text-right text-emerald-400 font-bold">
-                                            {sale.barber_commission_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                            {(sale.commission_value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                         </TableCell>
                                     </TableRow>
                                 ))}
