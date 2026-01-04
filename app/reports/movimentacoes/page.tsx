@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Api } from '@/lib/api';
 import { Loader2, Printer, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import { ReportHeader } from '@/components/reports/report-header';
 
 function MvtContent() {
     const searchParams = useSearchParams();
@@ -19,8 +20,13 @@ function MvtContent() {
             .finally(() => setLoading(false));
     }, [start, end]);
 
+
+
+    // ... existing code ...
+
     return (
         <div className="p-8 max-w-5xl mx-auto">
+            <ReportHeader />
             <div className="flex justify-between items-start mb-8 print:hidden">
                 <div>
                     <h1 className="text-2xl font-bold">Relatório de Movimentações</h1>

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Api } from '@/lib/api';
 import { Loader2, Printer } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ReportHeader } from '@/components/reports/report-header';
 
 // We duplicate the interface here to avoid cross-file dependency issues in this quick fix
 interface DreData {
@@ -42,8 +43,13 @@ function DreReportContent() {
 
     if (!start || !end) return <div className="p-8">Parâmetros de data inválidos.</div>;
 
+
+
+    // ... existing code ...
+
     return (
         <div className="p-8 max-w-4xl mx-auto font-sans text-black">
+            <ReportHeader />
             <div className="flex justify-between items-start mb-8 print:hidden">
                 <h1 className="text-2xl font-bold">Relatório DRE</h1>
                 <button

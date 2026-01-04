@@ -6,6 +6,7 @@ import { Api } from '@/lib/api';
 import { Loader2, Printer } from 'lucide-react';
 import { Sale, Barber } from '@/lib/types';
 import { supabaseClient } from '@/lib/supabase-client';
+import { ReportHeader } from '@/components/reports/report-header';
 
 function ClosingReportContent() {
     const searchParams = useSearchParams();
@@ -39,30 +40,15 @@ function ClosingReportContent() {
                 const barberName = bData?.name || bData?.users?.name || uData?.name || 'Barbeiro';
                 setBarber({ name: barberName });
 
-                // 2. Fetch Tenant info (Branding)
-                const { data: userData } = await supabaseClient.auth.getUser();
-                if (userData?.user) {
-                    const { data: tData } = await supabaseClient
-                        .from('tenants')
-                        .select('name')
-                        .eq('id', userData.user.user_metadata.tenant_id)
-                        .single();
-                    if (tData) setTenantName(tData.name);
-                }
+                // 2. Fetch Pending Sales (Same logic as Closing Dialog)
+                // REMOVED TENANT FETCH - using ReportHeader
+                // 3. Fetch Pending Sales
 
                 // 3. Fetch Pending Sales (Same logic as Closing Dialog)
-                const { data: sData } = await supabaseClient
-                    .from('sales')
-                    .select(`
-                        *,
-                        client_queue (client_name)
-                    `)
-                    .eq('barber_id', barberId)
-                    .eq('barber_commission_paid', false)
-                    .eq('status', 'completed'); // Only completed sales
-
-                if (sData) setSales(sData as any[]);
-
+                // 3. Fetch Pending Sales (Same logic as Closing Dialog)
+                // Usar a mesma API do Dialog para garantir consistência e evitar problemas de RLS
+                const closingSales = await Api.getBarberClosing(barberId);
+                setSales(closingSales);
             } catch (error) {
                 console.error("Error fetching report data", error);
             } finally {
@@ -83,15 +69,21 @@ function ClosingReportContent() {
 
     if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin" /></div>;
 
+
+
+    // ...
+
     return (
         <div className="p-8 max-w-[80mm] mx-auto bg-white min-h-screen font-mono text-xs text-black leading-tight print:p-0 print:max-w-none print:w-[80mm]">
             {/* Header */}
-            <div className="text-center border-b border-black pb-4 mb-4">
-                <h1 className="text-sm font-bold uppercase">{tenantName}</h1>
-                <p className="mt-1">Fechamento de Caixa</p>
-                <div className="mt-2 text-left">
-                    <p>Barbeiro: <span className="font-bold">{barber?.name}</span></p>
-                    <p>Data: {new Date().toLocaleDateString('pt-BR')} {new Date().toLocaleTimeString('pt-BR')}</p>
+            <div className="mb-4">
+                <ReportHeader />
+                <div className="text-center border-b border-black pb-2 mt-2">
+                    <p className="font-bold uppercase">Fechamento de Caixa</p>
+                    <div className="mt-2 text-left text-[10px]">
+                        <p>Barbeiro: <span className="font-bold">{barber?.name}</span></p>
+                        <p>Data: {new Date().toLocaleDateString('pt-BR')} {new Date().toLocaleTimeString('pt-BR')}</p>
+                    </div>
                 </div>
             </div>
 
