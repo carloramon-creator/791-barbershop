@@ -155,11 +155,13 @@ function ClosingReportContent() {
             <div className="mt-16 flex justify-between px-16 break-inside-avoid">
                 <div className="text-center w-1/3">
                     <div className="border-t border-black mb-2"></div>
-                    <p className="uppercase font-bold text-sm text-gray-700">Responsável (Caixa)</p>
+                    <p className="uppercase font-bold text-sm text-gray-700">{barber?.name}</p>
+                    <p className="text-[10px] italic text-gray-500">Barbeiro</p>
                 </div>
                 <div className="text-center w-1/3">
                     <div className="border-t border-black mb-2"></div>
-                    <p className="uppercase font-bold text-sm text-gray-700">{barber?.name}</p>
+                    <p className="uppercase font-bold text-sm text-gray-700">Responsável (Caixa)</p>
+                    <p className="text-[10px] italic text-gray-500">Assinatura</p>
                 </div>
             </div>
 

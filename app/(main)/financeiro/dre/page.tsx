@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FileText, Download, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ReportFooter } from '@/components/reports/report-header';
 
 interface DreData {
     period: {
@@ -98,27 +99,27 @@ export default function DrePage() {
                             <div className="divide-y divide-slate-800">
                                 <div className="p-6 flex justify-between items-center">
                                     <span className="text-lg text-slate-300">Total de Receitas</span>
-                                    <span className="text-xl font-bold text-emerald-500">R$ {dre.receitas.total.toFixed(2)}</span>
+                                    <span className="text-xl font-bold text-emerald-500">{dre.receitas.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                                 </div>
                                 <div className="p-6 bg-slate-950/20">
                                     <p className="text-xs text-slate-500 uppercase font-bold mb-2">Detalhamento de Receitas</p>
                                     {dre.receitas.breakdown.map((item, idx) => (
                                         <div key={idx} className="flex justify-between text-sm text-slate-400 mb-1">
                                             <span>{item.name}</span>
-                                            <span>R$ {item.value.toFixed(2)}</span>
+                                            <span>{item.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                                         </div>
                                     ))}
                                 </div>
                                 <div className="p-6 flex justify-between items-center">
                                     <span className="text-lg text-slate-300">Total de Despesas</span>
-                                    <span className="text-xl font-bold text-red-500">R$ {dre.despesas.total.toFixed(2)}</span>
+                                    <span className="text-xl font-bold text-red-500">{dre.despesas.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                                 </div>
                                 <div className="p-6 bg-slate-950/20">
                                     <p className="text-xs text-slate-500 uppercase font-bold mb-2">Detalhamento de Despesas</p>
                                     {dre.despesas.breakdown.map((item, idx) => (
                                         <div key={idx} className="flex justify-between text-sm text-slate-400 mb-1">
                                             <span>{item.name}</span>
-                                            <span>R$ {item.value.toFixed(2)}</span>
+                                            <span>{item.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -128,7 +129,7 @@ export default function DrePage() {
                                         "text-3xl font-black",
                                         dre.lucro >= 0 ? "text-emerald-400" : "text-red-400"
                                     )}>
-                                        R$ {dre.lucro.toFixed(2)}
+                                        {dre.lucro.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                     </span>
                                 </div>
                             </div>
@@ -178,6 +179,7 @@ export default function DrePage() {
                     </Card>
                 </div>
             )}
+            <ReportFooter />
         </div>
     );
 }
