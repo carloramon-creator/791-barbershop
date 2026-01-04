@@ -264,6 +264,11 @@ export default function FinanceiroPage() {
             is_paid: false
         })).sort((a, b) => a.date.localeCompare(b.date));
 
+    console.log('[FINANCE PAGE] Total finance records:', financeRecords.length);
+    console.log('[FINANCE PAGE] Filtered records:', filteredRecords.length);
+    console.log('[FINANCE PAGE] View:', view);
+    console.log('[FINANCE PAGE] Sample finance:', financeRecords.slice(0, 2));
+
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-center">
