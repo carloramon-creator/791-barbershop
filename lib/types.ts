@@ -130,6 +130,23 @@ export interface FinanceRecord {
     is_recurring?: boolean;
     recurrence_period?: 'day' | 'week' | 'month' | 'year' | null;
     recurrence_count?: number;
+    is_paid: boolean;
+    created_at: string;
+}
+
+export interface Sale {
+    id: string;
+    tenant_id: string;
+    client_queue_id: string;
+    services?: { id: string; qty: number }[];
+    products?: { id: string; qty: number }[];
+    total_amount: number;
+    payment_method: PaymentMethod;
+    pix_payload?: string;
+    paid: boolean;
+    barber_id?: string;
+    barber_commission_paid?: boolean;
+    commission_value?: number;
     created_at: string;
 }
 

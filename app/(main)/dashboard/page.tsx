@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Api } from '@/lib/api';
 import { DashboardSummary, BarberQueueStatus } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
     Users,
@@ -26,6 +27,30 @@ export default function DashboardPage() {
     const [queueStatus, setQueueStatus] = useState<BarberQueueStatus[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const [period, setPeriod] = useState<'today' | 'week' | 'fortnight' | 'month'>('today');
+    const [periodMetrics, setPeriodMetrics] = useState({
+        totalBilling: 0,
+        servicesDone: 0,
+        avgWaitTime: 0
+    });
+    const [periodLoading, setPeriodLoading] = useState(false);
+
+    const fetchPeriodMetrics = async (p: string) => {
+        setPeriodLoading(true);
+        try {
+            const data = await Api.getDashboardMetrics(p);
+            setPeriodMetrics(data);
+        } catch (error) {
+            console.error('Error fetching period metrics:', error);
+        } finally {
+            setPeriodLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchPeriodMetrics(period);
+    }, [period]);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -43,7 +68,7 @@ export default function DashboardPage() {
         };
 
         fetchData();
-        const interval = setInterval(fetchData, 15000); // Aumentado para 15s para reduzir carga
+        const interval = setInterval(fetchData, 15000);
         return () => clearInterval(interval);
     }, []);
 
@@ -57,9 +82,73 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold text-slate-100 italic">Visão Geral</h1>
-                <p className="text-slate-400 font-medium">Acompanhe o movimento da sua barbearia em tempo real.</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-100 italic">Visão Geral</h1>
+                    <p className="text-slate-400 font-medium">Acompanhe o movimento da sua barbearia.</p>
+                </div>
+
+                <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800">
+                    {(['week', 'fortnight', 'month'] as const).map((p) => (
+                        <Button
+                            key={p}
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setPeriod(p)}
+                            className={cn(
+                                "rounded-lg px-4 transition-all duration-300",
+                                period === p ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-200"
+                            )}
+                        >
+                            {p === 'week' ? 'Semana' : p === 'fortnight' ? 'Quinzena' : 'Mês'}
+                        </Button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Nova linha de métricas por período */}
+            <div className="grid gap-4 md:grid-cols-3">
+                <Card className="bg-slate-900 border-slate-800 border-b-2 border-blue-500/50 shadow-2xl overflow-hidden relative group">
+                    <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <TrendingUp size={48} className="text-blue-500" />
+                    </div>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] text-blue-400">Faturamento ({period === 'week' ? 'Semana' : period === 'fortnight' ? 'Quinzena' : 'Mês'})</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-black text-slate-100">
+                            {periodLoading ? '...' : periodMetrics.totalBilling.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-slate-900 border-slate-800 border-b-2 border-emerald-500/50 shadow-2xl relative group">
+                    <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <UserCheckIcon size={48} className="text-emerald-500" />
+                    </div>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] text-emerald-400">Atendimentos Concluídos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-black text-slate-100">
+                            {periodLoading ? '...' : periodMetrics.servicesDone}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-slate-900 border-slate-800 border-b-2 border-yellow-500/50 shadow-2xl relative group">
+                    <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Clock size={48} className="text-yellow-500" />
+                    </div>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] text-yellow-400">Média de Espera (Real)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-black text-slate-100">
+                            {periodLoading ? '...' : `${periodMetrics.avgWaitTime} min`}
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

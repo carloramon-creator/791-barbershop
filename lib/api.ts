@@ -80,11 +80,12 @@ export const Api = {
 
     // Analytics
     getDashboardSummary: () => apiFetch('/api/analytics/summary'),
-    getDashboardMetrics: () => apiFetch('/api/analytics/dashboard'),
+    getDashboardMetrics: (period: string) => apiFetch(`/api/analytics/dashboard?period=${period}`),
 
     // Finance Records
     getFinanceRecords: () => apiFetch('/api/finance'),
     createFinanceRecord: (payload: Record<string, unknown>) => apiFetch('/api/finance', { method: 'POST', body: JSON.stringify(payload) }),
+    updateFinanceRecord: (id: string, payload: Record<string, unknown>) => apiFetch(`/api/finance/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
     getFinanceCategories: () => apiFetch('/api/finance/categories'),
     createFinanceCategory: (payload: Record<string, unknown>) => apiFetch('/api/finance/categories', { method: 'POST', body: JSON.stringify(payload) }),
 
@@ -93,6 +94,8 @@ export const Api = {
     createBarber: (payload: Record<string, unknown>) => apiFetch('/api/barbers', { method: 'POST', body: JSON.stringify(payload) }),
     updateBarber: (id: string, payload: Record<string, unknown>) => apiFetch(`/api/barbers/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
     deleteBarber: (id: string) => apiFetch(`/api/barbers/${id}`, { method: 'DELETE' }),
+    getBarberClosing: (id: string) => apiFetch(`/api/barbers/${id}/closing`),
+    confirmBarberClosing: (id: string, payload: Record<string, unknown>) => apiFetch(`/api/barbers/${id}/closing`, { method: 'POST', body: JSON.stringify(payload) }),
 
     // Settings
     getBarbershop: () => apiFetch('/api/barbershop'),

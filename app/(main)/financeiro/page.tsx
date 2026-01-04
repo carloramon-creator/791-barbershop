@@ -26,7 +26,7 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, ArrowUpCircle, ArrowDownCircle, PieChart, RefreshCw, Tag, Loader2 } from 'lucide-react';
+import { Plus, ArrowUpCircle, ArrowDownCircle, PieChart, RefreshCw, Tag, Loader2, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -49,18 +49,18 @@ export default function FinanceiroPage() {
         category_id: '',
         is_recurring: false,
         recurrence_period: 'month',
-        recurrence_count: '1'
+        recurrence_count: '1',
+        is_paid: true
     });
     const { role } = useAuth();
 
     const fetchData = async () => {
         try {
-            console.log('[FRONTEND] Iniciando coleta de dados financeiros...');
             setLoading(true);
             const [salesData, financeData, categoriesData] = await Promise.all([
-                Api.getSales().catch(err => { console.error('Erro Vendas:', err); return []; }),
-                Api.getFinanceRecords().catch(err => { console.error('Erro Financeiro:', err); return []; }),
-                Api.getFinanceCategories().catch(err => { console.error('Erro Categorias:', err); return []; })
+                Api.getSales().catch(() => []),
+                Api.getFinanceRecords().catch(() => []),
+                Api.getFinanceCategories().catch(() => [])
             ]);
             setSales(salesData || []);
             setFinanceRecords(financeData || []);
@@ -68,7 +68,6 @@ export default function FinanceiroPage() {
         } catch (err) {
             console.error('Erro ao buscar dados:', err);
         } finally {
-            console.log('[FRONTEND] Coleta finalizada.');
             setLoading(false);
         }
     };
@@ -81,7 +80,6 @@ export default function FinanceiroPage() {
         try {
             if (!newExpense.description || !newExpense.value) return alert('Preencha os campos obrigatórios (Descrição e Valor)');
 
-            console.log('[FRONTEND] Criando despesa:', newExpense);
             await Api.createFinanceRecord({
                 type: 'expense',
                 description: newExpense.description,
@@ -90,7 +88,8 @@ export default function FinanceiroPage() {
                 category_id: newExpense.category_id || null,
                 is_recurring: newExpense.is_recurring,
                 recurrence_period: newExpense.is_recurring ? newExpense.recurrence_period : null,
-                recurrence_count: newExpense.is_recurring ? parseInt(newExpense.recurrence_count) : 1
+                recurrence_count: newExpense.is_recurring ? parseInt(newExpense.recurrence_count) : 1,
+                is_paid: newExpense.is_paid
             });
 
             setIsDialogOpen(false);
@@ -101,13 +100,25 @@ export default function FinanceiroPage() {
                 category_id: '',
                 is_recurring: false,
                 recurrence_period: 'month',
-                recurrence_count: '1'
+                recurrence_count: '1',
+                is_paid: true
             });
             fetchData();
         } catch (err: unknown) {
             const error = err as Error;
-            console.error('Erro ao salvar:', error);
             alert('Erro ao criar despesa: ' + (error.message || 'Erro desconhecido'));
+        }
+    };
+
+    const handleTogglePaid = async (recordId: string, currentStatus: boolean) => {
+        try {
+            await Api.updateFinanceRecord(recordId, { is_paid: !currentStatus });
+            // Optimistic update
+            setFinanceRecords(prev => prev.map(r => r.id === recordId ? { ...r, is_paid: !currentStatus } : r));
+        } catch (err: unknown) {
+            const error = err as Error;
+            alert('Erro ao atualizar status: ' + error.message);
+            fetchData();
         }
     };
 
@@ -133,25 +144,51 @@ export default function FinanceiroPage() {
 
     if (role !== 'owner') return <div className="p-8 text-red-500">Acesso restrito ao proprietário.</div>;
 
-    const totalRevenue = sales.reduce((acc, s) => acc + Number(s.total_amount), 0) +
-        financeRecords.filter(r => r.type === 'revenue').reduce((acc, r) => acc + Number(r.value), 0);
+    const todayStr = new Date().toISOString().split('T')[0];
 
-    const totalExpenses = financeRecords.filter(r => r.type === 'expense').reduce((acc, r) => acc + Number(r.value), 0);
+    // Total Revenue: Sales (until today) + Finance Revenue (paid and until today)
+    const totalRevenue = sales
+        .filter(s => s.created_at.split('T')[0] <= todayStr)
+        .reduce((acc, s) => acc + Number(s.total_amount), 0) +
+        financeRecords
+            .filter(r => r.type === 'revenue' && r.is_paid && r.date <= todayStr)
+            .reduce((acc, r) => acc + Number(r.value), 0);
+
+    // Total Expenses: Paid expenses until today
+    const totalExpenses = financeRecords
+        .filter(r => r.type === 'expense' && r.is_paid && r.date <= todayStr)
+        .reduce((acc, r) => acc + Number(r.value), 0);
 
     const netBalance = totalRevenue - totalExpenses;
 
-    const combinedRecords = [
-        ...sales.map(s => ({
-            id: s.id,
-            date: s.created_at,
-            description: `Venda #${s.id.slice(-4)}`,
-            type: 'revenue',
-            method: s.payment_method,
-            value: s.total_amount,
-            category: 'Vendas',
-            is_recurring: false
-        })),
-        ...financeRecords.map(r => ({
+    const [view, setView] = useState<'main' | 'topay'>('main');
+
+    const filteredRecords = view === 'main'
+        ? [
+            ...sales.filter(s => s.created_at.split('T')[0] <= todayStr).map(s => ({
+                id: s.id,
+                date: s.created_at.split('T')[0],
+                description: `Venda #${s.id.slice(-4)}`,
+                type: 'revenue',
+                method: s.payment_method,
+                value: s.total_amount,
+                category: 'Vendas',
+                is_recurring: false,
+                is_paid: true
+            })),
+            ...financeRecords.filter(r => r.is_paid && r.date <= todayStr).map(r => ({
+                id: r.id,
+                date: r.date,
+                description: r.description,
+                type: r.type,
+                method: '-',
+                value: r.value,
+                category: r.finance_categories?.name || 'Diversos',
+                is_recurring: r.is_recurring,
+                is_paid: true
+            }))
+        ].sort((a, b) => b.date.localeCompare(a.date))
+        : financeRecords.filter(r => !r.is_paid).map(r => ({
             id: r.id,
             date: r.date,
             description: r.description,
@@ -159,9 +196,9 @@ export default function FinanceiroPage() {
             method: '-',
             value: r.value,
             category: r.finance_categories?.name || 'Diversos',
-            is_recurring: r.is_recurring
-        }))
-    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            is_recurring: r.is_recurring,
+            is_paid: false
+        })).sort((a, b) => a.date.localeCompare(b.date));
 
     return (
         <div className="space-y-8">
@@ -277,6 +314,15 @@ export default function FinanceiroPage() {
                                 <div className="space-y-4 pt-4 border-t border-slate-800/60">
                                     <div className="flex items-center space-x-3">
                                         <Checkbox
+                                            id="ispadef"
+                                            checked={newExpense.is_paid}
+                                            onCheckedChange={(checked) => setNewExpense({ ...newExpense, is_paid: !!checked })}
+                                        />
+                                        <Label htmlFor="ispadef" className="text-slate-200 font-medium cursor-pointer italic">Já está pago?</Label>
+                                    </div>
+
+                                    <div className="flex items-center space-x-3">
+                                        <Checkbox
                                             id="recurring"
                                             checked={newExpense.is_recurring}
                                             onCheckedChange={(checked) => setNewExpense({ ...newExpense, is_recurring: !!checked })}
@@ -326,11 +372,28 @@ export default function FinanceiroPage() {
                 </div>
             </div>
 
+            <div className="flex gap-4 border-b border-slate-800 pb-4">
+                <Button
+                    variant={view === 'main' ? 'default' : 'outline'}
+                    onClick={() => setView('main')}
+                    className={cn(view === 'main' ? "bg-blue-600" : "border-slate-800")}
+                >
+                    Fluxo Principal (Pagos)
+                </Button>
+                <Button
+                    variant={view === 'topay' ? 'default' : 'outline'}
+                    onClick={() => setView('topay')}
+                    className={cn(view === 'topay' ? "bg-amber-600" : "border-slate-800")}
+                >
+                    À Pagar (Pendentes)
+                </Button>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="bg-slate-900 border-slate-800 border-l-4 border-emerald-500 shadow-xl overflow-hidden group">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-xs uppercase text-slate-500 font-bold tracking-widest flex items-center justify-between">
-                            Receitas Totais <ArrowUpCircle size={14} className="text-emerald-500" />
+                            Receitas (Até Hoje) <ArrowUpCircle size={14} className="text-emerald-500" />
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -342,7 +405,7 @@ export default function FinanceiroPage() {
                 <Card className="bg-slate-900 border-slate-800 border-l-4 border-red-500 shadow-xl overflow-hidden group">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-xs uppercase text-slate-500 font-bold tracking-widest flex items-center justify-between">
-                            Despesas Totais <ArrowDownCircle size={14} className="text-red-500" />
+                            Despesas (Até Hoje) <ArrowDownCircle size={14} className="text-red-500" />
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -367,7 +430,9 @@ export default function FinanceiroPage() {
 
             <Card className="bg-slate-900 border-slate-800 shadow-2xl">
                 <CardHeader className="border-b border-slate-800/50 bg-slate-800/10">
-                    <CardTitle className="text-slate-100 italic tracking-tighter">Fluxo de Caixa Decrescente</CardTitle>
+                    <CardTitle className="text-slate-100 italic tracking-tighter">
+                        {view === 'main' ? 'Histórico de Pagamentos' : 'Contas à Pagar'}
+                    </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
@@ -375,21 +440,22 @@ export default function FinanceiroPage() {
                             <TableRow className="border-slate-800">
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px] w-32">Data</TableHead>
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px]">Lançamento / Categoria</TableHead>
-                                <TableHead className="text-slate-500 font-bold uppercase text-[10px]">Origem</TableHead>
+                                <TableHead className="text-slate-500 font-bold uppercase text-[10px]">Status</TableHead>
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px] text-right pr-6">Valor</TableHead>
+                                <TableHead className="text-slate-500 font-bold uppercase text-[10px] w-20"></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {loading ? (
-                                <TableRow><TableCell colSpan={4} className="text-center py-20">
+                                <TableRow><TableCell colSpan={5} className="text-center py-20">
                                     <div className="flex flex-col items-center gap-2">
                                         <RefreshCw className="animate-spin text-blue-500 w-8 h-8 opacity-50" />
                                         <span className="text-slate-600 text-sm font-medium">Sincronizando registros...</span>
                                     </div>
                                 </TableCell></TableRow>
-                            ) : combinedRecords.length === 0 ? (
-                                <TableRow><TableCell colSpan={4} className="text-center py-20 text-slate-700 italic">Nenhum lançamento encontrado no período atual.</TableCell></TableRow>
-                            ) : combinedRecords.map(r => (
+                            ) : filteredRecords.length === 0 ? (
+                                <TableRow><TableCell colSpan={5} className="text-center py-20 text-slate-700 italic">Nenhum lançamento encontrado neste filtro.</TableCell></TableRow>
+                            ) : filteredRecords.map((r: any) => (
                                 <TableRow key={r.id} className="border-slate-800 hover:bg-slate-800/30 transition-colors group">
                                     <TableCell className="text-slate-500 font-mono text-[11px] py-4">
                                         {new Date(r.date).toLocaleDateString('pt-BR')}
@@ -400,20 +466,30 @@ export default function FinanceiroPage() {
                                             <span className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5 font-bold uppercase">
                                                 <Tag size={10} className="text-blue-500/50" /> {r.category}
                                             </span>
-                                            {r.is_recurring && (
-                                                <span className="text-[9px] uppercase font-bold text-blue-400 flex items-center gap-1 mt-1 bg-blue-500/5 w-fit px-1.5 py-0.5 rounded border border-blue-500/10">
-                                                    <RefreshCw size={8} className="animate-spin-slow" /> Recorrente
-                                                </span>
-                                            )}
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant="secondary" className="bg-slate-800 text-slate-400 border-slate-700 capitalize text-[9px] font-black px-2 py-0.5">
-                                            {r.method}
+                                        <Badge variant="secondary" className={cn(
+                                            "capitalize text-[9px] font-black px-2 py-0.5",
+                                            r.is_paid ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                                        )}>
+                                            {r.is_paid ? 'Pago' : 'Pendente'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className={cn("text-right font-black text-md pr-6", r.type === 'revenue' ? "text-emerald-400" : "text-red-400")}>
                                         {r.type === 'revenue' ? '+' : '-'} {Number(r.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    </TableCell>
+                                    <TableCell>
+                                        {r.type === 'expense' && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className={cn("h-8 w-8 p-0", r.is_paid ? "text-slate-600" : "text-emerald-500 hover:bg-emerald-500/10")}
+                                                onClick={() => handleTogglePaid(r.id, r.is_paid)}
+                                            >
+                                                <CheckCircle2 size={16} />
+                                            </Button>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ))}

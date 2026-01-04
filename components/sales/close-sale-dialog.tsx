@@ -29,6 +29,7 @@ interface CloseSaleDialogProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     queueId: string;
+    onSuccess?: () => void;
 }
 
 interface SelectedItem {
@@ -39,7 +40,7 @@ interface SelectedItem {
     qty: number;
 }
 
-export function CloseSaleDialog({ isOpen, onOpenChange, queueId }: CloseSaleDialogProps) {
+export function CloseSaleDialog({ isOpen, onOpenChange, queueId, onSuccess }: CloseSaleDialogProps) {
     const [step, setStep] = useState<'selection' | 'payment' | 'pix'>('selection');
     const [services, setServices] = useState<Service[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
@@ -100,6 +101,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId }: CloseSaleDial
                 await Api.finishService(queueId);
                 alert('Venda finalizada com sucesso!');
                 onOpenChange(false);
+                if (onSuccess) onSuccess();
             }
         } catch (err: unknown) {
             const error = err as Error;
@@ -115,7 +117,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId }: CloseSaleDial
         try {
             await Api.finishService(queueId);
             onOpenChange(false);
-            window.location.reload(); // Força um refresh para garantir status atualizado
+            if (onSuccess) onSuccess();
         } catch (error: unknown) {
             const err = error as Error;
             alert(err.message);
@@ -337,6 +339,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId }: CloseSaleDial
                                                 await Api.finishService(queueId);
                                                 alert('Atendimento concluído!');
                                                 onOpenChange(false);
+                                                if (onSuccess) onSuccess();
                                             } catch (err: unknown) {
                                                 const error = err as Error;
                                                 alert(error.message);
