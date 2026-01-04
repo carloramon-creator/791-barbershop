@@ -26,10 +26,10 @@ function ClosingReportContent() {
                 // 1. Fetch Barber info with fallback to Users
                 console.log('[REPORT] Starting name resolution for ID:', barberId);
 
-                // First attempt: Direct fetch from barbers with join
+                // First attempt: Direct fetch from barbers to get the user_id
                 const { data: bData } = await supabaseClient
                     .from('barbers')
-                    .select('name, user_id, users(name)')
+                    .select('name, user_id')
                     .eq('id', barberId)
                     .single();
 
@@ -37,26 +37,27 @@ function ClosingReportContent() {
 
                 let resolvedName = '';
 
-                // Try to get name from the linked user first (highest priority for real name)
-                if (bData?.users) {
-                    resolvedName = (bData.users as any).name;
-                }
-
-                // If no user name, use the barber name if it's not the generic one
-                if (!resolvedName || resolvedName === 'Barbeiro') {
-                    resolvedName = bData?.name !== 'Barbeiro' ? bData?.name : '';
-                }
-
-                // Final fallback: If still no name, query the users table directly using the ID 
-                // (maybe the barberId IS the userId)
-                if (!resolvedName || resolvedName === 'Barbeiro') {
+                // ALWAYS try to get the real name from the users table first using user_id
+                if (bData?.user_id || barberId) {
+                    const targetUserId = bData?.user_id || barberId;
                     const { data: uData } = await supabaseClient
                         .from('users')
                         .select('name')
-                        .eq('id', bData?.user_id || barberId)
+                        .eq('id', targetUserId)
                         .single();
 
-                    if (uData?.name) resolvedName = uData.name;
+                    if (uData?.name) {
+                        resolvedName = uData.name;
+                        console.log('[REPORT] Found name in users table:', resolvedName);
+                    }
+                }
+
+                // Fallback: If no user name found or query failed, use barber name (if not generic)
+                if (!resolvedName || resolvedName === 'Barbeiro') {
+                    if (bData?.name && bData.name !== 'Barbeiro') {
+                        resolvedName = bData.name;
+                        console.log('[REPORT] Using name from barbers table:', resolvedName);
+                    }
                 }
 
                 const finalName = resolvedName || 'Profissional';
