@@ -23,21 +23,20 @@ function ClosingReportContent() {
             if (!barberId) return;
             setLoading(true);
             try {
-                // 1. Fetch Barber info
+                // 1. Fetch Barber info with its related user name
                 const { data: bData } = await supabaseClient
                     .from('barbers')
-                    .select('*, users(name)')
+                    .select('name, users(name)')
                     .eq('id', barberId)
                     .single();
 
-                // Fallback if barber is just stored in users
-                const { data: uData } = await supabaseClient
-                    .from('users')
-                    .select('name')
-                    .eq('id', barberId)
-                    .single();
+                let barberName = bData?.name;
 
-                const barberName = bData?.name || uData?.name || 'Barbeiro'; // Removed tricky deep access since we query users(name)
+                // If the name in barbers is generic, try the user name
+                if (!barberName || barberName === 'Barbeiro') {
+                    barberName = (bData?.users as any)?.name || 'Barbeiro';
+                }
+
                 setBarber({ name: barberName });
 
                 // 2. Fetch Pending Sales (Same logic as Closing Dialog)
