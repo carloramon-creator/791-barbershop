@@ -7,13 +7,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FileText, Download, Calendar } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface DreData {
+    period: {
+        start: string;
+        end: string;
+    };
+    receitas: number;
+    despesas: number;
+    lucro: number;
+}
 
 export default function DrePage() {
     const [dates, setDates] = useState({
         start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
         end: new Date().toISOString().split('T')[0]
     });
-    const [dre, setDre] = useState<any>(null);
+    const [dre, setDre] = useState<DreData | null>(null);
     const [loading, setLoading] = useState(false);
 
     const handleGenerate = async () => {
@@ -21,7 +32,7 @@ export default function DrePage() {
         try {
             const data = await Api.getDre(dates.start, dates.end);
             setDre(data);
-        } catch (err) {
+        } catch {
             alert('Erro ao gerar DRE. Verifique se seu plano é o Completo.');
         } finally {
             setLoading(false);
@@ -150,6 +161,3 @@ function PieChart({ size }: { size: number }) {
     );
 }
 
-function cn(...inputs: any[]) {
-    return inputs.filter(Boolean).join(' ');
-}

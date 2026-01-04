@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon, MapPin, Phone, CreditCard as CardIcon, Copy, Loader2, Link as LinkIcon, Key, Pencil, Save, MessageCircle, Clock, Percent, DollarSign, Eye, Camera } from 'lucide-react';
+import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon, MapPin, Copy, Loader2, Key, Pencil, Save, MessageCircle, Clock, Percent, DollarSign, Eye, Camera } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,17 +34,18 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Api } from '@/lib/api';
-import { User } from '@/lib/types';
+import { User, UserRole } from '@/lib/types';
 import { useAuth } from '@/lib/auth-provider';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { supabaseClient } from '@/lib/supabase-client';
 
 export default function UsersPage() {
   const pathname = usePathname();
-  const { user: currentUser } = useAuth();
+  const { } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
@@ -129,7 +130,8 @@ export default function UsersPage() {
         .getPublicUrl(filePath);
 
       setInvitePhotoUrl(publicUrl);
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as Error;
       alert('Erro no upload: ' + error.message);
     } finally {
       setUploading(false);
@@ -180,19 +182,20 @@ export default function UsersPage() {
       }
 
       fetchUsers();
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as Error;
       alert('Erro: ' + error.message);
     } finally {
       setInviteLoading(false);
     }
   };
 
-  const handleEditClick = (u: any, viewOnly: boolean = false) => {
+  const handleEditClick = (u: User, viewOnly: boolean = false) => {
     setIsViewOnly(viewOnly);
     setEditingUserId(u.id);
     setInviteName(u.name || '');
     setInviteEmail(u.email || '');
-    setInviteRoles(u.roles || [u.role || 'staff']);
+    setInviteRoles(u.roles || (u.role ? [u.role] : ['staff']));
     setInvitePhotoUrl(u.photo_url || '');
     setInvitePhone(u.phone || '');
     setInviteCpf(u.cpf || '');
@@ -229,9 +232,10 @@ export default function UsersPage() {
 
   const handleRoleUpdate = async (userId: string, newRole: string) => {
     try {
-      await Api.updateUser({ id: userId, role: newRole, roles: [newRole] });
+      await Api.updateUser({ id: userId, role: newRole as UserRole, roles: [newRole as UserRole] });
       fetchUsers();
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as Error;
       alert('Erro ao atualizar função: ' + error.message);
     }
   };
@@ -242,7 +246,8 @@ export default function UsersPage() {
     try {
       await Api.removeUser(userId);
       fetchUsers();
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as Error;
       alert('Erro ao remover usuário: ' + error.message);
     }
   };
@@ -264,7 +269,8 @@ export default function UsersPage() {
       } else {
         throw new Error('O servidor não retornou um link de convite.');
       }
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as Error;
       alert('Erro ao gerar link: ' + error.message);
     } finally {
       setInviteLoading(false);
@@ -395,7 +401,7 @@ export default function UsersPage() {
                       <div className="relative group cursor-pointer" onClick={() => !isViewOnly && document.getElementById('user-photo-input')?.click()}>
                         <div className="w-24 h-24 rounded-full bg-slate-800 border-2 border-dashed border-slate-700 flex items-center justify-center overflow-hidden">
                           {invitePhotoUrl ? (
-                            <img src={invitePhotoUrl} alt="Preview" className="w-full h-full object-cover" />
+                            <Image src={invitePhotoUrl} alt="Preview" width={96} height={96} className="w-full h-full object-cover" unoptimized />
                           ) : (
                             <Camera size={24} className="text-slate-600 group-hover:text-blue-500 transition-colors" />
                           )}
@@ -478,7 +484,7 @@ export default function UsersPage() {
                             <Label className="flex items-center gap-2 text-blue-400">
                               <Percent className="w-3 h-3" /> Tipo de Comissão
                             </Label>
-                            <Select disabled={isViewOnly} value={inviteCommType} onValueChange={(v: any) => setInviteCommType(v)}>
+                            <Select disabled={isViewOnly} value={inviteCommType} onValueChange={(v: 'fixed' | 'percentage') => setInviteCommType(v)}>
                               <SelectTrigger className="bg-slate-950 border-slate-800">
                                 <SelectValue />
                               </SelectTrigger>
@@ -576,7 +582,7 @@ export default function UsersPage() {
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 overflow-hidden">
                             {u.photo_url ? (
-                              <img src={u.photo_url} alt={u.name} className="w-full h-full object-cover" />
+                              <Image src={u.photo_url} alt={u.name} width={32} height={32} className="w-full h-full object-cover" unoptimized />
                             ) : (
                               <UserIcon className="w-4 h-4" />
                             )}
@@ -587,7 +593,7 @@ export default function UsersPage() {
                       <TableCell className="text-slate-400">{u.email}</TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
-                          {(u.roles || [u.role]).map((r: string) => (
+                          {(u.roles || (u.role ? [u.role] : [])).map((r) => (
                             <span key={r} className={cn(
                               "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium uppercase",
                               r === 'owner' ? "bg-purple-500/10 text-purple-500" :

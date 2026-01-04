@@ -16,6 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { PLAN_CONFIG } from '@/lib/constants';
+import Image from 'next/image';
 
 export function Sidebar() {
     const pathname = usePathname();
@@ -56,7 +57,7 @@ export function Sidebar() {
                 <div className="flex items-center gap-3 text-blue-500 font-bold text-xl">
                     {tenant?.logo_url ? (
                         <>
-                            <img src={tenant.logo_url} alt={tenant.name || 'Logo'} className="w-8 h-8 rounded-lg object-cover" />
+                            <Image src={tenant.logo_url} alt={tenant.name || 'Logo'} width={32} height={32} className="w-8 h-8 rounded-lg object-cover" unoptimized />
                             {tenant.name || 'My Barber'}
                         </>
                     ) : (

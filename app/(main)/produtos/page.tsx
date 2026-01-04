@@ -60,8 +60,9 @@ export default function ProdutosPage() {
             setIsDialogOpen(false);
             setNewProduct({ name: '', price: '' });
             fetchProdutos();
-        } catch (error: any) {
-            alert('Erro ao criar produto: ' + error.message);
+        } catch (error: unknown) {
+            const err = error as Error;
+            alert('Erro ao criar produto: ' + err.message);
         }
     };
     const handleUpdateProduct = async () => {
@@ -85,8 +86,9 @@ export default function ProdutosPage() {
         try {
             await Api.deleteProduct(id);
             fetchProdutos();
-        } catch (error: any) {
-            alert('Erro ao remover produto: ' + error.message);
+        } catch (error: unknown) {
+            const err = error as Error;
+            alert('Erro ao remover produto: ' + err.message);
         }
     };
 

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-provider';
+import { BarberQueueStatus, ClientQueue } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,8 @@ import {
     AlertCircle,
     Trash2
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import Image from 'next/image';
 import {
     Table,
     TableBody,
@@ -25,9 +28,9 @@ import {
 import { CloseSaleDialog } from '@/components/sales/close-sale-dialog';
 
 export default function BarberPage() {
-    const [allBarbers, setAllBarbers] = useState<any[]>([]);
-    const [queue, setQueue] = useState<any[]>([]);
-    const [currentBarber, setCurrentBarber] = useState<any>(null);
+    const [allBarbers, setAllBarbers] = useState<BarberQueueStatus[]>([]);
+    const [queue, setQueue] = useState<ClientQueue[]>([]);
+    const [currentBarber, setCurrentBarber] = useState<BarberQueueStatus | null>(null);
     const [loading, setLoading] = useState(true);
     const [showSaleDialog, setShowSaleDialog] = useState(false);
     const [finishedQueueId, setFinishedQueueId] = useState<string | null>(null);
@@ -35,45 +38,56 @@ export default function BarberPage() {
 
     const { user, role, roles } = useAuth();
 
-    const fetchStatus = async () => {
+    const fetchStatus = useCallback(async (idOverride?: string) => {
         try {
             const allQueues = await Api.getQueueStatus();
             setAllBarbers(allQueues);
 
-            // Determinar qual ID usar (prioridade: selectedBarberId > user_id do logado > primeiro da lista)
-            let barberIdToFetch = selectedBarberId;
-
-            if (!barberIdToFetch && allQueues.length > 0) {
-                // Buscar pelo user_id ao invés de email para evitar alternância
-                const myQueue = allQueues.find((b: any) => b.user_id === user?.id) || allQueues[0];
-                if (myQueue) {
-                    barberIdToFetch = myQueue.barber_id;
-                    setSelectedBarberId(myQueue.barber_id);
-                }
-            }
+            const barberIdToFetch = idOverride || selectedBarberId;
 
             if (barberIdToFetch) {
-                const updated = allQueues.find((b: any) => b.barber_id === barberIdToFetch);
+                const updated = allQueues.find((b: BarberQueueStatus) => b.barber_id === barberIdToFetch);
                 if (updated) {
                     setCurrentBarber(updated);
                     setQueue(updated.queue);
                 }
+            } else if (allQueues.length > 0) {
+                // Seleção automática se ainda não tem nada selecionado
+                const myQueue = allQueues.find((b: BarberQueueStatus) => b.user_id === user?.id) || allQueues[0];
+                if (myQueue) {
+                    setSelectedBarberId(myQueue.barber_id);
+                    setCurrentBarber(myQueue);
+                    setQueue(myQueue.queue);
+                }
             }
         } catch (error) {
-            console.error(error);
+            console.error('[FETCH STATUS ERROR]', error);
         } finally {
             setLoading(false);
         }
-    };
+    }, [user?.id, selectedBarberId]);
+
+    // UseEffect para o intervalo de atualização
+    useEffect(() => {
+        if (!user) return;
+
+        fetchStatus();
+        const interval = setInterval(() => {
+            fetchStatus();
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [user, fetchStatus]);
+
 
     const handleUpdateStatus = async (barberId: string, status: string) => {
         // Atualização otimista no estado local para resposta instantânea
         setAllBarbers(prev => prev.map(b =>
-            b.barber_id === barberId ? { ...b, status } : b
+            b.barber_id === barberId ? { ...b, status: status as 'online' | 'offline' | 'busy' } : b
         ));
 
         if (currentBarber?.barber_id === barberId) {
-            setCurrentBarber((prev: any) => ({ ...prev, status }));
+            setCurrentBarber((prev: BarberQueueStatus | null) => prev ? ({ ...prev, status: status as 'online' | 'offline' | 'busy' }) : null);
         }
 
         try {
@@ -86,7 +100,8 @@ export default function BarberPage() {
             }
             // Refresh silencioso
             fetchStatus();
-        } catch (error: any) {
+        } catch (err: unknown) {
+            const error = err as Error;
             // Exibir apenas a mensagem de erro limpa, sem detalhes técnicos
             const errorMsg = error.message || 'Erro ao atualizar status';
             alert(errorMsg);
@@ -94,19 +109,16 @@ export default function BarberPage() {
         }
     };
 
-    useEffect(() => {
-        if (user) fetchStatus();
-        const interval = setInterval(fetchStatus, 5000);
-        return () => clearInterval(interval);
-    }, [user, selectedBarberId]); // Recarregar se o barbeiro selecionado mudar
-
-
     const handleCallNext = async () => {
         if (!currentBarber) return;
         try {
-            await Api.barberNext(currentBarber.barber_id);
+            const res = await Api.barberNext(currentBarber.barber_id);
+            if (res.message) {
+                alert(res.message);
+            }
             fetchStatus();
-        } catch (error: any) {
+        } catch (err: unknown) {
+            const error = err as Error;
             alert(error.message);
         }
     };
@@ -134,10 +146,20 @@ export default function BarberPage() {
             }
         }
 
+        // 3. Verificar se é o primeiro da fila
+        const nextInLine = waitingClients[0];
+        if (nextInLine && nextInLine.id !== queueId) {
+            const chosenClient = queue.find(q => q.id === queueId);
+            if (!confirm(`Você está pulando a vez de ${nextInLine.client_name} para atender ${chosenClient?.client_name || 'outro cliente'}.\n\nIsso pode frustrar o cliente que chegou primeiro.\n\nDeseja continuar com a antecipação?`)) {
+                return;
+            }
+        }
+
         try {
             await Api.startSpecificClient(queueId);
             fetchStatus();
-        } catch (error: any) {
+        } catch (err: unknown) {
+            const error = err as Error;
             alert(error.message);
         }
     };
@@ -147,7 +169,8 @@ export default function BarberPage() {
         try {
             await Api.cancelClient(queueId);
             fetchStatus();
-        } catch (error: any) {
+        } catch (err: unknown) {
+            const error = err as Error;
             alert(error.message);
         }
     };
@@ -187,7 +210,7 @@ export default function BarberPage() {
                                         currentBarber?.barber_id === barber.barber_id ? "bg-blue-600 text-white border-blue-400" : "bg-slate-800 text-slate-500 border-slate-700"
                                     )}>
                                         {barber.photo_url ? (
-                                            <img src={barber.photo_url} alt={barber.barber_name} className="w-full h-full object-cover" />
+                                            <Image src={barber.photo_url} alt={barber.barber_name} width={40} height={40} className="w-full h-full object-cover" unoptimized />
                                         ) : (
                                             barber.barber_name?.charAt(0)
                                         )}
@@ -244,7 +267,7 @@ export default function BarberPage() {
                         <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-500 font-bold border border-blue-600/30 overflow-hidden">
                                 {currentBarber?.photo_url ? (
-                                    <img src={currentBarber.photo_url} alt={currentBarber.barber_name} className="w-full h-full object-cover" />
+                                    <Image src={currentBarber.photo_url} alt={currentBarber.barber_name} width={40} height={40} className="w-full h-full object-cover" unoptimized />
                                 ) : (
                                     currentBarber?.barber_name?.charAt(0) || 'B'
                                 )}
@@ -270,7 +293,7 @@ export default function BarberPage() {
                 {roles?.includes('barber') && role !== 'owner' && (
                     <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-xl shadow-lg ring-1 ring-slate-800/50">
                         <Button
-                            onClick={() => handleUpdateStatus(currentBarber.barber_id, 'online')}
+                            onClick={() => currentBarber && handleUpdateStatus(currentBarber.barber_id, 'online')}
                             variant="ghost"
                             className={cn(
                                 "h-9 px-4 rounded-lg font-bold transition-all text-sm",
@@ -283,7 +306,7 @@ export default function BarberPage() {
                             Online
                         </Button>
                         <Button
-                            onClick={() => handleUpdateStatus(currentBarber.barber_id, 'offline')}
+                            onClick={() => currentBarber && handleUpdateStatus(currentBarber.barber_id, 'offline')}
                             variant="ghost"
                             className={cn(
                                 "h-9 px-4 rounded-lg font-bold transition-all text-sm",
@@ -331,7 +354,7 @@ export default function BarberPage() {
 
                                     <div className="flex items-center justify-center gap-2 text-slate-400 bg-slate-800/50 py-2 rounded-lg">
                                         <Clock size={16} />
-                                        <span className="text-sm">Iniciado às {new Date(attendingClient.started_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                        <span className="text-sm">Iniciado às {attendingClient.started_at ? new Date(attendingClient.started_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</span>
                                     </div>
 
                                     <Button
@@ -506,8 +529,4 @@ export default function BarberPage() {
             )}
         </div>
     );
-}
-
-function cn(...inputs: any[]) {
-    return inputs.filter(Boolean).join(' ');
 }

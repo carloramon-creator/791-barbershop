@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Loader2, Save, Users, CreditCard, Building2, AlertTriangle, Shield } from 'lucide-react';
+import { Upload, Loader2, Users, CreditCard, Building2, AlertTriangle, Shield } from 'lucide-react';
+import Image from 'next/image';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
@@ -16,7 +17,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 export default function BarbershopSettingsPage() {
-    const { tenant, refresh } = useAuth();
+    const { refresh } = useAuth();
     const pathname = usePathname();
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -25,6 +26,7 @@ export default function BarbershopSettingsPage() {
 
     // Form state
     const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
     const [cnpj, setCnpj] = useState('');
     const [phone, setPhone] = useState('');
     const [logoUrl, setLogoUrl] = useState('');
@@ -54,6 +56,7 @@ export default function BarbershopSettingsPage() {
             const data = await Api.getBarbershop();
             if (data) {
                 setName(data.name || '');
+                setEmail(data.email || '');
                 setCnpj(data.cnpj || '');
                 setPhone(data.phone || '');
                 setLogoUrl(data.logo_url || '');
@@ -106,7 +109,8 @@ export default function BarbershopSettingsPage() {
 
             if (uploadError) {
                 // Check if 'Bucket not found'
-                if (uploadError.message.includes('Bucket not found') || (uploadError as any).error === 'Bucket not found') {
+                const errorPayload = uploadError as unknown as Record<string, unknown>;
+                if (uploadError.message.includes('Bucket not found') || errorPayload.error === 'Bucket not found') {
                     setUploadError('Bucket de armazenamento "logos" não encontrado. Crie-o no painel do Supabase com acesso público.');
                     return;
                 }
@@ -119,7 +123,8 @@ export default function BarbershopSettingsPage() {
                 .getPublicUrl(filePath);
 
             setLogoUrl(data.publicUrl);
-        } catch (error: any) {
+        } catch (err: unknown) {
+            const error = err as Error;
             setUploadError(error.message || 'Erro ao fazer upload');
         } finally {
             setUploading(false);
@@ -158,6 +163,7 @@ export default function BarbershopSettingsPage() {
         try {
             const payload = {
                 name,
+                email,
                 cnpj,
                 phone,
                 cep,
@@ -183,7 +189,8 @@ export default function BarbershopSettingsPage() {
             await loadBarbershop(); // Local state refresh from DB
             setIsEditing(false);
             alert('Configurações atualizadas com sucesso!');
-        } catch (error: any) {
+        } catch (err: unknown) {
+            const error = err as Error;
             alert('Erro ao salvar: ' + error.message);
         } finally {
             setLoading(false);
@@ -244,7 +251,7 @@ export default function BarbershopSettingsPage() {
                             <div className="flex items-center gap-6">
                                 <div className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-700 bg-slate-800 flex items-center justify-center overflow-hidden relative shrink-0 group">
                                     {logoUrl ? (
-                                        <img src={logoUrl} alt="Logo Preview" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                                        <Image src={logoUrl} alt="Logo Preview" width={96} height={96} className="w-full h-full object-cover transition-transform group-hover:scale-110" unoptimized />
                                     ) : (
                                         <Upload className="w-8 h-8 text-slate-600" />
                                     )}
@@ -288,6 +295,19 @@ export default function BarbershopSettingsPage() {
                                     onChange={(e) => setName(e.target.value)}
                                     placeholder="Ex: Minha Barbearia"
                                     required
+                                    disabled={!isEditing}
+                                    className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-11"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="email" className="text-slate-400 text-xs uppercase font-bold">E-mail da Barbearia</Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="contato@barbearia.com"
                                     disabled={!isEditing}
                                     className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-11"
                                 />

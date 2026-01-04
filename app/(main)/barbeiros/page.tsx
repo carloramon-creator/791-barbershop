@@ -21,16 +21,19 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Trash2, Edit, Camera, Check, X, RefreshCw, Users, ShieldAlert } from 'lucide-react';
+import { Edit, Camera, RefreshCw, Users, ShieldAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabaseClient } from '@/lib/supabase-client';
 import Link from 'next/link';
+import Image from 'next/image';
+
+import { Barber } from '@/lib/types';
 
 export default function BarbeirosPage() {
-    const [barbeiros, setBarbeiros] = useState<any[]>([]);
+    const [barbeiros, setBarbeiros] = useState<Barber[]>([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
-    const [editingBarber, setEditingBarber] = useState<any>(null);
+    const [editingBarber, setEditingBarber] = useState<Barber | null>(null);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const { role } = useAuth();
 
@@ -66,8 +69,9 @@ export default function BarbeirosPage() {
                 .from('barber-photos')
                 .getPublicUrl(filePath);
 
-            setEditingBarber({ ...editingBarber, photo_url: publicUrl });
-        } catch (error: any) {
+            setEditingBarber(prev => prev ? { ...prev, photo_url: publicUrl } : null);
+        } catch (err: unknown) {
+            const error = err as Error;
             alert('Erro no upload: ' + error.message);
         } finally {
             setUploading(false);
@@ -76,33 +80,14 @@ export default function BarbeirosPage() {
 
     const handleUpdateBarber = async () => {
         try {
-            if (!editingBarber.name) return alert('Nome é obrigatório');
-            await Api.updateBarber(editingBarber.id, editingBarber);
+            if (!editingBarber || !editingBarber.name) return alert('Nome é obrigatório');
+            await Api.updateBarber(editingBarber.id, editingBarber as unknown as Record<string, unknown>);
             setIsEditOpen(false);
             setEditingBarber(null);
             fetchBarbeiros();
-        } catch (error: any) {
+        } catch (err: unknown) {
+            const error = err as Error;
             alert('Erro ao atualizar barbeiro: ' + (error.message || 'Erro desconhecido'));
-        }
-    };
-
-    const toggleStatus = async (barber: any) => {
-        try {
-            const newStatus = !barber.is_active;
-            await Api.updateBarber(barber.id, { is_active: newStatus });
-            fetchBarbeiros();
-        } catch (error: any) {
-            alert('Erro ao alterar status: ' + error.message);
-        }
-    };
-
-    const handleDeleteBarber = async (id: string, name: string) => {
-        if (!confirm(`Tem certeza que deseja remover o acesso de barbeiro de ${name}?`)) return;
-        try {
-            await Api.deleteBarber(id);
-            fetchBarbeiros();
-        } catch (error: any) {
-            alert('Erro ao remover: ' + (error.message || 'Erro desconhecido'));
         }
     };
 
@@ -153,7 +138,7 @@ export default function BarbeirosPage() {
                                     <div className="relative group cursor-pointer" onClick={() => document.getElementById('edit-photo-input')?.click()}>
                                         <div className="w-24 h-24 rounded-full bg-slate-800 border-2 border-dashed border-slate-700 flex items-center justify-center overflow-hidden">
                                             {editingBarber.photo_url ? (
-                                                <img src={editingBarber.photo_url} alt="Preview" className="w-full h-full object-cover" />
+                                                <Image src={editingBarber.photo_url} alt="Preview" width={96} height={96} className="w-full h-full object-cover" unoptimized />
                                             ) : (
                                                 <Camera size={24} className="text-slate-600 group-hover:text-blue-500 transition-colors" />
                                             )}
@@ -218,7 +203,7 @@ export default function BarbeirosPage() {
                             <TableCell>
                                 <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-700">
                                     {b.photo_url ? (
-                                        <img src={b.photo_url} alt={b.name} className="w-full h-full object-cover" />
+                                        <Image src={b.photo_url} alt={b.name} width={40} height={40} className="w-full h-full object-cover" unoptimized />
                                     ) : (
                                         <Users size={16} className="text-slate-600" />
                                     )}
@@ -233,21 +218,21 @@ export default function BarbeirosPage() {
                             <TableCell>
                                 <div className={cn(
                                     "flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase w-fit",
-                                    (b.status === 'online' || b.status === 'busy')
+                                    (b.status === 'available' || b.status === 'busy')
                                         ? "bg-emerald-500/10 text-emerald-500"
                                         : "bg-red-500/10 text-red-500"
                                 )}>
-                                    <div className={cn("w-1.5 h-1.5 rounded-full", (b.status === 'online' || b.status === 'busy') ? "bg-emerald-500" : "bg-red-500")} />
-                                    {(b.status === 'online' || b.status === 'busy') ? 'Online' : 'Offline'}
+                                    <div className={cn("w-1.5 h-1.5 rounded-full", (b.status === 'available' || b.status === 'busy') ? "bg-emerald-500" : "bg-red-500")} />
+                                    {(b.status === 'available' || b.status === 'busy') ? 'Online' : 'Offline'}
                                 </div>
                             </TableCell>
                             <TableCell>
                                 <span className={cn(
                                     "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
-                                    b.status === 'online' ? "text-slate-500" :
+                                    b.status === 'available' ? "text-slate-500" :
                                         b.status === 'busy' ? "bg-yellow-500/10 text-yellow-500" : "text-slate-600"
                                 )}>
-                                    {b.status === 'online' ? 'Livre' :
+                                    {b.status === 'available' ? 'Livre' :
                                         b.status === 'busy' ? 'Atendendo' : '---'}
                                 </span>
                             </TableCell>

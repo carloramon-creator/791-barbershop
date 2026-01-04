@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Api } from '@/lib/api';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DashboardSummary, BarberQueueStatus } from '@/lib/types';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
     Users,
@@ -21,18 +22,21 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
-    const [queueStatus, setQueueStatus] = useState<any[]>([]);
-    const [metrics, setMetrics] = useState({ billingToday: 0, queueCount: 0, avgWaitTime: 25 });
+    const [summary, setSummary] = useState<DashboardSummary | null>(null);
+    const [queueStatus, setQueueStatus] = useState<BarberQueueStatus[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const data = await Api.getDashboardSummary();
-                setQueueStatus(data.queueStatus || []);
-                setMetrics(data.metrics || { billingToday: 0, queueCount: 0, avgWaitTime: 25, busyBarbers: 0 });
-            } catch (error) {
-                console.error('Erro ao buscar dados:', error);
+                const sData = await Api.getDashboardSummary();
+                if (sData.error) {
+                    console.error('[DASHBOARD] API Error:', sData.error);
+                }
+                setSummary(sData);
+                setQueueStatus(sData.queueStatus || []);
+            } catch (error: any) {
+                console.error('[DASHBOARD] Fetch Error:', error);
             } finally {
                 setLoading(false);
             }
@@ -43,8 +47,13 @@ export default function DashboardPage() {
         return () => clearInterval(interval);
     }, []);
 
-    const onlineBarbers = (metrics as any).onlineBarbers || 0;
-    const busyBarbers = (metrics as any).busyBarbers || 0;
+    const metrics = summary?.metrics || {
+        billingToday: 0,
+        queueCount: 0,
+        avgWaitTime: 0,
+        onlineBarbers: 0,
+        busyBarbers: 0
+    };
 
     return (
         <div className="space-y-8">
@@ -74,8 +83,8 @@ export default function DashboardPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-black text-slate-100">{onlineBarbers}</div>
-                        <p className="text-[10px] text-slate-500 mt-1 uppercase font-bold">{busyBarbers} em atendimento</p>
+                        <div className="text-3xl font-black text-slate-100">{metrics.onlineBarbers}</div>
+                        <p className="text-[10px] text-slate-500 mt-1 uppercase font-bold">{metrics.busyBarbers} em atendimento</p>
                     </CardContent>
                 </Card>
 
@@ -110,8 +119,8 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                     <Table>
-                        <TableHeader className="hover:bg-transparent">
-                            <TableRow className="border-slate-800 hover:bg-slate-800/50">
+                        <TableHeader>
+                            <TableRow className="border-slate-800 hover:bg-transparent">
                                 <TableHead className="text-slate-400">Barbeiro</TableHead>
                                 <TableHead className="text-slate-400">Status</TableHead>
                                 <TableHead className="text-slate-400">Atendimento</TableHead>
@@ -134,7 +143,7 @@ export default function DashboardPage() {
                                 </TableRow>
                             ) : (
                                 queueStatus.map((barber) => (
-                                    <TableRow key={barber.barber_id} className={cn("border-slate-800 hover:bg-slate-800/50 transition-colors", !barber.is_active && "opacity-60")}>
+                                    <TableRow key={barber.barber_id} className={cn("border-slate-800 hover:bg-slate-800/50 transition-colors", barber.is_active === false && "opacity-60")}>
                                         <TableCell className="font-medium text-slate-100 italic">
                                             {barber.barber_name}
                                         </TableCell>

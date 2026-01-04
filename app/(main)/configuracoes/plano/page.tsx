@@ -96,9 +96,10 @@ export default function PlanPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             setCurrentPlan(data.currentPlan || 'trial');
-        } catch (err: any) {
-            console.error('Erro ao buscar plano:', err.message);
-            setError(err.message);
+        } catch (err: unknown) {
+            const errorObj = err as Error;
+            console.error('Erro ao buscar plano:', errorObj.message);
+            setError(errorObj.message);
         } finally {
             setLoading(false);
         }
@@ -133,8 +134,9 @@ export default function PlanPage() {
             } else {
                 throw new Error('URL de checkout não retornada');
             }
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            const errorObj = err as Error;
+            setError(errorObj.message);
             setSaving(false);
         }
         // Não resetar setSaving(false) aqui pois vamos redirecionar

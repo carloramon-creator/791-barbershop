@@ -27,11 +27,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
-import { Product } from '@/lib/types';
+import { Product, ProductMovement } from '@/lib/types';
 
 export default function EstoquePage() {
     const [products, setProducts] = useState<Product[]>([]);
-    const [movements, setMovements] = useState<any[]>([]); // movements logic is complex, keep any for now if needed or use record
+    const [movements, setMovements] = useState<ProductMovement[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEntryDialogOpen, setIsEntryDialogOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -51,7 +51,7 @@ export default function EstoquePage() {
         sell_price: ''
     });
 
-    const { role, tenant } = useAuth();
+    const { tenant } = useAuth();
     const isPremium = tenant?.plan === 'premium';
 
     const fetchData = async () => {
@@ -63,8 +63,9 @@ export default function EstoquePage() {
                 const prods = await Api.getProducts();
                 console.log('[DEBUG] Products fetched:', prods?.length);
                 setProducts(prods || []);
-            } catch (err: any) {
-                console.error("Erro ao buscar produtos:", err);
+            } catch (err: unknown) {
+                const error = err as Error;
+                console.error("Erro ao buscar produtos:", error);
             }
 
             // Fetch inventory
@@ -72,8 +73,9 @@ export default function EstoquePage() {
                 const moves = await Api.getInventory();
                 console.log('[DEBUG] Movements fetched:', moves?.length);
                 setMovements(moves || []);
-            } catch (err: any) {
-                console.error("Erro ao buscar inventário:", err);
+            } catch (err: unknown) {
+                const error = err as Error;
+                console.error("Erro ao buscar inventário:", error);
                 // Se falhar o inventário (provavelmente SQL não rodado ou plano), 
                 // mantemos movimentos como vazio mas não travamos a página.
             }
@@ -128,8 +130,9 @@ export default function EstoquePage() {
             resetForms();
             fetchData();
             alert('Operação realizada com sucesso!');
-        } catch (error: any) {
-            alert('Erro ao realizar operação: ' + error.message);
+        } catch (error: unknown) {
+            const err = error as Error;
+            alert('Erro ao realizar operação: ' + err.message);
         } finally {
             setSubmitting(false);
         }
@@ -449,15 +452,15 @@ export default function EstoquePage() {
                                     </div>
                                     {m.type === 'entry' ? (
                                         <div className="mt-2 text-[10px] text-slate-400 flex items-center gap-1 bg-slate-800/50 p-1.5 rounded border border-slate-700/50">
-                                            <div className="flex-1 flex items-center gap-1"><DollarSign size={8} /> Custo Unit: R$ {Number(m.cost_price).toFixed(2)}</div>
+                                            <div className="flex-1 flex items-center gap-1"><DollarSign size={8} /> Custo Unit: R$ {Number(m.cost_price || 0).toFixed(2)}</div>
                                             <div className="text-slate-500">|</div>
-                                            <div className="flex-1 text-right">Total: R$ {Number(m.cost_price * m.quantity).toFixed(2)}</div>
+                                            <div className="flex-1 text-right">Total: R$ {Number((m.cost_price || 0) * m.quantity).toFixed(2)}</div>
                                         </div>
                                     ) : (
                                         <div className="mt-2 text-[10px] text-slate-400 flex items-center gap-1 bg-slate-800/50 p-1.5 rounded border border-slate-700/50">
-                                            <div className="flex-1 flex items-center gap-1"><DollarSign size={8} /> Preço Venda: R$ {Number(m.price).toFixed(2)}</div>
+                                            <div className="flex-1 flex items-center gap-1"><DollarSign size={8} /> Preço Venda: R$ {Number(m.price || 0).toFixed(2)}</div>
                                             <div className="text-slate-500">|</div>
-                                            <div className="flex-1 text-right text-emerald-400">Total: R$ {Number(m.price * m.quantity).toFixed(2)}</div>
+                                            <div className="flex-1 text-right text-emerald-400">Total: R$ {Number((m.price || 0) * m.quantity).toFixed(2)}</div>
                                         </div>
                                     )}
                                 </div>

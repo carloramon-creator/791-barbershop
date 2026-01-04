@@ -10,6 +10,7 @@ import {
     DialogFooter,
     DialogDescription,
 } from '@/components/ui/dialog';
+import Image from "next/image";
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -30,14 +31,22 @@ interface CloseSaleDialogProps {
     queueId: string;
 }
 
+interface SelectedItem {
+    id: string;
+    name: string;
+    price: number;
+    type: 'service' | 'product';
+    qty: number;
+}
+
 export function CloseSaleDialog({ isOpen, onOpenChange, queueId }: CloseSaleDialogProps) {
     const [step, setStep] = useState<'selection' | 'payment' | 'pix'>('selection');
     const [services, setServices] = useState<Service[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
-    const [selectedItems, setSelectedItems] = useState<{ id: string; name: string; price: number; type: 'service' | 'product'; qty: number }[]>([]);
+    const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'pix'>('cash');
     const [loading, setLoading] = useState(false);
-    const [pixData, setPixData] = useState<any>(null);
+    const [pixData, setPixData] = useState<{ copyText?: string; qrBase64?: string } | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -57,7 +66,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId }: CloseSaleDial
         }
     }, [isOpen]);
 
-    const addItem = (item: any, type: 'service' | 'product') => {
+    const addItem = (item: Service | Product, type: 'service' | 'product') => {
         const existing = selectedItems.find(i => i.id === item.id);
         if (existing) {
             setSelectedItems(selectedItems.map(i => i.id === item.id ? { ...i, qty: i.qty + 1 } : i));
@@ -92,8 +101,9 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId }: CloseSaleDial
                 alert('Venda finalizada com sucesso!');
                 onOpenChange(false);
             }
-        } catch (err: any) {
-            alert(err.message);
+        } catch (err: unknown) {
+            const error = err as Error;
+            alert(error.message);
         } finally {
             setLoading(false);
         }
@@ -106,8 +116,9 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId }: CloseSaleDial
             await Api.finishService(queueId);
             onOpenChange(false);
             window.location.reload(); // Força um refresh para garantir status atualizado
-        } catch (error: any) {
-            alert(error.message);
+        } catch (error: unknown) {
+            const err = error as Error;
+            alert(err.message);
         } finally {
             setLoading(false);
         }
@@ -229,7 +240,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId }: CloseSaleDial
 
                             <div className="space-y-4">
                                 <Label className="text-sm font-bold text-slate-400 uppercase tracking-widest">Escolha a forma de pagamento</Label>
-                                <RadioGroup value={paymentMethod} onValueChange={(val: any) => setPaymentMethod(val)} className="grid grid-cols-1 gap-3">
+                                <RadioGroup value={paymentMethod} onValueChange={(val: 'cash' | 'card' | 'pix') => setPaymentMethod(val)} className="grid grid-cols-1 gap-3">
                                     <div className={`flex items-center space-x-2 p-4 rounded-xl border transition-all cursor-pointer ${paymentMethod === 'pix' ? 'bg-emerald-500/10 border-emerald-500/50' : 'bg-slate-800/50 border-slate-700 hover:bg-slate-800'}`}>
                                         <RadioGroupItem value="pix" id="pix" />
                                         <Label htmlFor="pix" className="flex flex-1 items-center gap-3 cursor-pointer">
@@ -299,7 +310,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId }: CloseSaleDial
                                 {pixData?.copyText ? (
                                     <QRCodeSVG value={pixData.copyText} size={192} />
                                 ) : pixData?.qrBase64 ? (
-                                    <img src={pixData.qrBase64} alt="QR Code PIX" className="w-48 h-48" />
+                                    <Image src={pixData.qrBase64} alt="QR Code PIX" width={192} height={192} className="w-48 h-48" unoptimized />
                                 ) : (
                                     <div className="w-48 h-48 bg-slate-100 flex items-center justify-center text-slate-400">QR Code Indisponível</div>
                                 )}
@@ -326,8 +337,9 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId }: CloseSaleDial
                                                 await Api.finishService(queueId);
                                                 alert('Atendimento concluído!');
                                                 onOpenChange(false);
-                                            } catch (err: any) {
-                                                alert(err.message);
+                                            } catch (err: unknown) {
+                                                const error = err as Error;
+                                                alert(error.message);
                                             }
                                         }}
                                     >

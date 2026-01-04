@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Scissors, Key, Mail, Lock, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
+import { Scissors, Mail, Lock, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -58,8 +58,9 @@ export default function LoginPage() {
 
             if (authError) throw authError;
             await redirectUser(data.user.id);
-        } catch (err: any) {
-            setError(err.message || 'Erro ao entrar');
+        } catch (err: unknown) {
+            const error = err as Error;
+            setError(error.message || 'Erro ao entrar');
             setLoading(false);
         }
     };
@@ -91,8 +92,9 @@ export default function LoginPage() {
             setTimeout(() => {
                 redirectUser(data.user.id);
             }, 1500);
-        } catch (err: any) {
-            setError(err.message || 'Erro ao atualizar senha');
+        } catch (err: unknown) {
+            const error = err as Error;
+            setError(error.message || 'Erro ao atualizar senha');
             setLoading(false);
         }
     };
@@ -117,8 +119,9 @@ export default function LoginPage() {
             } else {
                 router.push('/');
             }
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            const error = err as Error;
+            setError(error.message);
             setLoading(false);
         }
     };

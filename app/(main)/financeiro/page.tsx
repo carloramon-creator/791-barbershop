@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-provider';
+import { Sale, FinanceRecord, FinanceCategory } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -30,9 +31,9 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 export default function FinanceiroPage() {
-    const [sales, setSales] = useState<any[]>([]);
-    const [financeRecords, setFinanceRecords] = useState<any[]>([]);
-    const [categories, setCategories] = useState<any[]>([]);
+    const [sales, setSales] = useState<Sale[]>([]);
+    const [financeRecords, setFinanceRecords] = useState<FinanceRecord[]>([]);
+    const [categories, setCategories] = useState<FinanceCategory[]>([]);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
@@ -103,7 +104,8 @@ export default function FinanceiroPage() {
                 recurrence_count: '1'
             });
             fetchData();
-        } catch (error: any) {
+        } catch (err: unknown) {
+            const error = err as Error;
             console.error('Erro ao salvar:', error);
             alert('Erro ao criar despesa: ' + (error.message || 'Erro desconhecido'));
         }
@@ -121,8 +123,9 @@ export default function FinanceiroPage() {
             setNewExpense(prev => ({ ...prev, category_id: cat.id }));
             setNewCategoryName('');
             setIsCategoryDialogOpen(false);
-        } catch (err: any) {
-            alert("Erro ao criar categoria: " + err.message);
+        } catch (err: unknown) {
+            const error = err as Error;
+            alert("Erro ao criar categoria: " + error.message);
         } finally {
             setCategoryLoading(false);
         }

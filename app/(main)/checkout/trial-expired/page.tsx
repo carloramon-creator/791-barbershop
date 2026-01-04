@@ -31,7 +31,8 @@ export default function TrialExpiredPage() {
             if (data.url) {
                 window.location.href = data.url;
             }
-        } catch (error: any) {
+        } catch (err: unknown) {
+            const error = err as Error;
             alert('Erro ao criar checkout: ' + error.message);
             setLoading(null);
         }

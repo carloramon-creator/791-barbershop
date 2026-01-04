@@ -60,8 +60,9 @@ export default function ServicosPage() {
             setIsDialogOpen(false);
             setNewService({ name: '', price: '' });
             fetchServicos();
-        } catch (error: any) {
-            alert('Erro ao criar serviço: ' + error.message);
+        } catch (error: unknown) {
+            const err = error as Error;
+            alert('Erro ao criar serviço: ' + err.message);
         }
     };
 
@@ -86,8 +87,9 @@ export default function ServicosPage() {
         try {
             await Api.deleteService(id);
             fetchServicos();
-        } catch (error: any) {
-            alert('Erro ao remover serviço: ' + error.message);
+        } catch (error: unknown) {
+            const err = error as Error;
+            alert('Erro ao remover serviço: ' + err.message);
         }
     };
 

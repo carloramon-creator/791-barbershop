@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabaseClient } from '@/lib/supabase-client';
-import { Api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
@@ -65,8 +64,9 @@ export default function RegisterPage() {
                 router.push('/dashboard');
             }, 1000);
 
-        } catch (err: any) {
-            setError(err.message || 'Erro no cadastro');
+        } catch (err: unknown) {
+            const error = err as Error;
+            setError(error.message || 'Erro no cadastro');
             console.error(err);
         } finally {
             setLoading(false);

@@ -66,6 +66,8 @@ export interface ClientQueue {
     barber_id: string;
     client_id?: string;
     client_name: string;
+    client_phone?: string;
+    is_priority?: boolean;
     status: QueueStatus;
     position: number;
     estimated_time_minutes?: number;
@@ -99,19 +101,73 @@ export interface Sale {
     client_queue_id: string;
     services?: { id: string; qty: number }[];
     products?: { id: string; qty: number }[];
-    total: number;
+    total_amount: number;
     payment_method: PaymentMethod;
     pix_payload?: string;
     paid: boolean;
     created_at: string;
 }
 
-export interface Finance {
+export interface FinanceCategory {
+    id: string;
+    tenant_id: string;
+    name: string;
+    type: FinanceType;
+    created_at: string;
+}
+
+export interface FinanceRecord {
     id: string;
     tenant_id: string;
     type: FinanceType;
     value: number;
-    description?: string;
+    description: string;
     date: string;
+    category_id?: string;
+    finance_categories?: {
+        name: string;
+    };
+    is_recurring?: boolean;
+    recurrence_period?: 'day' | 'week' | 'month' | 'year' | null;
+    recurrence_count?: number;
     created_at: string;
+}
+
+export interface ProductMovement {
+    id: string;
+    tenant_id: string;
+    product_id: string;
+    type: 'entry' | 'exit';
+    quantity: number;
+    cost_price?: number;
+    price?: number;
+    description?: string;
+    created_at: string;
+    products?: {
+        name: string;
+        price: number;
+    };
+}
+
+export interface DashboardSummary {
+    metrics: {
+        billingToday: number;
+        queueCount: number;
+        avgWaitTime: number;
+        onlineBarbers: number;
+        busyBarbers: number;
+    };
+    queueStatus: BarberQueueStatus[];
+}
+
+export interface BarberQueueStatus {
+    barber_id: string;
+    barber_name: string;
+    user_id?: string;
+    photo_url?: string;
+    status: 'online' | 'offline' | 'busy';
+    is_active?: boolean;
+    avg_time_minutes: number;
+    queue: ClientQueue[];
+    total_estimated_wait_minutes: number;
 }

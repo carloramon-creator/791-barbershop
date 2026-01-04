@@ -67,8 +67,9 @@ export default function LandingPage() {
             setTimeout(() => {
                 window.location.href = '/configuracoes/barbearia';
             }, 2000);
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            const error = err as Error;
+            setError(error.message);
         } finally {
             setLoading(false);
         }

@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Scissors, Lock, CheckCircle2, Loader2, ArrowRight, Mail } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 function SetupPasswordForm() {
     const searchParams = useSearchParams();
@@ -84,8 +83,9 @@ function SetupPasswordForm() {
                 }
             }, 2000);
 
-        } catch (err: any) {
-            setError(err.message || 'Erro ao atualizar senha');
+        } catch (err: unknown) {
+            const error = err as Error;
+            setError(error.message || 'Erro ao atualizar senha');
             setLoading(false);
         }
     };
