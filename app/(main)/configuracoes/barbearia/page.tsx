@@ -539,7 +539,23 @@ export default function BarbershopSettingsPage() {
                         onClick={async () => {
                             if (!confirm('Executar reparo do sistema? Isso pode levar alguns segundos.')) return;
                             try {
-                                const res = await fetch('/api/system/repair', { method: 'POST', headers: { 'Authorization': `Bearer ${(await supabaseClient.auth.getSession()).data.session?.access_token}` } });
+                                const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
+                                const { data: { session } } = await supabaseClient.auth.getSession();
+                                const token = session?.access_token;
+
+                                const res = await fetch(`${backendUrl}/api/system/repair`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+
+                                if (!res.ok) {
+                                    const errorData = await res.json().catch(() => ({ error: 'Erro desconhecido' }));
+                                    throw new Error(errorData.error || res.statusText);
+                                }
+
                                 const data = await res.json();
                                 alert('Reparo concluído!\n\nDetalhes:\n' + JSON.stringify(data, null, 2));
                                 window.location.reload();
