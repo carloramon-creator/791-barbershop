@@ -132,10 +132,14 @@ export function BarberClosingDialog({
                             <div className="relative">
                                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
                                 <Input
-                                    type="number"
-                                    value={bonus}
-                                    onChange={(e) => setBonus(Number(e.target.value))}
-                                    className="bg-slate-900 border-slate-700 pl-10 h-11 focus:ring-blue-500"
+                                    type="text"
+                                    value={bonus.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    onChange={(e) => {
+                                        const cleanValue = e.target.value.replace(/\D/g, '');
+                                        const numericValue = Number(cleanValue) / 100;
+                                        setBonus(numericValue);
+                                    }}
+                                    className="bg-slate-900 border-slate-700 pl-10 h-11 focus:ring-blue-500 font-mono"
                                     placeholder="0,00"
                                 />
                             </div>

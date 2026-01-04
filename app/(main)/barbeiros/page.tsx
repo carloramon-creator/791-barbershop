@@ -118,7 +118,7 @@ export default function BarbeirosPage() {
     };
 
     const handleConfirmClosing = async (barberId: string, total: number, bonus: number, saleIds: string[]) => {
-        if (!confirm(`Confirmar o fechamento no valor de R$ ${total.toFixed(2)}?`)) return;
+        if (!confirm(`Confirmar o fechamento no valor de ${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}?`)) return;
         setClosingLoading(true);
         try {
             await Api.confirmBarberClosing(barberId, {
