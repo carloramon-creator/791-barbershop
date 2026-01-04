@@ -26,16 +26,12 @@ function ClosingReportContent() {
                 // 1. Fetch Barber info with its related user name
                 const { data: bData } = await supabaseClient
                     .from('barbers')
-                    .select('name, users(name)')
+                    .select('name, user_id, users(name)')
                     .eq('id', barberId)
                     .single();
 
-                let barberName = bData?.name;
-
-                // If the name in barbers is generic, try the user name
-                if (!barberName || barberName === 'Barbeiro') {
-                    barberName = (bData?.users as any)?.name || 'Barbeiro';
-                }
+                const userName = (bData?.users as any)?.name;
+                const barberName = userName || bData?.name || 'Barbeiro';
 
                 setBarber({ name: barberName });
 

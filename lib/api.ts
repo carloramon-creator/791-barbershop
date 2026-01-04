@@ -96,6 +96,7 @@ export const Api = {
     deleteBarber: (id: string) => apiFetch(`/api/barbers/${id}`, { method: 'DELETE' }),
     getBarberClosing: (id: string) => apiFetch(`/api/barbers/${id}/closing`),
     confirmBarberClosing: (id: string, payload: Record<string, unknown>) => apiFetch(`/api/barbers/${id}/closing`, { method: 'POST', body: JSON.stringify(payload) }),
+    revertBarberClosing: (barberId: string, financeId: string) => apiFetch(`/api/barbers/${barberId}/closing?financeId=${financeId}`, { method: 'DELETE' }),
 
     // Settings
     getBarbershop: () => apiFetch('/api/barbershop'),
