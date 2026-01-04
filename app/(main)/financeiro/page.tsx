@@ -195,6 +195,7 @@ export default function FinanceiroPage() {
     if (role !== 'owner') return <div className="p-8 text-red-500">Acesso restrito ao proprietário.</div>;
 
     const todayStr = new Date().toISOString().split('T')[0];
+    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
 
     // Total Revenue: Sales (until today) + Finance Revenue (paid and until today)
     const totalRevenue = sales
@@ -204,9 +205,9 @@ export default function FinanceiroPage() {
             .filter(r => r.type === 'revenue' && r.is_paid && r.date <= todayStr)
             .reduce((acc, r) => acc + Number(r.value), 0);
 
-    // Total Expenses: Paid expenses until today
+    // Total Expenses: ALL paid expenses in current month (not just until today)
     const totalExpenses = financeRecords
-        .filter(r => r.type === 'expense' && r.is_paid && r.date <= todayStr)
+        .filter(r => r.type === 'expense' && r.is_paid && r.date.startsWith(currentMonth))
         .reduce((acc, r) => acc + Number(r.value), 0);
 
     const netBalance = totalRevenue - totalExpenses;
