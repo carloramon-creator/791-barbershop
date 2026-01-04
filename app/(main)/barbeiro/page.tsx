@@ -119,10 +119,17 @@ export default function BarberPage() {
     };
 
     const handleStartClient = async (queueId: string) => {
-        // Verificar se é o dono operando a fila de outro
+        // 1. Verificar se é o dono operando a fila de outro
         if (role === 'owner' && currentBarber?.user_id !== user?.id) {
             const barberName = currentBarber?.barber_name || 'outro barbeiro';
             if (!confirm(`ATENÇÃO: Você está iniciando um atendimento em nome de ${barberName}.\n\nO status dele mudará para Ocupado/Atendendo.\nDeseja continuar?`)) {
+                return;
+            }
+        }
+
+        // 2. Verificar se JÁ existe alguém sendo atendido
+        if (attendingClient) {
+            if (!confirm(`ATENÇÃO: Já existe um atendimento em andamento (${attendingClient.client_name}).\n\nSe você chamar este novo cliente agora, o atendimento atual será ENCERRADO automaticamente.\n\nTem certeza que deseja fazer isso?`)) {
                 return;
             }
         }
