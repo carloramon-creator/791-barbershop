@@ -35,9 +35,9 @@ export function ReportHeader() {
     if (!tenant) return null;
 
     return (
-        <div className="flex flex-col items-center justify-center border-b-2 border-slate-900 pb-4 mb-6 report-header">
+        <div className="flex flex-col items-center justify-center border-b border-black pb-1 mb-2 report-header">
             {tenant.logo_url && (
-                <div className="mb-2 relative w-24 h-24">
+                <div className="mb-1 relative w-16 h-16">
                     <Image
                         src={tenant.logo_url}
                         alt={tenant.name}
@@ -47,14 +47,14 @@ export function ReportHeader() {
                     />
                 </div>
             )}
-            <h1 className="text-2xl font-black uppercase tracking-widest text-slate-900 text-center">{tenant.name}</h1>
+            <h1 className="text-xl font-black uppercase tracking-tight text-slate-900 text-center">{tenant.name}</h1>
         </div>
     );
 }
 
 export function ReportFooter() {
     return (
-        <div className="mt-12 text-center text-[10px] text-gray-400 py-4 border-t border-gray-100">
+        <div className="mt-4 text-center text-[10px] text-gray-400 py-2 border-t border-gray-100">
             Licensed by <span className="font-bold text-gray-600">791 Barber</span>
         </div>
     );

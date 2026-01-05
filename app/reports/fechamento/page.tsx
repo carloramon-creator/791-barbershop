@@ -56,17 +56,17 @@ function ClosingReportContent() {
     if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin" /></div>;
 
     return (
-        <div className="p-4 max-w-5xl mx-auto bg-white min-h-screen text-black print:p-0 print:max-w-none text-[12px]">
-            {/* Header - Compact */}
-            <div className="mb-4">
+        <div className="p-2 max-w-5xl mx-auto bg-white min-h-screen text-black print:p-0 print:max-w-none text-[12px]">
+            {/* Header - Ultra Compact */}
+            <div className="mb-2">
                 <ReportHeader />
-                <div className="flex justify-between items-end border-b border-black pb-2 mt-2">
+                <div className="flex justify-between items-end border-b border-black pb-1 mt-1">
                     <div>
-                        <h1 className="text-xl font-bold uppercase">Fechamento de Caixa / Comissões</h1>
-                        <p className="text-gray-600">Barbeiro: <span className="font-bold text-base">{barber?.name}</span></p>
+                        <h1 className="text-lg font-bold uppercase leading-none">Fechamento de Caixa</h1>
+                        <p className="text-gray-600 text-[10px]">Barbeiro: <span className="font-bold">{barber?.name}</span></p>
                     </div>
-                    <div className="text-right text-[10px] text-gray-500">
-                        <p>Gerado em: {new Date().toLocaleDateString('pt-BR')} {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                    <div className="text-right text-[9px] text-gray-500">
+                        <p>Gerado: {new Date().toLocaleDateString('pt-BR')} {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
                 </div>
             </div>
@@ -153,18 +153,18 @@ function ClosingReportContent() {
                 </tbody>
             </table>
 
-            {/* Bottom Section - Compact Grouping */}
-            <div className="flex justify-between items-start gap-8 mt-4 break-inside-avoid">
+            {/* Bottom Section - Ultra Compact */}
+            <div className="flex justify-between items-start gap-8 mt-4 mb-4 break-inside-avoid">
                 {/* Signatures Left/Center */}
-                <div className="flex-1 space-y-8 pt-4">
+                <div className="flex-1 space-y-4 pt-2">
                     <div className="max-w-[250px]">
-                        <div className="border-t border-black mb-1"></div>
-                        <p className="uppercase font-bold text-[10px] text-gray-700">{barber?.name}</p>
+                        <div className="border-t border-black mb-0.5"></div>
+                        <p className="uppercase font-bold text-[9px] text-gray-700">{barber?.name}</p>
                         <p className="text-[8px] italic text-gray-500">Barbeiro (Assinatura)</p>
                     </div>
                     <div className="max-w-[250px]">
-                        <div className="border-t border-black mb-1"></div>
-                        <p className="uppercase font-bold text-[10px] text-gray-700">Responsável (Caixa)</p>
+                        <div className="border-t border-black mb-0.5"></div>
+                        <p className="uppercase font-bold text-[9px] text-gray-700">Responsável (Caixa)</p>
                         <p className="text-[8px] italic text-gray-500">Conferência / Assinatura</p>
                     </div>
                 </div>
