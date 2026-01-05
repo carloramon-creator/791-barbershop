@@ -105,7 +105,7 @@ function ClosingReportContent() {
                                                     <span>• {name} {perc > 0 && <span className="text-[8px] font-bold">({perc}%)</span>}</span>
                                                     <div className="flex gap-4 print:gap-2">
                                                         <span className="w-20 text-right font-mono">
-                                                            {itemPrice > 0 ? `R$ ${itemPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'}
+                                                            {isService && itemPrice > 0 ? `R$ ${itemPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'}
                                                         </span>
                                                         <span className="w-20 text-right font-mono font-bold">
                                                             {isService && itemComm > 0 ? `R$ ${itemComm.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'}
