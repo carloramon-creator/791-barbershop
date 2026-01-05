@@ -97,13 +97,18 @@ function ClosingReportContent() {
                                             const name = item.services?.name || item.products?.name || 'Item';
                                             const isService = item.item_type === 'service';
                                             const perc = isService ? (commissionPercentage || 0) : 0;
+                                            const itemPrice = Number(item.price || 0);
+                                            const itemComm = isService ? (itemPrice * perc / 100) : 0;
+
                                             return (
                                                 <div key={idx} className="text-[10px] flex items-center justify-between text-gray-700">
                                                     <span>• {name} {perc > 0 && <span className="text-[8px] font-bold">({perc}%)</span>}</span>
                                                     <div className="flex gap-4 print:gap-2">
-                                                        <span className="w-20 text-right font-mono">R$ {(item.item_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                        <span className="w-20 text-right font-mono">
+                                                            {itemPrice > 0 ? `R$ ${itemPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'}
+                                                        </span>
                                                         <span className="w-20 text-right font-mono font-bold">
-                                                            {isService ? `R$ ${(item.commission_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'}
+                                                            {isService && itemComm > 0 ? `R$ ${itemComm.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -113,7 +118,7 @@ function ClosingReportContent() {
                                 </td>
                                 <td colSpan={2} className="py-2 px-2 align-bottom">
                                     <div className="flex justify-end pt-1 border-t border-gray-100 mt-1">
-                                        <div className="text-[10px] text-gray-400 mr-4">SUBTOTAL:</div>
+                                        <div className="text-[10px] text-gray-400 mr-4 italic">TOTAL DA VENDA:</div>
                                         <div className="w-20 text-right font-bold text-gray-400">R$ {(sale.total_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                                         <div className="w-20 text-right font-bold text-emerald-800">R$ {(sale.commission_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                                     </div>
