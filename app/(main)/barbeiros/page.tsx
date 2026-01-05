@@ -106,8 +106,10 @@ export default function BarbeirosPage() {
         setClosingLoading(true);
         setClosingBarber(barber);
         try {
-            const sales = await Api.getBarberClosing(barber.id);
-            setClosingSales(sales);
+            const response = await Api.getBarberClosing(barber.id);
+            // Handle new format { sales, barberName } or old array format
+            const salesArray = response?.sales || (Array.isArray(response) ? response : []);
+            setClosingSales(salesArray);
             setShowClosingDialog(true);
         } catch (error: unknown) {
             const err = error as Error;

@@ -23,57 +23,17 @@ function ClosingReportContent() {
             if (!barberId) return;
             setLoading(true);
             try {
-                // 1. Fetch Barber info with fallback to Users
-                console.log('[REPORT] Starting name resolution for ID:', barberId);
+                // Fetch data from the closing API which now returns both sales and the correct barber name
+                const response = await Api.getBarberClosing(barberId);
 
-                // First attempt: Direct fetch from barbers to get the user_id
-                const { data: bData } = await supabaseClient
-                    .from('barbers')
-                    .select('name, user_id')
-                    .eq('id', barberId)
-                    .single();
-
-                console.log('[REPORT] bData result:', bData);
-
-                let resolvedName = '';
-
-                // ALWAYS try to get the real name from the users table first using user_id
-                if (bData?.user_id || barberId) {
-                    const targetUserId = bData?.user_id || barberId;
-                    const { data: uData } = await supabaseClient
-                        .from('users')
-                        .select('name')
-                        .eq('id', targetUserId)
-                        .single();
-
-                    if (uData?.name) {
-                        resolvedName = uData.name;
-                        console.log('[REPORT] Found name in users table:', resolvedName);
-                    }
+                // If the backend returns the new format { sales, barberName }
+                if (response && response.barberName) {
+                    setSales(response.sales || []);
+                    setBarber({ name: response.barberName });
+                } else {
+                    // Fallback for old API format or empty response
+                    setSales(Array.isArray(response) ? response : []);
                 }
-
-                // Fallback: If no user name found or query failed, use barber name (if not generic)
-                if (!resolvedName || resolvedName === 'Barbeiro') {
-                    if (bData?.name && bData.name !== 'Barbeiro') {
-                        resolvedName = bData.name;
-                        console.log('[REPORT] Using name from barbers table:', resolvedName);
-                    }
-                }
-
-                const finalName = resolvedName || 'Profissional';
-                console.log('[REPORT] Final name resolved to:', finalName);
-
-                setBarber({ name: finalName });
-
-                // 2. Fetch Pending Sales (Same logic as Closing Dialog)
-                // REMOVED TENANT FETCH - using ReportHeader
-                // 3. Fetch Pending Sales
-
-                // 3. Fetch Pending Sales (Same logic as Closing Dialog)
-                // 3. Fetch Pending Sales (Same logic as Closing Dialog)
-                // Usar a mesma API do Dialog para garantir consistência e evitar problemas de RLS
-                const closingSales = await Api.getBarberClosing(barberId);
-                setSales(closingSales);
             } catch (error) {
                 console.error("Error fetching report data", error);
             } finally {
