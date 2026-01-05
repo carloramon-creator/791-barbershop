@@ -97,30 +97,49 @@ function ClosingReportContent() {
                                             const name = item.services?.name || item.products?.name || 'Item';
                                             const isService = item.item_type === 'service';
                                             const perc = isService ? (commissionPercentage || 0) : 0;
-                                            const itemPrice = Number(item.price || 0);
-                                            const itemComm = isService ? (itemPrice * perc / 100) : 0;
-
                                             return (
-                                                <div key={idx} className="text-[10px] flex items-center justify-between text-gray-700">
-                                                    <span>• {name} {perc > 0 && <span className="text-[8px] font-bold">({perc}%)</span>}</span>
-                                                    <div className="flex gap-4 print:gap-2">
-                                                        <span className="w-20 text-right font-mono">
-                                                            {isService && itemPrice > 0 ? `R$ ${itemPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'}
-                                                        </span>
-                                                        <span className="w-20 text-right font-mono font-bold">
-                                                            {isService && itemComm > 0 ? `R$ ${itemComm.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'}
-                                                        </span>
-                                                    </div>
+                                                <div key={idx} className="text-[10px] text-gray-700">
+                                                    • {name} {perc > 0 && <span className="text-[8px] font-bold">({perc}%)</span>}
                                                 </div>
                                             );
                                         })}
                                     </div>
-                                </td>
-                                <td colSpan={2} className="py-2 px-2 align-bottom">
                                     <div className="flex justify-end pt-1 border-t border-gray-100 mt-1">
-                                        <div className="text-[10px] text-gray-400 mr-4 italic">TOTAL DA VENDA:</div>
-                                        <div className="w-20 text-right font-bold text-gray-400">R$ {(sale.total_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                                        <div className="w-20 text-right font-bold text-emerald-800">R$ {(sale.commission_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                                        <div className="text-[10px] text-gray-400 mr-2 italic">TOTAL DA VENDA:</div>
+                                    </div>
+                                </td>
+                                <td className="py-2 px-2 text-right font-mono">
+                                    <div className="space-y-0.5">
+                                        {items.map((item: any, idx: number) => {
+                                            const isService = item.item_type === 'service';
+                                            const itemPrice = Number(item.price || 0);
+                                            return (
+                                                <div key={idx} className="text-[10px]">
+                                                    {isService && itemPrice > 0 ? `R$ ${itemPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="font-bold text-gray-400 border-t border-gray-100 mt-1 pt-1">
+                                        R$ {(sale.total_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </div>
+                                </td>
+                                <td className="py-2 px-2 text-right font-mono font-bold">
+                                    <div className="space-y-0.5">
+                                        {items.map((item: any, idx: number) => {
+                                            const isService = item.item_type === 'service';
+                                            const itemPrice = Number(item.price || 0);
+                                            const perc = isService ? (commissionPercentage || 0) : 0;
+                                            const itemComm = isService ? (itemPrice * perc / 100) : 0;
+                                            return (
+                                                <div key={idx} className="text-[10px]">
+                                                    {isService && itemComm > 0 ? `R$ ${itemComm.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="text-emerald-800 border-t border-gray-100 mt-1 pt-1 font-black">
+                                        R$ {(sale.commission_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                     </div>
                                 </td>
                             </tr>
