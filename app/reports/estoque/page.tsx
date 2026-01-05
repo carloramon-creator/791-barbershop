@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Api } from '@/lib/api';
 import { Product } from '@/lib/types';
 import { Loader2, Printer } from 'lucide-react';
+import { ReportHeader, ReportFooter } from '@/components/reports/report-header';
 
 export default function InventoryReportPage() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -20,7 +21,7 @@ export default function InventoryReportPage() {
 
     return (
         <div className="p-8 max-w-4xl mx-auto">
-            <div className="flex justify-between items-start mb-8 print:hidden">
+            <div className="flex justify-between items-start mb-4 print:hidden">
                 <h1 className="text-2xl font-bold">Relatório de Estoque</h1>
                 <button
                     onClick={() => window.print()}
@@ -30,16 +31,14 @@ export default function InventoryReportPage() {
                 </button>
             </div>
 
-            <div className="text-center mb-8 border-b pb-4">
-                <h2 className="text-xl font-bold uppercase tracking-widest">Relatório de Posição de Estoque</h2>
-                <p className="text-sm text-gray-500">Gerado em {new Date().toLocaleString()}</p>
-            </div>
+            <ReportHeader />
 
             {loading ? (
                 <div className="flex justify-center py-12"><Loader2 className="animate-spin" /></div>
             ) : (
                 <div className="space-y-8">
                     <table className="w-full text-sm text-left">
+                        {/* ... table content remains same ... */}
                         <thead>
                             <tr className="border-b-2 border-black">
                                 <th className="py-2">Produto</th>
@@ -75,6 +74,7 @@ export default function InventoryReportPage() {
                     </table>
                 </div>
             )}
+            <ReportFooter />
         </div>
     );
 }

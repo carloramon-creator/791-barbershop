@@ -75,10 +75,10 @@ function ClosingReportContent() {
             <table className="w-full text-left mb-4 border-collapse">
                 <thead>
                     <tr className="bg-gray-100 border-y border-gray-300">
-                        <th className="py-1 px-2 font-bold w-20">Data</th>
+                        <th className="py-1 px-2 font-bold w-[70px]">Data</th>
                         <th className="py-1 px-2 font-bold">Cliente / Itens Detalhados</th>
-                        <th className="py-1 px-2 text-right font-bold w-24">Vlr. Item</th>
-                        <th className="py-1 px-2 text-right font-bold w-24">Comissão</th>
+                        <th className="py-1 px-2 text-right font-bold w-[100px]">Vlr. Item</th>
+                        <th className="py-1 px-2 text-right font-bold w-[100px]">Comissão</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">

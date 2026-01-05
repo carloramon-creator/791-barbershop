@@ -54,8 +54,8 @@ export function ReportHeader() {
 
 export function ReportFooter() {
     return (
-        <div className="fixed bottom-0 left-0 w-full text-center text-[10px] text-gray-400 py-2 border-t border-gray-100 bg-white print:block hidden">
-            Licensed by <span className="font-bold">791 Barber</span>
+        <div className="mt-12 text-center text-[10px] text-gray-400 py-4 border-t border-gray-100">
+            Licensed by <span className="font-bold text-gray-600">791 Barber</span>
         </div>
     );
 }
