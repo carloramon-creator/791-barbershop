@@ -263,13 +263,13 @@ export default function BarberPage() {
                                         currentBarber?.barber_id === barber.barber_id ? "bg-blue-600 text-white border-blue-400" : "bg-slate-800 text-slate-500 border-slate-700"
                                     )}>
                                         {barber.photo_url ? (
-                                            <Image src={barber.photo_url} alt={barber.barber_name} width={40} height={40} className="w-full h-full object-cover" unoptimized />
+                                            <Image src={barber.photo_url} alt={barber.barber_nickname || barber.barber_name} width={40} height={40} className="w-full h-full object-cover" unoptimized />
                                         ) : (
-                                            barber.barber_name?.charAt(0)
+                                            (barber.barber_nickname || barber.barber_name)?.charAt(0)
                                         )}
                                     </div>
                                     <div className="text-left hidden md:block">
-                                        <div className="text-slate-100 text-sm font-bold">{barber.barber_name}</div>
+                                        <div className="text-slate-100 text-sm font-bold">{barber.barber_nickname || barber.barber_name}</div>
                                         <div className="flex items-center gap-1">
                                             <span className={cn(
                                                 "w-1.5 h-1.5 rounded-full",

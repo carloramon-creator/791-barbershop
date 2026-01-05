@@ -15,7 +15,7 @@ function ClosingReportContent() {
 
     const [sales, setSales] = useState<Sale[]>([]);
     const [barber, setBarber] = useState<any>(null); // Use any to allow join fields if needed
-    const [tenantName, setTenantName] = useState('Barbearia');
+    const [commissionPercentage, setCommissionPercentage] = useState<number>(0);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -30,6 +30,7 @@ function ClosingReportContent() {
                 if (response && response.barberName) {
                     setSales(response.sales || []);
                     setBarber({ name: response.barberName });
+                    setCommissionPercentage(response.commissionPercentage || 0);
                 } else {
                     // Fallback for old API format or empty response
                     setSales(Array.isArray(response) ? response : []);
@@ -54,10 +55,6 @@ function ClosingReportContent() {
 
     if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin" /></div>;
 
-
-
-    // ...
-
     return (
         <div className="p-8 max-w-5xl mx-auto bg-white min-h-screen text-black print:p-8 print:max-w-none">
             {/* Header */}
@@ -79,19 +76,34 @@ function ClosingReportContent() {
                 <thead>
                     <tr className="bg-gray-100 border-b border-gray-300">
                         <th className="py-3 px-4 font-bold">Data</th>
-                        <th className="py-3 px-4 font-bold">Cliente / Serviço</th>
-                        <th className="py-3 px-4 text-right font-bold">Valor Venda</th>
+                        <th className="py-3 px-4 font-bold">Cliente / Itens</th>
+                        <th className="py-3 px-4 text-right font-bold">Valor</th>
                         <th className="py-3 px-4 text-right font-bold">Comissão</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                     {sales.map((sale) => (
-                        <tr key={sale.id} className="hover:bg-gray-50">
+                        <tr key={sale.id} className="hover:bg-gray-50 align-top">
                             <td className="py-3 px-4 text-gray-600">
-                                {new Date(sale.created_at).toLocaleDateString('pt-BR')} <span className="text-xs">{new Date(sale.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                {new Date(sale.created_at).toLocaleDateString('pt-BR')} <br />
+                                <span className="text-[10px] opacity-60">{new Date(sale.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
                             </td>
                             <td className="py-3 px-4">
-                                <span className="font-medium uppercase">{sale.client_queue?.client_name || 'Balcão'}</span>
+                                <div className="font-bold uppercase mb-1">{sale.client_queue?.client_name || 'Balcão'}</div>
+                                <div className="space-y-1">
+                                    {(sale as any).sale_items?.map((item: any, idx: number) => {
+                                        const name = item.services?.name || item.products?.name || 'Item';
+                                        const isService = item.item_type === 'service';
+                                        const perc = isService ? (commissionPercentage || 0) : 0;
+
+                                        return (
+                                            <div key={idx} className="text-[11px] flex items-center gap-1 text-gray-500">
+                                                <span>• {name}</span>
+                                                {perc > 0 && <span className="bg-gray-100 px-1 rounded text-[9px] font-bold">({perc}%)</span>}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </td>
                             <td className="py-3 px-4 text-right">R$ {(sale.total_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                             <td className="py-3 px-4 text-right font-bold text-emerald-700">R$ {(sale.commission_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
@@ -107,11 +119,11 @@ function ClosingReportContent() {
 
             {/* Totals Section */}
             <div className="flex justify-end mb-12 break-inside-avoid">
-                <div className="w-1/3 bg-gray-50 rounded-lg p-6 border border-gray-200">
+                <div className="w-1/2 md:w-1/3 bg-gray-50 rounded-lg p-6 border border-gray-200">
                     <h3 className="font-bold border-b border-gray-300 pb-2 mb-4 uppercase text-sm text-gray-500">Resumo do Fechamento</h3>
 
                     <div className="flex justify-between py-1 text-sm">
-                        <span>Qtd Serviços:</span>
+                        <span>Qtd Vendas:</span>
                         <span className="font-mono">{sales.length}</span>
                     </div>
                     <div className="flex justify-between py-1 text-sm">

@@ -55,6 +55,7 @@ export default function UsersPage() {
 
   // Form State
   const [inviteName, setInviteName] = useState('');
+  const [inviteNickname, setInviteNickname] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRoles, setInviteRoles] = useState<string[]>(['staff']);
   const [invitePhotoUrl, setInvitePhotoUrl] = useState('');
@@ -92,6 +93,7 @@ export default function UsersPage() {
 
   const resetForm = () => {
     setInviteName('');
+    setInviteNickname('');
     setInviteEmail('');
     setInviteRoles(['staff']);
     setInvitePhotoUrl('');
@@ -146,6 +148,7 @@ export default function UsersPage() {
       const payload = {
         id: editingUserId,
         name: inviteName,
+        nickname: inviteNickname,
         email: inviteEmail,
         roles: inviteRoles,
         role: inviteRoles[0] || 'staff',
@@ -194,6 +197,7 @@ export default function UsersPage() {
     setIsViewOnly(viewOnly);
     setEditingUserId(u.id);
     setInviteName(u.name || '');
+    setInviteNickname(u.nickname || '');
     setInviteEmail(u.email || '');
     setInviteRoles(u.roles || (u.role ? [u.role] : ['staff']));
     setInvitePhotoUrl(u.photo_url || '');
@@ -425,6 +429,10 @@ export default function UsersPage() {
                         <Input id="name" disabled={isViewOnly} value={inviteName} onChange={e => setInviteName(e.target.value)} className="bg-slate-950 border-slate-800" placeholder="Ex: João da Silva" required />
                       </div>
                       <div className="space-y-2">
+                        <Label htmlFor="nickname">Apelido (Identificação rápida)</Label>
+                        <Input id="nickname" disabled={isViewOnly} value={inviteNickname} onChange={e => setInviteNickname(e.target.value)} className="bg-slate-950 border-slate-800" placeholder="Ex: João" />
+                      </div>
+                      <div className="space-y-2">
                         <Label htmlFor="email">E-mail</Label>
                         <Input
                           id="email"
@@ -587,7 +595,10 @@ export default function UsersPage() {
                               <UserIcon className="w-4 h-4" />
                             )}
                           </div>
-                          {u.name || 'Sem nome'}
+                          <div className="flex flex-col">
+                            <span className="text-slate-200">{u.nickname || u.name || 'Sem nome'}</span>
+                            {u.nickname && <span className="text-[10px] text-slate-500">{u.name}</span>}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-slate-400">{u.email}</TableCell>

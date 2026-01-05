@@ -316,7 +316,8 @@ export default function BarbeirosPage() {
                             </TableCell>
                             <TableCell>
                                 <div className="flex flex-col">
-                                    <span className="font-bold text-slate-100 uppercase tracking-tighter">{b.name}</span>
+                                    <span className="font-bold text-slate-100 uppercase tracking-tighter">{b.nickname || b.name}</span>
+                                    {b.nickname && <span className="text-[10px] text-slate-500">{b.name}</span>}
                                     {!b.is_active && <span className="text-[10px] text-red-500 font-bold uppercase">Fora de Operação</span>}
                                 </div>
                             </TableCell>

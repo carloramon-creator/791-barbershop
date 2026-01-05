@@ -68,7 +68,11 @@ function BarberReportContent() {
         return acc;
     }, {});
 
-    const getBarberName = (id: string) => barbers.find(b => b.id === id)?.name || 'Desconhecido';
+    const getBarberName = (id: string) => {
+        const b = barbers.find(barber => barber.id === id);
+        if (!b) return 'Desconhecido';
+        return b.nickname ? `${b.name} (${b.nickname})` : b.name;
+    };
 
     if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin" /></div>;
 

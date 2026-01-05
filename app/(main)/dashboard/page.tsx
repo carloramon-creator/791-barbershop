@@ -234,7 +234,7 @@ export default function DashboardPage() {
                                 queueStatus.map((barber) => (
                                     <TableRow key={barber.barber_id} className={cn("border-slate-800 hover:bg-slate-800/50 transition-colors", barber.is_active === false && "opacity-60")}>
                                         <TableCell className="font-medium text-slate-100 italic">
-                                            {barber.barber_name}
+                                            {barber.barber_nickname || barber.barber_name}
                                         </TableCell>
                                         <TableCell>
                                             <Badge className={

@@ -30,6 +30,7 @@ export interface User {
     tenant_id: string;
     email: string;
     name: string;
+    nickname?: string;
     role: UserRole;
     roles?: UserRole[];
     phone?: string;
@@ -53,6 +54,7 @@ export interface Barber {
     id: string;
     tenant_id: string;
     name: string;
+    nickname?: string;
     photo_url?: string;
     status: BarberStatus;
     avg_time_minutes: number;
@@ -181,6 +183,7 @@ export interface DashboardSummary {
 export interface BarberQueueStatus {
     barber_id: string;
     barber_name: string;
+    barber_nickname?: string;
     user_id?: string;
     photo_url?: string;
     status: 'available' | 'busy' | 'offline';
