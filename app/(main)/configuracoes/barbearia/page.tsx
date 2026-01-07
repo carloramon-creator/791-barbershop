@@ -50,12 +50,6 @@ export default function BarbershopSettingsPage() {
     const [bankAccountHolder, setBankAccountHolder] = useState('');
     const [bankAccountDoc, setBankAccountDoc] = useState('');
 
-    // Inter API State
-    const [interClientId, setInterClientId] = useState('');
-    const [interClientSecret, setInterClientSecret] = useState('');
-    const [interCertContent, setInterCertContent] = useState('');
-    const [interKeyContent, setInterKeyContent] = useState('');
-    const [interPixKey, setInterPixKey] = useState('');
 
     const loadBarbershop = async () => {
         try {
@@ -87,12 +81,6 @@ export default function BarbershopSettingsPage() {
                 setBankAccountHolder(data.bank_account_holder || data.name || '');
                 setBankAccountDoc(data.bank_account_doc || data.cnpj || '');
 
-                // Inter fields
-                setInterClientId(data.inter_client_id || '');
-                setInterClientSecret(data.inter_client_secret || '');
-                setInterCertContent(data.inter_cert_content || '');
-                setInterKeyContent(data.inter_key_content || '');
-                setInterPixKey(data.inter_pix_key || '');
             }
         } catch (error) {
             console.error('Failed to load barbershop data', error);
@@ -197,12 +185,6 @@ export default function BarbershopSettingsPage() {
                 bank_account_digit: bankAccountDigit,
                 bank_account_holder: bankAccountHolder,
                 bank_account_doc: bankAccountDoc,
-                // Inter Info
-                inter_client_id: interClientId,
-                inter_client_secret: interClientSecret,
-                inter_cert_content: interCertContent,
-                inter_key_content: interKeyContent,
-                inter_pix_key: interPixKey
             };
             await Api.updateBarbershop(payload);
             await refresh(); // Global context refresh
@@ -518,74 +500,6 @@ export default function BarbershopSettingsPage() {
                             </div>
                         </div>
 
-                        {/* Banco Inter API Section */}
-                        <div className="mt-8 p-6 bg-blue-500/5 border border-blue-500/20 rounded-xl space-y-6">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-500">
-                                    <Shield size={20} />
-                                </div>
-                                <div>
-                                    <h4 className="text-slate-100 font-bold uppercase text-xs tracking-wider">Integração Banco Inter (Opcional)</h4>
-                                    <p className="text-[10px] text-slate-500 font-medium">Automatize a confirmação de pagamentos Pix via API v2.</p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-slate-400 text-[10px] uppercase font-bold">Client ID (Inter)</Label>
-                                    <Input
-                                        value={interClientId}
-                                        onChange={e => setInterClientId(e.target.value)}
-                                        placeholder="Ex: 8a7b..."
-                                        disabled={!isEditing}
-                                        className="bg-slate-950 border-slate-800 text-xs h-10"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-slate-400 text-[10px] uppercase font-bold">Client Secret (Inter)</Label>
-                                    <Input
-                                        type="password"
-                                        value={interClientSecret}
-                                        onChange={e => setInterClientSecret(e.target.value)}
-                                        placeholder="••••••••"
-                                        disabled={!isEditing}
-                                        className="bg-slate-950 border-slate-800 text-xs h-10"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-slate-400 text-[10px] uppercase font-bold">Chave Pix do Inter</Label>
-                                    <Input
-                                        value={interPixKey}
-                                        onChange={e => setInterPixKey(e.target.value)}
-                                        placeholder="Deve ser a chave do Banco Inter"
-                                        disabled={!isEditing}
-                                        className="bg-slate-950 border-slate-800 text-xs h-10"
-                                    />
-                                </div>
-                                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-slate-400 text-[10px] uppercase font-bold">Conteúdo do Certificado (.crt)</Label>
-                                        <textarea
-                                            value={interCertContent}
-                                            onChange={e => setInterCertContent(e.target.value)}
-                                            placeholder="-----BEGIN CERTIFICATE----- ..."
-                                            disabled={!isEditing}
-                                            className="w-full h-24 bg-slate-950 border border-slate-800 rounded-md p-2 text-[10px] font-mono text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-slate-400 text-[10px] uppercase font-bold">Conteúdo da Chave (.key)</Label>
-                                        <textarea
-                                            value={interKeyContent}
-                                            onChange={e => setInterKeyContent(e.target.value)}
-                                            placeholder="-----BEGIN PRIVATE KEY----- ..."
-                                            disabled={!isEditing}
-                                            className="w-full h-24 bg-slate-950 border border-slate-800 rounded-md p-2 text-[10px] font-mono text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
                         {isEditing && (
                             <div className="pt-6 flex justify-end gap-4 sticky bottom-0 bg-slate-950/80 backdrop-blur-sm p-4 border-t border-slate-800 z-10">
