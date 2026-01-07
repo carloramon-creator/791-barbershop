@@ -7,7 +7,6 @@ import {
     Search,
     ChevronRight,
     Filter,
-    MoreVertical,
     User,
     Mail,
     Phone,
@@ -175,20 +174,13 @@ export default function TenantsPage() {
                                         variant="outline"
                                         size="icon"
                                         className="border-slate-800 bg-slate-950 text-slate-400 hover:text-blue-500 hover:border-blue-500/50"
-                                        onClick={() => window.open(`${window.location.origin}/clientes?tenant_id=${tenant.id}`, '_blank')}
+                                        onClick={() => {
+                                            // Navigate to dashboard as hidden user (impersonation)
+                                            window.open(`${window.location.origin}/dashboard?tenant_id=${tenant.id}&impersonate=true`, '_blank');
+                                        }}
+                                        title="Acessar como usuário oculto"
                                     >
                                         <ExternalLink size={16} />
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        className="border-slate-800 bg-slate-950 text-slate-400 hover:text-white"
-                                        onClick={() => {
-                                            // TODO: Implement impersonation or more actions
-                                            alert(`Gerenciar ${tenant.name}`);
-                                        }}
-                                    >
-                                        <MoreVertical size={16} />
                                     </Button>
                                 </div>
                             </div>

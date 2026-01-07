@@ -32,6 +32,7 @@ export default function CouponsPage() {
     const [discountPercent, setDiscountPercent] = useState('');
     const [trialDays, setTrialDays] = useState('0');
     const [maxUses, setMaxUses] = useState('');
+    const [expiresAt, setExpiresAt] = useState('');
 
     const loadCoupons = async () => {
         try {
@@ -64,6 +65,7 @@ export default function CouponsPage() {
                     discount_percent: discountPercent ? parseFloat(discountPercent) : null,
                     trial_days: parseInt(trialDays),
                     max_uses: maxUses ? parseInt(maxUses) : null,
+                    expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
                 });
 
             if (error) throw error;
@@ -73,6 +75,7 @@ export default function CouponsPage() {
             setDiscountPercent('');
             setTrialDays('0');
             setMaxUses('');
+            setExpiresAt('');
             loadCoupons();
             alert('Cupom criado com sucesso!');
         } catch (e: any) {
@@ -120,7 +123,7 @@ export default function CouponsPage() {
                         <CardTitle className="text-slate-100">Configurar Novo Cupom</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-5 gap-6">
                             <div className="space-y-2">
                                 <Label className="text-slate-400 text-xs uppercase font-bold">Código (Ex: BROW20)</Label>
                                 <Input value={code} onChange={e => setCode(e.target.value)} placeholder="PROMOCAO791" className="bg-slate-950 border-slate-800 h-11" required />
@@ -137,7 +140,11 @@ export default function CouponsPage() {
                                 <Label className="text-slate-400 text-xs uppercase font-bold">Limite de Usos</Label>
                                 <Input type="number" value={maxUses} onChange={e => setMaxUses(e.target.value)} placeholder="Vazio = Ilimitado" className="bg-slate-950 border-slate-800 h-11" />
                             </div>
-                            <div className="md:col-span-4 flex justify-end gap-3 mt-4">
+                            <div className="space-y-2">
+                                <Label className="text-slate-400 text-xs uppercase font-bold">Data de Expiração</Label>
+                                <Input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} className="bg-slate-950 border-slate-800 h-11" />
+                            </div>
+                            <div className="md:col-span-5 flex justify-end gap-3 mt-4">
                                 <Button type="button" variant="outline" onClick={() => setIsAdding(false)} className="border-slate-800 text-slate-400">Cancelar</Button>
                                 <Button type="submit" className="bg-blue-600 text-white min-w-[150px]">Salvar Cupom</Button>
                             </div>
@@ -200,6 +207,14 @@ export default function CouponsPage() {
                                         </div>
                                     </div>
                                 </div>
+                                {coupon.expires_at && (
+                                    <div className="p-3 bg-slate-950 rounded-xl border border-slate-800/50 col-span-2">
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Expira em</p>
+                                        <p className="text-sm font-black text-amber-500">
+                                            {new Date(coupon.expires_at).toLocaleDateString('pt-BR')}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex gap-2 pt-2">
