@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Api } from '@/lib/api';
 import { supabaseClient } from '@/lib/supabase-client';
 import {
