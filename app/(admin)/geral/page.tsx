@@ -27,18 +27,25 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         const load = async () => {
+            setLoading(true);
+
+            // Fetch Tenants
             try {
-                const [tenantsData, globalStats] = await Promise.all([
-                    Api.getSystemTenants(),
-                    Api.getSystemStats()
-                ]);
-                setTenants(tenantsData);
+                const tenantsData = await Api.getSystemTenants();
+                setTenants(tenantsData || []);
+            } catch (e) {
+                console.error('Error loading tenants:', e);
+            }
+
+            // Fetch Global Stats
+            try {
+                const globalStats = await Api.getSystemStats();
                 setStatsData(globalStats);
             } catch (e) {
-                console.error(e);
-            } finally {
-                setLoading(false);
+                console.error('Error loading stats:', e);
             }
+
+            setLoading(false);
         };
         load();
     }, []);
