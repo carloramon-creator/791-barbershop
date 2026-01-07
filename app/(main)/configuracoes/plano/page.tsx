@@ -115,7 +115,9 @@ export default function PlanPage() {
                 }
             });
             const tenantData = await tenantRes.json();
-            setTenantHasDocument(!!tenantData.cnpj);
+            // Check both cnpj and potentially other fields if needed, being robust
+            const doc = tenantData.cnpj || tenantData.cpf_cnpj || '';
+            setTenantHasDocument(doc.replace(/\D/g, '').length >= 11);
         } catch (err: unknown) {
             const errorObj = err as Error;
             console.error('Erro ao buscar plano:', errorObj.message);
