@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, Building2, CreditCard, Check, Shield, FileText } from 'lucide-react';
+import { Users, Building2, CreditCard, Check, Shield, FileText, ExternalLink, Copy } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -20,7 +20,7 @@ import { AlertCircle } from 'lucide-react';
 
 import { supabaseClient } from '@/lib/supabase-client';
 
-// Use NEXT_PUBLIC_BACKEND_URL if set, else fallback. Note user code used 3002 hardcoded so we trust new config
+// Use NEXT_PUBLIC_BACKEND_URL if set, else fallback.
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
 
 interface PlanInfo {
@@ -34,6 +34,7 @@ interface PlanInfo {
 }
 
 const PLANS: Record<string, PlanInfo> = {
+    trial: { id: 'trial', name: 'Período de Teste', price: 0, barbers: 'Total', appointments: 'Ilimitados', support: 'Limitado', features: ['Teste grátis'] },
     basic: {
         id: 'basic',
         name: 'Básico',
@@ -73,9 +74,10 @@ export default function PlanPage() {
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix' | 'boleto-inter'>('card');
+    const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix' | 'boleto-inter' | 'boleto-result'>('card');
     const [couponCode, setCouponCode] = useState('');
     const [pixData, setPixData] = useState<{ pixPayload: string; amount: number; expiresAt: string } | null>(null);
+    const [boletoData, setBoletoData] = useState<{ nossoNumero: string; codigoBarras: string; linhaDigitavel: string; pdfUrl: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const tabs = [
@@ -120,12 +122,12 @@ export default function PlanPage() {
             setSaving(true);
             setError(null);
             setPixData(null);
+            setBoletoData(null);
 
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) throw new Error('Usuário não autenticado ou sessão expirada');
 
             if (paymentMethod === 'card') {
-                // Chamar API de checkout do Stripe
                 const res = await fetch(`${API_URL}/api/checkout`, {
                     method: 'POST',
                     headers: {
@@ -138,14 +140,12 @@ export default function PlanPage() {
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
 
-                // Redirecionar para Stripe Checkout
                 if (data.url) {
                     window.location.href = data.url;
                 } else {
                     throw new Error('URL de checkout não retornada');
                 }
             } else if (paymentMethod === 'pix') {
-                // Chamar API de checkout do Pix
                 const res = await fetch(`${API_URL}/api/checkout/pix`, {
                     method: 'POST',
                     headers: {
@@ -160,7 +160,6 @@ export default function PlanPage() {
 
                 setPixData(data);
             } else if (paymentMethod === 'boleto-inter') {
-                // Chamar API de checkout do Boleto Inter
                 const res = await fetch(`${API_URL}/api/checkout/inter-boleto`, {
                     method: 'POST',
                     headers: {
@@ -173,12 +172,16 @@ export default function PlanPage() {
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
 
-                alert('Boleto gerado com sucesso! Verifique seu e-mail ou aguarde o PDF.');
-                setOpenDialog(false);
+                setBoletoData(data);
+                setPaymentMethod('boleto-result');
             }
-        } catch (err: unknown) {
-            const errorObj = err as Error;
-            setError(errorObj.message);
+        } catch (err: any) {
+            console.error('[CHECKOUT ERROR]', err);
+            if (err.message === 'Failed to fetch' || err.message === 'fetch failed') {
+                setError('Erro de conexão: Verifique se o domínio api.791barber.com está ativo e com SSL válido.');
+            } else {
+                setError(err.message || 'Erro inesperado ao processar pagamento');
+            }
         } finally {
             setSaving(false);
         }
@@ -235,10 +238,10 @@ export default function PlanPage() {
                                 <div className="flex justify-between items-center">
                                     <div>
                                         <h3 className="text-2xl font-bold text-slate-100 capitalize">
-                                            {currentPlan}
+                                            {PLANS[currentPlan]?.name || currentPlan}
                                         </h3>
                                         <p className="text-sm text-slate-400 mt-1">
-                                            R$ {PLANS[currentPlan]?.price}/mês
+                                            R$ {PLANS[currentPlan]?.price || 0}/mês
                                         </p>
                                     </div>
                                     <span className="px-4 py-2 bg-green-500/10 text-green-500 text-sm rounded-full border border-green-500/20">
@@ -252,7 +255,7 @@ export default function PlanPage() {
                     <div className="space-y-4">
                         <h2 className="text-xl font-bold text-slate-100">Escolha um Plano</h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {Object.values(PLANS).map((plan) => (
+                            {Object.values(PLANS).filter(p => p.id !== 'trial').map((plan) => (
                                 <Card
                                     key={plan.id}
                                     className={cn(
@@ -301,6 +304,7 @@ export default function PlanPage() {
                                             disabled={currentPlan === plan.id}
                                             onClick={() => {
                                                 setSelectedPlan(plan.id);
+                                                setPaymentMethod('card');
                                                 setOpenDialog(true);
                                             }}
                                         >
@@ -314,25 +318,23 @@ export default function PlanPage() {
                 </>
             )}
 
-            {error && (
-                <div className="bg-red-500/10 border border-red-500/20 p-4 rounded text-red-400 text-sm">
-                    {error}
-                </div>
-            )}
-
             <Dialog open={openDialog} onOpenChange={(open) => {
                 setOpenDialog(open);
-                if (!open) setPixData(null);
+                if (!open) {
+                    setPixData(null);
+                    setBoletoData(null);
+                    setError(null);
+                }
             }}>
                 <DialogContent className="border-slate-800 bg-slate-900 text-slate-100 max-w-md">
                     <DialogHeader>
                         <DialogTitle>Confirmar Assinatura</DialogTitle>
                         <DialogDescription className="text-slate-400">
-                            Plano <span className="font-bold text-slate-100 capitalize">{selectedPlan}</span> - R$ {PLANS[selectedPlan || '']?.price}/mês
+                            Plano <span className="font-bold text-slate-100 capitalize">{selectedPlan}</span> - R$ {selectedPlan ? PLANS[selectedPlan]?.price : 0}/mês
                         </DialogDescription>
                     </DialogHeader>
 
-                    {!pixData ? (
+                    {!pixData && !boletoData && (
                         <div className="py-4 space-y-4">
                             <Label className="text-xs text-slate-500 uppercase tracking-wider">Forma de Pagamento</Label>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -374,7 +376,7 @@ export default function PlanPage() {
                                 </button>
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-2 pt-2">
                                 <Label className="text-xs text-slate-500 uppercase tracking-wider">Possui um cupom?</Label>
                                 <input
                                     type="text"
@@ -387,27 +389,26 @@ export default function PlanPage() {
                                     className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:border-amber-500 outline-none transition-all"
                                 />
                                 {error && (
-                                    <p className="text-[10px] font-bold text-red-500 uppercase tracking-tight mt-1">
+                                    <p className="text-[10px] font-bold text-red-500 uppercase tracking-tight mt-1 animate-pulse">
                                         {error}
                                     </p>
                                 )}
                             </div>
                         </div>
-                    ) : (
+                    )}
+
+                    {pixData && (
                         <div className="py-4 flex flex-col items-center space-y-4">
                             <p className="text-center text-sm text-slate-300">
-                                Escaneie o código abaixo com o app do seu banco para pagar a assinatura do 791 Barber.
+                                Escaneie o código abaixo para pagar via Pix. O acesso é liberado na hora!
                             </p>
 
-                            <div className="bg-white p-2 rounded-lg">
-                                {/* Using a simple img tag for the base64 QR. Real implementation would probably use a lib or specialized component */}
-                                <div className="w-48 h-48 bg-slate-200 animate-pulse flex items-center justify-center">
-                                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixData.pixPayload)}`} alt="QR Code Pix" />
-                                </div>
+                            <div className="bg-white p-2 rounded-lg border-4 border-emerald-500">
+                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixData.pixPayload)}`} alt="QR Code Pix" />
                             </div>
 
                             <div className="w-full space-y-2">
-                                <Label className="text-[10px] text-slate-500 uppercase">Pix Copia e Cola</Label>
+                                <Label className="text-[10px] text-slate-500 uppercase font-black">Copia e Cola</Label>
                                 <div className="flex gap-2">
                                     <input
                                         readOnly
@@ -417,6 +418,7 @@ export default function PlanPage() {
                                     <Button
                                         size="sm"
                                         variant="outline"
+                                        className="border-slate-700"
                                         onClick={() => {
                                             navigator.clipboard.writeText(pixData.pixPayload);
                                             alert('Copiado!');
@@ -426,15 +428,56 @@ export default function PlanPage() {
                                     </Button>
                                 </div>
                             </div>
+                        </div>
+                    )}
 
-                            <p className="text-[10px] text-slate-500 text-center uppercase tracking-widest">
-                                O acesso será liberado em segundos após o pagamento.
+                    {boletoData && (
+                        <div className="py-4 space-y-6">
+                            <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl text-center">
+                                <FileText className="w-12 h-12 text-blue-500 mx-auto mb-2" />
+                                <h3 className="font-black text-slate-100 uppercase tracking-tighter">Boleto Gerado</h3>
+                                <p className="text-xs text-slate-400">Pague pelo seu banco usando a linha digitável abaixo.</p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label className="text-[10px] text-slate-500 uppercase font-black">Linha Digitável</Label>
+                                <div className="flex gap-2">
+                                    <input
+                                        readOnly
+                                        value={boletoData.linhaDigitavel}
+                                        className="flex-1 bg-slate-950 border border-slate-800 rounded px-3 py-2 text-[10px] font-mono text-slate-300"
+                                    />
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="border-slate-700"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(boletoData.linhaDigitavel);
+                                            alert('Linha digitável copiada!');
+                                        }}
+                                    >
+                                        <Copy className="w-3 h-3" />
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <Button
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase"
+                                onClick={() => window.open(boletoData.pdfUrl, '_blank')}
+                            >
+                                <ExternalLink className="w-4 h-4 mr-2" />
+                                Visualizar PDF do Boleto
+                            </Button>
+
+                            <p className="text-[10px] text-slate-500 text-center uppercase tracking-widest leading-relaxed">
+                                Boletos podem levar até 48 horas úteis para compensar.<br />
+                                Para liberação imediata, escolha o Pix.
                             </p>
                         </div>
                     )}
 
                     <DialogFooter>
-                        {!pixData ? (
+                        {!pixData && !boletoData ? (
                             <>
                                 <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800" onClick={() => setOpenDialog(false)} disabled={saving}>Cancelar</Button>
                                 <Button onClick={handleChangePlan} disabled={saving} className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
@@ -442,7 +485,7 @@ export default function PlanPage() {
                                 </Button>
                             </>
                         ) : (
-                            <Button onClick={() => setOpenDialog(false)} className="w-full bg-slate-800 text-white">Fechar</Button>
+                            <Button onClick={() => setOpenDialog(false)} className="w-full bg-slate-800 text-white">Concluído</Button>
                         )}
                     </DialogFooter>
                 </DialogContent>
