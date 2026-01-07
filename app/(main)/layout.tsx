@@ -29,7 +29,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
             if (!isWhiteListed) {
                 if ((isTrial && isExpired) || (isCanceled && isExpired) || isPastDue) {
-                    router.push('/checkout/trial-expired');
+                    router.push('/configuracoes/plano?expired=true');
                 }
             }
         }

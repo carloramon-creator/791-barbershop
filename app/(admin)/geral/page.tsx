@@ -55,32 +55,32 @@ export default function AdminDashboard() {
 
     const mainMetrics = [
         {
-            label: 'Faturamento Mensal',
-            value: formatCurrency(statsData?.revenue?.month || 0),
-            detail: 'SaaS (Stripe/Inter)',
+            label: `Receita SaaS (${period === 'day' ? 'Hoje' : period === 'week' ? 'Semana' : 'Mês'})`,
+            value: formatCurrency(statsData?.revenue?.[period] || 0),
+            detail: 'Assinaturas (Stripe/Inter)',
             icon: TrendingUp,
             color: 'blue'
         },
         {
             label: 'Assinaturas Ativas',
             value: statsData?.subscriptions?.active || 0,
-            detail: `Total: ${statsData?.subscriptions?.active + statsData?.subscriptions?.inactive || 0}`,
+            detail: `Inativas: ${statsData?.subscriptions?.inactive || 0}`,
             icon: CreditCard,
             color: 'emerald'
         },
         {
-            label: 'Usuários Ativos (30d)',
-            value: statsData?.users?.total_active || 0,
-            detail: `Cadastrados: ${statsData?.users?.total_registered || 0}`,
-            icon: Users,
-            color: 'purple'
+            label: 'Total de Barbearias',
+            value: tenants.length,
+            detail: `${statsData?.subscriptions?.trials || 0} em período de teste`,
+            icon: Store,
+            color: 'amber'
         },
         {
-            label: 'Faturamento em Andamento',
-            value: formatCurrency(statsData?.in_progress_revenue || 0),
-            detail: 'Soma de todos os tenants',
-            icon: Clock,
-            color: 'amber'
+            label: 'Usuários Ativos (30d)',
+            value: statsData?.users?.total_active || 0,
+            detail: `Total: ${statsData?.users?.total_registered || 0}`,
+            icon: Users,
+            color: 'purple'
         },
     ];
 

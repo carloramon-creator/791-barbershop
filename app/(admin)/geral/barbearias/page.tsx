@@ -15,7 +15,8 @@ import {
     CheckCircle2,
     XCircle,
     Activity,
-    ExternalLink
+    ExternalLink,
+    TrendingUp
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -48,11 +49,38 @@ export default function TenantsPage() {
         t.owner?.[0]?.name?.toLowerCase().includes(search.toLowerCase())
     );
 
+    const totals = tenants.reduce((acc, t) => ({
+        attendances: acc.attendances + (t.stats?.total_attendances || 0),
+        users: acc.users + (t.stats?.total_users || 0),
+        revenue: acc.revenue + (t.stats?.total_revenue || 0)
+    }), { attendances: 0, users: 0, revenue: 0 });
+
+    const formatCurrency = (val: number) =>
+        new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val);
+
     return (
         <div className="space-y-8 pb-20">
-            <div>
-                <h1 className="text-3xl font-black text-slate-100 tracking-tighter uppercase">Gerenciar Barbearias</h1>
-                <p className="text-slate-500 font-medium">Lista completa de licenciados e performance individual.</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-black text-slate-100 tracking-tighter uppercase">Gerenciar Barbearias</h1>
+                    <p className="text-slate-500 font-medium">Lista completa de licenciados e performance individual.</p>
+                </div>
+
+                {/* Global Summary Row */}
+                <div className="flex bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-8 shadow-xl">
+                    <div className="text-center">
+                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Atendimentos Totais</p>
+                        <p className="text-xl font-black text-slate-100">{totals.attendances}</p>
+                    </div>
+                    <div className="text-center border-x border-slate-800 px-8">
+                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Vendas Totais</p>
+                        <p className="text-xl font-black text-emerald-500">{formatCurrency(totals.revenue)}</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Total Usuários</p>
+                        <p className="text-xl font-black text-purple-500">{totals.users}</p>
+                    </div>
+                </div>
             </div>
 
             {/* Toolbar */}
@@ -143,10 +171,23 @@ export default function TenantsPage() {
 
                                 {/* Actions */}
                                 <div className="flex gap-2">
-                                    <Button variant="outline" size="icon" className="border-slate-800 bg-slate-950 text-slate-400 hover:text-blue-500 hover:border-blue-500/50">
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="border-slate-800 bg-slate-950 text-slate-400 hover:text-blue-500 hover:border-blue-500/50"
+                                        onClick={() => window.open(`${window.location.origin}/clientes?tenant_id=${tenant.id}`, '_blank')}
+                                    >
                                         <ExternalLink size={16} />
                                     </Button>
-                                    <Button variant="outline" size="icon" className="border-slate-800 bg-slate-950 text-slate-400 hover:text-white">
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="border-slate-800 bg-slate-950 text-slate-400 hover:text-white"
+                                        onClick={() => {
+                                            // TODO: Implement impersonation or more actions
+                                            alert(`Gerenciar ${tenant.name}`);
+                                        }}
+                                    >
                                         <MoreVertical size={16} />
                                     </Button>
                                 </div>
@@ -154,6 +195,39 @@ export default function TenantsPage() {
                         </CardContent>
                     </Card>
                 ))}
+                {!loading && filteredTenants.length > 0 && (
+                    <Card className="bg-slate-950 border-slate-800 border-t-4 border-t-blue-600">
+                        <CardContent className="p-6">
+                            <div className="flex flex-col lg:flex-row lg:items-center gap-8 opacity-80">
+                                <div className="flex items-center gap-4 min-w-[250px]">
+                                    <div className="w-14 h-14 rounded-2xl bg-blue-600/10 flex items-center justify-center border border-blue-500/30">
+                                        <TrendingUp className="text-blue-500" size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-black text-slate-100">Total Acumulado</h3>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Soma de todos os licenciados</p>
+                                    </div>
+                                </div>
+                                <div className="flex-1"></div>
+                                <div className="flex items-center gap-8">
+                                    <div className="text-center">
+                                        <p className="text-lg font-black text-slate-100">{totals.attendances}</p>
+                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Atendimentos</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-lg font-black text-slate-100">{totals.users}</p>
+                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Usuários</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-lg font-black text-emerald-500">{formatCurrency(totals.revenue)}</p>
+                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Faturamento Total</p>
+                                    </div>
+                                </div>
+                                <div className="w-[84px]"></div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </div>
     );

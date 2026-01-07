@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, Building2, CreditCard, Check, Shield } from 'lucide-react';
+import { Users, Building2, CreditCard, Check, Shield, FileText } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
     Dialog,
@@ -16,6 +16,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from '@/components/ui/dialog';
+import { AlertCircle } from 'lucide-react';
 
 import { supabaseClient } from '@/lib/supabase-client';
 
@@ -64,12 +65,15 @@ const PLANS: Record<string, PlanInfo> = {
 
 export default function PlanPage() {
     const pathname = usePathname();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const isExpired = searchParams.get('expired') === 'true';
     const [currentPlan, setCurrentPlan] = useState<string>('basic');
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix'>('card');
+    const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix' | 'boleto-inter'>('card');
     const [couponCode, setCouponCode] = useState('');
     const [pixData, setPixData] = useState<{ pixPayload: string; amount: number; expiresAt: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -140,7 +144,7 @@ export default function PlanPage() {
                 } else {
                     throw new Error('URL de checkout não retornada');
                 }
-            } else {
+            } else if (paymentMethod === 'pix') {
                 // Chamar API de checkout do Pix
                 const res = await fetch(`${API_URL}/api/checkout/pix`, {
                     method: 'POST',
@@ -155,6 +159,22 @@ export default function PlanPage() {
                 if (!res.ok) throw new Error(data.error);
 
                 setPixData(data);
+            } else if (paymentMethod === 'boleto-inter') {
+                // Chamar API de checkout do Boleto Inter
+                const res = await fetch(`${API_URL}/api/checkout/inter-boleto`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({ plan: selectedPlan, coupon: couponCode }),
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                alert('Boleto gerado com sucesso! Verifique seu e-mail ou aguarde o PDF.');
+                setOpenDialog(false);
             }
         } catch (err: unknown) {
             const errorObj = err as Error;
@@ -166,6 +186,16 @@ export default function PlanPage() {
 
     return (
         <div className="max-w-6xl mx-auto space-y-6">
+            {isExpired && (
+                <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex items-center gap-3 text-red-400">
+                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                    <div>
+                        <p className="font-bold uppercase text-[10px] tracking-widest">Atenção: Período Expirado</p>
+                        <p className="text-xs font-medium text-red-500/80">Seu período de teste ou assinatura expirou. Escolha um plano abaixo para continuar utilizando a plataforma.</p>
+                    </div>
+                </div>
+            )}
+
             <div className="flex flex-col gap-4">
                 <h1 className="text-3xl font-bold text-slate-100">Configurações</h1>
                 <div className="flex space-x-1 border-b border-slate-800">
@@ -305,30 +335,42 @@ export default function PlanPage() {
                     {!pixData ? (
                         <div className="py-4 space-y-4">
                             <Label className="text-xs text-slate-500 uppercase tracking-wider">Forma de Pagamento</Label>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <button
                                     onClick={() => setPaymentMethod('card')}
                                     className={cn(
-                                        "flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all",
+                                        "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
                                         paymentMethod === 'card'
-                                            ? "border-amber-500 bg-amber-500/5"
-                                            : "border-slate-800 bg-slate-950 hover:border-slate-700"
+                                            ? "border-amber-500 bg-amber-500/5 text-slate-100"
+                                            : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
                                     )}
                                 >
-                                    <CreditCard className={cn("w-6 h-6", paymentMethod === 'card' ? "text-amber-500" : "text-slate-500")} />
-                                    <span className="text-sm font-bold">Cartão</span>
+                                    <CreditCard className="w-5 h-5" />
+                                    <span className="text-[10px] font-black uppercase">Cartão</span>
                                 </button>
                                 <button
                                     onClick={() => setPaymentMethod('pix')}
                                     className={cn(
-                                        "flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all",
+                                        "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
                                         paymentMethod === 'pix'
-                                            ? "border-amber-500 bg-amber-500/5"
-                                            : "border-slate-800 bg-slate-950 hover:border-slate-700"
+                                            ? "border-emerald-500 bg-emerald-500/5 text-slate-100"
+                                            : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
                                     )}
                                 >
-                                    <span className="text-xl font-black">Pix</span>
-                                    <span className="text-sm font-bold">Pix SaaS</span>
+                                    <span className="text-lg font-black leading-none">PIX</span>
+                                    <span className="text-[10px] font-black uppercase">Inter</span>
+                                </button>
+                                <button
+                                    onClick={() => setPaymentMethod('boleto-inter')}
+                                    className={cn(
+                                        "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
+                                        paymentMethod === 'boleto-inter'
+                                            ? "border-blue-500 bg-blue-500/5 text-slate-100"
+                                            : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
+                                    )}
+                                >
+                                    <FileText className="w-5 h-5" />
+                                    <span className="text-[10px] font-black uppercase">Boleto</span>
                                 </button>
                             </div>
 
@@ -338,9 +380,17 @@ export default function PlanPage() {
                                     type="text"
                                     placeholder="INSIRA SEU CUPOM"
                                     value={couponCode}
-                                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                    onChange={(e) => {
+                                        setCouponCode(e.target.value.toUpperCase());
+                                        setError(null);
+                                    }}
                                     className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:border-amber-500 outline-none transition-all"
                                 />
+                                {error && (
+                                    <p className="text-[10px] font-bold text-red-500 uppercase tracking-tight mt-1">
+                                        {error}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     ) : (
