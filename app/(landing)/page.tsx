@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +21,7 @@ import { supabaseClient } from '@/lib/supabase-client';
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
 
 export default function LandingPage() {
+    const router = useRouter();
     const [openDialog, setOpenDialog] = useState(false);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -30,6 +32,30 @@ export default function LandingPage() {
     });
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+
+    useEffect(() => {
+        const checkSession = async () => {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                // Se o usuário já está logado ou veio por um link de recuperação
+                router.push('/setup-password');
+            }
+        };
+
+        // Escutar mudanças de auth para capturar o evento de recuperação imediatamente
+        const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event, session) => {
+            if (event === 'PASSWORD_RECOVERY') {
+                router.push('/setup-password');
+            } else if (session && event === 'SIGNED_IN') {
+                // Se logar normalmente, pode mandar pro dashboard se preferir, 
+                // mas aqui focamos em pegar o recovery que cai na home.
+                router.push('/setup-password');
+            }
+        });
+
+        checkSession();
+        return () => subscription.unsubscribe();
+    }, [router]);
 
     async function handleSignUp() {
         if (!formData.name || !formData.email || !formData.barbershopName || !formData.password) {

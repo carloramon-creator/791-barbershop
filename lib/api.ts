@@ -139,4 +139,10 @@ export const Api = {
     getSystemStats: () => apiFetch('/api/system/stats'),
     getSystemSettings: () => apiFetch('/api/system/settings'),
     updateSystemSetting: (key: string, value: any) => apiFetch('/api/system/settings', { method: 'PUT', body: JSON.stringify({ key, value }) }),
+
+    // Public/Client Actions
+    getPublicQueueStatus: (tenantId?: string) => apiFetch(`/api/public/queue?tenant_id=${tenantId || ''}`),
+    enterPublicQueue: (payload: Record<string, any>) => apiFetch('/api/public/queue/enter', { method: 'POST', body: JSON.stringify(payload) }),
+    getPublicTicket: (ticketId: string) => apiFetch(`/api/public/queue/ticket?id=${ticketId}`),
+    cancelPublicTicket: (ticketId: string) => apiFetch(`/api/public/queue/cancel`, { method: 'PUT', body: JSON.stringify({ ticketId }) }),
 };
