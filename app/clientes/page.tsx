@@ -30,18 +30,27 @@ export default function HomePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Load existing data from localStorage if available
+    // 1. Load basic customer data
     const savedName = localStorage.getItem('791_client_name');
     const savedPhone = localStorage.getItem('791_client_phone');
     const savedCpf = localStorage.getItem('791_client_cpf');
     const savedPhoto = localStorage.getItem('791_client_photo');
+
+    // 2. Load cached Branding (Avoiding the 'generic' flash)
+    const cachedTenant = localStorage.getItem('791_cached_tenant');
+    if (cachedTenant) {
+      try {
+        setShopInfo(JSON.parse(cachedTenant));
+      } catch (e) {
+        console.error('Error parsing cached tenant', e);
+      }
+    }
 
     if (savedName) setClientName(savedName);
     if (savedPhone) setClientPhone(savedPhone);
     if (savedCpf) setClientCpf(savedCpf);
     if (savedPhoto) setClientPhoto(savedPhoto);
 
-    // If already has name and phone, skip to barber selection (Step 3)
     if (savedName && savedPhone) {
       setStep(3);
     }
@@ -49,12 +58,12 @@ export default function HomePage() {
     async function load() {
       try {
         const response = await Api.getPublicQueueStatus('');
-        // New structure: { barbers, tenant }
         setBarbers(response.barbers || []);
         setShopInfo(response.tenant || null);
 
-        // Push branding to layout via custom event or just let it stay here if layout handles it
         if (response.tenant) {
+          // Update cache for next time
+          localStorage.setItem('791_cached_tenant', JSON.stringify(response.tenant));
           window.dispatchEvent(new CustomEvent('791_tenant_found', { detail: response.tenant }));
         }
       } catch (err) {

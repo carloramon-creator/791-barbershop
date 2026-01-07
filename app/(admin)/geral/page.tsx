@@ -23,6 +23,7 @@ export default function AdminDashboard() {
     const [tenants, setTenants] = useState<any[]>([]);
     const [statsData, setStatsData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [period, setPeriod] = useState<'day' | 'week' | 'month' | 'year'>('month');
 
     useEffect(() => {
         const load = async () => {
@@ -92,9 +93,19 @@ export default function AdminDashboard() {
                     <p className="text-slate-500 font-medium">Métricas globais e faturamento da plataforma 791 Barber.</p>
                 </div>
                 <div className="flex gap-2">
-                    <div className="px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Sistema Online</span>
+                    <div className="flex bg-slate-900 border border-slate-800 rounded-xl p-1">
+                        {(['day', 'week', 'month'] as const).map((p) => (
+                            <button
+                                key={p}
+                                onClick={() => setPeriod(p)}
+                                className={cn(
+                                    "px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
+                                    period === p ? "bg-blue-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300"
+                                )}
+                            >
+                                {p === 'day' ? 'Hoje' : p === 'week' ? 'Semana' : 'Mês'}
+                            </button>
+                        ))}
                     </div>
                 </div>
             </div>

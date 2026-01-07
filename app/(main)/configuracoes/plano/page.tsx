@@ -70,6 +70,7 @@ export default function PlanPage() {
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix'>('card');
+    const [couponCode, setCouponCode] = useState('');
     const [pixData, setPixData] = useState<{ pixPayload: string; amount: number; expiresAt: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -127,7 +128,7 @@ export default function PlanPage() {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${session.access_token}`
                     },
-                    body: JSON.stringify({ plan: selectedPlan }),
+                    body: JSON.stringify({ plan: selectedPlan, coupon: couponCode }),
                 });
 
                 const data = await res.json();
@@ -147,7 +148,7 @@ export default function PlanPage() {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${session.access_token}`
                     },
-                    body: JSON.stringify({ plan: selectedPlan }),
+                    body: JSON.stringify({ plan: selectedPlan, coupon: couponCode }),
                 });
 
                 const data = await res.json();
@@ -329,6 +330,17 @@ export default function PlanPage() {
                                     <span className="text-xl font-black">Pix</span>
                                     <span className="text-sm font-bold">Pix SaaS</span>
                                 </button>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label className="text-xs text-slate-500 uppercase tracking-wider">Possui um cupom?</Label>
+                                <input
+                                    type="text"
+                                    placeholder="INSIRA SEU CUPOM"
+                                    value={couponCode}
+                                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:border-amber-500 outline-none transition-all"
+                                />
                             </div>
                         </div>
                     ) : (
