@@ -21,7 +21,8 @@ import { AlertCircle } from 'lucide-react';
 import { supabaseClient } from '@/lib/supabase-client';
 
 // Use NEXT_PUBLIC_BACKEND_URL if set, else fallback.
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
+// Hardcoding production URL to ensure immediate fix
+const API_URL = 'https://api.791barber.com';
 
 interface PlanInfo {
     id: string;
