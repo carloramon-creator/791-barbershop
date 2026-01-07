@@ -440,8 +440,12 @@ export default function BarberPage() {
                                             <div className="relative w-full">
                                                 <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full opacity-20"></div>
                                                 <div className="relative flex items-center gap-4 bg-slate-800/80 backdrop-blur-sm p-4 rounded-xl border border-slate-700 w-full shadow-xl">
-                                                    <div className="w-14 h-14 rounded-full bg-indigo-500 flex items-center justify-center text-white font-black text-xl shadow-lg ring-2 ring-indigo-500/30">
-                                                        {waitingClients[0].client_name.charAt(0)}
+                                                    <div className="w-14 h-14 rounded-full bg-indigo-500 flex items-center justify-center text-white font-black text-xl shadow-lg ring-2 ring-indigo-500/30 overflow-hidden">
+                                                        {waitingClients[0].client_photo ? (
+                                                            <img src={waitingClients[0].client_photo} alt={waitingClients[0].client_name} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            waitingClients[0].client_name.charAt(0)
+                                                        )}
                                                     </div>
                                                     <div className="flex-1 text-left min-w-0">
                                                         <div className="text-lg font-black text-slate-100 truncate">{waitingClients[0].client_name}</div>
