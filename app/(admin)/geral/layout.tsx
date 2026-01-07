@@ -36,11 +36,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     const navItems = [
-        { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-        { name: 'Barbearias', href: '/admin/barbearias', icon: Store },
-        { name: 'Cupons', href: '/admin/cupons', icon: Ticket },
-        { name: 'Configurações API', href: '/admin/configuracoes', icon: Settings },
-        { name: 'Administradores', href: '/admin/usuarios', icon: ShieldCheck },
+        { name: 'Dashboard', href: '/geral', icon: LayoutDashboard },
+        { name: 'Barbearias', href: '/geral/barbearias', icon: Store },
+        { name: 'Cupons', href: '/geral/cupons', icon: Ticket },
+        { name: 'Configurações API', href: '/geral/configuracoes', icon: Settings },
+        { name: 'Administradores', href: '/geral/usuarios', icon: ShieldCheck },
     ];
 
     return (

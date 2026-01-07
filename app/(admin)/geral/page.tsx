@@ -201,7 +201,7 @@ export default function AdminDashboard() {
                         <CardTitle className="text-slate-100">Barbearias e Performance</CardTitle>
                         <CardDescription className="text-slate-400">Dados individuais por licenciamento.</CardDescription>
                     </div>
-                    <Link href="/admin/barbearias" className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2">
+                    <Link href="/geral/barbearias" className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2">
                         Ver Barbearias <ChevronRight size={14} />
                     </Link>
                 </CardHeader>

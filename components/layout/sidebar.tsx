@@ -41,7 +41,7 @@ export function Sidebar() {
         { name: 'Estoque', href: '/estoque', icon: ShoppingBag, roles: ['owner', 'staff'], feature: 'inventory' },
         { name: 'Financeiro', href: '/financeiro', icon: BarChart3, roles: ['owner'], feature: 'finance' },
         { name: 'Configurações', href: '/configuracoes/barbearia', icon: Settings, roles: ['owner'], feature: 'queue' },
-        { name: 'Super Admin', href: '/admin', icon: ShieldCheck, roles: ['owner'], isSystemOnly: true },
+        { name: 'Super Admin', href: '/geral', icon: ShieldCheck, roles: ['owner'], isSystemOnly: true },
     ];
 
     const filteredMenu = menuItems.filter(item => {

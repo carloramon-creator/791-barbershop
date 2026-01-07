@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -79,8 +80,13 @@ export default function LandingPage() {
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
             {/* Header */}
             <div className="border-b border-slate-700 bg-slate-900/50 backdrop-blur">
-                <div className="max-w-7xl mx-auto px-4 py-6">
+                <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
                     <h1 className="text-2xl font-bold text-blue-400">791 Barber</h1>
+                    <Link href="/login">
+                        <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800">
+                            Entrar (Login)
+                        </Button>
+                    </Link>
                 </div>
             </div>
 
