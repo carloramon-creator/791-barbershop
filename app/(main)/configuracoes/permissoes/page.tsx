@@ -71,13 +71,13 @@ export default function PermissoesPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold text-slate-100 italic flex items-center gap-2">
+                <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-2">
                     <Shield className="text-blue-500" /> Níveis de Acesso
                 </h1>
                 <p className="text-slate-400 font-medium">Veja o que cada função pode realizar no sistema.</p>
             </div>
 
-            <div className="bg-blue-600/10 border border-blue-500/20 p-4 rounded-lg flex gap-3 text-blue-100 italic">
+            <div className="bg-blue-600/10 border border-blue-500/20 p-4 rounded-lg flex gap-3 text-blue-100">
                 <Info className="shrink-0" />
                 <p className="text-sm">
                     <strong>Nota:</strong> Atualmente as permissões são predefinidas para garantir a segurança da sua barbearia.
@@ -93,7 +93,7 @@ export default function PermissoesPage() {
                         <h2 className="text-lg font-bold">Proprietário</h2>
                     </div>
                     <p className="text-xs text-slate-500 uppercase font-bold">Acesso Total</p>
-                    <p className="text-sm text-slate-400 italic">Controla todas as engrenagens da barbearia, desde o financeiro até a equipe.</p>
+                    <p className="text-sm text-slate-400">Controla todas as engrenagens da barbearia, desde o financeiro até a equipe.</p>
                 </div>
 
                 <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl space-y-4">
@@ -102,7 +102,7 @@ export default function PermissoesPage() {
                         <h2 className="text-lg font-bold">Funcionário</h2>
                     </div>
                     <p className="text-xs text-slate-500 uppercase font-bold">Gerencial Interno</p>
-                    <p className="text-sm text-slate-400 italic">Responsável por organizar a fila e atender os clientes, sem ver dados sensíveis.</p>
+                    <p className="text-sm text-slate-400">Responsável por organizar a fila e atender os clientes, sem ver dados sensíveis.</p>
                 </div>
 
                 <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl space-y-4">
@@ -111,7 +111,7 @@ export default function PermissoesPage() {
                         <h2 className="text-lg font-bold">Barbeiro</h2>
                     </div>
                     <p className="text-xs text-slate-500 uppercase font-bold">Operacional</p>
-                    <p className="text-sm text-slate-400 italic">Focado em atender seus próprios clientes e gerenciar o tempo do serviço.</p>
+                    <p className="text-sm text-slate-400">Focado em atender seus próprios clientes e gerenciar o tempo do serviço.</p>
                 </div>
             </div>
 

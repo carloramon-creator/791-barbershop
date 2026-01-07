@@ -99,7 +99,7 @@ export default function ServicosPage() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-100 italic flex items-center gap-2">
+                    <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-2">
                         <Scissors size={24} className="text-blue-500" /> Catálogo de Serviços
                     </h1>
                     <p className="text-slate-400 font-medium">Defina os serviços e preços da sua barbearia.</p>

@@ -237,7 +237,7 @@ export default function BarberPage() {
         <div className="space-y-8">
             <div className="flex justify-between items-start">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-100 italic">Sala de Atendimento</h1>
+                    <h1 className="text-3xl font-bold text-slate-100">Sala de Atendimento</h1>
                     <p className="text-slate-400">Gerencie sua fila e seus clientes.</p>
                 </div>
 

@@ -209,7 +209,7 @@ export default function BarbershopSettingsPage() {
     return (
         <div className="max-w-4xl mx-auto space-y-6 pb-20">
             <div className="flex flex-col gap-4">
-                <h1 className="text-3xl font-bold text-slate-100 italic tracking-tighter">Configurações</h1>
+                <h1 className="text-3xl font-bold text-slate-100 tracking-tighter">Configurações</h1>
                 <div className="flex space-x-1 border-b border-slate-800 bg-slate-900/50 p-1 rounded-t-lg overflow-x-auto">
                     {tabs.map((tab) => (
                         <Link

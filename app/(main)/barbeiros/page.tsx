@@ -145,7 +145,7 @@ export default function BarbeirosPage() {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-100 italic flex items-center gap-2">
+                    <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-2">
                         <Users className="text-blue-500" /> Equipe de Barbeiros
                     </h1>
                     <p className="text-slate-400 font-medium">Visualize o status e disponibilidade dos profissionais.</p>

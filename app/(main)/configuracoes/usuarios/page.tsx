@@ -356,7 +356,7 @@ export default function UsersPage() {
 
                 {generatedLink ? (
                   <div className="py-6 space-y-4">
-                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-sm italic">
+                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-sm">
                       Usuário criado com sucesso! Escolha como deseja enviar o convite abaixo:
                     </div>
                     <div className="space-y-3">

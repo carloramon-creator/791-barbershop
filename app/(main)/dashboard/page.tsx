@@ -84,7 +84,7 @@ export default function DashboardPage() {
         <div className="space-y-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-100 italic">Visão Geral</h1>
+                    <h1 className="text-3xl font-bold text-slate-100">Visão Geral</h1>
                     <p className="text-slate-400 font-medium">Acompanhe o movimento da sua barbearia.</p>
                 </div>
 
@@ -233,7 +233,7 @@ export default function DashboardPage() {
                             ) : (
                                 queueStatus.map((barber) => (
                                     <TableRow key={barber.barber_id} className={cn("border-slate-800 hover:bg-slate-800/50 transition-colors", barber.is_active === false && "opacity-60")}>
-                                        <TableCell className="font-medium text-slate-100 italic">
+                                        <TableCell className="font-medium text-slate-100">
                                             {barber.barber_nickname || barber.barber_name}
                                         </TableCell>
                                         <TableCell>

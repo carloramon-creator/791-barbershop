@@ -276,7 +276,7 @@ export default function FinanceiroPage() {
         <div className="space-y-8">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-100 italic tracking-tighter">Financeiro</h1>
+                    <h1 className="text-3xl font-bold text-slate-100 tracking-tighter">Financeiro</h1>
                     <p className="text-slate-400 font-medium">Controle total de fluxo de caixa e categorias.</p>
                 </div>
                 <div className="flex gap-3">
@@ -298,7 +298,7 @@ export default function FinanceiroPage() {
                         </DialogTrigger>
                         <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-md">
                             <DialogHeader>
-                                <DialogTitle className="text-xl italic">Lançar Nova Despesa</DialogTitle>
+                                <DialogTitle className="text-xl">Lançar Nova Despesa</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
                                 <div className="space-y-2">
@@ -390,7 +390,7 @@ export default function FinanceiroPage() {
                                             checked={newExpense.is_paid}
                                             onCheckedChange={(checked) => setNewExpense({ ...newExpense, is_paid: !!checked })}
                                         />
-                                        <Label htmlFor="ispadef" className="text-slate-200 font-medium cursor-pointer italic">Já está pago?</Label>
+                                        <Label htmlFor="ispadef" className="text-slate-200 font-medium cursor-pointer">Já está pago?</Label>
                                     </div>
 
                                     <div className="flex items-center space-x-3">
@@ -502,7 +502,7 @@ export default function FinanceiroPage() {
 
             <Card className="bg-slate-900 border-slate-800 shadow-2xl">
                 <CardHeader className="border-b border-slate-800/50 bg-slate-800/10">
-                    <CardTitle className="text-slate-100 italic tracking-tighter">
+                    <CardTitle className="text-slate-100 tracking-tighter">
                         {view === 'main' ? 'Histórico de Pagamentos' : 'Contas à Pagar'}
                     </CardTitle>
                 </CardHeader>
@@ -527,7 +527,7 @@ export default function FinanceiroPage() {
                                     </div>
                                 </TableCell></TableRow>
                             ) : filteredRecords.length === 0 ? (
-                                <TableRow><TableCell colSpan={5} className="text-center py-20 text-slate-700 italic">Nenhum lançamento encontrado neste filtro.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={5} className="text-center py-20 text-slate-700">Nenhum lançamento encontrado neste filtro.</TableCell></TableRow>
                             ) : filteredRecords.map((r: { id: string; date: string; description: string; category: string; type: string; value: number | string; barber: string; barber_id?: string; is_paid: boolean }) => (
                                 <TableRow key={r.id} className="border-slate-800 hover:bg-slate-800/30 transition-colors group">
                                     <TableCell className="text-slate-500 font-mono text-[11px] py-4">

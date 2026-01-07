@@ -224,7 +224,7 @@ export default function EstoquePage() {
 
             <div className="flex justify-between items-center no-print">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-100 italic flex items-center gap-2">
+                    <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-2">
                         <Package size={24} className="text-blue-500" /> Gestão de Estoque
                     </h1>
                     <p className="text-slate-400 font-medium">Controle de entradas, saídas e custos de mercadoria.</p>
@@ -528,7 +528,7 @@ export default function EstoquePage() {
                             {loading && currentMonthMovements.length === 0 ? (
                                 <div className="p-8 text-center text-slate-500"><Loader2 className="animate-spin mx-auto opacity-20" /></div>
                             ) : currentMonthMovements.length === 0 ? (
-                                <div className="p-12 text-center text-slate-500 text-sm italic">Nenhuma movimentação este mês.</div>
+                                <div className="p-12 text-center text-slate-500 text-sm">Nenhuma movimentação este mês.</div>
                             ) : currentMonthMovements.map((m) => (
                                 <div key={m.id} className="p-4 hover:bg-slate-800/30 transition-all border-l-2 border-transparent hover:border-blue-500">
                                     <div className="flex justify-between items-start mb-1">
