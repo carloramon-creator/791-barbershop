@@ -191,7 +191,7 @@ export default function PlanPage() {
         } catch (err: any) {
             console.error('[CHECKOUT ERROR]', err);
             if (err.message === 'Failed to fetch' || err.message === 'fetch failed') {
-                setError('Erro de conexão: Verifique se o domínio api.791barber.com está ativo e com SSL válido.');
+                setError(`Erro de conexão (${err.message}). Tente novamente ou contate o suporte.`);
             } else {
                 setError(err.message || 'Erro inesperado ao processar pagamento');
             }
