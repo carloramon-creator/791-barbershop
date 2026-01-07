@@ -12,7 +12,8 @@ import {
     BarChart3,
     LogOut,
     UserCheck,
-    Settings
+    Settings,
+    ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,7 @@ import Image from 'next/image';
 
 export function Sidebar() {
     const pathname = usePathname();
-    const { role, tenant, signOut } = useAuth();
+    const { role, tenant, signOut, isSystemAdmin } = useAuth();
     const planConfig = PLAN_CONFIG[(tenant?.plan as keyof typeof PLAN_CONFIG) || 'basic'];
 
     // Salvar tenant no localStorage para relatórios em novas abas
@@ -40,9 +41,12 @@ export function Sidebar() {
         { name: 'Estoque', href: '/estoque', icon: ShoppingBag, roles: ['owner', 'staff'], feature: 'inventory' },
         { name: 'Financeiro', href: '/financeiro', icon: BarChart3, roles: ['owner'], feature: 'finance' },
         { name: 'Configurações', href: '/configuracoes/barbearia', icon: Settings, roles: ['owner'], feature: 'queue' },
+        { name: 'Super Admin', href: '/admin', icon: ShieldCheck, roles: ['owner'], isSystemOnly: true },
     ];
 
     const filteredMenu = menuItems.filter(item => {
+        // Filter by system admin requirement
+        if ((item as any).isSystemOnly && !isSystemAdmin) return false;
         // Filter by role
         const roleAllowed = !item.roles || (role && item.roles.includes(role));
         if (!roleAllowed) return false;

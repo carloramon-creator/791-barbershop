@@ -14,6 +14,7 @@ interface AuthContextType {
     signOut: () => Promise<void>;
     role: string | null;
     roles: string[] | null;
+    isSystemAdmin: boolean;
     refresh: () => Promise<void>;
 }
 
@@ -25,6 +26,7 @@ const AuthContext = createContext<AuthContextType>({
     signOut: async () => { },
     role: null,
     roles: null,
+    isSystemAdmin: false,
     refresh: async () => { },
 });
 
@@ -35,6 +37,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(true);
     const [role, setRole] = useState<string | null>(null);
     const [roles, setRoles] = useState<string[] | null>(null);
+    const [isSystemAdmin, setIsSystemAdmin] = useState<boolean>(false);
 
     const fetchSession = async () => {
         try {
@@ -46,11 +49,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 // Obter role do usuário
                 const { data } = await supabaseClient
                     .from('users')
-                    .select('role, roles')
+                    .select('role, roles, is_system_admin')
                     .eq('id', session.user.id)
                     .single();
                 setRole(data?.role ?? null);
                 setRoles(data?.roles ?? (data?.role ? [data.role] : null));
+                setIsSystemAdmin(data?.is_system_admin ?? false);
 
                 // Obter tenant/branding
                 // Como Api.getBarbershop usa a session (que acabamos de pegar), 
@@ -66,6 +70,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             } else {
                 setRole(null);
                 setRoles(null);
+                setIsSystemAdmin(false);
                 setTenant(null);
             }
         } catch (error) {
@@ -111,13 +116,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         await supabaseClient.auth.signOut();
         setRole(null);
         setRoles(null);
+        setIsSystemAdmin(false);
         setTenant(null);
         setUser(null);
         setSession(null);
     };
 
     return (
-        <AuthContext.Provider value={{ user, session, tenant, loading, signOut, role, roles, refresh: fetchSession }}>
+        <AuthContext.Provider value={{ user, session, tenant, loading, signOut, role, roles, isSystemAdmin, refresh: fetchSession }}>
             {children}
         </AuthContext.Provider>
     );

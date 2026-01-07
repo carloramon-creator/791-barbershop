@@ -133,4 +133,10 @@ export const Api = {
     // Barber Status
     getMyBarberStatus: () => apiFetch('/api/barbers/me/status'),
     updateMyBarberStatus: (status: string) => apiFetch('/api/barbers/me/status', { method: 'PATCH', body: JSON.stringify({ status }) }),
+
+    // System Administration
+    getSystemTenants: () => apiFetch('/api/system/tenants'),
+    getSystemStats: () => apiFetch('/api/system/stats'),
+    getSystemSettings: () => apiFetch('/api/system/settings'),
+    updateSystemSetting: (key: string, value: any) => apiFetch('/api/system/settings', { method: 'PUT', body: JSON.stringify({ key, value }) }),
 };
