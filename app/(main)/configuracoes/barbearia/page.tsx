@@ -28,6 +28,7 @@ export default function BarbershopSettingsPage() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [cnpj, setCnpj] = useState('');
+    const [hasCnpj, setHasCnpj] = useState(true);
     const [phone, setPhone] = useState('');
     const [logoUrl, setLogoUrl] = useState('');
 
@@ -59,6 +60,7 @@ export default function BarbershopSettingsPage() {
                 setName(data.name || '');
                 setEmail(data.email || '');
                 setCnpj(data.cnpj || '');
+                setHasCnpj(data.cnpj ? data.cnpj.replace(/\D/g, '').length > 11 : true);
                 setPhone(data.phone || '');
                 setLogoUrl(data.logo_url || '');
 
@@ -328,15 +330,30 @@ export default function BarbershopSettingsPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="cnpj" className="text-slate-400 text-xs uppercase font-bold">CNPJ</Label>
+                                <div className="flex justify-between items-center">
+                                    <Label htmlFor="cnpj" className="text-slate-400 text-xs uppercase font-bold">
+                                        {hasCnpj ? 'CNPJ' : 'CPF do Proprietário'}
+                                    </Label>
+                                    <button
+                                        type="button"
+                                        disabled={!isEditing}
+                                        onClick={() => setHasCnpj(!hasCnpj)}
+                                        className="text-[10px] text-blue-500 hover:text-blue-400 font-bold uppercase disabled:opacity-50"
+                                    >
+                                        {hasCnpj ? 'Não tenho CNPJ' : 'Tenho CNPJ'}
+                                    </button>
+                                </div>
                                 <MaskedInput
-                                    mask="99.999.999/9999-99"
+                                    mask={hasCnpj ? "99.999.999/9999-99" : "999.999.999-99"}
                                     value={cnpj}
                                     onChange={(e) => setCnpj(e.target.value)}
-                                    placeholder="00.000.000/0000-00"
+                                    placeholder={hasCnpj ? "00.000.000/0000-00" : "000.000.000-00"}
                                     disabled={!isEditing}
                                     className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-11"
                                 />
+                                <p className="text-[10px] text-slate-500">
+                                    {hasCnpj ? 'Ideal para empresas formalizadas.' : 'Use seu CPF caso não seja empresa formal (MEI/etc).'}
+                                </p>
                             </div>
                         </div>
 

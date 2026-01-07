@@ -78,6 +78,7 @@ export default function PlanPage() {
     const [couponCode, setCouponCode] = useState('');
     const [pixData, setPixData] = useState<{ pixPayload: string; amount: number; expiresAt: string } | null>(null);
     const [boletoData, setBoletoData] = useState<{ nossoNumero: string; codigoBarras: string; linhaDigitavel: string; pdfUrl: string } | null>(null);
+    const [tenantHasDocument, setTenantHasDocument] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
     const tabs = [
@@ -106,6 +107,15 @@ export default function PlanPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             setCurrentPlan(data.currentPlan || 'trial');
+
+            // Also check if tenant has CNPJ/CPF
+            const tenantRes = await fetch(`${API_URL}/api/barbershop`, {
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`
+                }
+            });
+            const tenantData = await tenantRes.json();
+            setTenantHasDocument(!!tenantData.cnpj);
         } catch (err: unknown) {
             const errorObj = err as Error;
             console.error('Erro ao buscar plano:', errorObj.message);
@@ -388,6 +398,11 @@ export default function PlanPage() {
                                     }}
                                     className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:border-amber-500 outline-none transition-all"
                                 />
+                                {paymentMethod === 'boleto-inter' && !tenantHasDocument && (
+                                    <p className="text-[10px] font-bold text-red-500 uppercase tracking-tight mt-2 animate-pulse leading-tight">
+                                        Para gerar boleto, é necessário cadastrar o CPF ou CNPJ em Configurações &gt; Barbearia.
+                                    </p>
+                                )}
                                 {error && (
                                     <p className="text-[10px] font-bold text-red-500 uppercase tracking-tight mt-1 animate-pulse">
                                         {error}
