@@ -167,7 +167,7 @@ export default function SystemSettingsPage() {
                                 className="bg-slate-950 border-slate-800 text-slate-100"
                             />
                         </div>
-                        <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                        <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
                                 <Label className="text-slate-400 text-xs uppercase font-bold">Certificado (.crt)</Label>
                                 <textarea
@@ -186,9 +186,42 @@ export default function SystemSettingsPage() {
                                     placeholder="-----BEGIN PRIVATE KEY-----"
                                 />
                             </div>
+                            <div className="space-y-2">
+                                <Label className="text-slate-400 text-xs uppercase font-bold text-amber-500">Certificado Webhook (ca.crt)</Label>
+                                <textarea
+                                    value={settings?.inter_config?.ca_crt || ''}
+                                    onChange={(e) => setSettings({ ...settings, inter_config: { ...settings.inter_config, ca_crt: e.target.value } })}
+                                    className="w-full h-32 bg-slate-950 border border-slate-800 rounded-lg p-3 text-[10px] font-mono text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                    placeholder="-----BEGIN CERTIFICATE-----"
+                                />
+                            </div>
                         </div>
                     </div>
-                    <div className="flex justify-end border-t border-slate-800 pt-6">
+                    <div className="flex justify-between items-center border-t border-slate-800 pt-6">
+                        <Button
+                            variant="outline"
+                            onClick={async () => {
+                                try {
+                                    setSaving('webhook_inter');
+                                    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/system/inter/setup-webhook`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' }
+                                    });
+                                    const res = await response.json();
+                                    if (!response.ok) throw new Error(res.error || 'Erro desconhecido');
+                                    alert('Webhook registrado com sucesso no Banco Inter!');
+                                } catch (e: any) {
+                                    alert('Erro ao ativar Webhook: ' + e.message);
+                                } finally {
+                                    setSaving(null);
+                                }
+                            }}
+                            disabled={saving !== null || !settings?.inter_config?.pix_key}
+                            className="border-slate-700 text-slate-400 hover:text-white"
+                        >
+                            {saving === 'webhook_inter' ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Shield className="w-4 h-4 mr-2" />}
+                            Registrar Webhook no Inter
+                        </Button>
                         <Button
                             onClick={() => handleSave('inter_config', settings.inter_config)}
                             disabled={saving === 'inter_config'}
@@ -207,7 +240,44 @@ export default function SystemSettingsPage() {
                     <CardTitle className="text-slate-100">Endpoints do Sistema</CardTitle>
                     <CardDescription className="text-slate-400">URLs que você deve configurar nos painéis externos.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
+                    <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-4">
+                        <div className="flex items-center gap-3 text-amber-500 mb-2">
+                            <Shield className="w-5 h-5" />
+                            <h3 className="font-bold">Configuração de Webhook</h3>
+                        </div>
+                        <p className="text-sm text-slate-400">
+                            Para que o sistema receba confirmações de pagamento automáticas, você deve configurar o seguinte URL no painel do Banco Inter e do Stripe:
+                        </p>
+
+                        <div className="space-y-3">
+                            <div>
+                                <Label className="text-xs text-slate-500 uppercase">URL de Webhook (Banco Inter & Stripe)</Label>
+                                <div className="flex gap-2 mt-1">
+                                    <input
+                                        readOnly
+                                        value="https://api.791barber.com/api/webhooks/inter"
+                                        className="flex-1 bg-slate-900 border border-slate-800 rounded px-3 py-2 text-sm text-slate-300 font-mono"
+                                    />
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText("https://api.791barber.com/api/webhooks/inter");
+                                            alert("Link copiado!");
+                                        }}
+                                    >
+                                        Copiar
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="text-xs text-amber-600 bg-amber-500/5 p-3 rounded border border-amber-500/10">
+                            <strong>Dica Banco Inter:</strong> No Internet Banking, vá em "Minhas Integrações", clique nos três pontinhos da aplicação "791 Barber" e escolha "Configurar Webhook". Cole o link acima e, se solicitado, use o arquivo <strong>ca.crt</strong> que você baixou.
+                        </div>
+                    </div>
+
                     <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
                         <div className="flex justify-between items-center">
                             <Label className="text-blue-500 text-[10px] font-black uppercase tracking-widest">Stripe Webhook URL</Label>
