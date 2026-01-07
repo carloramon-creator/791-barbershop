@@ -173,6 +173,7 @@ export default function PlanPage() {
 
                 setPixData(data);
             } else if (paymentMethod === 'boleto-inter') {
+                console.log('[DEBUG] Calling Boleto API:', `${API_URL}/api/checkout/inter-boleto`);
                 const res = await fetch(`${API_URL}/api/checkout/inter-boleto`, {
                     method: 'POST',
                     headers: {
@@ -181,6 +182,7 @@ export default function PlanPage() {
                     },
                     body: JSON.stringify({ plan: selectedPlan, coupon: couponCode }),
                 });
+                console.log('[DEBUG] Response status:', res.status, res.statusText);
 
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
