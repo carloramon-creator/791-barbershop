@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Users, Building2, CreditCard, Check, Shield } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -68,6 +69,8 @@ export default function PlanPage() {
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix'>('card');
+    const [pixData, setPixData] = useState<{ pixPayload: string; amount: number; expiresAt: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const tabs = [
@@ -111,35 +114,53 @@ export default function PlanPage() {
         try {
             setSaving(true);
             setError(null);
+            setPixData(null);
 
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) throw new Error('Usuário não autenticado ou sessão expirada');
 
-            // Chamar API de checkout do Stripe
-            const res = await fetch(`${API_URL}/api/checkout`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
-                },
-                body: JSON.stringify({ plan: selectedPlan }),
-            });
+            if (paymentMethod === 'card') {
+                // Chamar API de checkout do Stripe
+                const res = await fetch(`${API_URL}/api/checkout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({ plan: selectedPlan }),
+                });
 
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
 
-            // Redirecionar para Stripe Checkout
-            if (data.url) {
-                window.location.href = data.url;
+                // Redirecionar para Stripe Checkout
+                if (data.url) {
+                    window.location.href = data.url;
+                } else {
+                    throw new Error('URL de checkout não retornada');
+                }
             } else {
-                throw new Error('URL de checkout não retornada');
+                // Chamar API de checkout do Pix
+                const res = await fetch(`${API_URL}/api/checkout/pix`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                    },
+                    body: JSON.stringify({ plan: selectedPlan }),
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                setPixData(data);
             }
         } catch (err: unknown) {
             const errorObj = err as Error;
             setError(errorObj.message);
+        } finally {
             setSaving(false);
         }
-        // Não resetar setSaving(false) aqui pois vamos redirecionar
     }
 
     return (
@@ -268,20 +289,99 @@ export default function PlanPage() {
                 </div>
             )}
 
-            <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                <DialogContent className="border-slate-800 bg-slate-900 text-slate-100">
+            <Dialog open={openDialog} onOpenChange={(open) => {
+                setOpenDialog(open);
+                if (!open) setPixData(null);
+            }}>
+                <DialogContent className="border-slate-800 bg-slate-900 text-slate-100 max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Confirmar Mudança de Plano</DialogTitle>
+                        <DialogTitle>Confirmar Assinatura</DialogTitle>
                         <DialogDescription className="text-slate-400">
-                            Você está prestes a mudar para o plano{' '}
-                            <span className="font-bold text-slate-100 capitalize">{selectedPlan}</span>
+                            Plano <span className="font-bold text-slate-100 capitalize">{selectedPlan}</span> - R$ {PLANS[selectedPlan || '']?.price}/mês
                         </DialogDescription>
                     </DialogHeader>
+
+                    {!pixData ? (
+                        <div className="py-4 space-y-4">
+                            <Label className="text-xs text-slate-500 uppercase tracking-wider">Forma de Pagamento</Label>
+                            <div className="grid grid-cols-2 gap-4">
+                                <button
+                                    onClick={() => setPaymentMethod('card')}
+                                    className={cn(
+                                        "flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all",
+                                        paymentMethod === 'card'
+                                            ? "border-amber-500 bg-amber-500/5"
+                                            : "border-slate-800 bg-slate-950 hover:border-slate-700"
+                                    )}
+                                >
+                                    <CreditCard className={cn("w-6 h-6", paymentMethod === 'card' ? "text-amber-500" : "text-slate-500")} />
+                                    <span className="text-sm font-bold">Cartão</span>
+                                </button>
+                                <button
+                                    onClick={() => setPaymentMethod('pix')}
+                                    className={cn(
+                                        "flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all",
+                                        paymentMethod === 'pix'
+                                            ? "border-amber-500 bg-amber-500/5"
+                                            : "border-slate-800 bg-slate-950 hover:border-slate-700"
+                                    )}
+                                >
+                                    <span className="text-xl font-black">Pix</span>
+                                    <span className="text-sm font-bold">Pix SaaS</span>
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="py-4 flex flex-col items-center space-y-4">
+                            <p className="text-center text-sm text-slate-300">
+                                Escaneie o código abaixo com o app do seu banco para pagar a assinatura do 791 Barber.
+                            </p>
+
+                            <div className="bg-white p-2 rounded-lg">
+                                {/* Using a simple img tag for the base64 QR. Real implementation would probably use a lib or specialized component */}
+                                <div className="w-48 h-48 bg-slate-200 animate-pulse flex items-center justify-center">
+                                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixData.pixPayload)}`} alt="QR Code Pix" />
+                                </div>
+                            </div>
+
+                            <div className="w-full space-y-2">
+                                <Label className="text-[10px] text-slate-500 uppercase">Pix Copia e Cola</Label>
+                                <div className="flex gap-2">
+                                    <input
+                                        readOnly
+                                        value={pixData.pixPayload}
+                                        className="flex-1 bg-slate-950 border border-slate-800 rounded px-3 py-2 text-[10px] font-mono text-slate-400"
+                                    />
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(pixData.pixPayload);
+                                            alert('Copiado!');
+                                        }}
+                                    >
+                                        Copiar
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <p className="text-[10px] text-slate-500 text-center uppercase tracking-widest">
+                                O acesso será liberado em segundos após o pagamento.
+                            </p>
+                        </div>
+                    )}
+
                     <DialogFooter>
-                        <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800" onClick={() => setOpenDialog(false)} disabled={saving}>Cancelar</Button>
-                        <Button onClick={handleChangePlan} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white">
-                            {saving ? 'Salvando...' : 'Confirmar'}
-                        </Button>
+                        {!pixData ? (
+                            <>
+                                <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800" onClick={() => setOpenDialog(false)} disabled={saving}>Cancelar</Button>
+                                <Button onClick={handleChangePlan} disabled={saving} className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
+                                    {saving ? 'Processando...' : 'Confirmar e Pagar'}
+                                </Button>
+                            </>
+                        ) : (
+                            <Button onClick={() => setOpenDialog(false)} className="w-full bg-slate-800 text-white">Fechar</Button>
+                        )}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
