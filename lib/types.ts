@@ -68,6 +68,7 @@ export interface ClientQueue {
     barber_id: string;
     client_id?: string;
     client_name: string;
+    client_photo?: string;
     client_phone?: string;
     is_priority?: boolean;
     status: QueueStatus;

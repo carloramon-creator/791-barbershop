@@ -81,6 +81,12 @@ export default function BarberPage() {
 
         fetchStatus();
 
+        // Polling fallback (every 15 seconds) to ensure data is always fresh
+        const polling = setInterval(() => {
+            console.log('[POLLING] Refreshing data...');
+            fetchStatus();
+        }, 15000);
+
         const queueChannel = supabaseClient
             .channel('queue_changes')
             .on(
@@ -106,6 +112,7 @@ export default function BarberPage() {
             .subscribe();
 
         return () => {
+            clearInterval(polling);
             supabaseClient.removeChannel(queueChannel);
             supabaseClient.removeChannel(barberChannel);
         };
@@ -392,12 +399,18 @@ export default function BarberPage() {
                         <CardContent className="p-6 text-center space-y-6">
                             {attendingClient ? (
                                 <>
-                                    <div className="space-y-2">
-                                        <div className="w-20 h-20 bg-slate-800 rounded-full mx-auto flex items-center justify-center text-slate-500 mb-2">
-                                            <User size={40} />
+                                    <div className="space-y-4">
+                                        <div className="w-24 h-24 bg-slate-800 rounded-full mx-auto flex items-center justify-center text-slate-500 mb-2 border-4 border-blue-500/20 overflow-hidden shadow-xl ring-2 ring-blue-500/10">
+                                            {attendingClient.client_photo ? (
+                                                <img src={attendingClient.client_photo} alt={attendingClient.client_name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <User size={48} />
+                                            )}
                                         </div>
-                                        <CardTitle className="text-2xl font-black text-slate-100 uppercase">{attendingClient.client_name}</CardTitle>
-                                        <CardDescription className="text-blue-400">Em atendimento agora</CardDescription>
+                                        <div>
+                                            <CardTitle className="text-3xl font-black text-slate-100 uppercase leading-none">{attendingClient.client_name}</CardTitle>
+                                            <CardDescription className="text-blue-500 font-bold uppercase tracking-widest text-[10px] mt-2">Atendimento em curso</CardDescription>
+                                        </div>
                                         {attendingClient.client_phone && (
                                             <div className="text-slate-400 text-sm font-mono mt-1">
                                                 {attendingClient.client_phone}
