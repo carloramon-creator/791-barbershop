@@ -203,8 +203,8 @@ export default function PlanPage() {
                     throw new Error('URL de checkout não retornada');
                 }
             } else if (paymentMethod === 'pix') {
-                // Efeito psicológico: Já mostra que está processando
-                const tempId = `pix_${Date.now()}`;
+                // ID numérico para evitar problemas de compatibilidade
+                const tempId = Date.now().toString().slice(-15);
                 setPendingData({ message: 'Iniciando registro do Pix...', pending: true, seu_numero: tempId });
 
                 const res = await fetch(`${API_URL}/api/checkout/inter-pix`, {
@@ -233,8 +233,8 @@ export default function PlanPage() {
                 setPixData(data);
                 setPendingData(null);
             } else if (paymentMethod === 'boleto-inter') {
-                // Efeito psicológico: Já mostra que está processando
-                const tempId = `bol_${Date.now()}`;
+                // ID numérico para evitar problemas de compatibilidade
+                const tempId = Date.now().toString().slice(-15);
                 setPendingData({ message: 'Iniciando registro do boleto...', pending: true, seu_numero: tempId });
                 setPaymentMethod('boleto-result');
 
