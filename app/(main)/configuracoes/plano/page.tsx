@@ -17,6 +17,7 @@ import {
     DialogFooter,
 } from '@/components/ui/dialog';
 import { AlertCircle } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
 
 import { supabaseClient } from '@/lib/supabase-client';
 
@@ -451,8 +452,13 @@ export default function PlanPage() {
                                 Escaneie o código abaixo para pagar via Pix. O acesso é liberado na hora!
                             </p>
 
-                            <div className="bg-white p-2 rounded-lg border-4 border-emerald-500">
-                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixData.pixPayload)}`} alt="QR Code Pix" />
+                            <div className="bg-white p-3 rounded-xl border-4 border-emerald-500 shadow-xl">
+                                <QRCodeCanvas
+                                    value={pixData.pixPayload}
+                                    size={200}
+                                    level="H"
+                                    includeMargin={true}
+                                />
                             </div>
 
                             <div className="w-full space-y-2">
@@ -480,47 +486,62 @@ export default function PlanPage() {
                     )}
 
                     {boletoData && !pendingData && (
-                        <div className="py-4 space-y-6">
-                            <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl text-center">
-                                <FileText className="w-12 h-12 text-blue-500 mx-auto mb-2" />
-                                <h3 className="font-black text-slate-100 uppercase tracking-tighter">Boleto Gerado</h3>
-                                <p className="text-xs text-slate-400">Pague pelo seu banco usando a linha digitável abaixo.</p>
+                        <div className="py-4 space-y-4">
+                            <div className="bg-blue-600/10 border border-blue-500/20 p-4 rounded-2xl text-center space-y-2">
+                                <div className="w-12 h-12 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                                    <FileText className="w-6 h-6 text-blue-500" />
+                                </div>
+                                <h3 className="font-black text-slate-100 uppercase tracking-tight text-lg">Boleto Registrado</h3>
+                                <p className="text-xs text-slate-400">Pague agora pelo seu banco e libere seu acesso.</p>
+
+                                <div className="pt-4 flex justify-around border-t border-blue-500/10">
+                                    <div className="text-center">
+                                        <p className="text-[10px] text-slate-500 uppercase font-bold">Valor</p>
+                                        <p className="text-sm font-black text-slate-100">R$ {selectedPlan ? PLANS[selectedPlan]?.price : '0'},00</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-[10px] text-slate-500 uppercase font-bold">Vencimento</p>
+                                        <p className="text-sm font-black text-slate-100">{new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}</p>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-[10px] text-slate-500 uppercase font-black">Linha Digitável</Label>
+                                <Label className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Código de Barras / Linha Digitável</Label>
                                 <div className="flex gap-2">
-                                    <input
-                                        readOnly
-                                        value={boletoData.linhaDigitavel}
-                                        className="flex-1 bg-slate-950 border border-slate-800 rounded px-3 py-2 text-[10px] font-mono text-slate-300"
-                                    />
+                                    <div className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-[11px] font-mono text-blue-400 break-all leading-relaxed">
+                                        {boletoData.linhaDigitavel}
+                                    </div>
                                     <Button
-                                        size="sm"
+                                        size="icon"
                                         variant="outline"
-                                        className="border-slate-700"
+                                        className="h-auto border-slate-800 bg-slate-950 hover:bg-slate-900 group"
                                         onClick={() => {
                                             navigator.clipboard.writeText(boletoData.linhaDigitavel);
                                             alert('Linha digitável copiada!');
                                         }}
                                     >
-                                        <Copy className="w-3 h-3" />
+                                        <Copy className="w-4 h-4 text-slate-500 group-hover:text-blue-500" />
                                     </Button>
                                 </div>
                             </div>
 
-                            <Button
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase"
-                                onClick={() => window.open(boletoData.pdfUrl, '_blank')}
-                            >
-                                <ExternalLink className="w-4 h-4 mr-2" />
-                                Visualizar PDF do Boleto
-                            </Button>
+                            <div className="grid grid-cols-1 gap-3">
+                                <Button
+                                    className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-tight shadow-lg shadow-blue-600/20"
+                                    onClick={() => window.open(boletoData.pdfUrl, '_blank')}
+                                >
+                                    <ExternalLink className="w-4 h-4 mr-2" />
+                                    Imprimir / Ver PDF Completo
+                                </Button>
+                            </div>
 
-                            <p className="text-[10px] text-slate-500 text-center uppercase tracking-widest leading-relaxed">
-                                Boletos podem levar até 48 horas úteis para compensar.<br />
-                                Para liberação imediata, escolha o Pix.
-                            </p>
+                            <div className="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50">
+                                <p className="text-[10px] text-slate-500 text-center uppercase tracking-widest leading-relaxed font-medium">
+                                    A compensação bancária ocorre em até 2 dias úteis.<br />
+                                    Dica: Use o Pix para liberação instantânea.
+                                </p>
+                            </div>
                         </div>
                     )}
 
