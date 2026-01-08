@@ -105,17 +105,8 @@ export const Api = {
     // Users
     getUsers: () => apiFetch('/api/barbershop/users'),
     inviteUser: (payload: Record<string, unknown>) => apiFetch('/api/barbershop/users', { method: 'POST', body: JSON.stringify(payload) }),
-    async updateUser(payload: Record<string, unknown>) {
-        return apiFetch('/api/barbershop/users', {
-            method: 'PUT',
-            body: JSON.stringify(payload)
-        });
-    },
-
-    async removeUser(id: string) {
-        return apiFetch(`/api/barbershop/users?id=${id}`, { method: 'DELETE' });
-    },
-
+    updateUser: (payload: Record<string, unknown>) => apiFetch('/api/barbershop/users', { method: 'PUT', body: JSON.stringify(payload) }),
+    removeUser: (id: string) => apiFetch(`/api/barbershop/users?id=${id}`, { method: 'DELETE' }),
     generateInviteLink: (userId: string) => apiFetch('/api/barbershop/users', {
         method: 'POST',
         body: JSON.stringify({ userId, generateInvite: true })
@@ -139,6 +130,8 @@ export const Api = {
     getSystemStats: () => apiFetch('/api/system/stats'),
     getSystemSettings: () => apiFetch('/api/system/settings'),
     updateSystemSetting: (key: string, value: any) => apiFetch('/api/system/settings', { method: 'PUT', body: JSON.stringify({ key, value }) }),
+    updateSystemTenant: (id: string, updates: Record<string, any>) =>
+        apiFetch(`/api/system/tenants/${id}`, { method: 'PATCH', body: JSON.stringify(updates) }),
 
     // Public/Client Actions
     getPublicQueueStatus: (tenantId?: string) => apiFetch(`/api/public/queue?tenant_id=${tenantId || ''}`),

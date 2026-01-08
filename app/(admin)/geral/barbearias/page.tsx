@@ -15,17 +15,30 @@ import {
     XCircle,
     Activity,
     ExternalLink,
-    TrendingUp
+    TrendingUp,
+    Pencil
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function TenantsPage() {
     const [tenants, setTenants] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+
+    // Edit State
+    const [editingTenant, setEditingTenant] = useState<any>(null);
+    const [saving, setSaving] = useState(false);
+    const [editForm, setEditForm] = useState({
+        plan: '',
+        subscription_status: '',
+        trial_ends_at: ''
+    });
 
     const loadTenants = async () => {
         try {
@@ -36,6 +49,32 @@ export default function TenantsPage() {
             console.error(e);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleEditClick = (tenant: any) => {
+        setEditingTenant(tenant);
+        setEditForm({
+            plan: tenant.plan || 'basic',
+            subscription_status: tenant.subscription_status || 'trialing',
+            trial_ends_at: tenant.trial_ends_at ? new Date(tenant.trial_ends_at).toISOString().split('T')[0] : ''
+        });
+    };
+
+    const handleSaveTenant = async () => {
+        if (!editingTenant) return;
+        setSaving(true);
+        try {
+            await Api.updateSystemTenant(editingTenant.id, editForm);
+
+            // Refresh local list
+            setTenants(prev => prev.map(t => t.id === editingTenant.id ? { ...t, ...editForm } : t));
+            setEditingTenant(null);
+            alert('Barbearia atualizada com sucesso!');
+        } catch (e: any) {
+            alert('Erro ao atualizar: ' + e.message);
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -145,7 +184,7 @@ export default function TenantsPage() {
                                                 </span>
                                             ) : (
                                                 <span className="flex items-center gap-1 text-[10px] font-black text-red-500 uppercase">
-                                                    <XCircle size={12} /> Inadimplente
+                                                    <XCircle size={12} /> {tenant.subscription_status}
                                                 </span>
                                             )}
                                         </div>
@@ -170,6 +209,15 @@ export default function TenantsPage() {
 
                                 {/* Actions */}
                                 <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="border-slate-800 bg-slate-950 text-slate-400 hover:text-blue-500 hover:border-blue-500/50"
+                                        onClick={() => handleEditClick(tenant)}
+                                        title="Editar Barbearia"
+                                    >
+                                        <Pencil size={16} />
+                                    </Button>
                                     <Button
                                         variant="outline"
                                         size="icon"
@@ -221,6 +269,73 @@ export default function TenantsPage() {
                     </Card>
                 )}
             </div>
+
+            {/* Edit Dialog */}
+            <Dialog open={!!editingTenant} onOpenChange={(open) => !open && setEditingTenant(null)}>
+                <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
+                    <DialogHeader>
+                        <DialogTitle>Editar Barbearia</DialogTitle>
+                        <DialogDescription>Alterar plano e status manualmente.</DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label>Nome da Barbearia</Label>
+                            <Input value={editingTenant?.name || ''} disabled className="bg-slate-950 border-slate-800" />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Plano</Label>
+                                <Select
+                                    value={editForm.plan}
+                                    onValueChange={(val) => setEditForm(prev => ({ ...prev, plan: val }))}
+                                >
+                                    <SelectTrigger className="bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="bg-slate-900 border-slate-800">
+                                        <SelectItem value="basic">Basic</SelectItem>
+                                        <SelectItem value="premium">Premium</SelectItem>
+                                        <SelectItem value="complete">Completo</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Status da Assinatura</Label>
+                                <Select
+                                    value={editForm.subscription_status}
+                                    onValueChange={(val) => setEditForm(prev => ({ ...prev, subscription_status: val }))}
+                                >
+                                    <SelectTrigger className="bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger>
+                                    <SelectContent className="bg-slate-900 border-slate-800">
+                                        <SelectItem value="active">Ativo (Adimplente)</SelectItem>
+                                        <SelectItem value="past_due">Atrasado</SelectItem>
+                                        <SelectItem value="canceled">Cancelado</SelectItem>
+                                        <SelectItem value="trialing">Trial / Teste</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Fim do Período de Teste/Ciclo</Label>
+                            <Input
+                                type="date"
+                                value={editForm.trial_ends_at}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, trial_ends_at: e.target.value }))}
+                                className="bg-slate-950 border-slate-800 text-slate-100"
+                            />
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setEditingTenant(null)}>Cancelar</Button>
+                        <Button onClick={handleSaveTenant} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white">
+                            {saving ? 'Salvando...' : 'Salvar Alterações'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
