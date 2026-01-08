@@ -24,7 +24,7 @@ import { supabaseClient } from '@/lib/supabase-client';
 
 // Use NEXT_PUBLIC_BACKEND_URL if set, else fallback.
 // Hardcoding production URL to ensure immediate fix
-const API_URL = 'https://api.791barber.com';
+const API_URL = 'https://791-barber-backend-production.up.railway.app';
 
 interface PlanInfo {
     id: string;
