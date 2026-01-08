@@ -343,54 +343,51 @@ export default function PlanPage() {
                         </CardContent>
                     </Card>
 
-                    <div className="space-y-4">
-                        <h2 className="text-xl font-bold text-slate-100">Escolha um Plano</h2>
+                    <div className="space-y-6">
+                        <h2 className="text-xl md:text-2xl font-black text-slate-100 light:text-slate-900 uppercase italic">Escolha um Plano</h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {Object.values(PLANS).filter(p => p.id !== 'trial').map((plan) => (
                                 <Card
                                     key={plan.id}
                                     className={cn(
-                                        'bg-slate-900 border-slate-800 cursor-pointer transition-all hover:border-slate-700',
-                                        currentPlan === plan.id && 'border-blue-500'
+                                        'bg-slate-900 light:bg-white border-slate-800 light:border-slate-200 cursor-pointer transition-all hover:border-slate-700 light:hover:border-slate-300 rounded-2xl md:rounded-3xl p-2',
+                                        currentPlan === plan.id && 'border-blue-500 light:border-blue-600 ring-2 ring-blue-500/20'
                                     )}
                                 >
                                     <CardHeader>
-                                        <CardTitle className="text-slate-100">{plan.name}</CardTitle>
+                                        <CardTitle className="text-slate-100 light:text-slate-900 font-black">{plan.name}</CardTitle>
                                         <CardDescription className="text-slate-500">
-                                            <span className="text-2xl font-bold text-slate-100">
+                                            <span className="text-2xl font-black text-slate-100 light:text-slate-900">
                                                 R$ {plan.price}
                                             </span>
-                                            <span className="text-sm">/mês</span>
+                                            <span className="text-xs">/mês</span>
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-6">
                                         <div className="space-y-2">
-                                            <p className="text-sm text-slate-400">
-                                                <span className="font-medium text-slate-200">Barbeiros:</span> {plan.barbers}
+                                            <p className="text-sm text-slate-400 light:text-slate-500">
+                                                <span className="font-bold text-slate-200 light:text-slate-700">Barbeiros:</span> {plan.barbers}
                                             </p>
-                                            <p className="text-sm text-slate-400">
-                                                <span className="font-medium text-slate-200">Agendamentos:</span> {plan.appointments}
-                                            </p>
-                                            <p className="text-sm text-slate-400">
-                                                <span className="font-medium text-slate-200">Suporte:</span> {plan.support}
+                                            <p className="text-sm text-slate-400 light:text-slate-500">
+                                                <span className="font-bold text-slate-200 light:text-slate-700">Agendamentos:</span> {plan.appointments}
                                             </p>
                                         </div>
 
-                                        <div className="space-y-2 pt-4 border-t border-slate-800">
-                                            {plan.features.map((feature, i) => (
+                                        <div className="space-y-2 pt-4 border-t border-slate-800 light:border-slate-100">
+                                            {plan.features.slice(0, 4).map((feature, i) => (
                                                 <div key={i} className="flex items-center gap-2">
-                                                    <Check className="w-4 h-4 text-green-500" />
-                                                    <span className="text-sm text-slate-300">{feature}</span>
+                                                    <Check className="w-3.5 h-3.5 text-blue-500" />
+                                                    <span className="text-xs text-slate-400 light:text-slate-600">{feature}</span>
                                                 </div>
                                             ))}
                                         </div>
 
                                         <Button
                                             className={cn(
-                                                'w-full',
+                                                'w-full py-6 rounded-xl font-black uppercase tracking-widest',
                                                 currentPlan === plan.id
-                                                    ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                                    : 'bg-blue-600 hover:bg-blue-700'
+                                                    ? 'bg-slate-800 light:bg-slate-100 text-slate-500'
+                                                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20'
                                             )}
                                             disabled={currentPlan === plan.id}
                                             onClick={() => {
@@ -418,13 +415,14 @@ export default function PlanPage() {
                     setError(null);
                 }
             }}>
-                <DialogContent className="border-slate-800 bg-slate-900 text-slate-100 max-w-md">
+                <DialogContent className="border-slate-800 light:border-slate-200 bg-slate-900 light:bg-white text-slate-100 light:text-slate-900 max-w-md rounded-2xl md:rounded-3xl">
                     <DialogHeader>
-                        <DialogTitle>Confirmar Assinatura</DialogTitle>
-                        <DialogDescription className="text-slate-400">
-                            Plano <span className="font-bold text-slate-100 capitalize">{selectedPlan}</span> - R$ {selectedPlan ? PLANS[selectedPlan]?.price : 0}/mês
+                        <DialogTitle className="font-black text-xl md:text-2xl italic tracking-tighter uppercase">Confirmar Assinatura</DialogTitle>
+                        <DialogDescription className="text-slate-400 light:text-slate-500 font-bold">
+                            Plano <span className="text-blue-600 capitalize">{selectedPlan}</span> — R$ {selectedPlan ? PLANS[selectedPlan]?.price : 0}/mês
                         </DialogDescription>
                     </DialogHeader>
+
 
                     {!pixData && !boletoData && !pendingData && (
                         <div className="py-4 space-y-4">
