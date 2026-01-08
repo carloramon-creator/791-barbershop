@@ -120,8 +120,20 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-slate-950 text-slate-50;
+    @apply bg-slate-950 text-slate-50 transition-colors duration-300;
   }
+  
+  html.light body {
+    @apply bg-slate-50 text-slate-900;
+  }
+
+  /* Ajustes globais para modo claro */
+  .light .bg-slate-950 { @apply bg-slate-50; }
+  .light .bg-slate-900 { @apply bg-white; }
+  .light .text-slate-50 { @apply text-slate-900; }
+  .light .text-slate-100 { @apply text-slate-900; }
+  .light .text-slate-400 { @apply text-slate-500; }
+  .light .border-slate-800 { @apply border-slate-200; }
 }
 
 @layer utilities {
@@ -134,6 +146,9 @@
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background: #1e293b;
     border-radius: 10px;
+  }
+  .light .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #334155;

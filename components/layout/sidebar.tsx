@@ -1,5 +1,4 @@
-'use client';
-
+import { useState } from 'react';
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
@@ -13,7 +12,9 @@ import {
     LogOut,
     UserCheck,
     Settings,
-    ShieldCheck
+    ShieldCheck,
+    Menu,
+    X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,13 @@ import Image from 'next/image';
 export function Sidebar() {
     const pathname = usePathname();
     const { role, tenant, signOut, isSystemAdmin } = useAuth();
+    const [isOpen, setIsOpen] = useState(false);
     const planConfig = PLAN_CONFIG[(tenant?.plan as keyof typeof PLAN_CONFIG) || 'basic'];
+
+    // Close sidebar on navigation
+    useEffect(() => {
+        setIsOpen(false);
+    }, [pathname]);
 
     // Salvar tenant no localStorage para relatórios em novas abas
     useEffect(() => {
@@ -45,72 +52,84 @@ export function Sidebar() {
     ];
 
     const filteredMenu = menuItems.filter(item => {
-        // Filter by system admin requirement
         if ((item as any).isSystemOnly && !isSystemAdmin) return false;
-        // Filter by role
         const roleAllowed = !item.roles || (role && item.roles.includes(role));
         if (!roleAllowed) return false;
-
-        // Filter by plan feature
-        if (item.feature === 'finance') {
-            return planConfig.features.includes('finance') || planConfig.features.includes('all');
-        }
-
-        if (item.feature === 'inventory') {
-            return planConfig.features.includes('all'); // Only premium has 'all' which includes inventory
-        }
-
+        if (item.feature === 'finance') return planConfig.features.includes('finance') || planConfig.features.includes('all');
+        if (item.feature === 'inventory') return planConfig.features.includes('all');
         return true;
     });
 
     return (
-        <div className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col h-screen sticky top-0">
-            <div className="p-6">
-                <div className="flex items-center gap-3 text-blue-500 font-bold text-xl">
-                    {tenant?.logo_url ? (
-                        <>
-                            <Image src={tenant.logo_url} alt={tenant.name || 'Logo'} width={32} height={32} className="w-8 h-8 rounded-lg object-cover" unoptimized />
-                            {tenant.name || 'My Barber'}
-                        </>
-                    ) : (
-                        <>
-                            <div className="bg-blue-600 p-1.5 rounded-lg text-white">
-                                <Scissors className="w-6 h-6" />
-                            </div>
-                            {tenant?.name || '791 Barber'}
-                        </>
-                    )}
+        <>
+            {/* Mobile Trigger */}
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95 border-4 border-slate-950 light:border-white"
+            >
+                {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+
+            {/* Overlay */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 md:hidden"
+                    onClick={() => setIsOpen(false)}
+                />
+            )}
+
+            {/* Sidebar */}
+            <div className={cn(
+                "fixed inset-y-0 left-0 z-40 w-72 bg-slate-900 light:bg-slate-50 border-r border-slate-800 light:border-slate-200 flex flex-col h-screen transition-all duration-300 md:relative md:translate-x-0 overflow-hidden",
+                !isOpen && "-translate-x-full md:translate-x-0"
+            )}>
+                <div className="p-6">
+                    <div className="flex items-center gap-3 text-blue-600 font-black text-xl tracking-tighter uppercase italic">
+                        {tenant?.logo_url ? (
+                            <>
+                                <Image src={tenant.logo_url} alt={tenant.name || 'Logo'} width={32} height={32} className="w-8 h-8 rounded-lg object-cover" unoptimized />
+                                {tenant.name}
+                            </>
+                        ) : (
+                            <>
+                                <div className="bg-blue-600 p-1.5 rounded-lg text-white">
+                                    <Scissors className="w-5 h-5" />
+                                </div>
+                                791 <span className="text-slate-100 light:text-slate-900">Barber</span>
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto no-scrollbar">
+                    {filteredMenu.map((item) => (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={cn(
+                                "flex items-center gap-3 px-4 py-4 rounded-xl text-sm font-bold transition-all",
+                                pathname === item.href
+                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+                                    : "text-slate-400 light:text-slate-500 hover:text-slate-100 light:hover:text-blue-600 hover:bg-slate-800 light:hover:bg-blue-50"
+                            )}
+                        >
+                            <item.icon className="w-5 h-5 text-inherit" />
+                            {item.name}
+                        </Link>
+                    ))}
+                </nav>
+
+                <div className="p-6 mt-auto border-t border-slate-800 light:border-slate-200">
+                    <Button
+                        variant="ghost"
+                        className="w-full flex justify-start gap-3 text-slate-400 light:text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-xl font-bold transition-colors"
+                        onClick={signOut}
+                    >
+                        <LogOut className="w-5 h-5" />
+                        Sair do Painel
+                    </Button>
                 </div>
             </div>
-
-            <nav className="flex-1 px-4 py-4 space-y-1">
-                {filteredMenu.map((item) => (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                            "flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors",
-                            pathname === item.href
-                                ? "bg-blue-600/10 text-blue-500"
-                                : "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
-                        )}
-                    >
-                        <item.icon className="w-5 h-5" />
-                        {item.name}
-                    </Link>
-                ))}
-            </nav>
-
-            <div className="p-4 border-t border-slate-800">
-                <Button
-                    variant="ghost"
-                    className="w-full flex justify-start gap-3 text-slate-400 hover:text-red-400 hover:bg-red-400/10"
-                    onClick={signOut}
-                >
-                    <LogOut className="w-5 h-5" />
-                    Sair
-                </Button>
-            </div>
-        </div>
+        </>
     );
 }
