@@ -203,13 +203,9 @@ export default function SystemSettingsPage() {
                             onClick={async () => {
                                 try {
                                     setSaving('webhook_inter');
-                                    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/system/inter/setup-webhook`, {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' }
-                                    });
-                                    const res = await response.json();
-                                    if (!response.ok) throw new Error(res.error || 'Erro desconhecido');
-                                    alert('Webhook registrado com sucesso no Banco Inter!');
+                                    setSaving('webhook_inter');
+                                    const res = await Api.setupInterWebhook();
+                                    alert('Webhook registrado com sucesso no Banco Inter!\nURLs: ' + (res.registeredUrl || 'OK'));
                                 } catch (e: any) {
                                     alert('Erro ao ativar Webhook: ' + e.message);
                                 } finally {

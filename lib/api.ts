@@ -130,6 +130,7 @@ export const Api = {
     getSystemStats: () => apiFetch('/api/system/stats'),
     getSystemSettings: () => apiFetch('/api/system/settings'),
     updateSystemSetting: (key: string, value: any) => apiFetch('/api/system/settings', { method: 'PUT', body: JSON.stringify({ key, value }) }),
+    setupInterWebhook: () => apiFetch('/api/system/setup-inter-webhook'),
     updateSystemTenant: (id: string, updates: Record<string, any>) =>
         apiFetch(`/api/system/tenants/${id}`, { method: 'PATCH', body: JSON.stringify(updates) }),
     deleteSystemTenant: (id: string) => apiFetch(`/api/system/tenants/${id}`, { method: 'DELETE' }),
