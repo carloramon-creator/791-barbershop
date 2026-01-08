@@ -60,7 +60,14 @@ export default function LoginPage() {
             await redirectUser(data.user.id);
         } catch (err: unknown) {
             const error = err as Error;
-            setError(error.message || 'Erro ao entrar');
+            console.error('Login error:', error);
+
+            let message = error.message || 'Erro ao entrar';
+            if (message === 'Failed to fetch' || message === 'Load failed') {
+                message = `Erro de conexão: O domínio ${window.location.hostname} pode estar bloqueado no CORS do Supabase.`;
+            }
+
+            setError(message);
             setLoading(false);
         }
     };
@@ -121,7 +128,11 @@ export default function LoginPage() {
             }
         } catch (err: unknown) {
             const error = err as Error;
-            setError(error.message);
+            let message = error.message;
+            if (message === 'Failed to fetch' || message === 'Load failed') {
+                message = `Erro de conexão (Role): Verifique o CORS no Supabase para ${window.location.hostname}`;
+            }
+            setError(message);
             setLoading(false);
         }
     };
