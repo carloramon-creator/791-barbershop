@@ -159,7 +159,7 @@ export default function PlanPage() {
                     throw new Error('URL de checkout não retornada');
                 }
             } else if (paymentMethod === 'pix') {
-                const res = await fetch(`${API_URL}/api/checkout/pix`, {
+                const res = await fetch(`${API_URL}/api/checkout/inter-pix`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
