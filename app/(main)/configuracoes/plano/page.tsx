@@ -142,14 +142,14 @@ export default function PlanPage() {
                     if (!session) return;
 
                     // Busca na tabela finance pelo seu_numero que salvamos no pending_data
-                    const res = await fetch(`${API_URL}/api/barbershop/check-pending-payment?seuNumero=${pendingData.seu_numero}`, {
+                    const pollRes = await fetch(`https://791-barber-backend-production.up.railway.app/api/barbershop/check-pending-payment?seu_numero=${pendingData.seu_numero}`, {
                         headers: {
                             'Authorization': `Bearer ${session.access_token}`
                         }
                     });
 
-                    if (res.ok) {
-                        const data = await res.json();
+                    if (pollRes.ok) {
+                        const data = await pollRes.json();
                         if (data.ready) {
                             console.log('[POLLING] Cobrança encontrada e pronta!');
                             if (data.type === 'pix') {
@@ -207,7 +207,7 @@ export default function PlanPage() {
                 const tempId = Date.now().toString().slice(-15);
                 setPendingData({ message: 'Iniciando registro do Pix...', pending: true, seu_numero: tempId });
 
-                const res = await fetch(`${API_URL}/api/checkout/inter-pix`, {
+                const res = await fetch('https://791-barber-backend-production.up.railway.app/api/checkout/inter-pix', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -238,7 +238,7 @@ export default function PlanPage() {
                 setPendingData({ message: 'Iniciando registro do boleto...', pending: true, seu_numero: tempId });
                 setPaymentMethod('boleto-result');
 
-                const res = await fetch(`${API_URL}/api/checkout/inter-boleto`, {
+                const res = await fetch('https://791-barber-backend-production.up.railway.app/api/checkout/inter-boleto', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
