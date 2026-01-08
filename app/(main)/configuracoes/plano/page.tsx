@@ -80,7 +80,7 @@ export default function PlanPage() {
     const [couponCode, setCouponCode] = useState('');
     const [pixData, setPixData] = useState<{ pixPayload: string; amount: number; expiresAt: string } | null>(null);
     const [boletoData, setBoletoData] = useState<{ nossoNumero: string; codigoBarras: string; linhaDigitavel: string; pdfUrl: string } | null>(null);
-    const [pendingData, setPendingData] = useState<{ message: string; pending: boolean } | null>(null);
+    const [pendingData, setPendingData] = useState<{ message: string; pending: boolean; seu_numero?: string } | null>(null);
     const [tenantHasDocument, setTenantHasDocument] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -130,6 +130,47 @@ export default function PlanPage() {
         }
     }
 
+    // --- POLLING PARA COBRANÇAS PENDENTES ---
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+
+        if (pendingData?.pending) {
+            console.log('[POLLING] Iniciando busca por cobrança processada...');
+            interval = setInterval(async () => {
+                try {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (!session) return;
+
+                    // Busca na tabela finance pelo seu_numero que salvamos no pending_data
+                    const res = await fetch(`${API_URL}/api/barbershop/check-pending-payment?seuNumero=${pendingData.seu_numero}`, {
+                        headers: {
+                            'Authorization': `Bearer ${session.access_token}`
+                        }
+                    });
+
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.ready) {
+                            console.log('[POLLING] Cobrança encontrada e pronta!');
+                            if (data.type === 'pix') {
+                                setPixData(data.payload);
+                            } else {
+                                setBoletoData(data.payload);
+                            }
+                            setPendingData(null);
+                        }
+                    }
+                } catch (e) {
+                    console.error('[POLLING ERROR]', e);
+                }
+            }, 4000); // 4 segundos
+        }
+
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [pendingData]);
+
     async function handleChangePlan() {
         if (!selectedPlan) return;
 
@@ -162,48 +203,67 @@ export default function PlanPage() {
                     throw new Error('URL de checkout não retornada');
                 }
             } else if (paymentMethod === 'pix') {
+                // Efeito psicológico: Já mostra que está processando
+                const tempId = `pix_${Date.now()}`;
+                setPendingData({ message: 'Iniciando registro do Pix...', pending: true, seu_numero: tempId });
+
                 const res = await fetch(`${API_URL}/api/checkout/inter-pix`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${session.access_token}`
                     },
-                    body: JSON.stringify({ plan: selectedPlan, coupon: couponCode }),
+                    body: JSON.stringify({ plan: selectedPlan, coupon: couponCode, tempId }),
                 });
 
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
+                if (!res.ok) {
+                    setPendingData(null);
+                    throw new Error(data.error);
+                }
 
                 if (data.pending) {
-                    setPendingData(data);
+                    setPendingData({
+                        ...data,
+                        seu_numero: data.seu_numero || tempId
+                    });
                     return;
                 }
 
                 setPixData(data);
+                setPendingData(null);
             } else if (paymentMethod === 'boleto-inter') {
-                console.log('[DEBUG] Calling Boleto API:', `${API_URL}/api/checkout/inter-boleto`);
+                // Efeito psicológico: Já mostra que está processando
+                const tempId = `bol_${Date.now()}`;
+                setPendingData({ message: 'Iniciando registro do boleto...', pending: true, seu_numero: tempId });
+                setPaymentMethod('boleto-result');
+
                 const res = await fetch(`${API_URL}/api/checkout/inter-boleto`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${session.access_token}`
                     },
-                    body: JSON.stringify({ plan: selectedPlan, coupon: couponCode }),
+                    body: JSON.stringify({ plan: selectedPlan, coupon: couponCode, tempId }),
                 });
-                console.log('[DEBUG] Response status:', res.status, res.statusText);
 
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
+                if (!res.ok) {
+                    setPendingData(null);
+                    setPaymentMethod('boleto-inter'); // Volta pro form se der erro
+                    throw new Error(data.error);
+                }
 
                 if (data.pending) {
-                    setPendingData(data);
-                    // Mudar para boleto-result para esconder o form, mas mostrar o pending UI
-                    setPaymentMethod('boleto-result');
+                    setPendingData({
+                        ...data,
+                        seu_numero: data.seu_numero || tempId
+                    });
                     return;
                 }
 
                 setBoletoData(data);
-                setPaymentMethod('boleto-result');
+                setPendingData(null);
             }
         } catch (err: any) {
             console.error('[CHECKOUT ERROR]', err);
