@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, Building2, CreditCard, Check, Shield, FileText, ExternalLink, Copy } from 'lucide-react';
+import { Users, Building2, CreditCard, Check, Shield, FileText, ExternalLink, Copy, Activity } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -79,6 +79,7 @@ export default function PlanPage() {
     const [couponCode, setCouponCode] = useState('');
     const [pixData, setPixData] = useState<{ pixPayload: string; amount: number; expiresAt: string } | null>(null);
     const [boletoData, setBoletoData] = useState<{ nossoNumero: string; codigoBarras: string; linhaDigitavel: string; pdfUrl: string } | null>(null);
+    const [pendingData, setPendingData] = useState<{ message: string; pending: boolean } | null>(null);
     const [tenantHasDocument, setTenantHasDocument] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -136,6 +137,7 @@ export default function PlanPage() {
             setError(null);
             setPixData(null);
             setBoletoData(null);
+            setPendingData(null);
 
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) throw new Error('Usuário não autenticado ou sessão expirada');
@@ -171,6 +173,11 @@ export default function PlanPage() {
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
 
+                if (data.pending) {
+                    setPendingData(data);
+                    return;
+                }
+
                 setPixData(data);
             } else if (paymentMethod === 'boleto-inter') {
                 console.log('[DEBUG] Calling Boleto API:', `${API_URL}/api/checkout/inter-boleto`);
@@ -186,6 +193,13 @@ export default function PlanPage() {
 
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
+
+                if (data.pending) {
+                    setPendingData(data);
+                    // Mudar para boleto-result para esconder o form, mas mostrar o pending UI
+                    setPaymentMethod('boleto-result');
+                    return;
+                }
 
                 setBoletoData(data);
                 setPaymentMethod('boleto-result');
@@ -338,6 +352,7 @@ export default function PlanPage() {
                 if (!open) {
                     setPixData(null);
                     setBoletoData(null);
+                    setPendingData(null);
                     setError(null);
                 }
             }}>
@@ -349,7 +364,7 @@ export default function PlanPage() {
                         </DialogDescription>
                     </DialogHeader>
 
-                    {!pixData && !boletoData && (
+                    {!pixData && !boletoData && !pendingData && (
                         <div className="py-4 space-y-4">
                             <Label className="text-xs text-slate-500 uppercase tracking-wider">Forma de Pagamento</Label>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -417,7 +432,20 @@ export default function PlanPage() {
                         </div>
                     )}
 
-                    {pixData && (
+                    {pendingData && (
+                        <div className="py-8 text-center space-y-4">
+                            <div className="bg-amber-500/10 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto border border-amber-500/20">
+                                <Activity className="animate-spin text-amber-500 w-8 h-8" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-100">Gerando Cobrança...</h3>
+                            <p className="text-slate-400 text-sm px-4">{pendingData.message || 'O banco está processando o documento. Isso pode levar alguns minutos devido à alta demanda.'}</p>
+                            <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs text-slate-500 mt-4 mx-4">
+                                Fique tranquilo, a cobrança já foi registrada. Assim que o banco liberar o PDF/QR Code, ele aparecerá aqui ou no seu e-mail.
+                            </div>
+                        </div>
+                    )}
+
+                    {pixData && !pendingData && (
                         <div className="py-4 flex flex-col items-center space-y-4">
                             <p className="text-center text-sm text-slate-300">
                                 Escaneie o código abaixo para pagar via Pix. O acesso é liberado na hora!
@@ -451,7 +479,7 @@ export default function PlanPage() {
                         </div>
                     )}
 
-                    {boletoData && (
+                    {boletoData && !pendingData && (
                         <div className="py-4 space-y-6">
                             <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl text-center">
                                 <FileText className="w-12 h-12 text-blue-500 mx-auto mb-2" />
@@ -497,7 +525,7 @@ export default function PlanPage() {
                     )}
 
                     <DialogFooter>
-                        {!pixData && !boletoData ? (
+                        {!pixData && !boletoData && !pendingData ? (
                             <>
                                 <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800" onClick={() => setOpenDialog(false)} disabled={saving}>Cancelar</Button>
                                 <Button onClick={handleChangePlan} disabled={saving} className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
@@ -505,7 +533,7 @@ export default function PlanPage() {
                                 </Button>
                             </>
                         ) : (
-                            <Button onClick={() => setOpenDialog(false)} className="w-full bg-slate-800 text-white">Concluído</Button>
+                            <Button onClick={() => setOpenDialog(false)} className="w-full bg-slate-800 text-white hover:bg-slate-700">Fechar</Button>
                         )}
                     </DialogFooter>
                 </DialogContent>
