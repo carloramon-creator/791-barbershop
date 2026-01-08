@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+// RAILWAY MIGRATION TRIGGER - GOL DA VITÓRIA ⚽
+import React, { useState, useEffect } from 'react';
 import { Users, Building2, CreditCard, Check, Shield, FileText, ExternalLink, Copy, Activity } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
