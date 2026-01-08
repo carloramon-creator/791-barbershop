@@ -132,6 +132,7 @@ export const Api = {
     updateSystemSetting: (key: string, value: any) => apiFetch('/api/system/settings', { method: 'PUT', body: JSON.stringify({ key, value }) }),
     updateSystemTenant: (id: string, updates: Record<string, any>) =>
         apiFetch(`/api/system/tenants/${id}`, { method: 'PATCH', body: JSON.stringify(updates) }),
+    deleteSystemTenant: (id: string) => apiFetch(`/api/system/tenants/${id}`, { method: 'DELETE' }),
 
     // Public/Client Actions
     getPublicQueueStatus: (tenantId?: string) => apiFetch(`/api/public/queue?tenant_id=${tenantId || ''}`),

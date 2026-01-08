@@ -16,7 +16,8 @@ import {
     Activity,
     ExternalLink,
     TrendingUp,
-    Pencil
+    Pencil,
+    Trash2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -44,7 +45,13 @@ export default function TenantsPage() {
         try {
             setLoading(true);
             const data = await Api.getSystemTenants();
-            setTenants(data);
+
+            // Deduplicate local to ensure clean view, but allow seeing count if needed
+            const unique = Array.from(new Map(data.map((item: any) => [item.id, item])).values());
+            if (unique.length !== data.length) {
+                console.warn('[TENANTS] Found duplicates in response:', data.length - unique.length);
+            }
+            setTenants(unique);
         } catch (e) {
             console.error(e);
         } finally {
@@ -229,6 +236,24 @@ export default function TenantsPage() {
                                         title="Acessar como usuário oculto"
                                     >
                                         <ExternalLink size={16} />
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="border-slate-800 bg-slate-950 text-slate-400 hover:text-red-500 hover:border-red-500/50"
+                                        onClick={async () => {
+                                            if (window.confirm(`ATENÇÃO: Deseja EXCLUIR PERMANENTEMENTE a barbearia "${tenant.name}"?\n\nEsta ação apagará TODOS os dados vinculados e NÃO pode ser desfeita.`)) {
+                                                try {
+                                                    await Api.deleteSystemTenant(tenant.id);
+                                                    setTenants(prev => prev.filter(t => t.id !== tenant.id));
+                                                } catch (e: any) {
+                                                    alert('Erro ao excluir: ' + e.message);
+                                                }
+                                            }
+                                        }}
+                                        title="Excluir Barbearia"
+                                    >
+                                        <Trash2 size={16} />
                                     </Button>
                                 </div>
                             </div>
