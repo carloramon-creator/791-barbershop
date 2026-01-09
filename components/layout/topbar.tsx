@@ -10,7 +10,7 @@ export function Topbar() {
     const { theme, toggleTheme } = useTheme();
 
     return (
-        <header className="h-16 border-b border-slate-800 bg-slate-900 px-4 md:px-8 flex items-center justify-between transition-colors shadow-sm">
+        <header className="h-16 border-b border-blue-500/10 bg-[#0a1628] px-4 md:px-8 flex items-center justify-between transition-colors shadow-lg">
             <div className="flex items-center gap-4">
                 {/* Menu Hamburguer aparecerá apenas no mobile se necessário futuramente */}
                 <div className="text-sm font-bold text-slate-400 hidden md:block uppercase tracking-widest">

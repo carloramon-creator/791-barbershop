@@ -132,7 +132,7 @@
   }
 
   .light main {
-    @apply bg-white text-slate-900 !important;
+    @apply bg-white text-slate-900;
     /* Miolo totalmente branco */
   }
 
@@ -157,7 +157,7 @@
   /* Cards dentro do miolo */
   .light main .bg-slate-900,
   .light main .bg-slate-800 {
-    @apply bg-white border border-slate-200 shadow-sm !important;
+    @apply bg-white border border-slate-200 shadow-sm;
   }
 }
 

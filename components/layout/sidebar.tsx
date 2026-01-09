@@ -80,7 +80,7 @@ export function Sidebar() {
 
             {/* Sidebar */}
             <div className={cn(
-                "fixed inset-y-0 left-0 z-40 w-72 bg-slate-900 border-r border-slate-800 flex flex-col h-screen transition-all duration-300 md:relative md:translate-x-0 overflow-hidden",
+                "fixed inset-y-0 left-0 z-40 w-72 bg-[#0a1628] border-r border-blue-500/20 flex flex-col h-screen transition-all duration-300 md:relative md:translate-x-0 overflow-hidden shadow-[10px_0_30px_-15px_rgba(37,99,235,0.2)]",
                 !isOpen && "-translate-x-full md:translate-x-0"
             )}>
                 <div className="p-6">
