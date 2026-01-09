@@ -266,7 +266,7 @@ export async function POST(req: Request) {
                 codigoBarras: codigoBarras,
                 linhaDigitavel: linhaDigitavel,
                 pixCopiaECola: pixCopiaECola,
-                pdfUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}`
+                pdfUrl: `/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}`
             }));
         }
 
