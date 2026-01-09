@@ -27,9 +27,9 @@ export function Topbar() {
                     className="w-10 h-10 rounded-xl hover:bg-slate-800 light:hover:bg-slate-100 transition-colors"
                 >
                     {theme === 'dark' ? (
-                        <Moon className="w-5 h-5 text-slate-400" />
+                        <Sun className="w-5 h-5 text-yellow-500" />
                     ) : (
-                        <Sun className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                        <Moon className="w-5 h-5 text-slate-700 fill-slate-700" />
                     )}
                 </Button>
 
