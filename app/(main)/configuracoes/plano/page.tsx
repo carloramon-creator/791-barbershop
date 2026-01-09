@@ -440,7 +440,11 @@ export default function PlanPage() {
                     setError(null);
                 }
             }}>
-                <DialogContent className="border-slate-800 light:border-slate-200 bg-slate-900 light:bg-white text-slate-100 light:text-slate-900 max-w-md rounded-2xl md:rounded-3xl">
+                <DialogContent
+                    className="border-slate-800 light:border-slate-200 bg-slate-900 light:bg-white text-slate-100 light:text-slate-900 max-w-md rounded-2xl md:rounded-3xl"
+                    onPointerDownOutside={() => fetchInvoices()}
+                    onEscapeKeyDown={() => fetchInvoices()}
+                >
                     <DialogHeader>
                         <DialogTitle className="font-black text-xl md:text-2xl tracking-tighter uppercase">Confirmar Assinatura</DialogTitle>
                         <DialogDescription className="text-slate-400 light:text-slate-500 font-bold">
@@ -632,13 +636,13 @@ export default function PlanPage() {
                     <DialogFooter>
                         {!pixData && !boletoData && !pendingData ? (
                             <>
-                                <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800" onClick={() => setOpenDialog(false)} disabled={saving}>Cancelar</Button>
+                                <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800" onClick={() => { setOpenDialog(false); fetchInvoices(); }} disabled={saving}>Cancelar</Button>
                                 <Button onClick={handleChangePlan} disabled={saving} className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
                                     {saving ? 'Processando...' : 'Confirmar e Pagar'}
                                 </Button>
                             </>
                         ) : (
-                            <Button onClick={() => setOpenDialog(false)} className="w-full bg-slate-800 text-white hover:bg-slate-700">Fechar</Button>
+                            <Button onClick={() => { setOpenDialog(false); fetchInvoices(); }} className="w-full bg-slate-800 text-white hover:bg-slate-700">Fechar</Button>
                         )}
                     </DialogFooter>
                 </DialogContent>
