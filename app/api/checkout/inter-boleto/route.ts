@@ -176,8 +176,8 @@ export async function POST(req: Request) {
         if (!isReady && codigoSolicitacao) {
             console.log('[INTER] Cobrança assíncrona. Iniciando busca com retry...');
 
-            const maxRetries = 3;
-            const delays = [2000, 3000, 4000];
+            const maxRetries = 5; // Aumentado para 5 tentativas
+            const delays = [3000, 3000, 4000, 5000, 5000]; // Delays maiores (3s, 3s, 4s, 5s, 5s)
 
             for (let attempt = 0; attempt < maxRetries; attempt++) {
                 console.log(`[INTER] Tentativa ${attempt + 1}/${maxRetries} - Aguardando ${delays[attempt]}ms...`);
@@ -186,7 +186,7 @@ export async function POST(req: Request) {
                 try {
                     const token = await inter.getAccessToken();
                     const now = new Date();
-                    const dInit = new Date(now); dInit.setDate(dInit.getDate() - 1);
+                    const dInit = new Date(now); dInit.setDate(dInit.getDate() - 2); // Janela maior
                     const dEnd = new Date(now); dEnd.setDate(dEnd.getDate() + 1);
 
                     const path = `/cobranca/v3/cobrancas?seuNumero=${seuNumero}&dataInicial=${dInit.toISOString().split('T')[0]}&dataFinal=${dEnd.toISOString().split('T')[0]}`;
@@ -212,7 +212,7 @@ export async function POST(req: Request) {
 
                         console.log('[INTER] Dados extraídos:', { nossoNumero, linhaDigitavel, codigoBarras });
 
-                        if (nossoNumero && linhaDigitavel) {
+                        if (nossoNumero && (linhaDigitavel || pixCopiaECola)) {
                             isReady = true;
                             console.log('[INTER] ✅ Cobrança pronta!');
                             break;
