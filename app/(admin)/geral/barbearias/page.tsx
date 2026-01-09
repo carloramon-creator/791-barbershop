@@ -41,9 +41,12 @@ export default function TenantsPage() {
         trial_ends_at: ''
     });
 
+    const [error, setError] = useState<string | null>(null);
+
     const loadTenants = async () => {
         try {
             setLoading(true);
+            setError(null);
             const data = await Api.getSystemTenants();
 
             // Deduplicate local to ensure clean view, but allow seeing count if needed
@@ -52,8 +55,9 @@ export default function TenantsPage() {
                 console.warn('[TENANTS] Found duplicates in response:', data.length - unique.length);
             }
             setTenants(unique);
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
+            setError(e.message || 'Erro ao carregar barbearias');
         } finally {
             setLoading(false);
         }
@@ -146,6 +150,21 @@ export default function TenantsPage() {
 
             {/* List */}
             <div className="grid grid-cols-1 gap-4">
+                {error && (
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-8 rounded-2xl text-center font-bold">
+                        <XCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-xl mb-2">Ops! Algo deu errado.</p>
+                        <p className="text-sm opacity-80">{error}</p>
+                        <Button
+                            onClick={loadTenants}
+                            variant="outline"
+                            className="mt-6 border-red-500/30 hover:bg-red-500/10"
+                        >
+                            Tentar Novamente
+                        </Button>
+                    </div>
+                )}
+
                 {loading ? (
                     <div className="py-20 text-center"><Activity className="animate-spin inline text-blue-500" /></div>
                 ) : filteredTenants.map((tenant) => (

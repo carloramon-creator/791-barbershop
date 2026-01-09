@@ -107,14 +107,20 @@ export function Sidebar() {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex items-center gap-3 px-4 py-4 rounded-xl text-sm font-bold transition-all",
+                                "flex items-center gap-3 px-4 py-4 rounded-xl text-sm font-bold transition-all relative group",
                                 pathname === item.href
-                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
-                                    : "text-slate-400 light:text-slate-500 hover:text-slate-100 light:hover:text-blue-600 hover:bg-slate-800 light:hover:bg-blue-50"
+                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                                    : "text-slate-400 light:text-slate-500 hover:text-slate-100 light:hover:text-blue-600 hover:bg-slate-800 light:hover:bg-blue-50/50"
                             )}
                         >
-                            <item.icon className="w-5 h-5 text-inherit" />
+                            <item.icon className={cn(
+                                "w-5 h-5 transition-transform group-hover:scale-110",
+                                pathname === item.href ? "text-white" : "text-inherit"
+                            )} />
                             {item.name}
+                            {pathname === item.href && (
+                                <div className="absolute right-3 w-1.5 h-1.5 bg-white rounded-full" />
+                            )}
                         </Link>
                     ))}
                 </nav>
@@ -129,7 +135,7 @@ export function Sidebar() {
                         Sair do Painel
                     </Button>
                 </div>
-            </div>
+            </div >
         </>
     );
 }
