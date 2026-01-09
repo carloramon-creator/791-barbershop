@@ -163,7 +163,7 @@
   /* Cards em modo claro */
   .light .Card,
   .light [class*="card"] {
-    @apply bg-white border-slate-200 shadow-sm !important;
+    @apply bg-white border-slate-200 shadow-sm;
   }
 }
 
