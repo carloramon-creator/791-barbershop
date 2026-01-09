@@ -92,6 +92,25 @@ export class InterAPIV3 {
         return response;
     }
 
+    async getBillingBySolicitacao(codigoSolicitacao: string) {
+        const token = await this.getAccessToken();
+        const options: https.RequestOptions = {
+            hostname: 'cdpj.partners.bancointer.com.br',
+            port: 443,
+            path: `/cobranca/v3/cobrancas/solicitacoes/${codigoSolicitacao}`,
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            cert: this.config.cert,
+            key: this.config.key,
+            rejectUnauthorized: false,
+            family: 4
+        };
+
+        return await this.makeRequest(options);
+    }
+
     async registerWebhook(webhookUrl: string, type: 'boleto' | 'pix', pixKey?: string) {
         const token = await this.getAccessToken();
         let path = type === 'boleto' ? '/cobranca/v3/cobrancas/webhook' : `/pix/v2/webhook/${pixKey}`;

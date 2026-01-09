@@ -170,56 +170,46 @@ export async function POST(req: Request) {
         });
 
         // Se temos nossoNumero E linhaDigitavel, a cobrança está pronta
-        let isReady = !!(nossoNumero && linhaDigitavel);
+        let isReady = !!(nossoNumero && (linhaDigitavel || pixCopiaECola));
 
-        // Se não está pronto mas temos codigoSolicitacao, vamos buscar com retry
+        // Se não está pronto mas temos codigoSolicitacao, vamos buscar com retry oficial da V3
         if (!isReady && codigoSolicitacao) {
-            console.log('[INTER] Cobrança assíncrona. Iniciando busca com retry...');
+            console.log(`[INTER] Cobrança assíncrona. Consultando status da solicitação: ${codigoSolicitacao}`);
 
-            const maxRetries = 5; // Aumentado para 5 tentativas
-            const delays = [3000, 3000, 4000, 5000, 5000]; // Delays maiores (3s, 3s, 4s, 5s, 5s)
+            const maxRetries = 5;
+            const delays = [2000, 3000, 3000, 4000, 5000];
 
             for (let attempt = 0; attempt < maxRetries; attempt++) {
                 console.log(`[INTER] Tentativa ${attempt + 1}/${maxRetries} - Aguardando ${delays[attempt]}ms...`);
                 await new Promise(r => setTimeout(r, delays[attempt]));
 
                 try {
-                    const token = await inter.getAccessToken();
-                    const now = new Date();
-                    const dInit = new Date(now); dInit.setDate(dInit.getDate() - 2); // Janela maior
-                    const dEnd = new Date(now); dEnd.setDate(dEnd.getDate() + 1);
+                    // Consultar diretamente pelo código da solicitação
+                    const searchRes = await inter.getBillingBySolicitacao(codigoSolicitacao);
+                    console.log('[INTER] Resposta consulta solicitações - Status:', searchRes.situacao);
 
-                    const path = `/cobranca/v3/cobrancas?seuNumero=${seuNumero}&dataInicial=${dInit.toISOString().split('T')[0]}&dataFinal=${dEnd.toISOString().split('T')[0]}`;
-                    const searchRes = await inter.makeRequest({
-                        hostname: 'cdpj.partners.bancointer.com.br',
-                        port: 443, path, method: 'GET',
-                        headers: { 'Authorization': `Bearer ${token}` },
-                        cert, key, rejectUnauthorized: false, family: 4
-                    });
+                    // Na V3, se processado, os dados vêm no objeto ou campo 'cobranca'
+                    const found = searchRes.cobranca || searchRes;
 
-                    console.log('[INTER] Resposta busca - Keys:', Object.keys(searchRes));
-                    const items = searchRes.cobrancas || searchRes.content || [];
-                    console.log('[INTER] Cobranças encontradas:', items.length);
+                    if (found && (found.nossoNumero || found.identificador)) {
+                        console.log('[INTER] Dados da cobrança obtidos com sucesso!');
 
-                    if (items.length > 0) {
-                        const found = items[0];
-                        console.log('[INTER] Cobrança encontrada! Keys:', Object.keys(found));
                         interRes = found;
                         nossoNumero = found.nossoNumero || found.identificador || found.codigoCobranca;
                         linhaDigitavel = found.linhaDigitavel || found.LinhaDigitavel;
                         codigoBarras = found.codigoBarras || found.CodigoBarras;
-                        pixCopiaECola = found.pixCopiaECola || found.pix?.pixCopiaECola;
-
-                        console.log('[INTER] Dados extraídos:', { nossoNumero, linhaDigitavel, codigoBarras });
+                        pixCopiaECola = found.pixCopiaECola || found.pix?.pixCopiaECola || found.pixCopiaECola;
 
                         if (nossoNumero && (linhaDigitavel || pixCopiaECola)) {
                             isReady = true;
-                            console.log('[INTER] ✅ Cobrança pronta!');
+                            console.log('[INTER] ✅ Cobrança pronta via consulta de solicitação!');
                             break;
                         }
+                    } else {
+                        console.log('[INTER] Solicitação ainda não processada totalmente, tentando novamente...');
                     }
                 } catch (e: any) {
-                    console.error(`[INTER] Erro tentativa ${attempt + 1}:`, e.message);
+                    console.error(`[INTER] Erro na consulta da solicitação (Tentativa ${attempt + 1}):`, e.message || e);
                 }
             }
         }
