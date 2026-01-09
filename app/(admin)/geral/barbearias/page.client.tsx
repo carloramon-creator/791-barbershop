@@ -100,7 +100,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
         <div className="space-y-8 pb-20">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-100 tracking-tighter uppercase">Gerenciar Barbearias (TESTE)</h1>
+                    <h1 className="text-3xl font-black text-slate-100 tracking-tighter uppercase">Gerenciar Barbearias</h1>
                     <p className="text-slate-500 font-medium">Lista completa de licenciados e performance individual.</p>
                 </div>
 
