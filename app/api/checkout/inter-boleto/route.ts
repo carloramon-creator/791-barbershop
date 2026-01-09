@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-// Trigger Build: 11:10 BRT - GOL FINAL ⚽
+// Trigger Build: 11:41 BRT - PDF FIX 📄
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { InterAPIV3 } from '@/lib/inter-api-v3';
