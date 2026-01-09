@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { stripe, StripePlan } from '@/app/lib/stripe';
+import { stripe, StripePlan } from '@/lib/stripe-server';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
 import { supabaseAdmin } from '@/lib/supabase-server';
 

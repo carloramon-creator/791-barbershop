@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
-import { findOrCreateClientByPhone } from '@/app/lib/clients';
+import { findOrCreateClientByPhone } from '@/lib/clients';
 
 /**
  * Endpoint PÚBLICO para cliente entrar na fila de um barbeiro específico.

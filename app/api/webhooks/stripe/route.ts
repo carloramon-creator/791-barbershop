@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { stripe } from '@/app/lib/stripe';
+import { stripe } from '@/lib/stripe-server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import Stripe from 'stripe';
 
