@@ -166,10 +166,16 @@ export async function POST(req: Request) {
                         console.log('[SAAS PIX] Estratégia A falhou, pulando para B.');
                     }
 
-                    // Estratégia B: Busca na Lista
+                    // Estratégia B: Busca na Lista (+/- 1 dia)
                     if (!found) {
-                        const today = new Date().toISOString().split('T')[0];
-                        const listRes = await inter.listBillings(today, today);
+                        const now = new Date();
+                        const dInit = new Date(now); dInit.setDate(dInit.getDate() - 1);
+                        const dEnd = new Date(now); dEnd.setDate(dEnd.getDate() + 1);
+
+                        const listRes = await inter.listBillings(
+                            dInit.toISOString().split('T')[0],
+                            dEnd.toISOString().split('T')[0]
+                        );
                         const items = listRes.cobrancas || listRes.content || [];
                         found = items.find((it: any) => it.seuNumero === seuNumero);
                     }

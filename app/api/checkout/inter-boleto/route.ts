@@ -208,11 +208,17 @@ export async function POST(req: Request) {
                         console.log('[INTER] Estratégia A falhou, pulando para B.');
                     }
 
-                    // Estratégia B: Busca na Lista Geral
+                    // Estratégia B: Busca na Lista Geral (+/- 1 dia para evitar problemas de timezone)
                     if (!found) {
-                        console.log('[INTER] Estratégia B: Buscando na lista do dia...');
-                        const today = new Date().toISOString().split('T')[0];
-                        const listRes = await inter.listBillings(today, today);
+                        console.log('[INTER] Estratégia B: Buscando na lista (janela de 2 dias)...');
+                        const now = new Date();
+                        const dInit = new Date(now); dInit.setDate(dInit.getDate() - 1);
+                        const dEnd = new Date(now); dEnd.setDate(dEnd.getDate() + 1);
+
+                        const listRes = await inter.listBillings(
+                            dInit.toISOString().split('T')[0],
+                            dEnd.toISOString().split('T')[0]
+                        );
                         const items = listRes.cobrancas || listRes.content || [];
                         found = items.find((it: any) => it.seuNumero === seuNumero);
                     }
