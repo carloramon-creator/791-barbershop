@@ -1,6 +1,6 @@
 import { supabaseClient } from './supabase-client';
 
-const BACKEND_URL = '';
+const BACKEND_URL = typeof window === 'undefined' ? (process.env.NEXT_PUBLIC_APP_URL || '') : '';
 
 async function apiFetch(path: string, options: RequestInit = {}) {
     // Buscar sessão atual para pegar o JWT
