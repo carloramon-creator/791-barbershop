@@ -419,7 +419,7 @@ export default function PlanPage() {
                     <DialogHeader>
                         <DialogTitle className="font-black text-xl md:text-2xl italic tracking-tighter uppercase">Confirmar Assinatura</DialogTitle>
                         <DialogDescription className="text-slate-400 light:text-slate-500 font-bold">
-                            Plano <span className="text-blue-600 capitalize">{selectedPlan}</span> — R$ {selectedPlan ? PLANS[selectedPlan]?.price : 0}/mês
+                            Plano <span className="text-blue-600 capitalize">{selectedPlan}</span> — R$ {boletoData?.amount || (selectedPlan ? PLANS[selectedPlan]?.price : 0)}/mês
                         </DialogDescription>
                     </DialogHeader>
 
@@ -556,7 +556,7 @@ export default function PlanPage() {
                                 <div className="pt-4 flex justify-around border-t border-blue-500/10">
                                     <div className="text-center">
                                         <p className="text-[10px] text-slate-500 uppercase font-bold">Valor</p>
-                                        <p className="text-sm font-black text-slate-100">R$ {selectedPlan ? PLANS[selectedPlan]?.price : '0'},00</p>
+                                        <p className="text-sm font-black text-slate-100">R$ {boletoData.amount || (selectedPlan ? PLANS[selectedPlan]?.price : '0')}</p>
                                     </div>
                                     <div className="text-center">
                                         <p className="text-[10px] text-slate-500 uppercase font-bold">Vencimento</p>

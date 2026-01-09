@@ -183,7 +183,9 @@ export class InterAPIV3 {
                     if (res.statusCode === 200) {
                         resolve(Buffer.concat(chunks));
                     } else {
-                        reject(new Error(`Erro ao baixar PDF: ${res.statusCode}`));
+                        const errorMsg = Buffer.concat(chunks).toString() || `Status: ${res.statusCode}`;
+                        console.error(`[INTER PDF ERROR] Status: ${res.statusCode}, Body: ${errorMsg}`);
+                        reject(new Error(`Erro ao baixar PDF: ${res.statusCode} - ${errorMsg}`));
                     }
                 });
             });
