@@ -126,18 +126,20 @@
   }
 
   html.light body {
-    @apply bg-slate-50 text-slate-900;
+    @apply bg-white text-slate-900;
   }
 
   /* Ajustes globais para modo claro */
   .light .bg-slate-950 {
-    @apply bg-slate-50;
-  }
-
-  .light .bg-slate-900 {
     @apply bg-white;
   }
 
+  /* Miolo branco */
+  .light .bg-slate-900 {
+    @apply bg-slate-50/80;
+  }
+
+  /* Sidebar/Topbar com leve fundo cinza */
   .light .text-slate-50 {
     @apply text-slate-900;
   }
@@ -150,8 +152,18 @@
     @apply text-slate-500;
   }
 
+  .light .text-slate-500 {
+    @apply text-slate-600;
+  }
+
   .light .border-slate-800 {
-    @apply border-slate-200;
+    @apply border-slate-200/60;
+  }
+
+  /* Cards em modo claro */
+  .light .Card,
+  .light [class*="card"] {
+    @apply bg-white border-slate-200 shadow-sm !important;
   }
 }
 
