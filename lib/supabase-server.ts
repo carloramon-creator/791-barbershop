@@ -37,6 +37,6 @@ export const supabase = async () => {
 };
 
 export const supabaseAdmin = createClient(
-  (process.env.SUPABASE_URL || DEFAULT_URL).trim(),
+  (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_URL).trim(),
   (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
 );
