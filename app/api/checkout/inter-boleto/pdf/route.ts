@@ -6,9 +6,12 @@ export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const nossoNumero = searchParams.get('nossoNumero');
+        const codigoSolicitacao = searchParams.get('codigoSolicitacao');
 
-        if (!nossoNumero || nossoNumero === 'undefined') {
-            return NextResponse.json({ error: 'Nosso Número não informado ou inválido' }, { status: 400 });
+        const identifier = (codigoSolicitacao && codigoSolicitacao !== 'undefined' && codigoSolicitacao !== 'N/A') ? codigoSolicitacao : nossoNumero;
+
+        if (!identifier || identifier === 'undefined') {
+            return NextResponse.json({ error: 'Identificador (nossoNumero ou codigoSolicitacao) não informado' }, { status: 400 });
         }
 
         // 1. Configurar Inter - Buscar do DB primeiro (padronizado com a rota de criação)
@@ -39,8 +42,8 @@ export async function GET(req: Request) {
             key
         });
 
-        console.log(`[PDF] Baixando boleto: ${nossoNumero}`);
-        const pdfBuffer = await inter.getBillingPdf(nossoNumero);
+        console.log(`[PDF] Baixando boleto usando id: ${identifier}`);
+        const pdfBuffer = await inter.getBillingPdf(identifier!);
 
         return new NextResponse(new Uint8Array(pdfBuffer), {
             headers: {

@@ -266,7 +266,8 @@ export async function POST(req: Request) {
                 codigoBarras: codigoBarras,
                 linhaDigitavel: linhaDigitavel,
                 pixCopiaECola: pixCopiaECola,
-                pdfUrl: `/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}`
+                amount: amount,
+                pdfUrl: `/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}&codigoSolicitacao=${codigoSolicitacao || ''}`
             }));
         }
 
@@ -275,7 +276,8 @@ export async function POST(req: Request) {
             pending: true,
             message: 'Boleto em processamento no banco.',
             seu_numero: seuNumero,
-            amount: amount
+            amount: amount,
+            pdfUrl: `/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}&codigoSolicitacao=${codigoSolicitacao || ''}`
         }));
 
     } catch (error: any) {
