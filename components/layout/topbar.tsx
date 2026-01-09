@@ -10,10 +10,10 @@ export function Topbar() {
     const { theme, toggleTheme } = useTheme();
 
     return (
-        <header className="h-16 border-b border-slate-800 bg-slate-900 light:bg-white light:border-slate-200 px-4 md:px-8 flex items-center justify-between transition-colors shadow-sm">
+        <header className="h-16 border-b border-slate-800 bg-slate-900 px-4 md:px-8 flex items-center justify-between transition-colors shadow-sm">
             <div className="flex items-center gap-4">
                 {/* Menu Hamburguer aparecerá apenas no mobile se necessário futuramente */}
-                <div className="text-sm font-bold text-slate-400 light:text-slate-600 hidden md:block uppercase tracking-widest">
+                <div className="text-sm font-bold text-slate-400 hidden md:block uppercase tracking-widest">
                     Painel Administrativo
                 </div>
                 <div className="md:hidden text-lg font-black text-blue-600">791</div>
@@ -24,7 +24,7 @@ export function Topbar() {
                     variant="ghost"
                     size="icon"
                     onClick={toggleTheme}
-                    className="w-10 h-10 rounded-xl hover:bg-slate-800 light:hover:bg-slate-100 transition-colors"
+                    className="w-10 h-10 rounded-xl hover:bg-slate-800 transition-colors"
                 >
                     {theme === 'dark' ? (
                         <Sun className="w-5 h-5 text-yellow-500" />
@@ -33,12 +33,12 @@ export function Topbar() {
                     )}
                 </Button>
 
-                <div className="flex items-center gap-3 pl-2 md:pl-4 border-l border-slate-800 light:border-slate-200">
+                <div className="flex items-center gap-3 pl-2 md:pl-4 border-l border-slate-800">
                     <div className="text-right hidden sm:block">
-                        <div className="text-sm font-bold text-slate-100 light:text-slate-900">{user?.email?.split('@')[0]}</div>
+                        <div className="text-sm font-bold text-slate-100">{user?.email?.split('@')[0]}</div>
                         <div className="text-[10px] text-slate-500 uppercase font-black tracking-tighter">{role === 'owner' ? 'Dono' : 'Barbeiro'}</div>
                     </div>
-                    <div className="w-10 h-10 rounded-xl bg-slate-800 light:bg-slate-100 border border-slate-700 light:border-slate-200 flex items-center justify-center text-slate-400 light:text-slate-600">
+                    <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400">
                         <User className="w-5 h-5" />
                     </div>
                 </div>

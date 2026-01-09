@@ -125,45 +125,39 @@
     @apply bg-slate-950 text-slate-50 transition-colors duration-300;
   }
 
+  /* Modo Claro - Miolo Branco com Sidebar/Topbar Escuros (Estilo Premium) */
   html.light body {
-    @apply bg-white text-slate-900;
+    @apply bg-slate-950;
+    /* Mantém o fundo externo escuro */
   }
 
-  /* Ajustes globais para modo claro */
-  .light .bg-slate-950 {
-    @apply bg-white;
+  .light main {
+    @apply bg-white text-slate-900 !important;
+    /* Miolo totalmente branco */
   }
 
-  /* Miolo branco */
-  .light .bg-slate-900 {
-    @apply bg-slate-50/80;
-  }
-
-  /* Sidebar/Topbar com leve fundo cinza */
-  .light .text-slate-50 {
+  /* Forçar textos escuros dentro do miolo branco */
+  .light main h1,
+  .light main h2,
+  .light main h3,
+  .light main p,
+  .light main span:not(.text-white) {
     @apply text-slate-900;
   }
 
-  .light .text-slate-100 {
-    @apply text-slate-900;
-  }
-
-  .light .text-slate-400 {
+  .light main .text-slate-400,
+  .light main .text-slate-500 {
     @apply text-slate-500;
   }
 
-  .light .text-slate-500 {
-    @apply text-slate-600;
+  .light main .border-slate-800 {
+    @apply border-slate-200;
   }
 
-  .light .border-slate-800 {
-    @apply border-slate-200/60;
-  }
-
-  /* Cards em modo claro */
-  .light .Card,
-  .light [class*="card"] {
-    @apply bg-white border-slate-200 shadow-sm;
+  /* Cards dentro do miolo */
+  .light main .bg-slate-900,
+  .light main .bg-slate-800 {
+    @apply bg-white border border-slate-200 shadow-sm !important;
   }
 }
 

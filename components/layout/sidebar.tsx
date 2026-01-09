@@ -80,7 +80,7 @@ export function Sidebar() {
 
             {/* Sidebar */}
             <div className={cn(
-                "fixed inset-y-0 left-0 z-40 w-72 bg-slate-900 light:bg-slate-50 border-r border-slate-800 light:border-slate-200 flex flex-col h-screen transition-all duration-300 md:relative md:translate-x-0 overflow-hidden",
+                "fixed inset-y-0 left-0 z-40 w-72 bg-slate-900 border-r border-slate-800 flex flex-col h-screen transition-all duration-300 md:relative md:translate-x-0 overflow-hidden",
                 !isOpen && "-translate-x-full md:translate-x-0"
             )}>
                 <div className="p-6">
@@ -95,7 +95,7 @@ export function Sidebar() {
                                 <div className="bg-blue-600 p-1.5 rounded-lg text-white">
                                     <Scissors className="w-5 h-5" />
                                 </div>
-                                791 <span className="text-slate-100 light:text-slate-900">Barber</span>
+                                791 <span className="text-slate-100">Barber</span>
                             </>
                         )}
                     </div>
@@ -110,7 +110,7 @@ export function Sidebar() {
                                 "flex items-center gap-3 px-4 py-4 rounded-xl text-sm font-bold transition-all relative group",
                                 pathname === item.href
                                     ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
-                                    : "text-slate-400 light:text-slate-500 hover:text-slate-100 light:hover:text-blue-600 hover:bg-slate-800 light:hover:bg-blue-50/50"
+                                    : "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
                             )}
                         >
                             <item.icon className={cn(
@@ -125,10 +125,10 @@ export function Sidebar() {
                     ))}
                 </nav>
 
-                <div className="p-6 mt-auto border-t border-slate-800 light:border-slate-200">
+                <div className="p-6 mt-auto border-t border-slate-800">
                     <Button
                         variant="ghost"
-                        className="w-full flex justify-start gap-3 text-slate-400 light:text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-xl font-bold transition-colors"
+                        className="w-full flex justify-start gap-3 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-xl font-bold transition-colors"
                         onClick={signOut}
                     >
                         <LogOut className="w-5 h-5" />
