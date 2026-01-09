@@ -9,13 +9,13 @@ async function checkFinanceTable() {
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    console.log('--- BUSCANDO ÚLTIMOS REGISTROS DE FINANÇAS SaaS ---');
+    console.log('--- BUSCANDO REGISTROS DE SaaS (boleto_inter ou pix_inter) ---');
     const { data, error } = await supabase
         .from('finance')
         .select('*')
-        .contains('metadata', { method: 'boleto_inter' })
+        .or('metadata->>method.eq.boleto_inter,metadata->>method.eq.pix_inter')
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(20);
 
     if (error) {
         console.error('Erro ao buscar finanças:', error);

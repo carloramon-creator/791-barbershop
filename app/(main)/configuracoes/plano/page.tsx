@@ -84,6 +84,8 @@ export default function PlanPage() {
     const [pendingData, setPendingData] = useState<{ message: string; pending: boolean; seu_numero?: string } | null>(null);
     const [tenantHasDocument, setTenantHasDocument] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [invoices, setInvoices] = useState<any[]>([]);
+    const [loadingInvoices, setLoadingInvoices] = useState(false);
 
     const tabs = [
         { name: 'Geral', href: '/configuracoes/barbearia', icon: Building2 },
@@ -128,6 +130,29 @@ export default function PlanPage() {
             setError(errorObj.message);
         } finally {
             setLoading(false);
+            fetchInvoices();
+        }
+    }
+
+    async function fetchInvoices() {
+        try {
+            setLoadingInvoices(true);
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) return;
+
+            const res = await fetch('/api/barbershop/invoices', {
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`
+                }
+            });
+            const data = await res.json();
+            if (data.invoices) {
+                setInvoices(data.invoices);
+            }
+        } catch (err) {
+            console.error('Erro ao buscar faturas:', err);
+        } finally {
+            setLoadingInvoices(false);
         }
     }
 
@@ -419,7 +444,7 @@ export default function PlanPage() {
                     <DialogHeader>
                         <DialogTitle className="font-black text-xl md:text-2xl italic tracking-tighter uppercase">Confirmar Assinatura</DialogTitle>
                         <DialogDescription className="text-slate-400 light:text-slate-500 font-bold">
-                            Plano <span className="text-blue-600 capitalize">{selectedPlan}</span> — R$ {boletoData?.amount || (selectedPlan ? PLANS[selectedPlan]?.price : 0)}/mês
+                            Plano <span className="text-blue-600 capitalize">{selectedPlan}</span> — R$ {(boletoData?.amount || (selectedPlan ? PLANS[selectedPlan]?.price : 0)).toFixed(2).replace('.', ',')}/mês
                         </DialogDescription>
                     </DialogHeader>
 
@@ -556,7 +581,7 @@ export default function PlanPage() {
                                 <div className="pt-4 flex justify-around border-t border-blue-500/10">
                                     <div className="text-center">
                                         <p className="text-[10px] text-slate-500 uppercase font-bold">Valor</p>
-                                        <p className="text-sm font-black text-slate-100">R$ {boletoData.amount || (selectedPlan ? PLANS[selectedPlan]?.price : '0')}</p>
+                                        <p className="text-sm font-black text-slate-100">R$ {(boletoData.amount || (selectedPlan ? PLANS[selectedPlan]?.price : 0)).toFixed(2).replace('.', ',')}</p>
                                     </div>
                                     <div className="text-center">
                                         <p className="text-[10px] text-slate-500 uppercase font-bold">Vencimento</p>
@@ -618,6 +643,86 @@ export default function PlanPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* --- SEÇÃO DE HISTÓRICO DE FATURAS --- */}
+            <div className="mt-12 space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-blue-500/10 p-2 rounded-lg">
+                            <FileText className="w-5 h-5 text-blue-500" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-100">Meu Histórico de Faturas</h2>
+                            <p className="text-xs text-slate-500">Acompanhe seus pagamentos e baixe boletos anteriores.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm">
+                    {loadingInvoices ? (
+                        <div className="py-12 text-center text-slate-500 animate-pulse uppercase text-[10px] font-black tracking-widest"> Carregando faturas... </div>
+                    ) : invoices.length === 0 ? (
+                        <div className="py-12 text-center text-slate-600 uppercase text-[10px] font-black tracking-widest"> Nenhuma fatura encontrada. </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-slate-950/50 border-b border-slate-800">
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Data</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Descrição</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Valor</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-800">
+                                    {invoices.map((inv) => (
+                                        <tr key={inv.id} className="hover:bg-slate-800/30 transition-colors">
+                                            <td className="px-6 py-4 text-xs text-slate-400">
+                                                {new Date(inv.date).toLocaleDateString('pt-BR')}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <p className="text-xs font-bold text-slate-200">{inv.description}</p>
+                                                <p className="text-[10px] text-slate-500 font-mono">ID: {inv.metadata?.nosso_numero || inv.id.slice(0, 8)}</p>
+                                            </td>
+                                            <td className="px-6 py-4 text-xs font-black text-slate-200">
+                                                R$ {inv.value.toFixed(2).replace('.', ',')}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {inv.is_paid ? (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 uppercase">Pago</span>
+                                                ) : (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/10 text-amber-500 border border-amber-500/20 uppercase">Pendente</span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 text-right space-x-2">
+                                                {inv.metadata?.method === 'boleto_inter' && !inv.is_paid && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className="h-8 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 text-[10px] font-black uppercase"
+                                                        onClick={() => window.open(`/api/checkout/inter-boleto/pdf?nossoNumero=${inv.metadata.nosso_numero}&codigoSolicitacao=${inv.metadata.txid || ''}`, '_blank')}
+                                                    >
+                                                        <FileText className="w-3 h-3 mr-1" /> PDF
+                                                    </Button>
+                                                )}
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    disabled
+                                                    className="h-8 text-slate-600 border border-slate-800 text-[10px] font-black uppercase opacity-50 cursor-not-allowed group relative"
+                                                >
+                                                    <Shield className="w-3 h-3 mr-1" /> NF
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
