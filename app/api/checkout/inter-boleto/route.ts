@@ -119,12 +119,34 @@ export async function POST(req: Request) {
             }
         };
 
-        // 3. REGISTRAR NO BANCO
         console.log('[INTER] Criando boleto...');
         let interRes = await inter.createBilling(payload);
 
+        // Log completo da resposta para debug
+        console.log('[INTER] Resposta completa do Inter:', JSON.stringify(interRes, null, 2));
+
+        // A API V3 pode retornar de forma síncrona (com todos os dados) ou assíncrona (apenas codigoSolicitacao)
+        // Vamos verificar todos os possíveis campos de retorno
+
+        let nossoNumero = interRes.nossoNumero || interRes.identificador || interRes.codigoCobranca;
+        let linhaDigitavel = interRes.linhaDigitavel;
+        let codigoBarras = interRes.codigoBarras;
+        let pixCopiaECola = interRes.pixCopiaECola || interRes.pix?.pixCopiaECola;
+        const codigoSolicitacao = interRes.codigoSolicitacao;
+
+        console.log('[INTER] Campos extraídos:', {
+            nossoNumero,
+            linhaDigitavel,
+            codigoBarras,
+            pixCopiaECola,
+            codigoSolicitacao
+        });
+
+        // Se temos nossoNumero, a cobrança foi processada com sucesso
+        const isReady = nossoNumero && nossoNumero !== 'PENDING' && linhaDigitavel;
+
         // --- PULO DO GATO: Se o banco foi rápido, búscamos agora mesmo ---
-        if (interRes.codigoSolicitacao || interRes.pending_processing) {
+        if (codigoSolicitacao || interRes.pending_processing) { // Use codigoSolicitacao
             console.log('[INTER] Aguardando 1.5s para busca imediata...');
             await new Promise(r => setTimeout(r, 1500));
 
@@ -144,15 +166,20 @@ export async function POST(req: Request) {
 
                 const items = searchRes.cobrancas || searchRes.content || [];
                 if (items.length > 0) {
-                    interRes = items[0]; // Substitui pela cobrança real com nossoNumero!
+                    // Atualiza interRes com a cobrança real encontrada
+                    interRes = items[0];
+                    // Re-extrai os campos para garantir que estamos usando os dados mais recentes
+                    nossoNumero = interRes.nossoNumero || interRes.identificador || interRes.codigoCobranca;
+                    linhaDigitavel = interRes.linhaDigitavel;
+                    codigoBarras = interRes.codigoBarras;
+                    pixCopiaECola = interRes.pixCopiaECola || interRes.pix?.pixCopiaECola;
+                    // codigoSolicitacao não muda aqui, pois é o ID da solicitação inicial
                     console.log('[INTER] Cobrança encontrada na busca imediata!');
                 }
             } catch (e) {
                 console.error('[INTER] Erro na busca imediata, seguindo para fluxo pendente.');
             }
         }
-
-        const isReady = interRes.nossoNumero && interRes.nossoNumero !== 'PENDING';
 
         // 4. Salvar registro local
         await supabaseAdmin
@@ -165,12 +192,12 @@ export async function POST(req: Request) {
                 date: currentDate,
                 is_paid: false,
                 metadata: {
-                    nosso_numero: interRes.nossoNumero || 'PENDING',
-                    txid: interRes.codigoSolicitacao || interRes.txid || 'N/A',
+                    nosso_numero: nossoNumero || 'PENDING',
+                    txid: codigoSolicitacao || 'N/A',
                     seu_numero: seuNumero,
                     tenant_id: tenant.id,
-                    codigo_barras: interRes.codigoBarras,
-                    linha_digitavel: interRes.linhaDigitavel,
+                    codigo_barras: codigoBarras,
+                    linha_digitavel: linhaDigitavel,
                     method: 'boleto_inter'
                 }
             });
@@ -178,10 +205,11 @@ export async function POST(req: Request) {
         if (isReady) {
             return addCorsHeaders(req, NextResponse.json({
                 success: true,
-                nossoNumero: interRes.nossoNumero,
-                codigoBarras: interRes.codigoBarras,
-                linhaDigitavel: interRes.linhaDigitavel,
-                pdfUrl: `https://api.791barber.com/api/checkout/inter-boleto/pdf?nossoNumero=${interRes.nossoNumero}`
+                nossoNumero: nossoNumero,
+                codigoBarras: codigoBarras,
+                linhaDigitavel: linhaDigitavel,
+                pixCopiaECola: pixCopiaECola,
+                pdfUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}`
             }));
         }
 
