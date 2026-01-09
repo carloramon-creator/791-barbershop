@@ -18,18 +18,33 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Acesso Negado: Requer privilégios de Super Admin' }, { status: 403 });
         }
 
-        const cert = (process.env.INTER_CERT_CONTENT || '').replace(/\\n/g, '\n');
-        const key = (process.env.INTER_KEY_CONTENT || '').replace(/\\n/g, '\n');
+        // Fetch config from DB first
+        const { data: settingsData } = await supabaseAdmin
+            .from('system_settings')
+            .select('value')
+            .eq('key', 'inter_config')
+            .single();
 
-        if (!process.env.INTER_CLIENT_ID || !cert || !key) {
-            return NextResponse.json({ error: 'Configuração do Inter incompleta (env vars missing)' }, { status: 500 });
+        const dbConfig = settingsData?.value;
+
+        // Determine which config to use (DB or ENV)
+        const clientId = dbConfig?.client_id || process.env.INTER_CLIENT_ID;
+        const clientSecret = dbConfig?.client_secret || process.env.INTER_CLIENT_SECRET || '';
+        const certRaw = dbConfig?.crt || process.env.INTER_CERT_CONTENT || '';
+        const keyRaw = dbConfig?.key || process.env.INTER_KEY_CONTENT || '';
+
+        const cert = certRaw.replace(/\\n/g, '\n');
+        const key = keyRaw.replace(/\\n/g, '\n');
+
+        if (!clientId || !cert || !key) {
+            return NextResponse.json({ error: 'Configuração do Inter incompleta. Cadastre em Configurações API.' }, { status: 400 });
         }
 
         const inter = new InterAPIV3({
-            clientId: process.env.INTER_CLIENT_ID,
-            clientSecret: process.env.INTER_CLIENT_SECRET || '',
-            cert: cert,
-            key: key
+            clientId,
+            clientSecret,
+            cert,
+            key
         });
 
         // IMPORTANT: Use production URL to ensure Inter calls the right place
