@@ -132,43 +132,59 @@ export async function POST(req: Request) {
             }
         };
 
-        console.log('[SAAS PIX] Criando cobrança Pix no Inter...');
-        const interBoleto = await inter.createBilling(payload);
+        const interResRaw = await inter.createBilling(payload);
+        let interRes = interResRaw;
+        let codigoSolicitacao = interRes.codigoSolicitacao;
+        let pixCopiaECola = interRes.pixCopiaECola || interRes.pix?.pixCopiaECola;
+        const seuNumero = payload.seuNumero;
 
-        // Check for pending processing
-        if (interBoleto.pending_processing || interBoleto.codigoSolicitacao) {
-            // Salvar como pendente
-            await supabaseAdmin
-                .from('finance')
-                .insert({
-                    tenant_id: null,
-                    type: 'revenue',
-                    value: amount,
-                    description: `Pix SaaS Pendente (Processando) - Plano ${plan} (${tenant.name})`,
-                    date: currentDate,
-                    is_paid: false,
-                    metadata: {
-                        nosso_numero: 'PENDING',
-                        txid: interBoleto.codigoSolicitacao || 'N/A',
-                        seu_numero: payload.seuNumero,
-                        tenant_id: tenant.id,
-                        method: 'pix_inter'
+        console.log('[SAAS PIX] Resposta inicial:', { codigoSolicitacao, hasPix: !!pixCopiaECola });
+
+        // Se for assíncrono ou vier sem o pixCopiaECola, iniciamos busca
+        let isReady = !!pixCopiaECola;
+
+        if (!isReady && codigoSolicitacao) {
+            console.log(`[SAAS PIX] Cobrança assíncrona. Iniciando busca (Ticket: ${codigoSolicitacao})...`);
+            const maxRetries = 5;
+            const delays = [3000, 3000, 4000, 5000, 5000];
+
+            for (let attempt = 0; attempt < maxRetries; attempt++) {
+                console.log(`[SAAS PIX] Tentativa ${attempt + 1}/${maxRetries} - Aguardando ${delays[attempt]}ms...`);
+                await new Promise(r => setTimeout(r, delays[attempt]));
+
+                try {
+                    let found: any = null;
+
+                    // Estratégia A: Consulta por Solicitação
+                    try {
+                        const solRes = await inter.getBillingBySolicitacao(codigoSolicitacao);
+                        const possiblePix = solRes.pix;
+                        if (possiblePix?.pixCopiaECola) {
+                            found = { ...solRes.cobranca, pixCopiaECola: possiblePix.pixCopiaECola };
+                        }
+                    } catch (e: any) {
+                        console.log('[SAAS PIX] Estratégia A falhou, pulando para B.');
                     }
-                });
 
-            return addCorsHeaders(req, NextResponse.json({
-                success: true,
-                pending: true,
-                message: interBoleto.message,
-                seu_numero: payload.seuNumero,
-                amount: amount
-            }));
-        }
+                    // Estratégia B: Busca na Lista
+                    if (!found) {
+                        const today = new Date().toISOString().split('T')[0];
+                        const listRes = await inter.listBillings(today, today);
+                        const items = listRes.cobrancas || listRes.content || [];
+                        found = items.find((it: any) => it.seuNumero === seuNumero);
+                    }
 
-        const pixCopiaECola = interBoleto.pixCopiaECola || interBoleto.pix?.pixCopiaECola;
-
-        if (!pixCopiaECola) {
-            throw new Error(`DEBUG PIX: ${JSON.stringify(interBoleto).substring(0, 200)}...`);
+                    if (found && (found.pixCopiaECola || found.pix?.pixCopiaECola)) {
+                        interRes = found;
+                        pixCopiaECola = found.pixCopiaECola || found.pix?.pixCopiaECola;
+                        isReady = true;
+                        console.log('[SAAS PIX] ✅ Pix localizado!');
+                        break;
+                    }
+                } catch (e: any) {
+                    console.error(`[SAAS PIX] Erro tentativa ${attempt + 1}:`, e.message);
+                }
+            }
         }
 
         // 5. Salvar registro local
@@ -178,23 +194,33 @@ export async function POST(req: Request) {
                 tenant_id: null,
                 type: 'revenue',
                 value: amount,
-                description: `Pix SaaS Pendente - Plano ${plan} (${tenant.name})`,
+                description: `SaaS - Plano ${plan} (${tenant.name})`,
                 date: currentDate,
                 is_paid: false,
                 metadata: {
-                    nosso_numero: interBoleto.nossoNumber || interBoleto.nossoNumero,
-                    txid: interBoleto.codigoSolicitacao || interBoleto.txid || 'N/A',
-                    seu_numero: payload.seuNumero,
+                    txid: codigoSolicitacao || 'N/A',
+                    seu_numero: seuNumero,
                     tenant_id: tenant.id,
-                    method: 'pix_inter'
+                    method: 'pix_inter',
+                    pix_payload: pixCopiaECola
                 }
             });
 
+        if (isReady) {
+            return addCorsHeaders(req, NextResponse.json({
+                success: true,
+                pixPayload: pixCopiaECola,
+                amount: amount,
+                expiresAt: dueDateStr
+            }));
+        }
+
         return addCorsHeaders(req, NextResponse.json({
             success: true,
-            pixPayload: pixCopiaECola,
-            amount: amount,
-            expiresAt: dueDateStr
+            pending: true,
+            message: 'O Pix está sendo processado pelo banco.',
+            seu_numero: seuNumero,
+            amount: amount
         }));
 
     } catch (error: any) {
