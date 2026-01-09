@@ -15,6 +15,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { Topbar } from '@/components/layout/topbar';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { isSystemAdmin, loading, signOut } = useAuth();
@@ -44,16 +45,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     ];
 
     return (
-        <div className="min-h-screen bg-slate-950 flex">
+        <div className="min-h-screen bg-slate-950 light:bg-white flex">
             {/* Sidebar */}
-            <aside className="w-64 border-r border-slate-800 bg-slate-900/50 flex flex-col">
+            <aside className="w-64 border-r border-slate-800 light:border-slate-200 bg-slate-900/50 light:bg-slate-50 flex flex-col">
                 <div className="p-6">
                     <div className="flex items-center gap-3 px-2 mb-8">
                         <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/40">
                             <span className="text-xl font-black text-white">791</span>
                         </div>
                         <div>
-                            <h2 className="text-slate-100 font-black tracking-tighter uppercase text-lg leading-none">Admin</h2>
+                            <h2 className="text-slate-100 light:text-slate-900 font-black tracking-tighter uppercase text-lg leading-none">Admin</h2>
                             <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mt-1">SaaS Control</p>
                         </div>
                     </div>
@@ -69,7 +70,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                         "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm",
                                         active
                                             ? "bg-blue-600 text-white shadow-lg shadow-blue-900/30"
-                                            : "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
+                                            : "text-slate-400 light:text-slate-500 hover:text-slate-100 light:hover:text-blue-600 hover:bg-slate-800 light:hover:bg-blue-50/50"
                                     )}
                                 >
                                     <item.icon size={18} />
@@ -80,7 +81,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </nav>
                 </div>
 
-                <div className="mt-auto p-6 border-t border-slate-800">
+                <div className="mt-auto p-6 border-t border-slate-800 light:border-slate-200">
                     <button
                         onClick={() => signOut()}
                         className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-red-400 hover:bg-red-500/10 transition-all font-bold text-sm"
@@ -92,9 +93,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </aside>
 
             {/* Content */}
-            <main className="flex-1 overflow-y-auto p-8">
-                {children}
-            </main>
+            <div className="flex-1 flex flex-col overflow-hidden">
+                <Topbar />
+                <main className="flex-1 overflow-y-auto p-8 light:bg-white custom-scrollbar">
+                    {children}
+                </main>
+            </div>
         </div>
     );
 }

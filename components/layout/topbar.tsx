@@ -26,7 +26,11 @@ export function Topbar() {
                     onClick={toggleTheme}
                     className="w-10 h-10 rounded-xl hover:bg-slate-800 light:hover:bg-slate-100 transition-colors"
                 >
-                    {theme === 'dark' ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5 text-slate-700" />}
+                    {theme === 'dark' ? (
+                        <Moon className="w-5 h-5 text-slate-400" />
+                    ) : (
+                        <Sun className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                    )}
                 </Button>
 
                 <div className="flex items-center gap-3 pl-2 md:pl-4 border-l border-slate-800 light:border-slate-200">

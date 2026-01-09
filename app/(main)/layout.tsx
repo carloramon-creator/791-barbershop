@@ -46,13 +46,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     if (!session) return null;
 
     return (
-        <div className="flex h-screen bg-slate-950 overflow-hidden">
+        <div className="flex h-screen bg-slate-950 light:bg-slate-50 overflow-hidden">
             <Sidebar />
             <div className="flex-1 flex flex-col overflow-hidden">
                 <Topbar />
-                <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                <main className="flex-1 overflow-y-auto p-8 light:bg-white text-slate-50 light:text-slate-900 custom-scrollbar transition-colors">
                     {children}
-                    <footer className="mt-8 py-4 text-center text-xs text-slate-600">
+                    <footer className="mt-8 py-4 text-center text-xs text-slate-600 light:text-slate-400">
                         Licensed by <span className="text-slate-500 font-semibold">791 Barber</span>
                     </footer>
                 </main>
