@@ -183,13 +183,22 @@ export class InterAPIV3 {
                     if (res.statusCode === 200) {
                         resolve(Buffer.concat(chunks));
                     } else {
-                        const errorMsg = Buffer.concat(chunks).toString() || `Status: ${res.statusCode}`;
-                        console.error(`[INTER PDF ERROR] Status: ${res.statusCode}, Body: ${errorMsg}`);
-                        reject(new Error(`Erro ao baixar PDF: ${res.statusCode} - ${errorMsg}`));
+                        const errorBody = Buffer.concat(chunks).toString();
+                        console.error(`[INTER PDF ERROR] Status: ${res.statusCode} | ID: ${nossoNumero} | Response: ${errorBody}`);
+                        reject(new Error(`Erro Inter ${res.statusCode}: ${errorBody}`));
                     }
                 });
             });
-            req.on('error', (e) => reject(e));
+
+            req.setTimeout(15000, () => {
+                req.destroy();
+                reject(new Error('Timeout ao baixar PDF do Inter (15s)'));
+            });
+
+            req.on('error', (e) => {
+                console.error(`[INTER PDF REQ ERROR] ${e.message}`);
+                reject(e);
+            });
             req.end();
         });
     }
