@@ -82,19 +82,32 @@ export async function POST(req: Request) {
             }, { status: 400 }));
         }
 
-        // 3. Integrar com Inter (V3)
-        const cert = (process.env.INTER_CERT_CONTENT || '').replace(/\\n/g, '\n');
-        const key = (process.env.INTER_KEY_CONTENT || '').replace(/\\n/g, '\n');
+        // 3. Integrar com Inter (V3) - Buscar do DB primeiro
+        const { data: settingsData } = await supabaseAdmin
+            .from('system_settings')
+            .select('value')
+            .eq('key', 'inter_config')
+            .single();
 
-        if (!process.env.INTER_CLIENT_ID || !cert || !key) {
-            return addCorsHeaders(req, NextResponse.json({ error: 'Configuração do Inter incompleta no servidor' }, { status: 500 }));
+        const dbConfig = settingsData?.value;
+
+        const clientId = dbConfig?.client_id || process.env.INTER_CLIENT_ID;
+        const clientSecret = dbConfig?.client_secret || process.env.INTER_CLIENT_SECRET || '';
+        const certRaw = dbConfig?.crt || process.env.INTER_CERT_CONTENT || '';
+        const keyRaw = dbConfig?.key || process.env.INTER_KEY_CONTENT || '';
+
+        const cert = certRaw.replace(/\\n/g, '\n');
+        const key = keyRaw.replace(/\\n/g, '\n');
+
+        if (!clientId || !cert || !key) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'Configuração do Inter incompleta. Cadastre em Configurações API.' }, { status: 400 }));
         }
 
         const inter = new InterAPIV3({
-            clientId: process.env.INTER_CLIENT_ID,
-            clientSecret: process.env.INTER_CLIENT_SECRET || '',
-            cert: cert,
-            key: key
+            clientId,
+            clientSecret,
+            cert,
+            key
         });
 
         const payload = {
