@@ -100,12 +100,14 @@ export class InterAPIV3 {
             path: `/cobranca/v3/cobrancas/solicitacoes/${codigoSolicitacao}`,
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
             },
             cert: this.config.cert,
             key: this.config.key,
             rejectUnauthorized: false,
-            family: 4
+            family: 4,
+            timeout: 10000 // 10 segundos de timeout
         };
 
         return await this.makeRequest(options);
