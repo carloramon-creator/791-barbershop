@@ -122,28 +122,55 @@ export async function POST(req: Request) {
         console.log('[INTER] Criando boleto...');
         let interRes = await inter.createBilling(payload);
 
-        // Log completo da resposta para debug
-        console.log('[INTER] Resposta completa do Inter:', JSON.stringify(interRes, null, 2));
+        // Log campos individuais para evitar truncamento
+        console.log('[INTER] === RESPOSTA DO INTER ===');
+        console.log('[INTER] Keys disponíveis:', Object.keys(interRes));
+        console.log('[INTER] nossoNumero:', interRes.nossoNumero);
+        console.log('[INTER] identificador:', interRes.identificador);
+        console.log('[INTER] codigoCobranca:', interRes.codigoCobranca);
+        console.log('[INTER] linhaDigitavel:', interRes.linhaDigitavel);
+        console.log('[INTER] codigoBarras:', interRes.codigoBarras);
+        console.log('[INTER] pixCopiaECola:', interRes.pixCopiaECola);
+        console.log('[INTER] codigoSolicitacao:', interRes.codigoSolicitacao);
+        console.log('[INTER] ========================');
 
-        // A API V3 pode retornar de forma síncrona (com todos os dados) ou assíncrona (apenas codigoSolicitacao)
-        // Vamos verificar todos os possíveis campos de retorno
+        // A API V3 retorna campos com nomes variados. Vamos buscar TODAS as possibilidades.
+        // Baseado na documentação e no app do Inter, os campos podem ser:
 
-        let nossoNumero = interRes.nossoNumero || interRes.identificador || interRes.codigoCobranca;
-        let linhaDigitavel = interRes.linhaDigitavel;
-        let codigoBarras = interRes.codigoBarras;
-        let pixCopiaECola = interRes.pixCopiaECola || interRes.pix?.pixCopiaECola;
-        const codigoSolicitacao = interRes.codigoSolicitacao;
+        let nossoNumero = interRes.nossoNumero ||
+            interRes.identificador ||
+            interRes.codigoCobranca ||
+            interRes.nossoNumero ||
+            interRes.NossoNumero ||
+            interRes.Identificador;
+
+        let linhaDigitavel = interRes.linhaDigitavel ||
+            interRes.LinhaDigitavel ||
+            interRes.linha_digitavel;
+
+        let codigoBarras = interRes.codigoBarras ||
+            interRes.CodigoBarras ||
+            interRes.codigo_barras;
+
+        let pixCopiaECola = interRes.pixCopiaECola ||
+            interRes.PixCopiaECola ||
+            interRes.pix?.pixCopiaECola ||
+            interRes.pix?.PixCopiaECola;
+
+        const codigoSolicitacao = interRes.codigoSolicitacao ||
+            interRes.CodigoSolicitacao;
 
         console.log('[INTER] Campos extraídos:', {
             nossoNumero,
             linhaDigitavel,
             codigoBarras,
             pixCopiaECola,
-            codigoSolicitacao
+            codigoSolicitacao,
+            rawKeys: Object.keys(interRes)
         });
 
-        // Se temos nossoNumero, a cobrança foi processada com sucesso
-        const isReady = nossoNumero && nossoNumero !== 'PENDING' && linhaDigitavel;
+        // Se temos nossoNumero E linhaDigitavel, a cobrança está pronta
+        const isReady = !!(nossoNumero && linhaDigitavel);
 
         // --- PULO DO GATO: Se o banco foi rápido, búscamos agora mesmo ---
         if (codigoSolicitacao || interRes.pending_processing) { // Use codigoSolicitacao
