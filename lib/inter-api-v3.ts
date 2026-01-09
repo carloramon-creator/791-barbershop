@@ -97,7 +97,7 @@ export class InterAPIV3 {
         const options: https.RequestOptions = {
             hostname: 'cdpj.partners.bancointer.com.br',
             port: 443,
-            path: `/cobranca/v3/cobrancas/solicitacoes/${codigoSolicitacao}`,
+            path: `/cobranca/v3/cobrancas/${codigoSolicitacao}`,
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -107,7 +107,7 @@ export class InterAPIV3 {
             key: this.config.key,
             rejectUnauthorized: false,
             family: 4,
-            timeout: 10000 // 10 segundos de timeout
+            timeout: 10000
         };
 
         return await this.makeRequest(options);

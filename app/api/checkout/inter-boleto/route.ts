@@ -185,16 +185,27 @@ export async function POST(req: Request) {
                 try {
                     let found: any = null;
 
-                    // Estratégia A: Consulta por Solicitação
+                    // Estratégia A: Consulta por Solicitação (DOC OFICIAL)
                     try {
                         console.log('[INTER] Estratégia A: Consultando solicitação...');
                         const solRes = await inter.getBillingBySolicitacao(codigoSolicitacao);
-                        const possible = solRes.cobranca || solRes;
-                        if (possible && (possible.nossoNumero || possible.identificador)) {
-                            found = possible;
+
+                        // Conforme documentação, os dados de boleto e pix vêm em objetos separados
+                        const possibleBoleto = solRes.boleto || solRes.cobranca;
+                        const possiblePix = solRes.pix;
+
+                        if (possibleBoleto && (possibleBoleto.nossoNumero || possibleBoleto.identificador)) {
+                            found = {
+                                ...solRes.cobranca,
+                                nossoNumero: possibleBoleto.nossoNumero || possibleBoleto.identificador,
+                                linhaDigitavel: possibleBoleto.linhaDigitavel,
+                                codigoBarras: possibleBoleto.codigoBarras,
+                                pixCopiaECola: possiblePix?.pixCopiaECola || solRes.pixCopiaECola
+                            };
+                            console.log('[INTER] Encontrado via Solicitação!');
                         }
                     } catch (e: any) {
-                        console.log('[INTER] Estratégia A falhou (Socket ou Pendência), pulando para B.');
+                        console.log('[INTER] Estratégia A falhou, pulando para B.');
                     }
 
                     // Estratégia B: Busca na Lista Geral
