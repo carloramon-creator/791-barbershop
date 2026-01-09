@@ -206,7 +206,7 @@ export default function AdminDashboard() {
                                 <div className="h-full bg-red-500" style={{ width: `${(statsData?.subscriptions?.inactive / (statsData?.subscriptions?.active + statsData?.subscriptions?.inactive + statsData?.subscriptions?.trials || 1)) * 100}%` }} />
                             </div>
 
-                            <p className="text-[10px] text-slate-500 text-center font-medium italic">Distribuição de clientes na plataforma.</p>
+                            <p className="text-[10px] text-slate-500 text-center font-medium">Distribuição de clientes na plataforma.</p>
                         </div>
                     </CardContent>
                 </Card>

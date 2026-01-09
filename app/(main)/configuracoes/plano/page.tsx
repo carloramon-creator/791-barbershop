@@ -369,7 +369,7 @@ export default function PlanPage() {
                     </Card>
 
                     <div className="space-y-6">
-                        <h2 className="text-xl md:text-2xl font-black text-slate-100 light:text-slate-900 uppercase italic">Escolha um Plano</h2>
+                        <h2 className="text-xl md:text-2xl font-black text-slate-100 light:text-slate-900 uppercase">Escolha um Plano</h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {Object.values(PLANS).filter(p => p.id !== 'trial').map((plan) => (
                                 <Card
@@ -442,7 +442,7 @@ export default function PlanPage() {
             }}>
                 <DialogContent className="border-slate-800 light:border-slate-200 bg-slate-900 light:bg-white text-slate-100 light:text-slate-900 max-w-md rounded-2xl md:rounded-3xl">
                     <DialogHeader>
-                        <DialogTitle className="font-black text-xl md:text-2xl italic tracking-tighter uppercase">Confirmar Assinatura</DialogTitle>
+                        <DialogTitle className="font-black text-xl md:text-2xl tracking-tighter uppercase">Confirmar Assinatura</DialogTitle>
                         <DialogDescription className="text-slate-400 light:text-slate-500 font-bold">
                             Plano <span className="text-blue-600 capitalize">{selectedPlan}</span> — R$ {(boletoData?.amount || (selectedPlan ? PLANS[selectedPlan]?.price : 0)).toFixed(2).replace('.', ',')}/mês
                         </DialogDescription>
