@@ -84,7 +84,7 @@ export function Sidebar() {
                 !isOpen && "-translate-x-full md:translate-x-0"
             )}>
                 <div className="p-6">
-                    <div className="flex items-center gap-3 text-blue-600 font-black text-xl tracking-tighter uppercase italic">
+                    <div className="flex items-center gap-3 text-blue-600 font-black text-xl tracking-tighter uppercase">
                         {tenant?.logo_url ? (
                             <>
                                 <Image src={tenant.logo_url} alt={tenant.name || 'Logo'} width={32} height={32} className="w-8 h-8 rounded-lg object-cover" unoptimized />
