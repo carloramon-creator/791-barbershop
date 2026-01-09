@@ -172,28 +172,41 @@ export async function POST(req: Request) {
         // Se temos nossoNumero E linhaDigitavel, a cobrança está pronta
         let isReady = !!(nossoNumero && (linhaDigitavel || pixCopiaECola));
 
-        // Se não está pronto mas temos codigoSolicitacao, vamos buscar com retry oficial da V3
         if (!isReady && codigoSolicitacao) {
-            console.log(`[INTER] Cobrança assíncrona. Consultando status da solicitação: ${codigoSolicitacao}`);
+            console.log(`[INTER] Cobrança assíncrona. Iniciando busca (Ticket: ${codigoSolicitacao})...`);
 
             const maxRetries = 5;
-            const delays = [2000, 3000, 3000, 4000, 5000];
+            const delays = [3000, 3000, 4000, 5000, 5000];
 
             for (let attempt = 0; attempt < maxRetries; attempt++) {
                 console.log(`[INTER] Tentativa ${attempt + 1}/${maxRetries} - Aguardando ${delays[attempt]}ms...`);
                 await new Promise(r => setTimeout(r, delays[attempt]));
 
                 try {
-                    // Consultar diretamente pelo código da solicitação
-                    const searchRes = await inter.getBillingBySolicitacao(codigoSolicitacao);
-                    console.log('[INTER] Resposta consulta solicitações - Status:', searchRes.situacao);
+                    let found: any = null;
 
-                    // Na V3, se processado, os dados vêm no objeto ou campo 'cobranca'
-                    const found = searchRes.cobranca || searchRes;
+                    // Estratégia A: Consulta por Solicitação
+                    try {
+                        console.log('[INTER] Estratégia A: Consultando solicitação...');
+                        const solRes = await inter.getBillingBySolicitacao(codigoSolicitacao);
+                        const possible = solRes.cobranca || solRes;
+                        if (possible && (possible.nossoNumero || possible.identificador)) {
+                            found = possible;
+                        }
+                    } catch (e: any) {
+                        console.log('[INTER] Estratégia A falhou (Socket ou Pendência), pulando para B.');
+                    }
 
-                    if (found && (found.nossoNumero || found.identificador)) {
-                        console.log('[INTER] Dados da cobrança obtidos com sucesso!');
+                    // Estratégia B: Busca na Lista Geral
+                    if (!found) {
+                        console.log('[INTER] Estratégia B: Buscando na lista do dia...');
+                        const today = new Date().toISOString().split('T')[0];
+                        const listRes = await inter.listBillings(today, today);
+                        const items = listRes.cobrancas || listRes.content || [];
+                        found = items.find((it: any) => it.seuNumero === seuNumero);
+                    }
 
+                    if (found) {
                         interRes = found;
                         nossoNumero = found.nossoNumero || found.identificador || found.codigoCobranca;
                         linhaDigitavel = found.linhaDigitavel || found.LinhaDigitavel;
@@ -202,14 +215,14 @@ export async function POST(req: Request) {
 
                         if (nossoNumero && (linhaDigitavel || pixCopiaECola)) {
                             isReady = true;
-                            console.log('[INTER] ✅ Cobrança pronta via consulta de solicitação!');
+                            console.log('[INTER] ✅ Cobrança localizada com sucesso!');
                             break;
                         }
                     } else {
-                        console.log('[INTER] Solicitação ainda não processada totalmente, tentando novamente...');
+                        console.log('[INTER] Ainda não encontrado no Inter, tentando novamente...');
                     }
                 } catch (e: any) {
-                    console.error(`[INTER] Erro na consulta da solicitação (Tentativa ${attempt + 1}):`, e.message || e);
+                    console.error(`[INTER] Erro na tentativa ${attempt + 1}:`, e.message || e);
                 }
             }
         }
