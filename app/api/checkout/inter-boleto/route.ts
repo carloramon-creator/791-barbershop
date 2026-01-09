@@ -170,41 +170,57 @@ export async function POST(req: Request) {
         });
 
         // Se temos nossoNumero E linhaDigitavel, a cobrança está pronta
-        const isReady = !!(nossoNumero && linhaDigitavel);
+        let isReady = !!(nossoNumero && linhaDigitavel);
 
-        // --- PULO DO GATO: Se o banco foi rápido, búscamos agora mesmo ---
-        if (codigoSolicitacao || interRes.pending_processing) { // Use codigoSolicitacao
-            console.log('[INTER] Aguardando 1.5s para busca imediata...');
-            await new Promise(r => setTimeout(r, 1500));
+        // Se não está pronto mas temos codigoSolicitacao, vamos buscar com retry
+        if (!isReady && codigoSolicitacao) {
+            console.log('[INTER] Cobrança assíncrona. Iniciando busca com retry...');
 
-            try {
-                const token = await inter.getAccessToken();
-                const now = new Date();
-                const dInit = new Date(now); dInit.setDate(dInit.getDate() - 1);
-                const dEnd = new Date(now); dEnd.setDate(dEnd.getDate() + 1);
+            const maxRetries = 3;
+            const delays = [2000, 3000, 4000];
 
-                const path = `/cobranca/v3/cobrancas?seuNumero=${seuNumero}&dataInicial=${dInit.toISOString().split('T')[0]}&dataFinal=${dEnd.toISOString().split('T')[0]}`;
-                const searchRes = await inter.makeRequest({
-                    hostname: 'cdpj.partners.bancointer.com.br',
-                    port: 443, path, method: 'GET',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    cert, key, rejectUnauthorized: false, family: 4
-                });
+            for (let attempt = 0; attempt < maxRetries; attempt++) {
+                console.log(`[INTER] Tentativa ${attempt + 1}/${maxRetries} - Aguardando ${delays[attempt]}ms...`);
+                await new Promise(r => setTimeout(r, delays[attempt]));
 
-                const items = searchRes.cobrancas || searchRes.content || [];
-                if (items.length > 0) {
-                    // Atualiza interRes com a cobrança real encontrada
-                    interRes = items[0];
-                    // Re-extrai os campos para garantir que estamos usando os dados mais recentes
-                    nossoNumero = interRes.nossoNumero || interRes.identificador || interRes.codigoCobranca;
-                    linhaDigitavel = interRes.linhaDigitavel;
-                    codigoBarras = interRes.codigoBarras;
-                    pixCopiaECola = interRes.pixCopiaECola || interRes.pix?.pixCopiaECola;
-                    // codigoSolicitacao não muda aqui, pois é o ID da solicitação inicial
-                    console.log('[INTER] Cobrança encontrada na busca imediata!');
+                try {
+                    const token = await inter.getAccessToken();
+                    const now = new Date();
+                    const dInit = new Date(now); dInit.setDate(dInit.getDate() - 1);
+                    const dEnd = new Date(now); dEnd.setDate(dEnd.getDate() + 1);
+
+                    const path = `/cobranca/v3/cobrancas?seuNumero=${seuNumero}&dataInicial=${dInit.toISOString().split('T')[0]}&dataFinal=${dEnd.toISOString().split('T')[0]}`;
+                    const searchRes = await inter.makeRequest({
+                        hostname: 'cdpj.partners.bancointer.com.br',
+                        port: 443, path, method: 'GET',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        cert, key, rejectUnauthorized: false, family: 4
+                    });
+
+                    console.log('[INTER] Resposta busca - Keys:', Object.keys(searchRes));
+                    const items = searchRes.cobrancas || searchRes.content || [];
+                    console.log('[INTER] Cobranças encontradas:', items.length);
+
+                    if (items.length > 0) {
+                        const found = items[0];
+                        console.log('[INTER] Cobrança encontrada! Keys:', Object.keys(found));
+                        interRes = found;
+                        nossoNumero = found.nossoNumero || found.identificador || found.codigoCobranca;
+                        linhaDigitavel = found.linhaDigitavel || found.LinhaDigitavel;
+                        codigoBarras = found.codigoBarras || found.CodigoBarras;
+                        pixCopiaECola = found.pixCopiaECola || found.pix?.pixCopiaECola;
+
+                        console.log('[INTER] Dados extraídos:', { nossoNumero, linhaDigitavel, codigoBarras });
+
+                        if (nossoNumero && linhaDigitavel) {
+                            isReady = true;
+                            console.log('[INTER] ✅ Cobrança pronta!');
+                            break;
+                        }
+                    }
+                } catch (e: any) {
+                    console.error(`[INTER] Erro tentativa ${attempt + 1}:`, e.message);
                 }
-            } catch (e) {
-                console.error('[INTER] Erro na busca imediata, seguindo para fluxo pendente.');
             }
         }
 
