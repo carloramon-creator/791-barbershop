@@ -18,7 +18,7 @@ import { CheckCircle } from 'lucide-react';
 import { supabaseClient } from '@/lib/supabase-client';
 
 // Use env var or default to backend URL for signup
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
+const API_URL = '';
 
 export default function LandingPage() {
     const router = useRouter();

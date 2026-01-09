@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { PLANS } from '@/lib/stripe-config';
 import { useState } from 'react';
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
+const API_URL = '';
 
 export default function TrialExpiredPage() {
     const [loading, setLoading] = useState<string | null>(null);

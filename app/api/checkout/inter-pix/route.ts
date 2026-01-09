@@ -1,0 +1,191 @@
+import { NextResponse } from 'next/server';
+import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
+import { supabaseAdmin } from '@/lib/supabase-server';
+import { InterAPIV3 } from '@/lib/inter-api-v3';
+
+export async function OPTIONS(req: Request) {
+    const response = new NextResponse(null, { status: 200 });
+    return addCorsHeaders(req, response);
+}
+
+const PLAN_PRICES: Record<string, number> = {
+    basic: 49.00,
+    complete: 99.00,
+    premium: 169.00
+};
+
+export async function POST(req: Request) {
+    try {
+        const { tenant, user } = await getCurrentUserAndTenant();
+        if (!tenant || !user) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'Não autenticado' }, { status: 401 }));
+        }
+
+        const { plan, coupon, tempId } = await req.json();
+        let amount = PLAN_PRICES[plan];
+
+        if (!amount) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'Plano inválido' }, { status: 400 }));
+        }
+
+        // 1. Processar Cupom
+        let discount = 0;
+        let couponApplied = null;
+
+        if (coupon && coupon.trim() !== '') {
+            const code = String(coupon).trim().toUpperCase();
+            const { data: couponData } = await supabaseAdmin
+                .from('system_coupons')
+                .select('*')
+                .eq('code', code)
+                .eq('is_active', true)
+                .single();
+
+            if (couponData) {
+                couponApplied = code;
+                if (couponData.discount_percent) {
+                    discount = (amount * Number(couponData.discount_percent)) / 100;
+                } else if (couponData.discount_value) {
+                    discount = Number(couponData.discount_value);
+                }
+            } else {
+                return addCorsHeaders(req,
+                    NextResponse.json({ error: 'Cupom inválido ou expirado' }, { status: 400 })
+                );
+            }
+        }
+
+        amount = Math.max(0, amount - discount);
+        const currentDate = new Date().toISOString().split('T')[0];
+        const dueDate = new Date();
+        dueDate.setHours(dueDate.getHours() + 24); // Pix expira em 24h
+        const dueDateStr = dueDate.toISOString().split('T')[0];
+
+        // 2. Garantir documento CPF/CNPJ
+        let doc = (tenant.cnpj || tenant.cpf || tenant.document || tenant.bank_account_doc || "").replace(/\D/g, '');
+
+        if (!doc) {
+            const { data: userData } = await supabaseAdmin
+                .from('users')
+                .select('cpf')
+                .eq('id', user.id)
+                .single();
+
+            if (userData && userData.cpf) {
+                doc = userData.cpf.replace(/\D/g, '');
+            }
+        }
+
+        if (!doc || doc.length < 11) {
+            return addCorsHeaders(req, NextResponse.json({
+                error: 'Para gerar Pix, é necessário cadastrar um CPF ou CNPJ válido nas configurações da sua barbearia ou no seu perfil de usuário.'
+            }, { status: 400 }));
+        }
+
+        // 3. Integrar com Inter (V3)
+        const cert = (process.env.INTER_CERT_CONTENT || '').replace(/\\n/g, '\n');
+        const key = (process.env.INTER_KEY_CONTENT || '').replace(/\\n/g, '\n');
+
+        if (!process.env.INTER_CLIENT_ID || !cert || !key) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'Configuração do Inter incompleta no servidor' }, { status: 500 }));
+        }
+
+        const inter = new InterAPIV3({
+            clientId: process.env.INTER_CLIENT_ID,
+            clientSecret: process.env.INTER_CLIENT_SECRET || '',
+            cert: cert,
+            key: key
+        });
+
+        const payload = {
+            seuNumero: tempId || String(Date.now()).slice(-15),
+            pagador: {
+                cpfCnpj: doc,
+                tipoPessoa: doc.length > 11 ? "JURIDICA" : "FISICA",
+                nome: tenant.name.substring(0, 100),
+                cep: (tenant.address_zip?.replace(/\D/g, '') || tenant.cep?.replace(/\D/g, '') || "88000000").substring(0, 8),
+                numero: (tenant.number || "SN").substring(0, 10),
+                endereco: (tenant.street || tenant.address_street || "Endereço não informado").substring(0, 90),
+                bairro: (tenant.neighborhood || tenant.address_neighborhood || "Centro").substring(0, 60),
+                cidade: (tenant.city || tenant.address_city || "Cidade").substring(0, 60),
+                uf: (tenant.state || tenant.address_state || "SC").substring(0, 2)
+            },
+            dataVencimento: dueDateStr,
+            valorNominal: amount.toFixed(2),
+            dataEmissao: currentDate,
+            mensagem: {
+                linha1: `Pix 791 Barber - Plano ${plan}`.substring(0, 80),
+                linha2: (couponApplied ? `Cupom ${couponApplied}` : "").substring(0, 80)
+            }
+        };
+
+        console.log('[SAAS PIX] Criando cobrança Pix no Inter...');
+        const interBoleto = await inter.createBilling(payload);
+
+        // Check for pending processing
+        if (interBoleto.pending_processing || interBoleto.codigoSolicitacao) {
+            // Salvar como pendente
+            await supabaseAdmin
+                .from('finance')
+                .insert({
+                    tenant_id: null,
+                    type: 'revenue',
+                    value: amount,
+                    description: `Pix SaaS Pendente (Processando) - Plano ${plan} (${tenant.name})`,
+                    date: currentDate,
+                    is_paid: false,
+                    metadata: {
+                        nosso_numero: 'PENDING',
+                        txid: interBoleto.codigoSolicitacao || 'N/A',
+                        seu_numero: payload.seuNumero,
+                        tenant_id: tenant.id,
+                        method: 'pix_inter'
+                    }
+                });
+
+            return addCorsHeaders(req, NextResponse.json({
+                success: true,
+                pending: true,
+                message: interBoleto.message,
+                seu_numero: payload.seuNumero,
+                amount: amount
+            }));
+        }
+
+        const pixCopiaECola = interBoleto.pixCopiaECola || interBoleto.pix?.pixCopiaECola;
+
+        if (!pixCopiaECola) {
+            throw new Error(`DEBUG PIX: ${JSON.stringify(interBoleto).substring(0, 200)}...`);
+        }
+
+        // 5. Salvar registro local
+        await supabaseAdmin
+            .from('finance')
+            .insert({
+                tenant_id: null,
+                type: 'revenue',
+                value: amount,
+                description: `Pix SaaS Pendente - Plano ${plan} (${tenant.name})`,
+                date: currentDate,
+                is_paid: false,
+                metadata: {
+                    nosso_numero: interBoleto.nossoNumber || interBoleto.nossoNumero,
+                    txid: interBoleto.codigoSolicitacao || interBoleto.txid || 'N/A',
+                    seu_numero: payload.seuNumero,
+                    tenant_id: tenant.id,
+                    method: 'pix_inter'
+                }
+            });
+
+        return addCorsHeaders(req, NextResponse.json({
+            success: true,
+            pixPayload: pixCopiaECola,
+            amount: amount,
+            expiresAt: dueDateStr
+        }));
+
+    } catch (error: any) {
+        console.error('[SAAS PIX CHECKOUT ERROR]', error);
+        return addCorsHeaders(req, NextResponse.json({ error: error.message }, { status: 500 }));
+    }
+}

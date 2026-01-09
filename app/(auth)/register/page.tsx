@@ -41,7 +41,7 @@ export default function RegisterPage() {
 
             // 2. Chamar API do Backend para criar o Tenant (Barbearia) e vincular perfil
             // Nota: O Next.js enviará os cookies de sessão do Supabase automaticamente
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/tenants`, {
+            const response = await fetch(`/api/auth/tenants`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

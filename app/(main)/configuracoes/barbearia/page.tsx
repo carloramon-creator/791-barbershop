@@ -559,7 +559,7 @@ export default function BarbershopSettingsPage() {
                             className="border-blue-500/50 text-blue-500 hover:bg-blue-500 hover:text-white"
                             onClick={async () => {
                                 try {
-                                    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
+                                    const backendUrl = '';
                                     const { data: { session } } = await supabaseClient.auth.getSession();
                                     const token = session?.access_token;
 
@@ -591,7 +591,7 @@ export default function BarbershopSettingsPage() {
                             onClick={async () => {
                                 if (!confirm('Executar reparo do sistema? Isso pode levar alguns segundos.')) return;
                                 try {
-                                    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3002';
+                                    const backendUrl = '';
                                     const { data: { session } } = await supabaseClient.auth.getSession();
                                     const token = session?.access_token;
 
