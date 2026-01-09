@@ -15,29 +15,17 @@ export async function GET(req: Request) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Não autenticado' }, { status: 401 }));
         }
 
-        // Buscar faturas SaaS (tenant_id null mas metadata tem o ID do tenant)
+        // Buscar faturas SaaS
         const { data: invoices, error } = await supabaseAdmin
             .from('finance')
             .select('*')
-            .or(`metadata->>tenant_id.eq.${tenant.id},tenant_id.eq.${tenant.id}`)
-            .contains('metadata', { method: 'boleto_inter' }) // Filtra apenas faturas SaaS
+            .eq('tenant_id', tenant.id)
+            .ilike('description', 'SaaS%')
             .order('created_at', { ascending: false });
 
         if (error) throw error;
 
-        // Adicionar também as de Pix
-        const { data: pixInvoices } = await supabaseAdmin
-            .from('finance')
-            .select('*')
-            .or(`metadata->>tenant_id.eq.${tenant.id},tenant_id.eq.${tenant.id}`)
-            .contains('metadata', { method: 'pix_inter' })
-            .order('created_at', { ascending: false });
-
-        const allInvoices = [...(invoices || []), ...(pixInvoices || [])].sort((a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-
-        return addCorsHeaders(req, NextResponse.json({ invoices: allInvoices }));
+        return addCorsHeaders(req, NextResponse.json({ invoices: invoices || [] }));
     } catch (error: any) {
         console.error('[GET INVOICES ERROR]', error);
         return addCorsHeaders(req, NextResponse.json({ error: error.message }, { status: 500 }));

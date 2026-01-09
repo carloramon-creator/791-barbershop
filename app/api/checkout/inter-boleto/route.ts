@@ -239,25 +239,28 @@ export async function POST(req: Request) {
         }
 
         // 4. Salvar registro local
-        await supabaseAdmin
+        const { error: insertError } = await supabaseAdmin
             .from('finance')
             .insert({
-                tenant_id: null,
+                tenant_id: tenant.id,
                 type: 'revenue',
                 value: amount,
-                description: `SaaS - Plano ${plan} (${tenant.name})`,
+                description: `SaaS - Plano ${plan}`,
                 date: currentDate,
                 is_paid: false,
                 metadata: {
                     nosso_numero: nossoNumero || 'PENDING',
                     txid: codigoSolicitacao || 'N/A',
                     seu_numero: seuNumero,
-                    tenant_id: tenant.id,
                     codigo_barras: codigoBarras,
                     linha_digitavel: linhaDigitavel,
                     method: 'boleto_inter'
                 }
             });
+
+        if (insertError) {
+            console.error('[INTER DB ERROR] Erro ao salvar fatura:', insertError);
+        }
 
         if (isReady) {
             return addCorsHeaders(req, NextResponse.json({
