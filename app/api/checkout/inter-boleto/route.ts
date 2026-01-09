@@ -172,78 +172,6 @@ export async function POST(req: Request) {
         // Se temos nossoNumero E linhaDigitavel, a cobrança está pronta
         let isReady = !!(nossoNumero && (linhaDigitavel || pixCopiaECola));
 
-        if (!isReady && codigoSolicitacao) {
-            console.log(`[INTER] Cobrança assíncrona. Iniciando busca (Ticket: ${codigoSolicitacao})...`);
-
-            const maxRetries = 5;
-            const delays = [3000, 3000, 4000, 5000, 5000];
-
-            for (let attempt = 0; attempt < maxRetries; attempt++) {
-                console.log(`[INTER] Tentativa ${attempt + 1}/${maxRetries} - Aguardando ${delays[attempt]}ms...`);
-                await new Promise(r => setTimeout(r, delays[attempt]));
-
-                try {
-                    let found: any = null;
-
-                    // Estratégia A: Consulta por Solicitação (DOC OFICIAL)
-                    try {
-                        console.log('[INTER] Estratégia A: Consultando solicitação...');
-                        const solRes = await inter.getBillingBySolicitacao(codigoSolicitacao);
-
-                        // Conforme documentação, os dados de boleto e pix vêm em objetos separados
-                        const possibleBoleto = solRes.boleto || solRes.cobranca;
-                        const possiblePix = solRes.pix;
-
-                        if (possibleBoleto && (possibleBoleto.nossoNumero || possibleBoleto.identificador)) {
-                            found = {
-                                ...solRes.cobranca,
-                                nossoNumero: possibleBoleto.nossoNumero || possibleBoleto.identificador,
-                                linhaDigitavel: possibleBoleto.linhaDigitavel,
-                                codigoBarras: possibleBoleto.codigoBarras,
-                                pixCopiaECola: possiblePix?.pixCopiaECola || solRes.pixCopiaECola
-                            };
-                            console.log('[INTER] Encontrado via Solicitação!');
-                        }
-                    } catch (e: any) {
-                        console.log('[INTER] Estratégia A falhou, pulando para B.');
-                    }
-
-                    // Estratégia B: Busca na Lista Geral (+/- 1 dia para evitar problemas de timezone)
-                    if (!found) {
-                        console.log('[INTER] Estratégia B: Buscando na lista (janela de 2 dias)...');
-                        const now = new Date();
-                        const dInit = new Date(now); dInit.setDate(dInit.getDate() - 1);
-                        const dEnd = new Date(now); dEnd.setDate(dEnd.getDate() + 1);
-
-                        const listRes = await inter.listBillings(
-                            dInit.toISOString().split('T')[0],
-                            dEnd.toISOString().split('T')[0]
-                        );
-                        const items = listRes.cobrancas || listRes.content || [];
-                        found = items.find((it: any) => it.seuNumero === seuNumero);
-                    }
-
-                    if (found) {
-                        interRes = found;
-                        nossoNumero = found.nossoNumero || found.identificador || found.codigoCobranca;
-                        linhaDigitavel = found.linhaDigitavel || found.LinhaDigitavel;
-                        codigoBarras = found.codigoBarras || found.CodigoBarras;
-                        pixCopiaECola = found.pixCopiaECola || found.pix?.pixCopiaECola || found.pixCopiaECola;
-
-                        if (nossoNumero && (linhaDigitavel || pixCopiaECola)) {
-                            isReady = true;
-                            console.log('[INTER] ✅ Cobrança localizada com sucesso!');
-                            break;
-                        }
-                    } else {
-                        console.log('[INTER] Ainda não encontrado no Inter, tentando novamente...');
-                    }
-                } catch (e: any) {
-                    console.error(`[INTER] Erro na tentativa ${attempt + 1}:`, e.message || e);
-                }
-            }
-        }
-
         // 4. Salvar registro local
         const { error: insertError } = await supabaseAdmin
             .from('finance')
@@ -268,25 +196,16 @@ export async function POST(req: Request) {
             console.error('[INTER DB ERROR] Erro ao salvar fatura:', insertError);
         }
 
-        if (isReady) {
-            return addCorsHeaders(req, NextResponse.json({
-                success: true,
-                nossoNumero: nossoNumero,
-                codigoBarras: codigoBarras,
-                linhaDigitavel: linhaDigitavel,
-                pixCopiaECola: pixCopiaECola,
-                amount: amount,
-                pdfUrl: `/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}&codigoSolicitacao=${codigoSolicitacao || ''}`
-            }));
-        }
-
+        // Retornamos imediatamente. O frontend usará o check-pending-payment para atualizar.
         return addCorsHeaders(req, NextResponse.json({
             success: true,
-            pending: true,
-            message: 'Boleto em processamento no banco.',
-            seu_numero: seuNumero,
+            pending: !isReady,
+            nossoNumero: nossoNumero,
+            codigoBarras: codigoBarras,
+            linhaDigitavel: linhaDigitavel,
+            pixCopiaECola: pixCopiaECola,
             amount: amount,
-            pdfUrl: `/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}&codigoSolicitacao=${codigoSolicitacao || ''}`
+            pdfUrl: nossoNumero ? `/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}&codigoSolicitacao=${codigoSolicitacao || ''}` : null
         }));
 
     } catch (error: any) {

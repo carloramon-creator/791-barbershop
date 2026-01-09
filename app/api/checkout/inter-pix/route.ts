@@ -213,11 +213,16 @@ export async function POST(req: Request) {
             });
 
         if (isReady) {
+            // Buscamos o código de solicitação ou identificador para o PDF
+            const identifier = interRes.nossoNumero || interRes.identificador || codigoSolicitacao;
+
             return addCorsHeaders(req, NextResponse.json({
                 success: true,
                 pixPayload: pixCopiaECola,
                 amount: amount,
-                expiresAt: dueDateStr
+                expiresAt: dueDateStr,
+                nossoNumero: identifier,
+                pdfUrl: `/api/checkout/inter-boleto/pdf?nossoNumero=${identifier}&codigoSolicitacao=${codigoSolicitacao || ''}`
             }));
         }
 
