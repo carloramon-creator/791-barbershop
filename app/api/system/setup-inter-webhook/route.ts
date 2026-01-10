@@ -44,7 +44,8 @@ export async function GET(req: Request) {
             clientId,
             clientSecret,
             cert,
-            key
+            key,
+            accountNumber: dbConfig?.account_number || dbConfig?.accountNumber
         });
 
         // IMPORTANT: Use production URL to ensure Inter calls the right place

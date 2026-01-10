@@ -107,7 +107,8 @@ export async function POST(req: Request) {
             clientId,
             clientSecret,
             cert,
-            key
+            key,
+            accountNumber: dbConfig?.account_number || dbConfig?.accountNumber
         });
 
         const payload = {

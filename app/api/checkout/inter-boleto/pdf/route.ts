@@ -36,7 +36,13 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Configuração do Inter incompleta no servidor' }, { status: 500 });
         }
 
-        const inter = new InterAPIV3({ clientId, clientSecret: dbConfig?.client_secret || '', cert, key });
+        const inter = new InterAPIV3({
+            clientId,
+            clientSecret: dbConfig?.client_secret || '',
+            cert,
+            key,
+            accountNumber: dbConfig?.account_number || dbConfig?.accountNumber
+        });
 
         // PRIORIZA codigoSolicitacao (UUID) - é o identificador correto segundo a doc do Inter
         let pdfBuffer: Buffer | null = null;

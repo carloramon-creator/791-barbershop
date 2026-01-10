@@ -34,7 +34,8 @@ export async function GET(req: Request) {
                 clientId: config.client_id,
                 clientSecret: config.client_secret,
                 cert,
-                key
+                key,
+                accountNumber: config.account_number || config.accountNumber
             });
 
             const threeDaysAgo = new Date();

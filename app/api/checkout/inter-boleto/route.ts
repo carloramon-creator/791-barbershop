@@ -83,7 +83,8 @@ export async function POST(req: Request) {
             clientId,
             clientSecret,
             cert,
-            key
+            key,
+            accountNumber: dbConfig?.account_number || dbConfig?.accountNumber
         });
 
         let doc = (tenant.cnpj || tenant.cpf || tenant.document || tenant.bank_account_doc || "").replace(/\D/g, '');

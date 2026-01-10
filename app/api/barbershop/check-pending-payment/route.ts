@@ -48,7 +48,8 @@ export async function GET(req: Request) {
                 const inter = new InterAPIV3({
                     clientId,
                     clientSecret: dbConfig?.client_secret || process.env.INTER_CLIENT_SECRET || '',
-                    cert, key
+                    cert, key,
+                    accountNumber: dbConfig?.account_number || dbConfig?.accountNumber
                 });
 
                 try {

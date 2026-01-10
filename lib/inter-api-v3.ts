@@ -6,6 +6,7 @@ interface InterConfigV3 {
     clientSecret: string;
     cert: string;
     key: string;
+    accountNumber?: string;
 }
 
 export class InterAPIV3 {
@@ -71,16 +72,22 @@ export class InterAPIV3 {
         const token = await this.getAccessToken();
         const body = JSON.stringify(payload);
 
+        const headers: any = {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body)
+        };
+
+        if (this.config.accountNumber) {
+            headers['x-conta-corrente'] = this.config.accountNumber;
+        }
+
         const options: https.RequestOptions = {
             hostname: 'cdpj.partners.bancointer.com.br',
             port: 443,
             path: '/cobranca/v3/cobrancas',
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(body)
-            },
+            headers,
             cert: this.config.cert,
             key: this.config.key,
             rejectUnauthorized: false,
@@ -95,15 +102,21 @@ export class InterAPIV3 {
 
     async getBillingBySolicitacao(codigoSolicitacao: string) {
         const token = await this.getAccessToken();
+        const headers: any = {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+        };
+
+        if (this.config.accountNumber) {
+            headers['x-conta-corrente'] = this.config.accountNumber;
+        }
+
         const options: https.RequestOptions = {
             hostname: 'cdpj.partners.bancointer.com.br',
             port: 443,
             path: `/cobranca/v3/cobrancas/${codigoSolicitacao}`,
             method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
-            },
+            headers,
             cert: this.config.cert,
             key: this.config.key,
             rejectUnauthorized: false,
@@ -116,15 +129,21 @@ export class InterAPIV3 {
 
     async listBillings(startDate: string, endDate: string, extraParams: string = '') {
         const token = await this.getAccessToken();
+        const headers: any = {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+        };
+
+        if (this.config.accountNumber) {
+            headers['x-conta-corrente'] = this.config.accountNumber;
+        }
+
         const options: https.RequestOptions = {
             hostname: 'cdpj.partners.bancointer.com.br',
             port: 443,
             path: `/cobranca/v3/cobrancas?dataInicial=${startDate}&dataFinal=${endDate}${extraParams}`,
             method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
-            },
+            headers,
             cert: this.config.cert,
             key: this.config.key,
             rejectUnauthorized: false,
@@ -139,16 +158,22 @@ export class InterAPIV3 {
         let path = type === 'boleto' ? '/cobranca/v3/cobrancas/webhook' : `/pix/v2/webhook/${pixKey}`;
         const body = JSON.stringify({ webhookUrl });
 
+        const headers: any = {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body)
+        };
+
+        if (this.config.accountNumber) {
+            headers['x-conta-corrente'] = this.config.accountNumber;
+        }
+
         const options: https.RequestOptions = {
             hostname: 'cdpj.partners.bancointer.com.br',
             port: 443,
             path: path,
             method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(body)
-            },
+            headers,
             cert: this.config.cert,
             key: this.config.key,
             rejectUnauthorized: false,
@@ -168,15 +193,21 @@ export class InterAPIV3 {
 
         // Função auxiliar para tentar baixar
         const tryDownload = (id: string) => {
+            const headers: any = {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json' // O Inter V3 retorna PDF em Base64 dentro de um JSON
+            };
+
+            if (this.config.accountNumber) {
+                headers['x-conta-corrente'] = this.config.accountNumber;
+            }
+
             const options: https.RequestOptions = {
                 hostname: 'cdpj.partners.bancointer.com.br',
                 port: 443,
                 path: `/cobranca/v3/cobrancas/${id}/pdf`,
                 method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/pdf'
-                },
+                headers,
                 cert: this.config.cert,
                 key: this.config.key,
                 rejectUnauthorized: false,
