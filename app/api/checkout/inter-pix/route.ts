@@ -194,35 +194,40 @@ export async function POST(req: Request) {
         }
 
         // 5. Salvar registro local
-        await supabaseAdmin
+        const { error: insertError } = await supabaseAdmin
             .from('finance')
             .insert({
-                tenant_id: null,
+                tenant_id: tenant.id, // CORRIGIDO: estava null antes!
                 type: 'revenue',
                 value: amount,
-                description: `SaaS - Plano ${plan} (${tenant.name})`,
+                description: `SaaS - Plano ${plan}`,
                 date: currentDate,
                 is_paid: false,
                 metadata: {
                     txid: codigoSolicitacao || 'N/A',
                     seu_numero: seuNumero,
-                    tenant_id: tenant.id,
                     method: 'pix_inter',
-                    pix_payload: pixCopiaECola
+                    pix_payload: pixCopiaECola,
+                    expires_at: dueDate.toISOString()
                 }
             });
 
+        if (insertError) {
+            console.error('[PIX DB ERROR] Erro ao salvar fatura:', insertError);
+        }
+
         if (isReady) {
-            // Buscamos o código de solicitação ou identificador para o PDF
-            const identifier = interRes.nossoNumero || interRes.identificador || codigoSolicitacao;
+            // Usa codigoSolicitacao para PDF (sempre disponível)
+            const pdfUrl = codigoSolicitacao
+                ? `/api/checkout/inter-boleto/pdf?codigoSolicitacao=${codigoSolicitacao}`
+                : null;
 
             return addCorsHeaders(req, NextResponse.json({
                 success: true,
                 pixPayload: pixCopiaECola,
                 amount: amount,
-                expiresAt: dueDateStr,
-                nossoNumero: identifier,
-                pdfUrl: `/api/checkout/inter-boleto/pdf?nossoNumero=${identifier}&codigoSolicitacao=${codigoSolicitacao || ''}`
+                expiresAt: dueDate.toISOString(),
+                pdfUrl: pdfUrl
             }));
         }
 
@@ -236,6 +241,25 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error('[SAAS PIX CHECKOUT ERROR]', error);
-        return addCorsHeaders(req, NextResponse.json({ error: error.message }, { status: 500 }));
+        console.error('[SAAS PIX ERROR STACK]', error.stack);
+
+        // Mensagem mais amigável para o usuário
+        let userMessage = 'Erro inesperado ao processar pagamento';
+        if (error.message) {
+            if (error.message.includes('CNPJ') || error.message.includes('CPF')) {
+                userMessage = 'CPF/CNPJ inválido. Verifique os dados cadastrados.';
+            } else if (error.message.includes('timeout')) {
+                userMessage = 'Tempo esgotado ao conectar com o banco. Tente novamente.';
+            } else if (error.message.includes('certificado') || error.message.includes('certificate')) {
+                userMessage = 'Erro de autenticação com o banco. Contate o suporte.';
+            } else {
+                userMessage = error.message;
+            }
+        }
+
+        return addCorsHeaders(req, NextResponse.json({
+            error: userMessage,
+            details: error.message
+        }, { status: 500 }));
     }
 }
