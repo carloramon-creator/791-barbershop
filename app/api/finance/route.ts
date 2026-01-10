@@ -13,6 +13,9 @@ export async function GET() {
             .from('finance')
             .select('*')
             .eq('tenant_id', tenant.id)
+            .not('metadata->>is_saas_payment', 'eq', 'true') // Exclui novos
+            .not('description', 'ilike', '%SaaS%') // Exclui antigos/legado
+            .not('description', 'ilike', '%Assinatura%') // Exclui antigos/legado (backup)
             .order('date', { ascending: false });
 
         if (error) {
