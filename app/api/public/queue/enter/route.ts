@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { findOrCreateClientByPhone } from '@/lib/clients';
-import { addCorsHeaders } from '@/lib/server-utils';
+import { addCorsHeaders, resolveTenantId } from '@/lib/server-utils';
 
 export async function OPTIONS(req: Request) {
     return addCorsHeaders(req, new NextResponse(null, { status: 200 }));
@@ -26,6 +26,10 @@ export async function POST(req: Request) {
 
         // Determinar tenant_id
         let finalTenantId = tenant_id;
+        if (finalTenantId) {
+            finalTenantId = await resolveTenantId(finalTenantId);
+        }
+
         if (!finalTenantId) {
             // Fallback para dev: pegar primeiro tenant
             const { data: firstTenant } = await supabaseAdmin

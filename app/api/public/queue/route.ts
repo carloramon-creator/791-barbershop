@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
-import { getStatusColor, getDynamicBarberAverages, addCorsHeaders } from '@/lib/server-utils';
+import { getStatusColor, getDynamicBarberAverages, addCorsHeaders, resolveTenantId } from '@/lib/server-utils';
 
 export async function OPTIONS(req: Request) {
     return addCorsHeaders(req, new NextResponse(null, { status: 200 }));
@@ -16,7 +16,12 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url);
         let tenantId = searchParams.get('tenant_id');
 
-        // Se não vier tenant_id, buscar o primeiro tenant disponível (para demo/dev)
+        // Se Vier um slug ou ID, resolvemos para o ID real
+        if (tenantId) {
+            tenantId = await resolveTenantId(tenantId);
+        }
+
+        // Se não vier tenant_id ou não resolveu, buscar o primeiro tenant disponível (para demo/dev)
         if (!tenantId) {
             const { data: firstTenant } = await supabaseAdmin
                 .from('tenants')

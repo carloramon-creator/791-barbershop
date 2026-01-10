@@ -212,3 +212,41 @@ export function addCorsHeaders(req: Request, response: NextResponse) {
 
     return response;
 }
+
+/**
+ * Resolve um identifier de tenant (Slug ou UUID) para o UUID real.
+ */
+export async function resolveTenantId(idOrSlug: string): Promise<string | null> {
+    if (!idOrSlug) return null;
+
+    // UUID Regex check
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(idOrSlug);
+
+    if (isUuid) {
+        return idOrSlug;
+    }
+
+    // Lookup by slug (CASE INSENSITIVE)
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('tenants')
+            .select('id')
+            .ilike('slug', idOrSlug)
+            .maybeSingle();
+
+        if (!error && data) {
+            return data.id;
+        }
+    } catch (e) {
+        // Column might not exist yet
+    }
+
+    // One last try: lookup by name (lowercase and replaced spaces with dashes)
+    const { data: dataByName } = await supabaseAdmin
+        .from('tenants')
+        .select('id')
+        .ilike('name', idOrSlug.replace(/-/g, ' '))
+        .maybeSingle();
+
+    return dataByName?.id || null;
+}
