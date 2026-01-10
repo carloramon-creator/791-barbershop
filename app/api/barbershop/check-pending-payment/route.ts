@@ -100,14 +100,46 @@ export async function GET(req: Request) {
                         };
 
                         // Só atualiza se tiver novidade útil
+                        const isPaid = found.situacao === 'PAGO' || found.status === 'CONCLUIDA' || found.status === 'RECEBIDA'; // Pix status pode variar
+
+                        // Atualiza Metadata
                         if (meta.nosso_numero && meta.nosso_numero !== 'PENDING') {
-                            await supabaseAdmin.from('finance').update({ metadata: meta }).eq('id', charge.id);
+                            await supabaseAdmin.from('finance').update({
+                                metadata: meta,
+                                is_paid: isPaid ? true : charge.is_paid
+                            }).eq('id', charge.id);
                             charge.metadata = meta;
                             isReady = true;
                         } else if (isPix && meta.pix_payload) {
-                            await supabaseAdmin.from('finance').update({ metadata: meta }).eq('id', charge.id);
+                            await supabaseAdmin.from('finance').update({
+                                metadata: meta,
+                                is_paid: isPaid ? true : charge.is_paid
+                            }).eq('id', charge.id);
                             charge.metadata = meta;
                             isReady = true;
+                        }
+
+                        // Se descobriu que está PAGO agora, libera o tenant
+                        if (isPaid && !charge.is_paid) {
+                            console.log(`[POLLING] 🔥 Pagamento detectado via Polling! Liberando tenant...`);
+                            const description = charge.description || '';
+                            let plan = 'basic';
+                            if (description.toLowerCase().includes('premium')) plan = 'premium';
+                            else if (description.toLowerCase().includes('completo')) plan = 'complete';
+
+                            const periodEnd = new Date();
+                            periodEnd.setDate(periodEnd.getDate() + 31);
+
+                            if (charge.metadata.tenant_id) {
+                                await supabaseAdmin.from('tenants').update({
+                                    plan: plan,
+                                    subscription_status: 'active',
+                                    subscription_current_period_end: periodEnd.toISOString()
+                                }).eq('id', charge.metadata.tenant_id);
+                            }
+
+                            // Garante atualização final
+                            await supabaseAdmin.from('finance').update({ is_paid: true }).eq('id', charge.id);
                         }
                     }
                 } catch (e) {
