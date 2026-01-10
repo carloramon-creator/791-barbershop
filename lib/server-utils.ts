@@ -8,6 +8,7 @@ export async function getCurrentUserAndTenant() {
         console.log('[BACKEND] getCurrentUserAndTenant start');
 
         let userAuthId: string | null = null;
+        let userObj: any = null;
 
         // 1. Tentar pegar via standard client (mais robusto para token/cookies)
         const client = await supabase();
@@ -15,6 +16,7 @@ export async function getCurrentUserAndTenant() {
 
         if (!authError && user) {
             userAuthId = user.id;
+            userObj = user;
             console.log('[BACKEND] User validado via standard client. ID:', user.id);
         } else {
             console.warn('[BACKEND] Falha na validação via client standard:', authError?.message);
@@ -27,6 +29,7 @@ export async function getCurrentUserAndTenant() {
                 const { data: { user: adminUser }, error: adminError } = await supabaseAdmin.auth.getUser(token);
                 if (!adminError && adminUser) {
                     userAuthId = adminUser.id;
+                    userObj = adminUser;
                     console.log('[BACKEND] User validado via fallback admin. ID:', adminUser.id);
                 }
             }
@@ -55,6 +58,7 @@ export async function getCurrentUserAndTenant() {
 
             if (sessionData && sessionData.user) {
                 userAuthId = sessionData.user.id;
+                userObj = sessionData.user;
             } else {
                 console.log('[BACKEND] Nenhuma sessão válida encontrada nos cookies.');
             }
@@ -110,7 +114,7 @@ export async function getCurrentUserAndTenant() {
         }
 
         console.log('[BACKEND] Tenant found:', tenant.name, 'Plan:', tenant.plan);
-        const finalUser = { id: userAuthId };
+        const finalUser = { id: userAuthId, email: userObj?.email || userData.email || '' };
 
         return {
             user: finalUser,

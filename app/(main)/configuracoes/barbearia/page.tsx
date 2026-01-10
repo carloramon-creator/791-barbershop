@@ -388,7 +388,7 @@ export default function BarbershopSettingsPage() {
                                         <div className="flex flex-col md:flex-row items-center gap-8">
                                             <div className="bg-white p-4 rounded-2xl shadow-2xl">
                                                 <QRCodeSVG
-                                                    value={`https://791barber.com/${slug}`}
+                                                    value={`https://frontend-client-six-orpin.vercel.app/${slug}`}
                                                     size={160}
                                                     includeMargin={true}
                                                     level="H"

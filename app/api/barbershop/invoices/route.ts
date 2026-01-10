@@ -108,13 +108,28 @@ export async function GET(req: Request) {
         }
 
         // 2.1 Sync Stripe (GOL DA VITÓRIA ⚽)
-        if (tenant.stripe_customer_id) {
-            try {
-                const { stripe } = await import('@/lib/stripe-server');
-                // Buscar sessões de checkout recentes ou faturas
+        let stripeCustomerId = tenant.stripe_customer_id;
+        try {
+            const { stripe } = await import('@/lib/stripe-server');
+
+            // Se não tiver customer ID, tenta buscar pelo email da barbearia ou do usuário
+            if (!stripeCustomerId) {
+                const customersQuery = await stripe.customers.list({
+                    email: tenant.email || user.email,
+                    limit: 1
+                });
+                if (customersQuery.data.length > 0) {
+                    stripeCustomerId = customersQuery.data[0].id;
+                    // Salva para o futuro
+                    await supabaseAdmin.from('tenants').update({ stripe_customer_id: stripeCustomerId }).eq('id', tenant.id);
+                }
+            }
+
+            if (stripeCustomerId) {
+                // Buscar sessões de checkout recentes
                 const sessions = await stripe.checkout.sessions.list({
-                    customer: tenant.stripe_customer_id,
-                    limit: 5,
+                    customer: stripeCustomerId,
+                    limit: 15,
                 });
 
                 for (const session of sessions.data) {
@@ -128,23 +143,23 @@ export async function GET(req: Request) {
 
                         if (!existingFinance || !existingFinance.is_paid) {
                             console.log(`[STRIPE-SYNC] ✅ Sessão paga encontrada: ${session.id}`);
-                            const planFromMetadata = session.metadata?.plan || 'basic';
+                            const planFromMetadata = session.metadata?.plan || 'premium';
 
                             // Atualizar Tenant
                             await supabaseAdmin.from('tenants').update({
                                 plan: planFromMetadata,
                                 subscription_status: 'active',
+                                stripe_customer_id: stripeCustomerId,
                                 stripe_subscription_id: session.subscription as string,
                             }).eq('id', tenant.id);
 
                             if (!existingFinance) {
-                                // Inserir novo registro se não existia (ex: falha do webhook)
                                 await supabaseAdmin.from('finance').insert({
                                     tenant_id: tenant.id,
                                     type: 'revenue',
                                     value: (session.amount_total || 0) / 100,
-                                    description: `Assinatura SaaS - Plano ${planFromMetadata} (Stripe - Sync)`,
-                                    date: new Date().toISOString().split('T')[0],
+                                    description: `Assinatura SaaS - Plano ${planFromMetadata.toUpperCase()} (Stripe - Sync)`,
+                                    date: new Date(session.created * 1000).toISOString().split('T')[0],
                                     is_paid: true,
                                     metadata: {
                                         stripe_session_id: session.id,
@@ -153,18 +168,17 @@ export async function GET(req: Request) {
                                     }
                                 });
                             } else {
-                                // Apenas marcar como pago se já existia
                                 await supabaseAdmin.from('finance').update({
                                     is_paid: true,
-                                    description: existingFinance.is_paid ? undefined : `Assinatura SaaS - Plano ${planFromMetadata} (Stripe - Sync Up)`
+                                    description: `Assinatura SaaS - Plano ${planFromMetadata.toUpperCase()} (Stripe - Sync Up)`
                                 }).eq('id', existingFinance.id);
                             }
                         }
                     }
                 }
-            } catch (e) {
-                console.error('[STRIPE-SYNC ERROR]', e);
             }
+        } catch (e) {
+            console.error('[STRIPE-SYNC ERROR]', e);
         }
 
         // 3. Buscar faturas atualizadas
