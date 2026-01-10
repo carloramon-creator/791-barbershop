@@ -48,11 +48,30 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
 
     const [error, setError] = useState<string | null>(initialError);
 
-    // Reload function just updates local state if needed (optional)
     const loadTenants = async () => {
-        // No-op for now as we use server data
-        alert('Recarregue a página para atualizar os dados.');
+        setLoading(true);
+        setError(null);
+        try {
+            const [data, stats] = await Promise.all([
+                Api.getSystemTenants(),
+                Api.getSystemStats()
+            ]);
+
+            setTenants(data || []);
+            // Se o stats retornar métricas globais, poderíamos processar aqui,
+            // mas o TenantsPage já faz um reduce. Vou apenas garantir que os dados vieram.
+            console.log('[CLIENT] Dados carregados:', data.length, 'barbearias');
+        } catch (e: any) {
+            console.error('[CLIENT ERROR]', e);
+            setError(e.message || 'Falha ao carregar barbearias. Verifique se você é um administrador.');
+        } finally {
+            setLoading(false);
+        }
     };
+
+    useEffect(() => {
+        loadTenants();
+    }, []);
 
     const handleEditClick = (tenant: any) => {
         setEditingTenant(tenant);
