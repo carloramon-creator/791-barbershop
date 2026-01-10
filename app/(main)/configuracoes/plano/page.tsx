@@ -98,12 +98,25 @@ export default function PlanPage() {
     ];
 
     useEffect(() => {
-        fetchCurrentPlan();
+        const init = async () => {
+            setLoading(true);
+            try {
+                // 1. Primeiro sincroniza tudo (Inter e Stripe)
+                await fetchInvoices();
+                // 2. Agora busca o status atualizado do plano
+                await fetchCurrentPlan(false); // Pass false to not reset loading
+            } catch (e) {
+                console.error('Erro na inicialização:', e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        init();
     }, []);
 
-    async function fetchCurrentPlan() {
+    async function fetchCurrentPlan(shouldSetLoading = true) {
         try {
-            setLoading(true);
+            if (shouldSetLoading) setLoading(true);
 
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) throw new Error('Usuário não autenticado');
@@ -126,7 +139,6 @@ export default function PlanPage() {
                 }
             });
             const tenantData = await tenantRes.json();
-            // Check both cnpj and potentially other fields if needed, being robust
             const doc = tenantData.cnpj || tenantData.cpf_cnpj || '';
             setTenantHasDocument(doc.replace(/\D/g, '').length >= 11);
         } catch (err: unknown) {
@@ -134,8 +146,7 @@ export default function PlanPage() {
             console.error('Erro ao buscar plano:', errorObj.message);
             setError(errorObj.message);
         } finally {
-            setLoading(false);
-            fetchInvoices();
+            if (shouldSetLoading) setLoading(false);
         }
     }
 
