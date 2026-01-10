@@ -5,15 +5,12 @@ import { Plan } from './backend-types';
 
 /**
  * UTILITY PRINCIPAL DE AUTENTICAÇÃO (SSR)
- * Refatorado para máxima resiliência no ambiente Railway.
+ * Refatorado para segurança máxima e resiliência.
  */
 export async function getCurrentUserAndTenant() {
     try {
         const cookieStore = await cookies();
         const allCookies = cookieStore.getAll();
-
-        console.log(`[AUTH-DEBUG] Verificando cookies (${allCookies.length} encontrados)`);
-        allCookies.forEach(c => console.log(`[AUTH-DEBUG] Cookie: ${c.name} (len: ${c.value?.length || 0})`));
 
         let userAuthId: string | null = null;
         let userObj: any = null;
@@ -25,36 +22,19 @@ export async function getCurrentUserAndTenant() {
         if (user && !authError) {
             userAuthId = user.id;
             userObj = user;
-            console.log('[AUTH-DEBUG] ✅ Sessão SSR validada:', user.id);
         } else {
-            console.log('[AUTH-DEBUG] ⚠️ SSR falhou (Code: ' + (authError?.code || 'unknown') + '). Tentando busca manual...');
-
-            // 2. BUSCA MANUAL "ABSOLUTA"
-            // Procura tokens em cookies de forma agnóstica ao nome do projeto
+            // 2. BUSCA MANUAL "BRUTE FORCE" (Apenas se o SSR falhar)
             for (const c of allCookies) {
-                // Tokens costumam ser grandes (JWT > 100 char) e conter o padrão de 3 partes separadas por ponto
                 if (!c.value || c.value.length < 50) continue;
 
                 let token: string | null = null;
-                const raw = c.value;
-
                 try {
-                    const decoded = decodeURIComponent(raw);
-                    // Padrão Supabase SSR: ["token", "refresh", ...]
-                    if (decoded.trim().startsWith('[')) {
-                        token = JSON.parse(decoded)[0];
-                    }
-                    // Padrão Supabase antigo ou personalizado: {"access_token": "..."}
-                    else if (decoded.trim().startsWith('{')) {
-                        const parsed = JSON.parse(decoded);
-                        token = parsed.access_token || parsed.token || parsed.access;
-                    }
-                    // String direta
-                    else {
-                        token = decoded.replace(/^"|"$/g, '');
-                    }
+                    const decoded = decodeURIComponent(c.value);
+                    if (decoded.trim().startsWith('[')) token = JSON.parse(decoded)[0];
+                    else if (decoded.trim().startsWith('{')) token = JSON.parse(decoded).access_token;
+                    else token = decoded.replace(/^"|"$/g, '');
                 } catch (e) {
-                    token = raw.replace(/^"|"$/g, '');
+                    token = c.value.replace(/^"|"$/g, '');
                 }
 
                 if (token && token.split('.').length === 3) {
@@ -62,7 +42,6 @@ export async function getCurrentUserAndTenant() {
                     if (adminUser && !adminError) {
                         userAuthId = adminUser.id;
                         userObj = adminUser;
-                        console.log(`[AUTH-DEBUG] ✅ Token validado extraído do cookie: ${c.name}`);
                         break;
                     }
                 }
@@ -70,7 +49,6 @@ export async function getCurrentUserAndTenant() {
         }
 
         if (!userAuthId) {
-            console.error('[AUTH-DEBUG] ❌ FALHA: Nenhum token de acesso válido localizado nos cookies.');
             throw new Error('Usuário não autenticado ou sessão expirada');
         }
 
@@ -82,22 +60,28 @@ export async function getCurrentUserAndTenant() {
             .single();
 
         if (profileError || !userData) {
-            console.error('[AUTH-DEBUG] ❌ Erro de Perfil:', profileError?.message || 'Não encontrado');
             throw new Error('Perfil de usuário não localizado.');
         }
 
-        const isSystemAdmin = userData.is_system_admin === true || userData.role === 'admin' || userData.role === 'owner';
+        // --- TRAVA DE SEGURANÇA CRÍTICA ---
+        // Apenas usuários marcados EXPLICITAMENTE como is_system_admin ou com e-mail do Ramon
+        // podem ter acesso às funções de Super Admin e Impersonate.
+        const isSystemAdmin =
+            userData.is_system_admin === true ||
+            userData.email === 'ramon@791solucoes.com.br';
+
+        // ----------------------------------
+
         let tenantIdToUse = userData.tenant_id;
 
-        // 4. SUPORTE A IMPERSONATE
+        // 4. SUPORTE A IMPERSONATE (TRAVADO PARA ADMIN)
         const impersonateId = cookieStore.get('impersonate_tenant_id')?.value;
         if (isSystemAdmin && impersonateId) {
-            console.log(`[AUTH-DEBUG] 🕵️ Impersonate Ativo: ${impersonateId}`);
             tenantIdToUse = impersonateId;
         }
 
         if (!tenantIdToUse && !isSystemAdmin) {
-            throw new Error('Sem barbearia vinculada.');
+            throw new Error('Sua conta não possui uma barbearia vinculada.');
         }
 
         // 5. CARREGAR TENANT
@@ -145,13 +129,15 @@ export const assertPlanAtLeast = (planName: string, requiredPlan: Plan) => {
 export async function checkRole(requiredRole: 'owner' | 'barber' | 'staff') {
     const { role } = await getCurrentUserAndTenant();
     const rolesPriority = { owner: 3, barber: 2, staff: 1 };
-    if (rolesPriority[role as keyof typeof rolesPriority] < rolesPriority[requiredRole]) {
+    const userRole = (role || 'staff') as keyof typeof rolesPriority;
+    if (rolesPriority[userRole] < rolesPriority[requiredRole]) {
         throw new Error('Acesso negado');
     }
 }
 
 export function checkRolePermission(roleOrRoles: string | string[], permission: string) {
     const roles = Array.isArray(roleOrRoles) ? roleOrRoles : [roleOrRoles];
+    // Apenas donos de barbearia (owner) ou Admins do sistema podem gerenciar usuários/finanças
     return roles.includes('admin') || roles.includes('system_admin') || roles.includes('owner');
 }
 
