@@ -131,18 +131,30 @@ export async function getCurrentUserAndTenant() {
         }
 
         // Buscar dados da barbearia
-        const { data: tenant, error: tenantError } = await supabaseAdmin
-            .from('tenants')
-            .select('*')
-            .eq('id', tenantIdToUse)
-            .single();
+        let tenant = null;
+        if (tenantIdToUse) {
+            const { data, error: tenantError } = await supabaseAdmin
+                .from('tenants')
+                .select('*')
+                .eq('id', tenantIdToUse)
+                .single();
 
-        if (tenantError || !tenant) {
-            console.error('[BACKEND] Tenant not found:', tenantError?.message);
-            throw new Error('Barbearia não encontrada ou vinculada');
+            if (tenantError) {
+                console.error('[BACKEND] Tenant not found:', tenantError.message);
+                if (!isSystemAdmin) throw new Error('Barbearia não encontrada ou vinculada');
+            }
+            tenant = data;
         }
 
-        console.log('[BACKEND] Tenant found:', tenant.name, 'Plan:', tenant.plan);
+        if (!tenant && !isSystemAdmin) {
+            throw new Error('Você ainda não tem uma barbearia vinculada.');
+        }
+
+        console.log('[BACKEND] Tenant final:', tenant?.name || 'Nenhum (MODO ADMIN)');
+
+        if (tenant) {
+            console.log('[BACKEND] Tenant found:', tenant.name, 'Plan:', tenant.plan);
+        }
         const finalUser = { id: userAuthId, email: userObj?.email || userData.email || '' };
 
         return {
