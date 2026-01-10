@@ -188,11 +188,26 @@ export class InterAPIV3 {
                     const chunks: any[] = [];
                     res.on('data', (chunk) => chunks.push(chunk));
                     res.on('end', () => {
+                        const buffer = Buffer.concat(chunks);
                         if (res.statusCode === 200) {
                             console.log(`[INTER PDF] ✅ Sucesso com ID: ${id}`);
-                            resolve(Buffer.concat(chunks));
+
+                            const contentType = res.headers['content-type'] || '';
+                            if (contentType.includes('application/json')) {
+                                try {
+                                    const json = JSON.parse(buffer.toString());
+                                    if (json.pdf) {
+                                        console.log('[INTER PDF] 📄 Decodificando Base64...');
+                                        resolve(Buffer.from(json.pdf, 'base64'));
+                                        return;
+                                    }
+                                } catch (e) {
+                                    console.error('[INTER PDF] Erro ao parsear JSON:', e);
+                                }
+                            }
+                            resolve(buffer);
                         } else {
-                            const errorBody = Buffer.concat(chunks).toString();
+                            const errorBody = buffer.toString();
                             console.warn(`[INTER PDF WARN] Falha com ID: ${id} | Status: ${res.statusCode}`);
                             reject({ statusCode: res.statusCode, body: errorBody });
                         }
