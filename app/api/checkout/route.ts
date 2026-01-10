@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { stripe, StripePlan } from '@/lib/stripe-server';
+import Stripe from 'stripe';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
 import { supabaseAdmin } from '@/lib/supabase-server';
 
@@ -34,6 +35,29 @@ export async function POST(req: Request) {
                 NextResponse.json({ error: 'Plano inválido' }, { status: 400 })
             );
         }
+
+        // 0. Preparar Cliente Stripe com Chave Dinâmica do Banco
+        const { data: settingsData } = await supabaseAdmin
+            .from('system_settings')
+            .select('value')
+            .eq('key', 'stripe_config')
+            .single();
+
+        const dbKey = settingsData?.value?.secret_key;
+        const envKey = process.env.STRIPE_SECRET_KEY;
+        const finalKey = dbKey || envKey;
+
+        if (!finalKey || finalKey.includes('dummy')) {
+            return addCorsHeaders(req,
+                NextResponse.json({ error: 'Stripe não configurado. Adicione a Secret Key em Geral > Configurações.' }, { status: 500 })
+            );
+        }
+
+        const stripeClient = new Stripe(finalKey, {
+            apiVersion: '2025-12-15.clover' as any, // Use version from lib or locked version
+            typescript: true,
+        });
+
 
         // 1. Validar e Calcular Valor com Cupom
         let baseAmount = PLAN_BASE_PRICES[plan];
@@ -103,11 +127,11 @@ export async function POST(req: Request) {
                 const uniqueCouponId = `COUPON_${cleanCode}_${discountPercent || discountValue}`; // Improved ID format
 
                 try {
-                    const existing = await stripe.coupons.retrieve(uniqueCouponId);
+                    const existing = await stripeClient.coupons.retrieve(uniqueCouponId);
                     stripeCouponId = existing.id;
                 } catch (e) {
                     if (discountPercent > 0) {
-                        const newC = await stripe.coupons.create({
+                        const newC = await stripeClient.coupons.create({
                             id: uniqueCouponId,
                             percent_off: discountPercent,
                             duration: 'forever',
@@ -115,7 +139,7 @@ export async function POST(req: Request) {
                         });
                         stripeCouponId = newC.id;
                     } else if (discountValue > 0) {
-                        const newC = await stripe.coupons.create({
+                        const newC = await stripeClient.coupons.create({
                             id: uniqueCouponId,
                             amount_off: Math.round(discountValue * 100),
                             currency: 'brl',
@@ -140,7 +164,7 @@ export async function POST(req: Request) {
                 .eq('id', user.id)
                 .single();
 
-            const customer = await stripe.customers.create({
+            const customer = await stripeClient.customers.create({
                 email: userProfile?.email || `user-${user.id}@791barber.com`,
                 name: userProfile?.name || tenant.name,
                 metadata: {
@@ -161,7 +185,7 @@ export async function POST(req: Request) {
         const doc = (tenant.cnpj || tenant.cpf || tenant.cpf_cnpj || '').replace(/\D/g, '');
 
         try {
-            await stripe.customers.update(customerId, {
+            await stripeClient.customers.update(customerId, {
                 name: tenant.name,
                 address: {
                     line1: tenant.street || tenant.address_street || 'Endereço não informado',
@@ -189,7 +213,7 @@ export async function POST(req: Request) {
         }
 
         // 3. Criar Checkout Session Dinâmica
-        const session = await stripe.checkout.sessions.create({
+        const session = await stripeClient.checkout.sessions.create({
             customer: customerId,
             payment_method_types: ['card'],
             billing_address_collection: 'auto',
