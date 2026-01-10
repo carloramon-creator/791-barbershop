@@ -66,12 +66,12 @@ export async function getCurrentUserAndTenant() {
                 }
             }
 
-            // Fallback para outros cookies (session, etc)
+            // Fallback FINAL: qualquer cookie que pareça ter um token JWT
             if (!accessToken) {
                 for (const cookie of allCookies) {
-                    if (cookie.name.toLowerCase().includes('session') && cookie.value.length > 100) {
+                    if ((cookie.name.includes('token') || cookie.name.includes('auth')) && cookie.value.length > 100) {
                         accessToken = cookie.value;
-                        console.log('[BACKEND] 🍪 Token extraído do cookie de session:', cookie.name);
+                        console.log('[BACKEND] 🍪 Token extraído por padrão de nome:', cookie.name);
                         break;
                     }
                 }
