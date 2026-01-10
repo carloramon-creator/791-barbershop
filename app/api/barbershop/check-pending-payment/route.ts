@@ -100,7 +100,8 @@ export async function GET(req: Request) {
                         };
 
                         // Só atualiza se tiver novidade útil
-                        const isPaid = found.situacao === 'PAGO' || found.situacao === 'RECEBIDO' || found.status === 'CONCLUIDA' || found.status === 'RECEBIDA'; // Pix status pode variar: PAGO, RECEBIDO, CONCLUIDA
+                        const isPaid = found.situacao === 'PAGO' || found.situacao === 'RECEBIDO' || found.status === 'CONCLUIDA' || found.status === 'RECEBIDA';
+                        const isCanceled = found.situacao === 'CANCELADO' || found.situacao === 'EXPIRADO' || found.status === 'REJEITADA';
 
                         // Atualiza Metadata
                         if (meta.nosso_numero && meta.nosso_numero !== 'PENDING') {
@@ -117,6 +118,14 @@ export async function GET(req: Request) {
                             }).eq('id', charge.id);
                             charge.metadata = meta;
                             isReady = true;
+                        }
+
+                        // Se descobriu que foi CANCELADO, podemos opcionalmente marcar algo no banco
+                        // Por ora, vamos garantir que o is_paid continue falso mas o metadata salve o status
+                        if (isCanceled) {
+                            await supabaseAdmin.from('finance').update({
+                                metadata: { ...meta, status_inter: found.situacao || found.status }
+                            }).eq('id', charge.id);
                         }
 
                         // Se descobriu que está PAGO agora, libera o tenant

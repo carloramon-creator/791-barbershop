@@ -63,9 +63,18 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Use o txid (UUID) para checagem forçada por enquanto.' });
         }
 
-        console.log('Status Inter:', details?.situacao || details?.status);
+        // 3. Normalizar Resposta (Se vier aninhado em 'cobranca')
+        const finalDetails = details.cobranca ? { ...details.cobranca, boleto: details.boleto, pix: details.pix } : details;
 
-        const isPaid = details?.situacao === 'PAGO' || details?.status === 'CONCLUIDA' || details?.status === 'RECEBIDA';
+        console.log('Status Inter:', finalDetails?.situacao || finalDetails?.status);
+
+        const isPaid = finalDetails?.situacao === 'PAGO' ||
+            finalDetails?.situacao === 'RECEBIDO' ||
+            finalDetails?.status === 'CONCLUIDA' ||
+            finalDetails?.status === 'RECEBIDA';
+
+        details = finalDetails; // Atualiza para uso posterior no log e update
+
 
         // 3. Verifica no Banco
         let charge;
