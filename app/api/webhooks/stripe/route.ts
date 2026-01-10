@@ -80,11 +80,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const couponId = session.metadata?.coupon_id;
 
     if (!tenantId || !plan) {
-        console.error('[STRIPE] Metadata faltando no checkout:', session.id);
+        console.error('[STRIPE] CRITICAL: Metadata faltando no checkout (tenantId/plan). Session:', session.id, 'Metadata:', session.metadata);
         return;
     }
 
-    console.log('[STRIPE] Checkout completado para tenant:', tenantId);
+    console.log(`[STRIPE] Processando Checkout: Tenant=${tenantId}, Plan=${plan}`);
 
     // Atualizar tenant com informações da assinatura
     await supabaseAdmin
@@ -218,11 +218,11 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     const plan = subscription.metadata?.plan;
 
     if (!tenantId) {
-        console.error('[STRIPE] Tenant ID faltando na subscription:', subscription.id);
+        console.error('[STRIPE] Tenant ID faltando na subscription update:', subscription.id, 'Metadata:', subscription.metadata);
         return;
     }
 
-    console.log('[STRIPE] Subscription atualizada:', subscription.id, 'Status:', subscription.status);
+    console.log(`[STRIPE] Subscription atualizada: Sub=${subscription.id}, Status=${subscription.status}, Tenant=${tenantId}`);
 
     const periodEnd = (subscription as any).current_period_end;
 
