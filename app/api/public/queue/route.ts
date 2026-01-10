@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
-import { getStatusColor, getDynamicBarberAverages } from '@/lib/server-utils';
+import { getStatusColor, getDynamicBarberAverages, addCorsHeaders } from '@/lib/server-utils';
+
+export async function OPTIONS(req: Request) {
+    return addCorsHeaders(req, new NextResponse(null, { status: 200 }));
+}
 
 /**
  * Endpoint PÚBLICO para clientes verem as filas da barbearia.
@@ -124,15 +128,15 @@ export async function GET(req: Request) {
             };
         }) || [];
 
-        return NextResponse.json({
+        return addCorsHeaders(req, NextResponse.json({
             barbers: consolidatedBarbers,
             tenant: {
                 name: tenant.name,
                 logo_url: tenant.logo_url
             }
-        });
+        }));
     } catch (error: any) {
         console.error('[PUBLIC QUEUE ERROR]', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return addCorsHeaders(req, NextResponse.json({ error: error.message }, { status: 500 }));
     }
 }

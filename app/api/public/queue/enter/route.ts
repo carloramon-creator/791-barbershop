@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { findOrCreateClientByPhone } from '@/lib/clients';
+import { addCorsHeaders } from '@/lib/server-utils';
+
+export async function OPTIONS(req: Request) {
+    return addCorsHeaders(req, new NextResponse(null, { status: 200 }));
+}
 
 /**
  * Endpoint PÚBLICO para cliente entrar na fila de um barbeiro específico.
@@ -11,11 +16,12 @@ export async function POST(req: Request) {
         const body = await req.json();
         const { barber_id, client_name, client_phone, tenant_id, cpf, photo_url } = body;
 
-        if (!client_name || !client_phone) {
-            return NextResponse.json(
+        let client_name_sanitized = client_name;
+        if (!client_name_sanitized || !client_phone) {
+            return addCorsHeaders(req, NextResponse.json(
                 { error: 'Nome e telefone são obrigatórios para entrar na fila.' },
                 { status: 400 }
-            );
+            ));
         }
 
         // Determinar tenant_id
@@ -31,7 +37,7 @@ export async function POST(req: Request) {
         }
 
         if (!finalTenantId) {
-            return NextResponse.json({ error: 'Nenhuma barbearia encontrada' }, { status: 404 });
+            return addCorsHeaders(req, NextResponse.json({ error: 'Nenhuma barbearia encontrada' }, { status: 404 }));
         }
 
         // 1. Encontrar ou criar cliente
@@ -58,11 +64,11 @@ export async function POST(req: Request) {
             .maybeSingle();
 
         if (existingQueue) {
-            return NextResponse.json({
+            return addCorsHeaders(req, NextResponse.json({
                 error: 'CLIENT_ALREADY_IN_QUEUE',
                 message: 'Você já está na fila. Conclua o atendimento atual antes de entrar novamente.',
                 ticketId: existingQueue.id
-            }, { status: 409 });
+            }, { status: 409 }));
         }
 
         // 3. Selecionar Barbeiro
@@ -77,7 +83,7 @@ export async function POST(req: Request) {
                 .eq('is_active', true);
 
             if (!barbers || barbers.length === 0) {
-                return NextResponse.json({ error: 'Nenhum barbeiro disponível' }, { status: 404 });
+                return addCorsHeaders(req, NextResponse.json({ error: 'Nenhum barbeiro disponível' }, { status: 404 }));
             }
 
             // Contar fila de cada barbeiro
@@ -105,7 +111,7 @@ export async function POST(req: Request) {
             .single();
 
         if (barberError || !barber) {
-            return NextResponse.json({ error: 'Barbeiro não encontrado' }, { status: 404 });
+            return addCorsHeaders(req, NextResponse.json({ error: 'Barbeiro não encontrado' }, { status: 404 }));
         }
 
         // 4. Buscar maior posição na fila
@@ -139,9 +145,9 @@ export async function POST(req: Request) {
 
         if (insertError) throw insertError;
 
-        return NextResponse.json(queueEntry);
+        return addCorsHeaders(req, NextResponse.json(queueEntry));
     } catch (error: any) {
         console.error('[PUBLIC QUEUE ENTER ERROR]', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return addCorsHeaders(req, NextResponse.json({ error: error.message }, { status: 500 }));
     }
 }
