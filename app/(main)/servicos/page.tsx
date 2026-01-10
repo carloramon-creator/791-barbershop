@@ -262,7 +262,7 @@ export default function ServicosPage() {
                                         type="number"
                                         step="0.01"
                                         value={editingService.price}
-                                        onChange={(e) => setEditingService({ ...editingService, price: Number(e.target.value) })}
+                                        onChange={(e) => setEditingService({ ...editingService, price: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
                                         className="bg-slate-800 border-slate-700"
                                     />
                                 </div>
@@ -271,8 +271,8 @@ export default function ServicosPage() {
                                     <Input
                                         id="edit-duration"
                                         type="number"
-                                        value={editingService.duration_minutes || 30}
-                                        onChange={(e) => setEditingService({ ...editingService, duration_minutes: Number(e.target.value) })}
+                                        value={editingService.duration_minutes}
+                                        onChange={(e) => setEditingService({ ...editingService, duration_minutes: e.target.value === '' ? 0 : parseInt(e.target.value) })}
                                         className="bg-slate-800 border-slate-700"
                                     />
                                 </div>

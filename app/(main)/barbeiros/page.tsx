@@ -23,14 +23,14 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Edit, Camera, RefreshCw, Users, ShieldAlert, FileText, History } from 'lucide-react';
+import { Edit, Camera, RefreshCw, Users, ShieldAlert, FileText, History, Scissors } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabaseClient } from '@/lib/supabase-client';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BarberClosingDialog } from '@/components/barbers/barber-closing-dialog';
 
-import { Barber, Sale } from '@/lib/types';
+import { Barber, Sale, Service } from '@/lib/types';
 
 export default function BarbeirosPage() {
     const [barbeiros, setBarbeiros] = useState<Barber[]>([]);
@@ -46,6 +46,11 @@ export default function BarbeirosPage() {
     const [closingBarber, setClosingBarber] = useState<Barber | null>(null);
     const [reportBarbers, setReportBarbers] = useState<string[]>([]);
 
+    // Services
+    const [services, setServices] = useState<Service[]>([]);
+    const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+    const [loadingServices, setLoadingServices] = useState(false);
+
     const { role } = useAuth();
 
     const fetchBarbeiros = async () => {
@@ -59,8 +64,18 @@ export default function BarbeirosPage() {
         }
     };
 
+    const fetchServices = async () => {
+        try {
+            const data = await Api.getServices();
+            setServices(data || []);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     useEffect(() => {
         fetchBarbeiros();
+        fetchServices();
     }, []);
 
     const handlePhotoUpload = async (file: File) => {
@@ -93,6 +108,10 @@ export default function BarbeirosPage() {
         try {
             if (!editingBarber || !editingBarber.name) return alert('Nome é obrigatório');
             await Api.updateBarber(editingBarber.id, editingBarber as unknown as Record<string, unknown>);
+
+            // Update services
+            await Api.updateBarberServices(editingBarber.id, selectedServiceIds);
+
             setIsEditOpen(false);
             setEditingBarber(null);
             fetchBarbeiros();
@@ -146,7 +165,7 @@ export default function BarbeirosPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-2">
-                        <Users className="text-blue-500" /> Equipe de Barbeiros
+                        <Users className="text-blue-500" /> Equipe de Profissionais
                     </h1>
                     <p className="text-slate-400 font-medium">Visualize o status e disponibilidade dos profissionais.</p>
                 </div>
@@ -179,7 +198,7 @@ export default function BarbeirosPage() {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="block mb-2">Barbeiros</Label>
+                                    <Label className="block mb-2">Profissionais</Label>
                                     <div className="flex flex-wrap gap-4 bg-slate-800/50 p-4 rounded-lg">
                                         <div className="flex items-center space-x-2 w-full border-b border-slate-700 pb-2 mb-2">
                                             <Checkbox id="all"
@@ -226,7 +245,7 @@ export default function BarbeirosPage() {
                 <ShieldAlert className="text-blue-400 w-5 h-5 mt-0.5" />
                 <div className="text-sm">
                     <p className="text-blue-100 font-bold">Otimização do Sistema</p>
-                    <p className="text-blue-400/80">Para adicionar novos barbeiros, utilize o botão <span className="text-white font-bold">Gerenciar Equipe</span>. Lá você define e-mail, foto, endereço e comissões de forma centralizada.</p>
+                    <p className="text-blue-400/80">Para adicionar novos profissionais, utilize o botão <span className="text-white font-bold">Gerenciar Equipe</span>. Lá você define e-mail, foto, endereço e comissões de forma centralizada.</p>
                 </div>
             </div>
 
@@ -234,7 +253,7 @@ export default function BarbeirosPage() {
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Editar Perfil Público do Barbeiro</DialogTitle>
+                        <DialogTitle>Editar Perfil Público do Profissional</DialogTitle>
                     </DialogHeader>
                     {editingBarber && (
                         <div className="space-y-4 py-4">
@@ -269,14 +288,14 @@ export default function BarbeirosPage() {
                                     />
                                 </div>
                                 <div className="flex items-center space-x-2 col-span-2 pt-2">
-                                    <Label className="flex-1">Barbeiro Ativo</Label>
+                                    <Label className="flex-1">Profissional Ativo</Label>
                                     <Button
                                         variant={editingBarber.is_active ? 'default' : 'outline'}
                                         size="sm"
                                         onClick={() => {
                                             // Se está tentando desativar, pede confirmação
                                             if (editingBarber.is_active) {
-                                                if (confirm(`⚠️ ATENÇÃO: Deseja realmente DESATIVAR ${editingBarber.name}?\n\nO barbeiro ficará "FORA DE OPERAÇÃO" e não aparecerá mais para os clientes.\n\nEsta ação deve ser usada apenas quando o barbeiro não trabalha mais na barbearia.`)) {
+                                                if (confirm(`⚠️ ATENÇÃO: Deseja realmente DESATIVAR ${editingBarber.name}?\n\nO profissional ficará "FORA DE OPERAÇÃO" e não aparecerá mais para os clientes.\n\nEsta ação deve ser usada apenas quando o profissional não trabalha mais na barbearia.`)) {
                                                     setEditingBarber({ ...editingBarber, is_active: false });
                                                 }
                                             } else {
@@ -290,6 +309,39 @@ export default function BarbeirosPage() {
                                     </Button>
                                 </div>
                             </div>
+
+                            <div className="space-y-2 col-span-2 pt-4 border-t border-slate-800">
+                                <Label className="flex items-center gap-2 mb-2">
+                                    <Scissors size={16} className="text-blue-500" />
+                                    Serviços Habilitados
+                                </Label>
+                                <div className="bg-slate-950/50 p-3 rounded-lg border border-slate-800 max-h-[150px] overflow-y-auto space-y-2">
+                                    {loadingServices ? (
+                                        <p className="text-xs text-slate-500 text-center">Carregando serviços...</p>
+                                    ) : services.length === 0 ? (
+                                        <p className="text-xs text-slate-500 text-center">Nenhum serviço cadastrado.</p>
+                                    ) : (
+                                        services.map(service => (
+                                            <div key={service.id} className="flex items-center space-x-2 hover:bg-slate-800/50 p-1 rounded transition-colors">
+                                                <Checkbox
+                                                    id={`srv-${service.id}`}
+                                                    checked={selectedServiceIds.includes(service.id)}
+                                                    onCheckedChange={(checked) => {
+                                                        if (checked) setSelectedServiceIds([...selectedServiceIds, service.id]);
+                                                        else setSelectedServiceIds(selectedServiceIds.filter(id => id !== service.id));
+                                                    }}
+                                                    className="border-slate-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                                />
+                                                <Label htmlFor={`srv-${service.id}`} className="text-sm cursor-pointer flex-1 user-select-none">
+                                                    {service.name}
+                                                </Label>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                                <p className="text-[10px] text-slate-500">Selecione quais serviços este profissional pode realizar.</p>
+                            </div>
+
                         </div>
                     )}
                     <DialogFooter>
@@ -302,7 +354,7 @@ export default function BarbeirosPage() {
                 <TableHeader>
                     <TableRow className="border-slate-800 hover:bg-transparent">
                         <TableHead className="text-slate-500 w-[80px]">Foto</TableHead>
-                        <TableHead className="text-slate-500">Barbeiro</TableHead>
+                        <TableHead className="text-slate-500">Profissional</TableHead>
                         <TableHead className="text-slate-500">Status</TableHead>
                         <TableHead className="text-slate-500">Atendimento</TableHead>
                         <TableHead className="text-slate-500 text-right">Ações</TableHead>
@@ -312,7 +364,7 @@ export default function BarbeirosPage() {
                     {loading ? (
                         <TableRow><TableCell colSpan={5} className="text-center py-8 text-slate-500">Carregando...</TableCell></TableRow>
                     ) : barbeiros.length === 0 ? (
-                        <TableRow><TableCell colSpan={5} className="text-center py-8 text-slate-500">Nenhum barbeiro ativo encontrado.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={5} className="text-center py-8 text-slate-500">Nenhum profissional ativo encontrado.</TableCell></TableRow>
                     ) : barbeiros.map((b) => (
                         <TableRow key={b.id} className={cn("border-slate-800 group hover:bg-slate-900/50 transition-colors", !b.is_active && "opacity-50")}>
                             <TableCell>
@@ -365,9 +417,20 @@ export default function BarbeirosPage() {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => {
+                                    onClick={async () => {
                                         setEditingBarber(b);
                                         setIsEditOpen(true);
+                                        // Load services
+                                        setLoadingServices(true);
+                                        try {
+                                            const ids = await Api.getBarberServices(b.id);
+                                            setSelectedServiceIds(ids || []);
+                                        } catch (e) {
+                                            console.error(e);
+                                            setSelectedServiceIds([]);
+                                        } finally {
+                                            setLoadingServices(false);
+                                        }
                                     }}
                                     className="text-slate-600 hover:text-white transition-colors"
                                 >

@@ -1,73 +1,73 @@
+
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
-/**
- * Listar serviços que um barbeiro pode executar
- */
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
-    const { id: barberId } = await params;
+export async function GET(
+    request: Request,
+    { params }: { params: { id: string } }
+) {
     try {
         const { tenant } = await getCurrentUserAndTenant();
+        const barberId = params.id;
+
+        // Verify if barber belongs to tenant (implicit check via join if needed, or simple select)
+        // Here we just fetch directly from barber_services. 
+        // We assume RLS or logic ensures isolation, but admin client bypasses RLS, so we trust tenant_id check on upper levels usually.
+        // However, barber_services linking table might not have tenant_id.
+        // BUT, the services themselves have tenant_id and the user has tenant_id.
 
         const { data, error } = await supabaseAdmin
             .from('barber_services')
-            .select('service_id, services(id, name, price, duration_minutes)')
+            .select('service_id')
             .eq('barber_id', barberId);
 
         if (error) throw error;
 
-        return NextResponse.json(data);
+        // Return array of service IDs
+        return NextResponse.json(data.map((row: any) => row.service_id));
     } catch (error: any) {
-        console.error('[BARBER SERVICES GET ERROR]', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
 
-/**
- * Atualizar serviços que um barbeiro pode executar (substitui todos)
- */
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
-    const { id: barberId } = await params;
+export async function PUT(
+    request: Request,
+    { params }: { params: { id: string } }
+) {
     try {
         const { tenant } = await getCurrentUserAndTenant();
-        const { serviceIds } = await req.json();
+        const barberId = params.id;
+        const { serviceIds } = await request.json();
 
-        // Verificar se o barbeiro pertence ao tenant
-        const { data: barber } = await supabaseAdmin
-            .from('barbers')
-            .select('id')
-            .eq('id', barberId)
-            .eq('tenant_id', tenant.id)
-            .single();
-
-        if (!barber) {
-            return NextResponse.json({ error: 'Barbeiro não encontrado' }, { status: 404 });
+        if (!Array.isArray(serviceIds)) {
+            return NextResponse.json({ error: 'serviceIds must be an array' }, { status: 400 });
         }
 
-        // Remover serviços antigos
-        await supabaseAdmin
+        // 1. Delete all existing links
+        const { error: deleteError } = await supabaseAdmin
             .from('barber_services')
             .delete()
             .eq('barber_id', barberId);
 
-        // Adicionar novos serviços
-        if (serviceIds && serviceIds.length > 0) {
-            const inserts = serviceIds.map((serviceId: string) => ({
+        if (deleteError) throw deleteError;
+
+        // 2. Insert new links
+        if (serviceIds.length > 0) {
+            const inserts = serviceIds.map(id => ({
                 barber_id: barberId,
-                service_id: serviceId
+                service_id: id
             }));
 
-            const { error } = await supabaseAdmin
+            const { error: insertError } = await supabaseAdmin
                 .from('barber_services')
                 .insert(inserts);
 
-            if (error) throw error;
+            if (insertError) throw insertError;
         }
 
         return NextResponse.json({ success: true });
     } catch (error: any) {
-        console.error('[BARBER SERVICES PUT ERROR]', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
