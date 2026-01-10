@@ -17,96 +17,100 @@ export async function getCurrentUserAndTenant() {
         if (!authError && user) {
             userAuthId = user.id;
             userObj = user;
-            console.log('[BACKEND] User validado via standard client. ID:', user.id);
+            console.log('[BACKEND] ✅ User validado via standard client:', user.id);
         } else {
-            console.warn('[BACKEND] Falha na validação via client standard:', authError?.message);
-            const cookieStore = await cookies();
-            console.log('[BACKEND] Cookies list:', cookieStore.getAll().map(c => c.name).join(', '));
-
-            // Fallback manual se o standard falhar por algum motivo de header
-            const headersList = await headers();
-            const authHeader = headersList.get('authorization');
-            if (authHeader && authHeader.startsWith('Bearer ')) {
-                const token = authHeader.substring(7);
-                const { data: { user: adminUser }, error: adminError } = await supabaseAdmin.auth.getUser(token);
-                if (!adminError && adminUser) {
-                    userAuthId = adminUser.id;
-                    userObj = adminUser;
-                    console.log('[BACKEND] User validado via fallback admin. ID:', adminUser.id);
-                }
-            }
+            console.warn('[BACKEND] ⚠️ standard client falhou:', authError?.message);
         }
 
-        // 2. Fallback manual melhorado para Cookies (Next.js context)
+        // 2. Fallback manual AGRESSIVO para Cookies (Next.js context)
         if (!userAuthId) {
-            console.log('[BACKEND] standard getUser falhou. Tentando busca manual em cookies...');
             const cookieStore = await cookies();
             const allCookies = cookieStore.getAll();
+            console.log('[BACKEND] 🔍 Buscando em', allCookies.length, 'cookies:', allCookies.map(c => c.name).join(', '));
 
-            // Padrão do @supabase/ssr: sb-<project-ref>-auth-token
-            // Pode estar quebrado em múltiplos cookies .0, .1 se for grande
             let accessToken: string | null = null;
 
-            // Tenta encontrar o token de acesso nos cookies
+            // Tenta encontrar token do Supabase SSR (sb-xxxxx-auth-token)
             const authCookies = allCookies.filter(c => c.name.endsWith('-auth-token'));
 
             if (authCookies.length > 0) {
-                // Ordenar cookies por sufixo numérico (.0, .1, etc.) se existirem
+                console.log('[BACKEND] 🍪 Cookies de auth encontrados:', authCookies.map(c => c.name));
+                // Ordenar cookies por sufixo numérico (.0, .1, etc.)
                 authCookies.sort((a, b) => {
                     const getIndex = (name: string) => {
                         const parts = name.split('.');
-                        return parts.length > 1 ? parseInt(parts[parts.length - 1]) : -1;
+                        const last = parts[parts.length - 1];
+                        return (parts.length > 1 && !isNaN(parseInt(last))) ? parseInt(last) : -1;
                     };
                     return getIndex(a.name) - getIndex(b.name);
                 });
 
                 const rawValue = authCookies.map(c => c.value).join('');
                 try {
-                    const parsed = JSON.parse(decodeURIComponent(rawValue));
-                    if (Array.isArray(parsed) && parsed[0]) {
-                        accessToken = parsed[0];
-                    } else if (parsed.access_token) {
-                        accessToken = parsed.access_token;
+                    const decoded = decodeURIComponent(rawValue);
+                    // Supabase SSR salva como array JSON: ["access_token", "refresh_token", ...]
+                    if (decoded.trim().startsWith('[')) {
+                        const parsed = JSON.parse(decoded);
+                        accessToken = Array.isArray(parsed) ? parsed[0] : (parsed.access_token || null);
+                    } else if (decoded.trim().startsWith('{')) {
+                        const parsed = JSON.parse(decoded);
+                        accessToken = parsed.access_token || null;
                     } else {
-                        // Se não for JSON ou array esperado, tenta usar o valor bruto se parecer um JWT
-                        if (rawValue.length > 50) accessToken = rawValue;
+                        accessToken = decoded;
                     }
                 } catch (e) {
+                    console.error('[BACKEND] ❌ Erro ao parsear cookie de auth:', e);
+                    // Tenta usar o valor bruto se parecer um JWT
                     if (rawValue.length > 50) accessToken = rawValue;
                 }
             }
 
-            // Fallback para cookies de sessão antigos
+            // Fallback para outros cookies (session, etc)
             if (!accessToken) {
                 for (const cookie of allCookies) {
-                    if (cookie.name.includes('session') && cookie.value.includes('{')) {
-                        try {
-                            const parsed = JSON.parse(decodeURIComponent(cookie.value));
-                            if (parsed.access_token) accessToken = parsed.access_token;
-                        } catch (e) { }
+                    if (cookie.name.toLowerCase().includes('session') && cookie.value.length > 100) {
+                        accessToken = cookie.value;
+                        console.log('[BACKEND] 🍪 Token extraído do cookie de session:', cookie.name);
+                        break;
                     }
                 }
             }
 
-            if (accessToken && !userAuthId) {
-                console.log('[BACKEND] Token encontrado. Validando via supabaseAdmin...');
-                const { data: { user: verifiedUser }, error: verifyError } = await supabaseAdmin.auth.getUser(accessToken);
+            if (accessToken) {
+                console.log('[BACKEND] 🔐 Token encontrado. Validando via supabaseAdmin...');
+                // Limpeza de caracteres se estiver escapado
+                const cleanToken = accessToken.replace(/^"|"$/g, '');
+
+                const { data: { user: verifiedUser }, error: verifyError } = await supabaseAdmin.auth.getUser(cleanToken);
                 if (!verifyError && verifiedUser) {
                     userAuthId = verifiedUser.id;
                     userObj = verifiedUser;
-                    console.log('[BACKEND] User validado via supabaseAdmin + Token de Cookie.');
+                    console.log('[BACKEND] ✅ User validado via Admin + Token de Cookie.');
                 } else {
-                    console.warn('[BACKEND] Falha ao validar token do cookie:', verifyError?.message);
+                    console.warn('[BACKEND] ❌ Falha na validação do token manual:', verifyError?.message);
                 }
             }
         }
 
         if (!userAuthId) {
-            console.error('[BACKEND] Falha total de autenticação. Cookies presentes:', (await cookies()).getAll().map(c => c.name).join(', '));
+            // TENTATIVA FINAL: Ver se há headers de auth
+            const headersList = await headers();
+            const authHeader = headersList.get('authorization');
+            if (authHeader?.startsWith('Bearer ')) {
+                const token = authHeader.substring(7);
+                const { data: { user: adminUser }, error: adminError } = await supabaseAdmin.auth.getUser(token);
+                if (!adminError && adminUser) {
+                    userAuthId = adminUser.id;
+                    userObj = adminUser;
+                }
+            }
+        }
+
+        if (!userAuthId) {
             throw new Error('Usuário não autenticado ou sessão expirada');
         }
 
-        console.log('[BACKEND] User autenticado (final):', userAuthId);
+        console.log('[BACKEND] 👤 Autenticado:', userAuthId);
 
         // 3. Atualizar last_seen_at (presença) em background
         supabaseAdmin.from('users').update({ last_seen_at: new Date() }).eq('id', userAuthId).then(({ error }) => {
