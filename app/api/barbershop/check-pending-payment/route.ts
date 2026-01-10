@@ -52,25 +52,60 @@ export async function GET(req: Request) {
                 });
 
                 try {
-                    const today = new Date().toISOString().split('T')[0];
-                    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                    const response = await inter.listBillings(yesterday, today);
-                    const items = response.cobrancas || response.content || [];
+                    let found: any = null;
+                    const txid = charge.metadata.txid;
 
-                    const found = items.find((it: any) => it.seuNumero === seuNumero);
+                    // Estratégia 1: Busca direta por UUID (Mais rápido e garantido)
+                    if (txid && txid !== 'N/A') {
+                        try {
+                            console.log(`[POLLING] Buscando direto por UUID: ${txid}`);
+                            const directRes = await inter.getBillingBySolicitacao(txid);
+                            // Normaliza a resposta (pode vir aninhada)
+                            if (directRes.cobranca) {
+                                found = {
+                                    ...directRes.cobranca,
+                                    boleto: directRes.boleto,
+                                    pix: directRes.pix
+                                };
+                            } else {
+                                found = directRes;
+                            }
+                        } catch (e) {
+                            console.warn(`[POLLING] Falha na busca direta por UUID: ${txid}`);
+                        }
+                    }
+
+                    // Estratégia 2: Listagem (Fallback)
+                    if (!found) {
+                        console.log('[POLLING] Buscando por listagem (fallback)...');
+                        const today = new Date().toISOString().split('T')[0];
+                        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                        const response = await inter.listBillings(yesterday, today);
+                        const items = response.cobrancas || response.content || [];
+                        found = items.find((it: any) => it.seuNumero === seuNumero);
+                    }
+
                     if (found) {
                         const isPix = charge.metadata.method === 'pix_inter';
                         const meta = {
                             ...charge.metadata,
-                            nosso_numero: found.nossoNumero || found.cobranca?.nossoNumero,
+                            nosso_numero: found.nossoNumero || found.boleto?.nossoNumero || found.cobranca?.nossoNumero,
                             codigo_barras: found.codigoBarras || found.boleto?.codigoBarras,
                             linha_digitavel: found.linhaDigitavel || found.boleto?.linhaDigitavel,
-                            pix_payload: found.pixCopiaECola || found.pix?.pixCopiaECola,
-                            txid: found.txid || found.pix?.txid || found.codigoSolicitacao
+                            pix_payload: found.pixCopiaECola || found.pix?.pixCopiaECola || found.pixCopiaECola,
+                            txid: found.codigoSolicitacao || found.cobranca?.codigoSolicitacao || charge.metadata.txid
                         };
-                        await supabaseAdmin.from('finance').update({ metadata: meta }).eq('id', charge.id);
-                        charge.metadata = meta;
-                        isReady = true;
+
+                        // Só atualiza se tiver novidade útil
+                        if (meta.nosso_numero && meta.nosso_numero !== 'PENDING') {
+                            await supabaseAdmin.from('finance').update({ metadata: meta }).eq('id', charge.id);
+                            charge.metadata = meta;
+                            isReady = true;
+                        } else if (isPix && meta.pix_payload) {
+                            await supabaseAdmin.from('finance').update({ metadata: meta }).eq('id', charge.id);
+                            charge.metadata = meta;
+                            isReady = true;
+                        }
                     }
                 } catch (e) {
                     console.error('[POLLING INTER ERROR]', e);
