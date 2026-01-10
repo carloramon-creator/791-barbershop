@@ -11,7 +11,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         const body = await req.json();
 
         // Regra Especial: Bloquear 'online' ou 'busy' se o usuário não estiver logado/ativo
-        if (body.status === 'online' || body.status === 'busy') {
+        if (body.status === 'available' || body.status === 'busy') {
             const { data: barber } = await supabaseAdmin
                 .from('barbers')
                 .select('user_id')

@@ -143,7 +143,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         await supabaseAdmin
             .from('finance')
             .insert({
-                tenant_id: null,
+                tenant_id: tenantId, // Associar ao tenant para aparecer no histórico dele
                 type: 'revenue',
                 value: amount,
                 description: `Assinatura SaaS - Plano ${plan} (Stripe - Checkout)`,
@@ -151,7 +151,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
                 is_paid: true,
                 metadata: {
                     stripe_session_id: session.id,
-                    stripe_customer_id: session.customer
+                    stripe_customer_id: session.customer,
+                    method: 'stripe_card'
                 }
             });
     }
@@ -191,7 +192,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
     await supabaseAdmin
         .from('finance')
         .insert({
-            tenant_id: null,
+            tenant_id: tenant.id, // Associar ao tenant
             type: 'revenue',
             value: amount,
             description: `Renovação SaaS - Plano ${tenant.plan} (Stripe)`,
@@ -200,7 +201,8 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
             metadata: {
                 stripe_invoice_id: invoice.id,
                 stripe_subscription_id: subscriptionId,
-                stripe_customer_id: customerId
+                stripe_customer_id: customerId,
+                method: 'stripe_card'
             }
         });
 

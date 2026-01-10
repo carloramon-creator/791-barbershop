@@ -273,7 +273,7 @@ export default function BarberPage() {
                                     <Button
                                         size="sm"
                                         variant={currentBarber.status === 'available' ? 'default' : 'outline'}
-                                        onClick={() => handleUpdateStatus(currentBarber.barber_id, currentBarber.status === 'available' ? 'unavailable' : 'available')}
+                                        onClick={() => handleUpdateStatus(currentBarber.barber_id, currentBarber.status === 'available' ? 'offline' : 'available')}
                                         className={cn(
                                             "h-10 px-4 rounded-lg font-black uppercase text-[10px] tracking-widest transition-all",
                                             currentBarber.status === 'available'

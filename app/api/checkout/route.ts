@@ -212,6 +212,8 @@ export async function POST(req: Request) {
             console.log('Erro ao atualizar endereço do cliente Stripe:', updateError);
         }
 
+        const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://791barber.com';
+
         // 3. Criar Checkout Session Dinâmica
         const session = await stripeClient.checkout.sessions.create({
             customer: customerId,
@@ -235,8 +237,8 @@ export async function POST(req: Request) {
                 },
             ],
             mode: 'subscription',
-            success_url: `${process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://791barber.com'}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://791barber.com'}/checkout/cancel`,
+            success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${origin}/checkout/cancel`,
             metadata: {
                 tenant_id: tenant.id,
                 plan: plan,
