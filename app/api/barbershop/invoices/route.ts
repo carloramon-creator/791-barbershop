@@ -91,24 +91,26 @@ export async function GET(req: Request) {
             }
         }
 
-        // 2.1 Sync Stripe (GOL DA VITÓRIA ⚽)
+        // 2.1 Sync Stripe (GOL DA VITÓRIA - VERSÃO SEGURA ⚽)
         let stripeCustomerId = tenant.stripe_customer_id;
         try {
             const { stripe } = await import('@/lib/stripe-server');
 
-            console.log(`[STRIPE-SYNC] Iniciando sync para ${tenant.name}. CustomerID: ${stripeCustomerId || 'vazio'}`);
-
-            // Busca customer por emails se estiver vazio
+            // Busca customer por emails vinculados estritamente ao tenant ou user atual
+            // REMOVIDO HARDCODE DE EMAILS GLOBAIS PARA MANTER A BLINDAGEM (ISOLATION)
             if (!stripeCustomerId) {
-                const searchEmails = [tenant.email, user.email, 'ramon@791solucoes.com.br', 'carloramon@gmail.com'].filter(Boolean);
+                // SÓ busca pelos emails que pertencem a este Tenant específico ou ao usuário logado
+                const searchEmails = [tenant.email, user.email].filter(Boolean);
                 const uniqueEmails = Array.from(new Set(searchEmails as string[]));
-                console.log(`[STRIPE-SYNC] Buscando customer por emails: ${uniqueEmails.join(', ')}`);
+
+                console.log(`[STRIPE-SYNC] Buscando customer por emails vinculados a este tenant: ${uniqueEmails.join(', ')}`);
 
                 for (const email of uniqueEmails) {
                     const customersQuery = await stripe.customers.list({ email, limit: 1 });
                     if (customersQuery.data.length > 0) {
                         stripeCustomerId = customersQuery.data[0].id;
                         console.log(`[STRIPE-SYNC] Customer encontrado para ${email}: ${stripeCustomerId}`);
+                        // Associa permanentemente este Stripe Customer a este Tenant
                         await supabaseAdmin.from('tenants').update({ stripe_customer_id: stripeCustomerId }).eq('id', tenant.id);
                         break;
                     }
@@ -116,9 +118,8 @@ export async function GET(req: Request) {
             }
 
             if (stripeCustomerId) {
-                // A. Checkout Sessions
+                // A. Checkout Sessions (Sempre filtrado pelo customer_id do tenant)
                 const sessions = await stripe.checkout.sessions.list({ customer: stripeCustomerId, limit: 10 });
-                console.log(`[STRIPE-SYNC] Encontradas ${sessions.data.length} sessões`);
 
                 for (const session of sessions.data) {
                     if (session.payment_status === 'paid') {
@@ -126,10 +127,11 @@ export async function GET(req: Request) {
                             .from('finance')
                             .select('id, is_paid')
                             .eq('metadata->>stripe_session_id', session.id)
+                            .eq('tenant_id', tenant.id) // Reforço de isolamento
                             .maybeSingle();
 
                         if (!exists || !exists.is_paid) {
-                            console.log(`[STRIPE-SYNC] ✅ Sincronizando sessão paga: ${session.id}`);
+                            console.log(`[STRIPE-SYNC] ✅ Sincronizando sessão paga deste tenant: ${session.id}`);
                             const planFromMeta = session.metadata?.plan || 'premium';
 
                             await supabaseAdmin.from('tenants').update({
@@ -156,21 +158,21 @@ export async function GET(req: Request) {
                     }
                 }
 
-                // B. Invoices
+                // B. Invoices (Sempre filtrado pelo customer_id do tenant)
                 const invoicesStripe = await stripe.invoices.list({ customer: stripeCustomerId, limit: 10, status: 'paid' });
-                console.log(`[STRIPE-SYNC] Encontradas ${invoicesStripe.data.length} faturas`);
 
                 for (const inv of invoicesStripe.data) {
                     const { data: exists } = await supabaseAdmin
                         .from('finance')
                         .select('id')
                         .eq('metadata->>stripe_invoice_id', inv.id)
+                        .eq('tenant_id', tenant.id) // Reforço de isolamento
                         .maybeSingle();
 
                     if (!exists) {
                         const amount = inv.amount_paid / 100;
                         if (amount > 0) {
-                            console.log(`[STRIPE-SYNC] ✅ Nova fatura paga: ${inv.id}`);
+                            console.log(`[STRIPE-SYNC] ✅ Nova fatura paga deste tenant: ${inv.id}`);
                             await supabaseAdmin.from('finance').insert({
                                 tenant_id: tenant.id,
                                 type: 'revenue',
@@ -192,7 +194,7 @@ export async function GET(req: Request) {
             console.error('[STRIPE-SYNC ERROR]', e);
         }
 
-        // 3. Buscar faturas atualizadas
+        // 3. Buscar faturas atualizadas (Garante que só vê as faturas do seu tenant_id)
         const { data: invoices, error } = await supabaseAdmin
             .from('finance')
             .select('*')
