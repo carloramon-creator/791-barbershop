@@ -5,62 +5,67 @@ import { Plan } from './backend-types';
 
 /**
  * UTILITY PRINCIPAL DE AUTENTICAÇÃO (SSR)
+ * Refatorado para lidar com cookies fragmentados de forma robusta no Railway.
  */
 export async function getCurrentUserAndTenant() {
     try {
         const cookieStore = await cookies();
         const allCookies = cookieStore.getAll();
 
-        console.log(`[AUTH-DEBUG] Verificando cookies. Total: ${allCookies.length}`);
-
-        // Logs específicos para depuração (vão aparecer no log da Railway)
-        allCookies.forEach(c => {
-            if (c.name.includes('auth') || c.name.includes('token') || c.name.includes('impersonate')) {
-                console.log(`[AUTH-DEBUG] Cookie encontrado: ${c.name} (Value Start: ${c.value?.substring(0, 10)}...)`);
-            }
-        });
+        console.log(`[AUTH-RESILIENCE] Iniciando validação. Cookies: ${allCookies.length}`);
 
         let userAuthId: string | null = null;
         let userObj: any = null;
 
-        // 1. TENTATIVA PADRÃO
+        // 1. TENTATIVA PADRÃO via SDK
         const client = await supabase();
         const { data: { user }, error: authError } = await client.auth.getUser();
 
         if (user && !authError) {
             userAuthId = user.id;
             userObj = user;
-            console.log(`[AUTH-DEBUG] Sessão validada pelo Supabase SDK: ${user.email}`);
+            console.log(`[AUTH-RESILIENCE] SDK validado: ${user.email}`);
         } else {
-            console.log(`[AUTH-DEBUG] Supabase SDK falhou. Erro: ${authError?.message || 'No user'}. Tentando extração manual...`);
+            console.log(`[AUTH-RESILIENCE] SDK falhou. Tentando agrupamento manual de cookies...`);
 
-            // 2. BUSCA MANUAL EM TODOS OS COOKIES (Brute Force para tokens JWT)
-            for (const c of allCookies) {
-                const val = c.value?.trim();
-                if (!val || val.length < 40) continue;
+            // 2. AGRUPAMENTO DE FRAGMENTOS (sb-xxxxx-auth-token.0, .1 ...)
+            const groups: Record<string, string[]> = {};
+            allCookies.forEach(c => {
+                const baseName = c.name.split('.')[0];
+                if (!groups[baseName]) groups[baseName] = [];
+                // Guardamos o nome completo para ordenar depois pelas extensões (.0, .1)
+                groups[baseName].push(c.name + ':::' + c.value);
+            });
+
+            for (const base in groups) {
+                const parts = groups[base];
+                // Sorteia para garantir ordem .0, .1, .2
+                parts.sort((a, b) => a.localeCompare(b));
+                const combinedValue = parts.map(p => p.split(':::')[1]).join('');
+
+                if (combinedValue.length < 50) continue;
 
                 let token: string | null = null;
                 try {
-                    const decoded = decodeURIComponent(val);
+                    const decoded = decodeURIComponent(combinedValue);
                     if (decoded.startsWith('[') && decoded.includes('.')) {
                         token = JSON.parse(decoded)[0];
                     } else if (decoded.startsWith('{')) {
-                        const parsed = JSON.parse(decoded);
-                        token = parsed.access_token || parsed.token;
+                        token = JSON.parse(decoded).access_token || JSON.parse(decoded).token;
                     } else if (decoded.split('.').length === 3) {
                         token = decoded.replace(/^"|"$/g, '');
                     }
                 } catch (e) {
-                    if (val.split('.').length === 3) token = val;
+                    if (combinedValue.split('.').length === 3) token = combinedValue;
                 }
 
-                if (token && token.length > 50 && token.includes('.')) {
-                    console.log(`[AUTH-DEBUG] Testando token no cookie ${c.name}...`);
+                if (token && token.length > 50) {
+                    console.log(`[AUTH-RESILIENCE] Testando token agrupado do grupo: ${base}`);
                     const { data: { user: adminUser }, error: adminError } = await supabaseAdmin.auth.getUser(token);
                     if (adminUser && !adminError) {
                         userAuthId = adminUser.id;
                         userObj = adminUser;
-                        console.log(`[AUTH-DEBUG] Sucesso! Token validado para ${adminUser.email}`);
+                        console.log(`[AUTH-RESILIENCE] Sucesso manual! Usuário: ${adminUser.email}`);
                         break;
                     }
                 }
@@ -71,7 +76,7 @@ export async function getCurrentUserAndTenant() {
             throw new Error('Usuário não autenticado ou sessão expirada');
         }
 
-        // 3. BUSCAR PERFIL NO BANCO
+        // 3. BUSCAR PERFIL
         const { data: userData, error: profileError } = await supabaseAdmin
             .from('users')
             .select('*')
@@ -79,29 +84,28 @@ export async function getCurrentUserAndTenant() {
             .single();
 
         if (profileError || !userData) {
-            throw new Error(`Perfil não localizado no banco para ${userAuthId}.`);
+            throw new Error('Perfil de usuário não localizado.');
         }
 
-        // --- TRAVA DE SEGURANÇA RAMON ---
+        // Segurança Ramon
+        const userEmail = (userData.email || '').toLowerCase();
         const isSystemAdmin =
             userData.is_system_admin === true ||
-            userData.email === 'ramon@791solucoes.com.br' ||
+            userEmail === 'ramon@791solucoes.com.br' ||
             userData.role === 'admin';
 
         let tenantIdToUse = userData.tenant_id;
 
-        // 4. SUPORTE A IMPERSONATE (TRAVADO PARA ADMIN)
+        // Impersonate
         const impersonateCookie = cookieStore.get('impersonate_tenant_id');
         if (isSystemAdmin && impersonateCookie?.value) {
-            console.log(`[AUTH-DEBUG] Ativando Impersonate para Tenant: ${impersonateCookie.value}`);
             tenantIdToUse = impersonateCookie.value;
         }
 
         if (!tenantIdToUse && !isSystemAdmin) {
-            throw new Error('Acesso negado: Nenhuma barbearia vinculada à sua conta.');
+            throw new Error('Nenhuma barbearia vinculada.');
         }
 
-        // 5. CARREGAR TENANT
         let tenantData = null;
         if (tenantIdToUse) {
             const { data: tenant } = await supabaseAdmin
