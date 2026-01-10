@@ -100,7 +100,7 @@ export async function GET(req: Request) {
                         };
 
                         // Só atualiza se tiver novidade útil
-                        const isPaid = found.situacao === 'PAGO' || found.status === 'CONCLUIDA' || found.status === 'RECEBIDA'; // Pix status pode variar
+                        const isPaid = found.situacao === 'PAGO' || found.situacao === 'RECEBIDO' || found.status === 'CONCLUIDA' || found.status === 'RECEBIDA'; // Pix status pode variar: PAGO, RECEBIDO, CONCLUIDA
 
                         // Atualiza Metadata
                         if (meta.nosso_numero && meta.nosso_numero !== 'PENDING') {
