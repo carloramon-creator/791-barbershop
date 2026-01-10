@@ -37,37 +37,64 @@ export async function getCurrentUserAndTenant() {
             }
         }
 
-        // 2. Se não achou no header, tentar cookies (fallback)
+        // 2. Fallback manual melhorado para Cookies (Next.js context)
         if (!userAuthId) {
-            console.log('[BACKEND] Header auth falhou ou ausente. Tentando cookies...');
+            console.log('[BACKEND] standard getUser falhou. Tentando busca manual em cookies...');
             const cookieStore = await cookies();
             const allCookies = cookieStore.getAll();
 
-            let sessionData: any = null;
+            // Padrão do @supabase/ssr: sb-<project-ref>-auth-token
+            // Pode estar quebrado em múltiplos cookies .0, .1 se for grande
+            let accessToken: string | null = null;
+
+            // Tenta encontrar o token de acesso nos cookies
             for (const cookie of allCookies) {
-                if (cookie.name.includes('session') || cookie.name.includes('sb-')) {
+                // Se for o formato antigo (JSON no cookie)
+                if (cookie.name.includes('session') && cookie.value.includes('{')) {
                     try {
-                        sessionData = JSON.parse(decodeURIComponent(cookie.value));
-                        if (sessionData?.user?.id) {
-                            console.log('[BACKEND] Sessão válida encontrada em cookie:', cookie.name);
-                            break;
+                        const parsed = JSON.parse(decodeURIComponent(cookie.value));
+                        if (parsed.access_token) accessToken = parsed.access_token;
+                        if (parsed.user?.id) {
+                            userAuthId = parsed.user.id;
+                            userObj = parsed.user;
+                        }
+                    } catch (e) { }
+                }
+
+                // Formato novo do @supabase/ssr: sb-xxx-auth-token
+                // Nota: O ideal é usar o createServerClient, mas se ele falhar (ex: projeto-ref errado no default)
+                // tentamos validar o token via supabaseAdmin
+                if (cookie.name.endsWith('-auth-token')) {
+                    try {
+                        const parsed = JSON.parse(decodeURIComponent(cookie.value));
+                        // No novo formato, o valor do cookie é um array de strings [access_token, refresh_token, ...]
+                        if (Array.isArray(parsed) && parsed[0]) {
+                            accessToken = parsed[0];
+                        } else if (parsed.access_token) {
+                            accessToken = parsed.access_token;
                         }
                     } catch (e) {
-                        continue;
+                        // Se não for JSON, pode ser o token direto ou parte dele
+                        if (cookie.value.length > 50) accessToken = cookie.value;
                     }
                 }
             }
 
-            if (sessionData && sessionData.user) {
-                userAuthId = sessionData.user.id;
-                userObj = sessionData.user;
-            } else {
-                console.log('[BACKEND] Nenhuma sessão válida encontrada nos cookies.');
+            if (accessToken && !userAuthId) {
+                console.log('[BACKEND] Token encontrado. Validando via supabaseAdmin...');
+                const { data: { user: verifiedUser }, error: verifyError } = await supabaseAdmin.auth.getUser(accessToken);
+                if (!verifyError && verifiedUser) {
+                    userAuthId = verifiedUser.id;
+                    userObj = verifiedUser;
+                    console.log('[BACKEND] User validado via supabaseAdmin + Token de Cookie.');
+                } else {
+                    console.warn('[BACKEND] Falha ao validar token do cookie:', verifyError?.message);
+                }
             }
         }
 
         if (!userAuthId) {
-            console.error('[BACKEND] Falha total de autenticação (sem header válido, sem cookie válido)');
+            console.error('[BACKEND] Falha total de autenticação. Cookies presentes:', (await cookies()).getAll().map(c => c.name).join(', '));
             throw new Error('Usuário não autenticado ou sessão expirada');
         }
 
