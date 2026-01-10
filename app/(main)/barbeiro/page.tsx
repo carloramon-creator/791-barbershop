@@ -98,7 +98,8 @@ export default function BarberPage() {
             .subscribe();
 
         const barberChannel = supabaseClient
-            .channel('barber_changes', { event: '*', schema: 'public', table: 'barbers' }, () => fetchStatus())
+            .channel('barber_changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'barbers' }, () => fetchStatus())
             .subscribe();
 
         return () => {
