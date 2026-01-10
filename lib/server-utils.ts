@@ -5,85 +5,88 @@ import { Plan } from './backend-types';
 
 export async function getCurrentUserAndTenant() {
     try {
-        console.log('[BACKEND] --- Autenticação Iniciada ---');
+        console.log('[AUTH] Checking session...');
         const cookieStore = await cookies();
-        const allCookies = cookieStore.getAll();
 
         let userAuthId: string | null = null;
         let userObj: any = null;
 
-        // 1. Tentar pegar o token diretamente dos cookies (Supabase SSR)
-        const authCookies = allCookies.filter(c => c.name.includes('-auth-token'));
-        let token: string | null = null;
+        // 1. TENTATIVA PADRÃO (Supabase SSR) - Geralmente funciona se os cookies estiverem certos
+        const client = await supabase();
+        const { data: { user }, error: authError } = await client.auth.getUser();
 
-        if (authCookies.length > 0) {
-            authCookies.sort((a, b) => a.name.localeCompare(b.name));
-            const raw = authCookies.map(c => c.value).join('');
-            try {
-                const decoded = decodeURIComponent(raw);
-                if (decoded.startsWith('[')) token = JSON.parse(decoded)[0];
-                else if (decoded.startsWith('{')) token = JSON.parse(decoded).access_token;
-                else token = decoded.replace(/^"|"$/g, '');
-            } catch (e) {
-                token = raw.replace(/^"|"$/g, '');
+        if (user && !authError) {
+            userAuthId = user.id;
+            userObj = user;
+            console.log('[AUTH] ✅ Standard session found:', user.id);
+        } else {
+            // 2. BUSCA MANUAL EXTENSIVA (Fallback para cookies fragmentados ou mal formados)
+            const allCookies = cookieStore.getAll();
+            console.log('[AUTH] ⚠️ Standard failed. Cookies present:', allCookies.map(c => c.name).join(', '));
+
+            // Tenta encontrar qualquer pedaço de token
+            const authCookies = allCookies.filter(c =>
+                c.name.includes('-auth-token') ||
+                c.name.includes('access-token') ||
+                c.name.toLowerCase().includes('session')
+            );
+
+            if (authCookies.length > 0) {
+                // Junta fragmentos (.0, .1...)
+                authCookies.sort((a, b) => a.name.localeCompare(b.name));
+                const raw = authCookies.map(c => c.value).join('');
+                let token: string | null = null;
+
+                try {
+                    const decoded = decodeURIComponent(raw);
+                    if (decoded.trim().startsWith('[')) token = JSON.parse(decoded)[0];
+                    else if (decoded.trim().startsWith('{')) token = JSON.parse(decoded).access_token;
+                    else token = decoded.replace(/^"|"$/g, '');
+                } catch (e) {
+                    token = raw.replace(/^"|"$/g, '');
+                }
+
+                if (token && token.length > 40) {
+                    const { data: { user: adminUser }, error: adminError } = await supabaseAdmin.auth.getUser(token);
+                    if (adminUser && !adminError) {
+                        userAuthId = adminUser.id;
+                        userObj = adminUser;
+                        console.log('[AUTH] ✅ Manual token validation success');
+                    }
+                }
             }
         }
 
-        // 2. Validar token via Admin (mais robusto que o client padrão em SSR)
-        if (token) {
-            const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-            if (user && !authError) {
-                userAuthId = user.id;
-                userObj = user;
-                console.log('[BACKEND] ✅ User validado via Token');
-            } else if (authError) {
-                console.warn('[BACKEND] ⚠️ Token inválido:', authError.message);
-            }
-        }
-
-        // 3. Fallback para o client padrão (caso o token acima não tenha sido encontrado)
         if (!userAuthId) {
-            const client = await supabase();
-            const { data: { user }, error } = await (await client).auth.getUser();
-            if (user && !error) {
-                userAuthId = user.id;
-                userObj = user;
-                console.log('[BACKEND] ✅ User validado via Standard Client');
-            }
+            throw new Error('Usuário não autenticado ou sessão expirada');
         }
 
-        if (!userAuthId) {
-            const names = allCookies.map(c => c.name).join(', ') || 'Nenhum';
-            console.error('[BACKEND] ❌ Não autenticado. Cookies presentes:', names);
-            throw new Error(`Sessão expirada. (Cookies: ${names})`);
-        }
-
-        // 4. Buscar Perfil no Banco
+        // 3. BUSCAR PERFIL
         const { data: userData, error: userError } = await supabaseAdmin
             .from('users')
             .select('*')
             .eq('id', userAuthId)
             .single();
 
-        if (!userData || userError) {
-            throw new Error('Perfil do usuário não encontrado.');
+        if (userError || !userData) {
+            throw new Error('Perfil de usuário não localizado.');
         }
 
         const isSystemAdmin = userData.is_system_admin === true || userData.role === 'admin';
-
-        // 5. Resolver Tenant (com suporte a Impersonate)
         let tenantIdToUse = userData.tenant_id;
-        const impersonateId = cookieStore.get('impersonate_tenant_id')?.value;
 
+        // 4. SUPORTE A IMPERSONATE (APENAS PARA ADM)
+        const impersonateId = cookieStore.get('impersonate_tenant_id')?.value;
         if (isSystemAdmin && impersonateId) {
-            console.log(`[BACKEND] 🕵️ MODO ADMINISTRADOR: Simulando Barbeiria ${impersonateId}`);
+            console.log('[AUTH] 🕵️ MODO ADMINISTRADOR ATIVO:', impersonateId);
             tenantIdToUse = impersonateId;
         }
 
         if (!tenantIdToUse && !isSystemAdmin) {
-            throw new Error('Nenhuma barbearia vinculada a esta conta.');
+            throw new Error('Sua conta não possui uma barbearia vinculada.');
         }
 
+        // 5. CARREGAR TENANT
         let tenantData = null;
         if (tenantIdToUse) {
             const { data: tenant } = await supabaseAdmin
@@ -102,17 +105,44 @@ export async function getCurrentUserAndTenant() {
         };
 
     } catch (error: any) {
-        console.error('[AUTH ERROR]', error.message);
+        console.error('[AUTH CRITICAL ERROR]', error.message);
         throw error;
     }
 }
 
 export function assertPlan(tenant: any, requiredPlan: Plan) {
-    if (!tenant) throw new Error('Dados da barbearia não carregadores');
+    if (!tenant) throw new Error('Barbearia não identificada.');
     const plans: Record<Plan, number> = { basic: 1, premium: 2, complete: 3, trial: 1 };
     const current = plans[tenant.plan as Plan] || 1;
     const required = plans[requiredPlan];
     if (current < required) {
-        throw new Error(`Este recurso exige o plano ${requiredPlan.toUpperCase()}`);
+        throw new Error(`Este recurso requer o plano ${requiredPlan.toUpperCase()}`);
+    }
+}
+
+export function getStatusColor(status: string) {
+    switch (status) {
+        case 'waiting': return 'text-yellow-500';
+        case 'attending': return 'text-emerald-500';
+        case 'finished': return 'text-slate-400';
+        case 'canceled': return 'text-red-500';
+        default: return 'text-slate-300';
+    }
+}
+
+export async function getDynamicBarberAverages(tenantId: string) {
+    try {
+        const { data } = await supabaseAdmin
+            .from('barbers')
+            .select('id, avg_time_minutes')
+            .eq('tenant_id', tenantId);
+
+        const averages: Record<string, number> = {};
+        (data || []).forEach(b => {
+            averages[b.id] = b.avg_time_minutes || 30;
+        });
+        return averages;
+    } catch (e) {
+        return {};
     }
 }
