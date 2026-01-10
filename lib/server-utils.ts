@@ -101,7 +101,9 @@ export async function getCurrentUserAndTenant() {
             user: { id: userAuthId, email: userData.email, role: userData.role },
             tenant: tenantData,
             tenantId: tenantIdToUse,
-            isSystemAdmin
+            isSystemAdmin,
+            role: userData.role,
+            roles: userData.roles || [userData.role]
         };
 
     } catch (error: any) {
@@ -113,7 +115,21 @@ export async function getCurrentUserAndTenant() {
 export function assertPlan(tenant: any, requiredPlan: Plan) {
     if (!tenant) throw new Error('Barbearia não identificada.');
     const plans: Record<Plan, number> = { basic: 1, premium: 2, complete: 3, trial: 1 };
-    const current = plans[tenant.plan as Plan] || 1;
+
+    // Normalizar plano do banco
+    const currentPlanStr = String(tenant.plan).toLowerCase() as Plan;
+    const current = plans[currentPlanStr] || plans[tenant.plan as Plan] || 1;
+    const required = plans[requiredPlan];
+
+    if (current < required) {
+        throw new Error(`Este recurso requer o plano ${requiredPlan.toUpperCase()}`);
+    }
+}
+
+/** Alias para compatibilidade com rotas antigas */
+export const assertPlanAtLeast = (planName: string, requiredPlan: Plan) => {
+    const plans: Record<Plan, number> = { basic: 1, premium: 2, complete: 3, trial: 1 };
+    const current = plans[planName as Plan] || 1;
     const required = plans[requiredPlan];
     if (current < required) {
         throw new Error(`Este recurso requer o plano ${requiredPlan.toUpperCase()}`);
@@ -144,5 +160,76 @@ export async function getDynamicBarberAverages(tenantId: string) {
         return averages;
     } catch (e) {
         return {};
+    }
+}
+
+/**
+ * Adiciona headers de CORS para rotas acessadas pelo app cliente (PWA)
+ */
+export function addCorsHeaders(req: Request, res: NextResponse) {
+    const origin = req.headers.get('origin') || '*';
+
+    res.headers.set('Access-Control-Allow-Origin', origin);
+    res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.headers.set('Access-Control-Allow-Credentials', 'true');
+    res.headers.set('Access-Control-Max-Age', '86400');
+
+    return res;
+}
+
+/**
+ * Resolve um tenantId a partir de um UUID ou de um Slug
+ */
+export async function resolveTenantId(idOrSlug: string): Promise<string | null> {
+    if (!idOrSlug) return null;
+
+    // Se parecer um UUID, retorna o próprio ID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(idOrSlug)) {
+        return idOrSlug;
+    }
+
+    // Se não for UUID, tenta buscar pelo slug
+    const { data: tenant } = await supabaseAdmin
+        .from('tenants')
+        .select('id')
+        .ilike('slug', idOrSlug)
+        .maybeSingle();
+
+    return tenant?.id || null;
+}
+
+/**
+ * Validação de permissões por role.
+ */
+export function checkRolePermission(roleOrRoles: string | string[], permission: string) {
+    const roles = Array.isArray(roleOrRoles) ? roleOrRoles : [roleOrRoles];
+    const isOwner = roles.includes('owner');
+    const isAdmin = roles.includes('admin') || roles.includes('system_admin');
+
+    if (permission === 'manage_users') {
+        if (!isOwner && !isAdmin) throw new Error('Acesso negado: Somente proprietários podem gerenciar usuários');
+        return true;
+    }
+
+    if (permission === 'manage_finance') {
+        if (!isOwner && !isAdmin) throw new Error('Acesso negado: Somente proprietários podem ver finanças');
+        return true;
+    }
+
+    // Admin tem permissão para tudo
+    if (isAdmin) return true;
+
+    return true; // Fallback permissivo para outras strings por enquanto
+}
+
+/** Alias para novas rotas */
+export async function checkRole(requiredRole: 'owner' | 'barber' | 'staff') {
+    const { user } = await getCurrentUserAndTenant();
+    const rolesPriority = { owner: 3, barber: 2, staff: 1 };
+    const userRole = (user.role || 'staff') as keyof typeof rolesPriority;
+    if (rolesPriority[userRole] < rolesPriority[requiredRole]) {
+        throw new Error('Acesso negado: Nível de permissão insuficiente');
     }
 }
