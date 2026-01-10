@@ -12,24 +12,17 @@ export async function getCurrentUserAndTenant() {
         const cookieStore = await cookies();
         const allCookies = cookieStore.getAll();
 
-        console.log(`[AUTH] Verificando ${allCookies.length} cookies...`);
-
         let userAuthId: string | null = null;
         let userObj: any = null;
 
-        // 1. Tentar ler o token de qualquer cookie "sb-" ou que pareça um JWT
-        // Fazemos isso antes do SDK para garantir que pegamos mesmo se o nome do cookie mudar
+        // 1. Tentar ler o token manualmente para lidar com fragmentação ou headers
         for (const c of allCookies) {
             if (!c.value || c.value.length < 50) continue;
-
-            // JWT tem 2 pontos obrigatoriamente
-            if (c.value.split('.').length !== 3 && !c.value.includes('%2E')) continue;
 
             try {
                 const val = decodeURIComponent(c.value);
                 let token = val;
 
-                // Tratar formatos JSON/Array do Supabase SSR
                 if (val.startsWith('[')) {
                     token = JSON.parse(val)[0];
                 } else if (val.startsWith('{')) {
@@ -43,32 +36,29 @@ export async function getCurrentUserAndTenant() {
                     if (adminUser && !adminError) {
                         userAuthId = adminUser.id;
                         userObj = adminUser;
-                        console.log(`[AUTH] ✅ Token validado extraído do cookie ${c.name}`);
                         break;
                     }
                 }
             } catch (e) {
-                // Ignore parsing errors for non-matching cookies
+                // Ignore
             }
         }
 
-        // 2. Fallback para o SDK caso o loop manual não ache (raro, mas segurança)
+        // 2. Fallback para o SDK
         if (!userAuthId) {
             const client = await supabase();
             const { data: { user }, error } = await client.auth.getUser();
             if (user && !error) {
                 userAuthId = user.id;
                 userObj = user;
-                console.log(`[AUTH] ✅ Sessão validada via SDK`);
             }
         }
 
         if (!userAuthId) {
-            console.error('[AUTH] ❌ Erro: Nenhum usuário autenticado localizado.');
             throw new Error('Usuário não autenticado ou sessão expirada');
         }
 
-        // 3. Buscar Perfil no Banco (Ignorando RLS)
+        // 3. Buscar Perfil no Banco
         const { data: userData, error: profileError } = await supabaseAdmin
             .from('users')
             .select('*')
@@ -76,10 +66,10 @@ export async function getCurrentUserAndTenant() {
             .single();
 
         if (profileError || !userData) {
-            throw new Error('Perfil do sistema não localizado para este usuário.');
+            throw new Error('Perfil do sistema não localizado.');
         }
 
-        // --- SEGURANÇA RAMON ---
+        // Segurança Ramon
         const userEmail = (userData.email || '').toLowerCase();
         const isSystemAdmin =
             userData.is_system_admin === true ||
@@ -88,10 +78,9 @@ export async function getCurrentUserAndTenant() {
 
         let tenantIdToUse = userData.tenant_id;
 
-        // 4. IMPERSONATE (TRAVA DE ADMIN)
+        // 4. IMPERSONATE
         const impersonateCookie = cookieStore.get('impersonate_tenant_id');
         if (isSystemAdmin && impersonateCookie?.value) {
-            console.log(`[AUTH] 🕵️ MODO ACESSO OCULTO ATIVO: ${impersonateCookie.value}`);
             tenantIdToUse = impersonateCookie.value;
         }
 
@@ -120,12 +109,11 @@ export async function getCurrentUserAndTenant() {
         };
 
     } catch (error: any) {
-        console.error('[AUTH-CRITICAL]', error.message);
         throw error;
     }
 }
 
-/** Permissões */
+/** Permissões de Plano */
 export function assertPlan(tenant: any, requiredPlan: Plan) {
     if (!tenant) throw new Error('Dados da barbearia ausentes.');
     const plans: Record<Plan, number> = { basic: 1, premium: 2, complete: 3, trial: 1 };
@@ -141,10 +129,12 @@ export const assertPlanAtLeast = (planName: string, requiredPlan: Plan) => {
     if (current < required) throw new Error(`Requer plano ${requiredPlan.toUpperCase()}`);
 };
 
+/** Permissões de Role */
 export async function checkRole(requiredRole: 'owner' | 'barber' | 'staff') {
     const { role } = await getCurrentUserAndTenant();
     const rolesPriority = { owner: 3, barber: 2, staff: 1 };
-    if (rolesPriority[role as keyof typeof rolesPriority] < rolesPriority[requiredRole]) {
+    const userRole = (role || 'staff') as keyof typeof rolesPriority;
+    if (rolesPriority[userRole] < rolesPriority[requiredRole]) {
         throw new Error('Acesso negado');
     }
 }
@@ -154,7 +144,7 @@ export function checkRolePermission(roleOrRoles: string | string[], permission: 
     return roles.includes('admin') || roles.includes('system_admin') || roles.includes('owner');
 }
 
-/** Utils */
+/** Estética de Status */
 export function getStatusColor(status: string) {
     switch (status) {
         case 'waiting': return 'text-yellow-500';
@@ -165,6 +155,19 @@ export function getStatusColor(status: string) {
     }
 }
 
+/** Cálculo de Médias Dinâmicas */
+export async function getDynamicBarberAverages(tenantId: string) {
+    try {
+        const { data } = await supabaseAdmin.from('barbers').select('id, avg_time_minutes').eq('tenant_id', tenantId);
+        const averages: Record<string, number> = {};
+        (data || []).forEach(b => averages[b.id] = b.avg_time_minutes || 30);
+        return averages;
+    } catch {
+        return {};
+    }
+}
+
+/** Headers CORS utilitário */
 export function addCorsHeaders(req: Request, res: NextResponse) {
     const origin = req.headers.get('origin') || '*';
     const response = res || NextResponse.json({});
@@ -175,6 +178,7 @@ export function addCorsHeaders(req: Request, res: NextResponse) {
     return response;
 }
 
+/** Resolução de Tenant por Slug ou ID */
 export async function resolveTenantId(idOrSlug: string) {
     if (!idOrSlug) return null;
     if (idOrSlug.length > 30 && idOrSlug.includes('-')) return idOrSlug;
