@@ -20,6 +20,8 @@ export async function getCurrentUserAndTenant() {
             console.log('[BACKEND] User validado via standard client. ID:', user.id);
         } else {
             console.warn('[BACKEND] Falha na validação via client standard:', authError?.message);
+            const cookieStore = await cookies();
+            console.log('[BACKEND] Cookies list:', cookieStore.getAll().map(c => c.name).join(', '));
 
             // Fallback manual se o standard falhar por algum motivo de header
             const headersList = await headers();

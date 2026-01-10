@@ -114,27 +114,28 @@ export async function GET(req: Request) {
 
             // Se não tiver customer ID, tenta buscar pelo email da barbearia ou do usuário
             if (!stripeCustomerId) {
+                console.log(`[STRIPE-SYNC] Buscando customer por email: ${tenant.email || user.email}`);
                 const customersQuery = await stripe.customers.list({
                     email: tenant.email || user.email,
                     limit: 1
                 });
                 if (customersQuery.data.length > 0) {
                     stripeCustomerId = customersQuery.data[0].id;
+                    console.log(`[STRIPE-SYNC] Customer encontrado: ${stripeCustomerId}`);
                     // Salva para o futuro
                     await supabaseAdmin.from('tenants').update({ stripe_customer_id: stripeCustomerId }).eq('id', tenant.id);
                 }
             }
 
             if (stripeCustomerId) {
-                // Buscar sessões de checkout recentes
+                // A. Sincronizar Sessões de Checkout (Pagamento inicial)
                 const sessions = await stripe.checkout.sessions.list({
                     customer: stripeCustomerId,
-                    limit: 15,
+                    limit: 10,
                 });
 
                 for (const session of sessions.data) {
-                    if (session.payment_status === 'paid' && session.status === 'complete') {
-                        // Verificar se esta sessão já está registrada e paga
+                    if (session.payment_status === 'paid' && (session.status === 'complete' || session.status === 'expired' /* some sessions stay expired but paid */)) {
                         const { data: existingFinance } = await supabaseAdmin
                             .from('finance')
                             .select('id, is_paid')
@@ -158,21 +159,60 @@ export async function GET(req: Request) {
                                     tenant_id: tenant.id,
                                     type: 'revenue',
                                     value: (session.amount_total || 0) / 100,
-                                    description: `Assinatura SaaS - Plano ${planFromMetadata.toUpperCase()} (Stripe - Sync)`,
+                                    description: `Assinatura SaaS - Plano ${planFromMetadata.toUpperCase()} (Stripe CSS)`,
                                     date: new Date(session.created * 1000).toISOString().split('T')[0],
                                     is_paid: true,
                                     metadata: {
                                         stripe_session_id: session.id,
-                                        stripe_customer_id: session.customer,
+                                        stripe_customer_id: stripeCustomerId,
                                         method: 'stripe_card'
                                     }
                                 });
                             } else {
                                 await supabaseAdmin.from('finance').update({
                                     is_paid: true,
-                                    description: `Assinatura SaaS - Plano ${planFromMetadata.toUpperCase()} (Stripe - Sync Up)`
+                                    description: `Assinatura SaaS - Plano ${planFromMetadata.toUpperCase()} (Stripe CSS Update)`
                                 }).eq('id', existingFinance.id);
                             }
+                        }
+                    }
+                }
+
+                // B. Sincronizar Invoices (Renovações)
+                const stripeInvoices = await stripe.invoices.list({
+                    customer: stripeCustomerId,
+                    limit: 10,
+                    status: 'paid'
+                });
+
+                for (const invStripe of stripeInvoices.data) {
+                    const { data: existingInv } = await supabaseAdmin
+                        .from('finance')
+                        .select('id')
+                        .eq('metadata->>stripe_invoice_id', invStripe.id)
+                        .maybeSingle();
+
+                    if (!existingInv) {
+                        const amount = invStripe.amount_paid / 100;
+                        if (amount > 0) {
+                            console.log(`[STRIPE-SYNC] ✅ Fatura paga encontrada: ${invStripe.id}`);
+                            await supabaseAdmin.from('finance').insert({
+                                tenant_id: tenant.id,
+                                type: 'revenue',
+                                value: amount,
+                                description: `Renovação SaaS (Stripe INV)`,
+                                date: new Date(invStripe.status_transitions.paid_at! * 1000).toISOString().split('T')[0],
+                                is_paid: true,
+                                metadata: {
+                                    stripe_invoice_id: invStripe.id,
+                                    stripe_customer_id: stripeCustomerId,
+                                    method: 'stripe_card'
+                                }
+                            });
+                            await supabaseAdmin.from('tenants').update({
+                                subscription_status: 'active',
+                                stripe_customer_id: stripeCustomerId
+                            }).eq('id', tenant.id);
                         }
                     }
                 }

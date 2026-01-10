@@ -373,6 +373,11 @@ export default function BarbershopSettingsPage() {
                                 <p className="text-[10px] text-slate-500">
                                     Seu link será: frontend-client-six-orpin.vercel.app/{slug || 'nome-da-barbearia'}
                                 </p>
+                                {!slug && isEditing && (
+                                    <p className="text-[10px] text-amber-500 font-medium">
+                                        ⚠️ Defina um slug para o QR Code funcionar corretamente!
+                                    </p>
+                                )}
                             </div>
                         </div>
 
@@ -405,6 +410,7 @@ export default function BarbershopSettingsPage() {
                                                         variant="outline"
                                                         className="border-slate-700 hover:bg-slate-800 gap-2"
                                                         onClick={() => {
+                                                            if (!slug) return alert('Por favor, defina um "Slug URL" acima antes de copiar.');
                                                             const url = `https://frontend-client-six-orpin.vercel.app/${slug}`;
                                                             navigator.clipboard.writeText(url);
                                                             alert('Link copiado!');
