@@ -543,6 +543,7 @@ export default function BarbershopSettingsPage() {
                                                                     : "bg-slate-950/50 border-slate-800 text-slate-400 hover:border-slate-700 hover:bg-slate-900"
                                                             )}
                                                             onClick={() => {
+                                                                if (!isEditing) return; // Prevent click if not editing
                                                                 if (isSelected) setOpeningHours({ ...openingHours, work_days: openingHours.work_days.filter(d => d !== idx) });
                                                                 else setOpeningHours({ ...openingHours, work_days: [...openingHours.work_days, idx] });
                                                             }}
@@ -560,6 +561,7 @@ export default function BarbershopSettingsPage() {
                                                 <Label className="text-slate-200">Horário de Abertura</Label>
                                                 <Input
                                                     type="time"
+                                                    disabled={!isEditing}
                                                     value={openingHours.start_time}
                                                     onChange={e => setOpeningHours({ ...openingHours, start_time: e.target.value })}
                                                     className="bg-slate-950 border-slate-800 text-slate-100"
@@ -569,6 +571,7 @@ export default function BarbershopSettingsPage() {
                                                 <Label className="text-slate-200">Horário de Fechamento</Label>
                                                 <Input
                                                     type="time"
+                                                    disabled={!isEditing}
                                                     value={openingHours.end_time}
                                                     onChange={e => setOpeningHours({ ...openingHours, end_time: e.target.value })}
                                                     className="bg-slate-950 border-slate-800 text-slate-100"
@@ -582,16 +585,21 @@ export default function BarbershopSettingsPage() {
                                                     type="button"
                                                     variant="ghost"
                                                     role="checkbox"
+                                                    disabled={!isEditing}
                                                     aria-checked={openingHours.lunch_enabled}
-                                                    onClick={() => setOpeningHours({ ...openingHours, lunch_enabled: !openingHours.lunch_enabled })}
+                                                    onClick={() => isEditing && setOpeningHours({ ...openingHours, lunch_enabled: !openingHours.lunch_enabled })}
                                                     className={cn(
                                                         "w-5 h-5 p-0 rounded border flex items-center justify-center",
-                                                        openingHours.lunch_enabled ? "bg-blue-600 border-blue-600 text-white" : "border-slate-600 bg-transparent"
+                                                        openingHours.lunch_enabled ? "bg-blue-600 border-blue-600 text-white" : "border-slate-600 bg-transparent",
+                                                        !isEditing && "opacity-50 cursor-not-allowed"
                                                     )}
                                                 >
                                                     {openingHours.lunch_enabled && <Check size={14} />}
                                                 </Button>
-                                                <Label className="text-slate-200 cursor-pointer" onClick={() => setOpeningHours({ ...openingHours, lunch_enabled: !openingHours.lunch_enabled })}>
+                                                <Label
+                                                    className={cn("text-slate-200", isEditing ? "cursor-pointer" : "cursor-not-allowed opacity-70")}
+                                                    onClick={() => isEditing && setOpeningHours({ ...openingHours, lunch_enabled: !openingHours.lunch_enabled })}
+                                                >
                                                     Possui intervalo de almoço?
                                                 </Label>
                                             </div>
@@ -601,6 +609,7 @@ export default function BarbershopSettingsPage() {
                                                     <Label className="text-slate-200">Duração do Intervalo (minutos)</Label>
                                                     <Input
                                                         type="number"
+                                                        disabled={!isEditing}
                                                         value={openingHours.lunch_duration}
                                                         onChange={e => setOpeningHours({ ...openingHours, lunch_duration: Number(e.target.value) })}
                                                         className="bg-slate-950 border-slate-800 text-slate-100 w-32"
@@ -622,6 +631,7 @@ export default function BarbershopSettingsPage() {
                                             <div className="flex items-center gap-4">
                                                 <Input
                                                     type="number"
+                                                    disabled={!isEditing}
                                                     value={openingHours.overtime_tolerance_percent}
                                                     onChange={e => setOpeningHours({ ...openingHours, overtime_tolerance_percent: Number(e.target.value) })}
                                                     className="bg-slate-950 border-slate-800 text-slate-100 w-24"

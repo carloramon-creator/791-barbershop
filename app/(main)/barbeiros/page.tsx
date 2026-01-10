@@ -107,7 +107,12 @@ export default function BarbeirosPage() {
     const handleUpdateBarber = async () => {
         try {
             if (!editingBarber || !editingBarber.name) return alert('Nome é obrigatório');
-            await Api.updateBarber(editingBarber.id, editingBarber as unknown as Record<string, unknown>);
+
+            // Remove status from payload to avoid "User not logged in" validation error
+            // The status should only be changed by the barber login/logout or specific status actions, not profile editing.
+            const { status, ...payload } = editingBarber as any;
+
+            await Api.updateBarber(editingBarber.id, payload);
 
             // Update services
             await Api.updateBarberServices(editingBarber.id, selectedServiceIds);

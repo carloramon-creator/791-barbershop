@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon, MapPin, Copy, Loader2, Key, Pencil, Save, MessageCircle, Clock, Percent, DollarSign, Eye, Camera } from 'lucide-react';
+import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon, MapPin, Copy, Loader2, Key, Pencil, Save, MessageCircle, Clock, Percent, DollarSign, Eye, Camera, Scissors } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -76,6 +76,12 @@ export default function UsersPage() {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [isViewOnly, setIsViewOnly] = useState(false);
 
+  // Services Management State (for Barbers)
+  const [services, setServices] = useState<any[]>([]);
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [loadingServices, setLoadingServices] = useState(false);
+  const [currentBarberId, setCurrentBarberId] = useState<string | null>(null);
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -113,7 +119,13 @@ export default function UsersPage() {
     setInviteCnpjMei('');
     setGeneratedLink('');
     setEditingUserId(null);
+    setEditingUserId(null);
     setIsViewOnly(false);
+
+    // Reset Services
+    setServices([]);
+    setSelectedServiceIds([]);
+    setCurrentBarberId(null);
   };
 
   const handlePhotoUpload = async (file: File) => {
@@ -175,6 +187,10 @@ export default function UsersPage() {
         await Api.updateUser(payload);
         setIsInviteOpen(false);
         resetForm();
+        if (editingUserId && currentBarberId && inviteRoles.includes('barber')) {
+          await Api.updateBarberServices(currentBarberId, selectedServiceIds);
+        }
+
         alert('Usuário atualizado com sucesso!');
       } else {
         const result = await Api.inviteUser(payload);
@@ -218,6 +234,32 @@ export default function UsersPage() {
     setInviteCommValue(u.commission_value?.toString() || '50');
     setInviteCnpjMei(u.cnpj_mei || '');
     setIsInviteOpen(true);
+
+    // Load Services if Barber
+    if (u.roles?.includes('barber') || u.role === 'barber') {
+      loadBarberData(u.id);
+    }
+  };
+
+  const loadBarberData = async (userId: string) => {
+    setLoadingServices(true);
+    try {
+      // 1. Get Barber ID
+      const { data: barber } = await supabaseClient.from('barbers').select('id').eq('user_id', userId).single();
+      if (barber) {
+        setCurrentBarberId(barber.id);
+        // 2. Get All Services
+        const allServices = await Api.getServices();
+        setServices(allServices);
+        // 3. Get Linked Services
+        const linkedIds = await Api.getBarberServices(barber.id);
+        setSelectedServiceIds(linkedIds || []);
+      }
+    } catch (err) {
+      console.error("Error loading barber services", err);
+    } finally {
+      setLoadingServices(false);
+    }
   };
 
   const handleCepBlur = async () => {
@@ -348,7 +390,7 @@ export default function UsersPage() {
                   Adicionar Usuário
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+              <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-4xl max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <DialogHeader>
                   <DialogTitle>
                     {isViewOnly ? 'Detalhes do Usuário' : (editingUserId ? 'Editar Usuário' : 'Adicionar novo usuário')}
@@ -527,6 +569,45 @@ export default function UsersPage() {
                               <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest mt-1">CNPJ inválido</p>
                             )}
                           </div>
+                        </div>
+                      )}
+
+                      {/* SERVICES SECTION FOR BARBERS */}
+                      {editingUserId && inviteRoles.includes('barber') && (
+                        <div className="md:col-span-2 space-y-2 pt-4 border-t border-slate-800 animate-in fade-in">
+                          <Label className="flex items-center gap-2 mb-2 text-slate-200">
+                            <Scissors size={16} className="text-blue-500" />
+                            Serviços Realizados (Vínculo Profissional)
+                          </Label>
+                          <div className="bg-slate-950/50 p-4 rounded-lg border border-slate-800 max-h-[200px] overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {loadingServices ? (
+                              <p className="text-xs text-slate-500 col-span-2">Carregando serviços...</p>
+                            ) : services.length === 0 ? (
+                              <p className="text-xs text-slate-500 col-span-2">Para configurar serviços, certifique-se que existem serviços cadastrados.</p>
+                            ) : (
+                              services.map(service => (
+                                <div key={service.id} className="flex items-center space-x-2 hover:bg-slate-800/50 p-2 rounded transition-colors border border-transparent hover:border-slate-800">
+                                  <Checkbox
+                                    id={`usr-srv-${service.id}`}
+                                    checked={selectedServiceIds.includes(service.id)}
+                                    disabled={isViewOnly}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) setSelectedServiceIds([...selectedServiceIds, service.id]);
+                                      else setSelectedServiceIds(selectedServiceIds.filter(id => id !== service.id));
+                                    }}
+                                    className="border-slate-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                  />
+                                  <Label htmlFor={`usr-srv-${service.id}`} className={cn("text-xs md:text-sm flex-1 user-select-none", isViewOnly ? "" : "cursor-pointer")}>
+                                    {service.name}
+                                  </Label>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                          <p className="text-[10px] text-slate-500 flex items-center gap-1">
+                            <Clock size={10} />
+                            Selecione os serviços que este usuário pode realizar como barbeiro.
+                          </p>
                         </div>
                       )}
                     </div>
