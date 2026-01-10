@@ -41,16 +41,6 @@ export function ProductTreeSelector({
         return acc;
     }, {} as Record<string, Product[]>);
 
-    const toggleCategory = (categoryId: string) => {
-        const newExpanded = new Set(expandedCategories);
-        if (newExpanded.has(categoryId)) {
-            newExpanded.delete(categoryId);
-        } else {
-            newExpanded.add(categoryId);
-        }
-        setExpandedCategories(newExpanded);
-    };
-
     const toggleProduct = (productId: string) => {
         const newSelection = selectedProductIds.includes(productId)
             ? selectedProductIds.filter(id => id !== productId)
