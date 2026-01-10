@@ -9,6 +9,10 @@ export default async function TenantsPageServer() {
     let error = null;
 
     try {
+        const { isSystemAdmin } = await getCurrentUserAndTenant();
+        if (!isSystemAdmin) {
+            return <div className="p-20 text-center font-bold text-red-500">Acesso Negado: Área Restrita ao Administrador</div>;
+        }
         // Direct Database Access (No Fetch)
         const { data, error: dbError } = await supabaseAdmin
             .from('tenants')
