@@ -273,7 +273,17 @@ export default function BarbeirosPage() {
                                     <Button
                                         variant={editingBarber.is_active ? 'default' : 'outline'}
                                         size="sm"
-                                        onClick={() => setEditingBarber({ ...editingBarber, is_active: !editingBarber.is_active })}
+                                        onClick={() => {
+                                            // Se está tentando desativar, pede confirmação
+                                            if (editingBarber.is_active) {
+                                                if (confirm(`⚠️ ATENÇÃO: Deseja realmente DESATIVAR ${editingBarber.name}?\n\nO barbeiro ficará "FORA DE OPERAÇÃO" e não aparecerá mais para os clientes.\n\nEsta ação deve ser usada apenas quando o barbeiro não trabalha mais na barbearia.`)) {
+                                                    setEditingBarber({ ...editingBarber, is_active: false });
+                                                }
+                                            } else {
+                                                // Se está reativando, não precisa confirmação
+                                                setEditingBarber({ ...editingBarber, is_active: true });
+                                            }
+                                        }}
                                         className={cn("w-20", editingBarber.is_active ? "bg-emerald-600 hover:bg-emerald-700" : "border-slate-700")}
                                     >
                                         {editingBarber.is_active ? 'Ativo' : 'Inativo'}
