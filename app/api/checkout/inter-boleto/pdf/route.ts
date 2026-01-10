@@ -8,8 +8,11 @@ export async function GET(req: Request) {
         const nossoNumero = searchParams.get('nossoNumero');
         const codigoSolicitacao = searchParams.get('codigoSolicitacao');
 
-        const cleanNossoNumero = nossoNumero ? nossoNumero.replace(/\D/g, '') : null;
+        // Prioriza codigoSolicitacao (UUID) conforme documentação do Inter
         const solicitacaoId = (codigoSolicitacao && codigoSolicitacao !== 'undefined' && codigoSolicitacao !== 'N/A') ? codigoSolicitacao : null;
+        const cleanNossoNumero = nossoNumero ? nossoNumero.replace(/\D/g, '') : null;
+
+        console.log('[PDF] Parâmetros recebidos:', { nossoNumero, codigoSolicitacao, solicitacaoId, cleanNossoNumero });
 
         if (!solicitacaoId && !cleanNossoNumero) {
             return NextResponse.json({ error: 'Identificador (nossoNumero ou codigoSolicitacao) não informado' }, { status: 400 });
@@ -35,29 +38,42 @@ export async function GET(req: Request) {
 
         const inter = new InterAPIV3({ clientId, clientSecret: dbConfig?.client_secret || '', cert, key });
 
-        // Tenta primeiro pelo Solicitação ID (UUID) se existir, depois pelo Nosso Número
+        // PRIORIZA codigoSolicitacao (UUID) - é o identificador correto segundo a doc do Inter
         let pdfBuffer: Buffer | null = null;
         let usedId = '';
 
         try {
             if (solicitacaoId) {
-                console.log(`[PDF] Tentando baixar pelo Solicitação ID: ${solicitacaoId}`);
+                console.log(`[PDF] ✅ Tentando baixar pelo Código de Solicitação (UUID): ${solicitacaoId}`);
                 pdfBuffer = await inter.getBillingPdf(solicitacaoId);
                 usedId = solicitacaoId;
+                console.log(`[PDF] ✅ PDF baixado com sucesso usando Código de Solicitação!`);
             }
-        } catch (e) {
-            console.warn(`[PDF] Falha ao baixar pelo Solicitação ID, tentando Nosso Número...`);
+        } catch (e: any) {
+            console.warn(`[PDF] ⚠️ Falha ao baixar pelo Código de Solicitação: ${e.message}`);
         }
 
+        // Fallback: tenta pelo nossoNumero se não conseguiu pelo codigoSolicitacao
         if (!pdfBuffer && cleanNossoNumero) {
-            console.log(`[PDF] Tentando baixar pelo Nosso Número: ${cleanNossoNumero}`);
-            pdfBuffer = await inter.getBillingPdf(cleanNossoNumero);
-            usedId = cleanNossoNumero;
+            try {
+                console.log(`[PDF] 🔄 Tentando fallback pelo Nosso Número: ${cleanNossoNumero}`);
+                pdfBuffer = await inter.getBillingPdf(cleanNossoNumero);
+                usedId = cleanNossoNumero;
+                console.log(`[PDF] ✅ PDF baixado com sucesso usando Nosso Número!`);
+            } catch (e: any) {
+                console.error(`[PDF] ❌ Falha no fallback pelo Nosso Número: ${e.message}`);
+            }
         }
 
         if (!pdfBuffer) {
-            return NextResponse.json({ error: 'Não foi possível baixar o PDF com nenhum dos identificadores.' }, { status: 404 });
+            console.error(`[PDF] ❌ Não foi possível baixar o PDF com nenhum dos identificadores.`);
+            return NextResponse.json({
+                error: 'Não foi possível baixar o PDF. Tente novamente em alguns instantes ou entre em contato com o suporte.',
+                details: 'Nenhum dos identificadores (codigoSolicitacao ou nossoNumero) funcionou.'
+            }, { status: 404 });
         }
+
+        console.log(`[PDF] 🎉 Retornando PDF (${pdfBuffer.length} bytes) usando ID: ${usedId}`);
 
         return new NextResponse(new Uint8Array(pdfBuffer), {
             headers: {
@@ -67,6 +83,9 @@ export async function GET(req: Request) {
         });
     } catch (error: any) {
         console.error('[BOLETO PDF PROXY ERROR]', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({
+            error: 'Erro ao processar solicitação de PDF',
+            details: error.message
+        }, { status: 500 });
     }
 }

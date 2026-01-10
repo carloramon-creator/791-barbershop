@@ -197,6 +197,11 @@ export async function POST(req: Request) {
         }
 
         // Retornamos imediatamente. O frontend usará o check-pending-payment para atualizar.
+        // IMPORTANTE: Usar codigoSolicitacao para PDF (sempre disponível), não nossoNumero (pode vir depois)
+        const pdfUrl = codigoSolicitacao
+            ? `/api/checkout/inter-boleto/pdf?codigoSolicitacao=${codigoSolicitacao}&nossoNumero=${nossoNumero || ''}`
+            : (nossoNumero ? `/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}` : null);
+
         return addCorsHeaders(req, NextResponse.json({
             success: true,
             pending: !isReady,
@@ -205,7 +210,7 @@ export async function POST(req: Request) {
             linhaDigitavel: linhaDigitavel,
             pixCopiaECola: pixCopiaECola,
             amount: amount,
-            pdfUrl: nossoNumero ? `/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}&codigoSolicitacao=${codigoSolicitacao || ''}` : null
+            pdfUrl: pdfUrl
         }));
 
     } catch (error: any) {

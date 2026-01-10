@@ -2,7 +2,7 @@
 
 // RAILWAY MIGRATION TRIGGER - GOL DA VITÓRIA ⚽
 import React, { useState, useEffect } from 'react';
-import { Users, Building2, CreditCard, Check, Shield, FileText, ExternalLink, Copy, Activity } from 'lucide-react';
+import { Users, Building2, CreditCard, Check, Shield, FileText, ExternalLink, Copy, Activity, Zap, FileCheck } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -79,7 +79,7 @@ export default function PlanPage() {
     const [saving, setSaving] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix' | 'boleto-inter' | 'boleto-result'>('card');
     const [couponCode, setCouponCode] = useState('');
-    const [pixData, setPixData] = useState<{ pixPayload: string; amount: number; expiresAt: string } | null>(null);
+    const [pixData, setPixData] = useState<{ pixPayload: string; amount: number; expiresAt: string; pdfUrl?: string } | null>(null);
     const [boletoData, setBoletoData] = useState<{ nossoNumero: string; codigoBarras: string; linhaDigitavel: string; pdfUrl: string; amount?: number } | null>(null);
     const [pendingData, setPendingData] = useState<{ message: string; pending: boolean; seu_numero?: string } | null>(null);
     const [tenantHasDocument, setTenantHasDocument] = useState<boolean>(true);
@@ -184,6 +184,7 @@ export default function PlanPage() {
                                 setBoletoData(data.payload);
                             }
                             setPendingData(null);
+                            fetchInvoices(); // Atualiza o histórico assim que pronto!
                         }
                     }
                 } catch (e) {
@@ -258,6 +259,7 @@ export default function PlanPage() {
 
                 setPixData(data);
                 setPendingData(null);
+                fetchInvoices(); // Atualiza o histórico imediatamente
             } else if (paymentMethod === 'boleto-inter') {
                 // ID numérico para evitar problemas de compatibilidade
                 const tempId = Date.now().toString().slice(-15);
@@ -290,6 +292,7 @@ export default function PlanPage() {
 
                 setBoletoData(data);
                 setPendingData(null);
+                fetchInvoices(); // Atualiza o histórico imediatamente
             }
         } catch (err: any) {
             console.error('[CHECKOUT ERROR]', err);
@@ -536,14 +539,21 @@ export default function PlanPage() {
 
                     {pixData && !pendingData && (
                         <div className="py-4 flex flex-col items-center space-y-4">
-                            <p className="text-center text-sm text-slate-300">
+                            <div className="text-center bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl w-full">
+                                <p className="text-[10px] text-emerald-500 uppercase font-black tracking-widest">Valor do Pix</p>
+                                <p className="text-2xl font-black text-slate-100">
+                                    R$ {(pixData.amount || Number(PLANS[selectedPlan || 'basic']?.price || 0)).toFixed(2).replace('.', ',')}
+                                </p>
+                            </div>
+
+                            <p className="text-center text-xs text-slate-400">
                                 Escaneie o código abaixo para pagar via Pix. O acesso é liberado na hora!
                             </p>
 
                             <div className="bg-white p-3 rounded-xl border-4 border-emerald-500 shadow-xl">
                                 <QRCodeCanvas
                                     value={pixData.pixPayload}
-                                    size={200}
+                                    size={160}
                                     level="H"
                                     includeMargin={true}
                                 />
@@ -570,6 +580,16 @@ export default function PlanPage() {
                                     </Button>
                                 </div>
                             </div>
+
+                            {pixData.pdfUrl && (
+                                <Button
+                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-tight py-6 rounded-xl"
+                                    onClick={() => window.open(pixData.pdfUrl, '_blank')}
+                                >
+                                    <FileCheck className="w-5 h-5 mr-2" />
+                                    Baixar Comprovante / PDF
+                                </Button>
+                            )}
                         </div>
                     )}
 
@@ -674,6 +694,7 @@ export default function PlanPage() {
                                     <tr className="bg-slate-950/50 border-b border-slate-800">
                                         <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Data</th>
                                         <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Descrição</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Método</th>
                                         <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Valor</th>
                                         <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</th>
                                         <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Ações</th>
@@ -689,6 +710,21 @@ export default function PlanPage() {
                                                 <p className="text-xs font-bold text-slate-200">{inv.description}</p>
                                                 <p className="text-[10px] text-slate-500 font-mono">ID: {inv.metadata?.nosso_numero || inv.id.slice(0, 8)}</p>
                                             </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2">
+                                                    {inv.metadata?.method === 'pix_inter' ? (
+                                                        <span className="flex items-center gap-1 font-black text-[9px] text-emerald-500 bg-emerald-500/5 px-2 py-0.5 rounded border border-emerald-500/20 uppercase tracking-tighter">
+                                                            <Zap className="w-2.5 h-2.5" /> Pix
+                                                        </span>
+                                                    ) : inv.metadata?.method === 'boleto_inter' ? (
+                                                        <span className="flex items-center gap-1 font-black text-[9px] text-blue-500 bg-blue-500/5 px-2 py-0.5 rounded border border-blue-500/20 uppercase tracking-tighter">
+                                                            <FileText className="w-2.5 h-2.5" /> Boleto
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-[10px] text-slate-500 uppercase">Cartão</span>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td className="px-6 py-4 text-xs font-black text-slate-200">
                                                 R$ {inv.value.toFixed(2).replace('.', ',')}
                                             </td>
@@ -700,12 +736,20 @@ export default function PlanPage() {
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 text-right space-x-2">
-                                                {inv.metadata?.method === 'boleto_inter' && !inv.is_paid && (
+                                                {!inv.is_paid && (inv.metadata?.method === 'boleto_inter' || inv.metadata?.method === 'pix_inter') && (
                                                     <Button
                                                         size="sm"
                                                         variant="ghost"
                                                         className="h-8 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 text-[10px] font-black uppercase"
-                                                        onClick={() => window.open(`/api/checkout/inter-boleto/pdf?nossoNumero=${inv.metadata.nosso_numero}&codigoSolicitacao=${inv.metadata.txid || ''}`, '_blank')}
+                                                        onClick={() => {
+                                                            // Prioriza codigoSolicitacao (txid) que sempre está disponível
+                                                            const codigoSolicitacao = inv.metadata.txid;
+                                                            const nossoNumero = inv.metadata.nosso_numero || '';
+                                                            const url = codigoSolicitacao
+                                                                ? `/api/checkout/inter-boleto/pdf?codigoSolicitacao=${codigoSolicitacao}&nossoNumero=${nossoNumero}`
+                                                                : `/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}`;
+                                                            window.open(url, '_blank')
+                                                        }}
                                                     >
                                                         <FileText className="w-3 h-3 mr-1" /> PDF
                                                     </Button>
@@ -727,6 +771,6 @@ export default function PlanPage() {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

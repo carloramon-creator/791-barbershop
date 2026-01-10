@@ -159,15 +159,24 @@ export class InterAPIV3 {
         return { success: true };
     }
 
-    async getBillingPdf(nossoNumero: string): Promise<Buffer> {
+    /**
+     * Baixa o PDF de uma cobrança do Banco Inter
+     * @param identifier - Pode ser codigoSolicitacao (UUID) ou nossoNumero
+     * Prioriza codigoSolicitacao conforme documentação oficial do Inter
+     */
+    async getBillingPdf(identifier: string): Promise<Buffer> {
         const token = await this.getAccessToken();
+
+        console.log(`[INTER PDF] Tentando baixar PDF com identificador: ${identifier}`);
+
         const options: https.RequestOptions = {
             hostname: 'cdpj.partners.bancointer.com.br',
             port: 443,
-            path: `/cobranca/v3/cobrancas/${nossoNumero}/pdf`,
+            path: `/cobranca/v3/cobrancas/${identifier}/pdf`,
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/pdf'
             },
             cert: this.config.cert,
             key: this.config.key,
@@ -181,22 +190,25 @@ export class InterAPIV3 {
                 res.on('data', (chunk) => chunks.push(chunk));
                 res.on('end', () => {
                     if (res.statusCode === 200) {
+                        console.log(`[INTER PDF] ✅ PDF baixado com sucesso (${chunks.length} chunks)`);
                         resolve(Buffer.concat(chunks));
                     } else {
                         const errorBody = Buffer.concat(chunks).toString();
-                        console.error(`[INTER PDF ERROR] Status: ${res.statusCode} | ID: ${nossoNumero} | Response: ${errorBody}`);
+                        console.error(`[INTER PDF ERROR] ❌ Status: ${res.statusCode} | ID: ${identifier}`);
+                        console.error(`[INTER PDF ERROR] Response: ${errorBody}`);
                         reject(new Error(`Erro Inter ${res.statusCode}: ${errorBody}`));
                     }
                 });
             });
 
-            req.setTimeout(15000, () => {
+            req.setTimeout(20000, () => {
+                console.error(`[INTER PDF ERROR] ⏱️ Timeout ao baixar PDF (20s)`);
                 req.destroy();
-                reject(new Error('Timeout ao baixar PDF do Inter (15s)'));
+                reject(new Error('Timeout ao baixar PDF do Inter (20s)'));
             });
 
             req.on('error', (e) => {
-                console.error(`[INTER PDF REQ ERROR] ${e.message}`);
+                console.error(`[INTER PDF REQ ERROR] 🔥 ${e.message}`);
                 reject(e);
             });
             req.end();

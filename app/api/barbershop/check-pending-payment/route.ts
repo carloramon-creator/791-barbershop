@@ -53,7 +53,8 @@ export async function GET(req: Request) {
 
                 try {
                     const today = new Date().toISOString().split('T')[0];
-                    const response = await inter.listBillings(today, today);
+                    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                    const response = await inter.listBillings(yesterday, today);
                     const items = response.cobrancas || response.content || [];
 
                     const found = items.find((it: any) => it.seuNumero === seuNumero);
@@ -79,7 +80,10 @@ export async function GET(req: Request) {
 
         if (isReady) {
             const isPix = charge.metadata.method === 'pix_inter';
-            const pdfUrl = `/api/checkout/inter-boleto/pdf?nossoNumero=${charge.metadata.nosso_numero}&codigoSolicitacao=${charge.metadata.txid || ''}`;
+            // Prioriza codigoSolicitacao (txid) para PDF, pois sempre está disponível
+            const pdfUrl = charge.metadata.txid
+                ? `/api/checkout/inter-boleto/pdf?codigoSolicitacao=${charge.metadata.txid}&nossoNumero=${charge.metadata.nosso_numero || ''}`
+                : `/api/checkout/inter-boleto/pdf?nossoNumero=${charge.metadata.nosso_numero}`;
 
             return addCorsHeaders(req, NextResponse.json({
                 ready: true,
@@ -87,7 +91,8 @@ export async function GET(req: Request) {
                 payload: isPix ? {
                     pixPayload: charge.metadata.pix_payload,
                     amount: charge.value,
-                    expiresAt: charge.metadata.expires_at || new Date().toISOString()
+                    expiresAt: charge.metadata.expires_at || new Date().toISOString(),
+                    pdfUrl
                 } : {
                     nossoNumero: charge.metadata.nosso_numero,
                     codigoBarras: charge.metadata.codigo_barras,
