@@ -702,7 +702,7 @@ export default function PlanPage() {
                                         <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Método</th>
                                         <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Valor</th>
                                         <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Ações</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-left">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-800">
@@ -740,101 +740,103 @@ export default function PlanPage() {
                                                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/10 text-amber-500 border border-amber-500/20 uppercase">Pendente</span>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 text-right space-x-2 flex justify-end">
-                                                {!inv.is_paid && (inv.metadata?.method === 'boleto_inter' || inv.metadata?.method === 'pix_inter') && (
-                                                    <>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            className="h-8 text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 text-[10px] font-black uppercase"
-                                                            onClick={async () => {
-                                                                if (!confirm('Verificar status do pagamento no banco agora?')) return;
-                                                                try {
-                                                                    // Tenta pelo seu_numero ou txid
-                                                                    const seuNumero = inv.metadata.seu_numero;
-                                                                    const txid = inv.metadata.txid;
-
-                                                                    // Chama endpoint de Polling para atualizar status
-                                                                    let url = `/api/barbershop/check-pending-payment?force=true`;
-                                                                    if (seuNumero) url += `&seu_numero=${seuNumero}`;
-                                                                    else if (txid) url += `&txid=${txid}`; // Fallback se o endpoint suportar txid direto no query
-
-                                                                    // Nota: o endpoint atual suporta seu_numero e busca pelo txid interno no metadada.
-                                                                    // Se o seu_numero falhar, podemos ter que usar o debug endpoint.
-
-                                                                    // Vamos usar também o endpoint de DEBUG FORCE CHECK que é garantido
-                                                                    if (txid) {
-                                                                        const debugRes = await fetch(`/api/debug/force-check?txid=${txid}`);
-                                                                        const debugData = await debugRes.json();
-                                                                        if (debugData.updatedIsPaid) {
-                                                                            alert('Pagamento confirmado e processado! 🚀');
-                                                                            fetchInvoices();
-                                                                            return;
-                                                                        }
-                                                                    }
-
-                                                                    // Fallback para polling normal
-                                                                    if (seuNumero) {
-                                                                        const res = await fetch(`/api/barbershop/check-pending-payment?seu_numero=${seuNumero}`);
-                                                                        const data = await res.json();
-                                                                        if (data.ready) {
-                                                                            // O pooling já atualiza o is_paid se detectar
-                                                                            alert('Status Atualizado!');
-                                                                            fetchInvoices();
-                                                                        } else {
-                                                                            alert('Ainda consta como pendente no banco.');
-                                                                        }
-                                                                    }
-                                                                } catch (e: any) {
-                                                                    alert('Erro ao verificar: ' + e.message);
-                                                                }
-                                                            }}
-                                                        >
-                                                            <Activity className="w-3 h-3 mr-1" /> Check
-                                                        </Button>
-
-                                                        {inv.metadata?.method === 'pix_inter' ? (
+                                            <td className="px-6 py-4 text-left whitespace-nowrap">
+                                                <div className="flex items-center justify-start gap-3">
+                                                    {!inv.is_paid && (inv.metadata?.method === 'boleto_inter' || inv.metadata?.method === 'pix_inter') && (
+                                                        <>
                                                             <Button
                                                                 size="sm"
                                                                 variant="ghost"
-                                                                className="h-8 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-black uppercase"
-                                                                onClick={() => {
-                                                                    // Reabrir Modal Pix
-                                                                    setPixData({
-                                                                        amount: inv.value,
-                                                                        pixPayload: inv.metadata.pix_payload,
-                                                                        expiresAt: inv.metadata.expires_at || new Date().toISOString(),
-                                                                        pdfUrl: undefined // Pix pendente não tem PDF
-                                                                    });
-                                                                    setPendingData({
-                                                                        pending: true,
-                                                                        message: 'Aguardando pagamento...',
-                                                                        seu_numero: inv.metadata.seu_numero
-                                                                    }); // Ativa polling UI
-                                                                    setOpenDialog(true);
+                                                                className="h-8 text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 text-[10px] font-black uppercase"
+                                                                onClick={async () => {
+                                                                    if (!confirm('Verificar status do pagamento no banco agora?')) return;
+                                                                    try {
+                                                                        // Tenta pelo seu_numero ou txid
+                                                                        const seuNumero = inv.metadata.seu_numero;
+                                                                        const txid = inv.metadata.txid;
+
+                                                                        // Chama endpoint de Polling para atualizar status
+                                                                        let url = `/api/barbershop/check-pending-payment?force=true`;
+                                                                        if (seuNumero) url += `&seu_numero=${seuNumero}`;
+                                                                        else if (txid) url += `&txid=${txid}`; // Fallback se o endpoint suportar txid direto no query
+
+                                                                        // Nota: o endpoint atual suporta seu_numero e busca pelo txid interno no metadada.
+                                                                        // Se o seu_numero falhar, podemos ter que usar o debug endpoint.
+
+                                                                        // Vamos usar também o endpoint de DEBUG FORCE CHECK que é garantido
+                                                                        if (txid) {
+                                                                            const debugRes = await fetch(`/api/debug/force-check?txid=${txid}`);
+                                                                            const debugData = await debugRes.json();
+                                                                            if (debugData.updatedIsPaid) {
+                                                                                alert('Pagamento confirmado e processado! 🚀');
+                                                                                fetchInvoices();
+                                                                                return;
+                                                                            }
+                                                                        }
+
+                                                                        // Fallback para polling normal
+                                                                        if (seuNumero) {
+                                                                            const res = await fetch(`/api/barbershop/check-pending-payment?seu_numero=${seuNumero}`);
+                                                                            const data = await res.json();
+                                                                            if (data.ready) {
+                                                                                // O pooling já atualiza o is_paid se detectar
+                                                                                alert('Status Atualizado!');
+                                                                                fetchInvoices();
+                                                                            } else {
+                                                                                alert('Ainda consta como pendente no banco.');
+                                                                            }
+                                                                        }
+                                                                    } catch (e: any) {
+                                                                        alert('Erro ao verificar: ' + e.message);
+                                                                    }
                                                                 }}
                                                             >
-                                                                <Zap className="w-3 h-3 mr-1" /> Ver Pix
+                                                                <Activity className="w-3 h-3 mr-1" /> Check
                                                             </Button>
-                                                        ) : (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                className="h-8 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 text-[10px] font-black uppercase"
-                                                                onClick={() => {
-                                                                    const codigoSolicitacao = inv.metadata.txid;
-                                                                    const nossoNumero = inv.metadata.nosso_numero || '';
-                                                                    const url = codigoSolicitacao
-                                                                        ? `/api/checkout/inter-boleto/pdf?codigoSolicitacao=${codigoSolicitacao}&nossoNumero=${nossoNumero}`
-                                                                        : `/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}`;
-                                                                    window.open(url, '_blank')
-                                                                }}
-                                                            >
-                                                                <FileText className="w-3 h-3 mr-1" /> PDF
-                                                            </Button>
-                                                        )}
-                                                    </>
-                                                )}
+
+                                                            {inv.metadata?.method === 'pix_inter' ? (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    className="h-8 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-black uppercase"
+                                                                    onClick={() => {
+                                                                        // Reabrir Modal Pix
+                                                                        setPixData({
+                                                                            amount: inv.value,
+                                                                            pixPayload: inv.metadata.pix_payload,
+                                                                            expiresAt: inv.metadata.expires_at || new Date().toISOString(),
+                                                                            pdfUrl: undefined // Pix pendente não tem PDF
+                                                                        });
+                                                                        setPendingData({
+                                                                            pending: true,
+                                                                            message: 'Aguardando pagamento...',
+                                                                            seu_numero: inv.metadata.seu_numero
+                                                                        }); // Ativa polling UI
+                                                                        setOpenDialog(true);
+                                                                    }}
+                                                                >
+                                                                    <Zap className="w-3 h-3 mr-1" /> Ver Pix
+                                                                </Button>
+                                                            ) : (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    className="h-8 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 text-[10px] font-black uppercase"
+                                                                    onClick={() => {
+                                                                        const codigoSolicitacao = inv.metadata.txid;
+                                                                        const nossoNumero = inv.metadata.nosso_numero || '';
+                                                                        const url = codigoSolicitacao
+                                                                            ? `/api/checkout/inter-boleto/pdf?codigoSolicitacao=${codigoSolicitacao}&nossoNumero=${nossoNumero}`
+                                                                            : `/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}`;
+                                                                        window.open(url, '_blank')
+                                                                    }}
+                                                                >
+                                                                    <FileText className="w-3 h-3 mr-1" /> PDF
+                                                                </Button>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
