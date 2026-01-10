@@ -5,78 +5,70 @@ import { Plan } from './backend-types';
 
 /**
  * UTILITY PRINCIPAL DE AUTENTICAÇÃO (SSR)
- * Refatorado para lidar com cookies fragmentados de forma robusta no Railway.
+ * Design resiliênte para evitar falhas de sessão no Railway/Vercel.
  */
 export async function getCurrentUserAndTenant() {
     try {
         const cookieStore = await cookies();
         const allCookies = cookieStore.getAll();
 
-        console.log(`[AUTH-RESILIENCE] Iniciando validação. Cookies: ${allCookies.length}`);
+        console.log(`[AUTH] Verificando ${allCookies.length} cookies...`);
 
         let userAuthId: string | null = null;
         let userObj: any = null;
 
-        // 1. TENTATIVA PADRÃO via SDK
-        const client = await supabase();
-        const { data: { user }, error: authError } = await client.auth.getUser();
+        // 1. Tentar ler o token de qualquer cookie "sb-" ou que pareça um JWT
+        // Fazemos isso antes do SDK para garantir que pegamos mesmo se o nome do cookie mudar
+        for (const c of allCookies) {
+            if (!c.value || c.value.length < 50) continue;
 
-        if (user && !authError) {
-            userAuthId = user.id;
-            userObj = user;
-            console.log(`[AUTH-RESILIENCE] SDK validado: ${user.email}`);
-        } else {
-            console.log(`[AUTH-RESILIENCE] SDK falhou. Tentando agrupamento manual de cookies...`);
+            // JWT tem 2 pontos obrigatoriamente
+            if (c.value.split('.').length !== 3 && !c.value.includes('%2E')) continue;
 
-            // 2. AGRUPAMENTO DE FRAGMENTOS (sb-xxxxx-auth-token.0, .1 ...)
-            const groups: Record<string, string[]> = {};
-            allCookies.forEach(c => {
-                const baseName = c.name.split('.')[0];
-                if (!groups[baseName]) groups[baseName] = [];
-                // Guardamos o nome completo para ordenar depois pelas extensões (.0, .1)
-                groups[baseName].push(c.name + ':::' + c.value);
-            });
+            try {
+                const val = decodeURIComponent(c.value);
+                let token = val;
 
-            for (const base in groups) {
-                const parts = groups[base];
-                // Sorteia para garantir ordem .0, .1, .2
-                parts.sort((a, b) => a.localeCompare(b));
-                const combinedValue = parts.map(p => p.split(':::')[1]).join('');
-
-                if (combinedValue.length < 50) continue;
-
-                let token: string | null = null;
-                try {
-                    const decoded = decodeURIComponent(combinedValue);
-                    if (decoded.startsWith('[') && decoded.includes('.')) {
-                        token = JSON.parse(decoded)[0];
-                    } else if (decoded.startsWith('{')) {
-                        token = JSON.parse(decoded).access_token || JSON.parse(decoded).token;
-                    } else if (decoded.split('.').length === 3) {
-                        token = decoded.replace(/^"|"$/g, '');
-                    }
-                } catch (e) {
-                    if (combinedValue.split('.').length === 3) token = combinedValue;
+                // Tratar formatos JSON/Array do Supabase SSR
+                if (val.startsWith('[')) {
+                    token = JSON.parse(val)[0];
+                } else if (val.startsWith('{')) {
+                    token = JSON.parse(val).access_token || JSON.parse(val).token;
+                } else {
+                    token = val.replace(/^"|"$/g, '');
                 }
 
-                if (token && token.length > 50) {
-                    console.log(`[AUTH-RESILIENCE] Testando token agrupado do grupo: ${base}`);
+                if (token && token.split('.').length === 3) {
                     const { data: { user: adminUser }, error: adminError } = await supabaseAdmin.auth.getUser(token);
                     if (adminUser && !adminError) {
                         userAuthId = adminUser.id;
                         userObj = adminUser;
-                        console.log(`[AUTH-RESILIENCE] Sucesso manual! Usuário: ${adminUser.email}`);
+                        console.log(`[AUTH] ✅ Token validado extraído do cookie ${c.name}`);
                         break;
                     }
                 }
+            } catch (e) {
+                // Ignore parsing errors for non-matching cookies
+            }
+        }
+
+        // 2. Fallback para o SDK caso o loop manual não ache (raro, mas segurança)
+        if (!userAuthId) {
+            const client = await supabase();
+            const { data: { user }, error } = await client.auth.getUser();
+            if (user && !error) {
+                userAuthId = user.id;
+                userObj = user;
+                console.log(`[AUTH] ✅ Sessão validada via SDK`);
             }
         }
 
         if (!userAuthId) {
+            console.error('[AUTH] ❌ Erro: Nenhum usuário autenticado localizado.');
             throw new Error('Usuário não autenticado ou sessão expirada');
         }
 
-        // 3. BUSCAR PERFIL
+        // 3. Buscar Perfil no Banco (Ignorando RLS)
         const { data: userData, error: profileError } = await supabaseAdmin
             .from('users')
             .select('*')
@@ -84,10 +76,10 @@ export async function getCurrentUserAndTenant() {
             .single();
 
         if (profileError || !userData) {
-            throw new Error('Perfil de usuário não localizado.');
+            throw new Error('Perfil do sistema não localizado para este usuário.');
         }
 
-        // Segurança Ramon
+        // --- SEGURANÇA RAMON ---
         const userEmail = (userData.email || '').toLowerCase();
         const isSystemAdmin =
             userData.is_system_admin === true ||
@@ -96,16 +88,18 @@ export async function getCurrentUserAndTenant() {
 
         let tenantIdToUse = userData.tenant_id;
 
-        // Impersonate
+        // 4. IMPERSONATE (TRAVA DE ADMIN)
         const impersonateCookie = cookieStore.get('impersonate_tenant_id');
         if (isSystemAdmin && impersonateCookie?.value) {
+            console.log(`[AUTH] 🕵️ MODO ACESSO OCULTO ATIVO: ${impersonateCookie.value}`);
             tenantIdToUse = impersonateCookie.value;
         }
 
         if (!tenantIdToUse && !isSystemAdmin) {
-            throw new Error('Nenhuma barbearia vinculada.');
+            throw new Error('Sua conta não possui uma barbearia vinculada.');
         }
 
+        // 5. Carregar Dados da Barbearia
         let tenantData = null;
         if (tenantIdToUse) {
             const { data: tenant } = await supabaseAdmin
@@ -126,7 +120,7 @@ export async function getCurrentUserAndTenant() {
         };
 
     } catch (error: any) {
-        console.error('[AUTH-ERROR]', error.message);
+        console.error('[AUTH-CRITICAL]', error.message);
         throw error;
     }
 }
@@ -169,15 +163,6 @@ export function getStatusColor(status: string) {
         case 'canceled': return 'text-red-500';
         default: return 'text-slate-300';
     }
-}
-
-export async function getDynamicBarberAverages(tenantId: string) {
-    try {
-        const { data } = await supabaseAdmin.from('barbers').select('id, avg_time_minutes').eq('tenant_id', tenantId);
-        const averages: Record<string, number> = {};
-        (data || []).forEach(b => averages[b.id] = b.avg_time_minutes || 30);
-        return averages;
-    } catch { return {}; }
 }
 
 export function addCorsHeaders(req: Request, res: NextResponse) {
