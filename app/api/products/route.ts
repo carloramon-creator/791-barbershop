@@ -25,11 +25,11 @@ export async function GET() {
 export async function POST(req: Request) {
     try {
         const { tenant } = await getCurrentUserAndTenant();
-        const { name, price } = await req.json();
+        const { name, price, category_id } = await req.json();
 
         const { data, error } = await supabaseAdmin
             .from('products')
-            .insert({ name, price, tenant_id: tenant.id })
+            .insert({ name, price, category_id, tenant_id: tenant.id })
             .select()
             .single();
 
