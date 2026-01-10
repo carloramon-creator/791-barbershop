@@ -67,9 +67,28 @@ export async function GET(req: Request) {
         while (current < workEnd) {
             const slotEnd = addMinutes(current, duration);
 
-            // If slot exceeds work hours, stop
-            if (isAfter(slotEnd, workEnd)) {
-                break;
+            // Check if slot exceeds working hours
+            let exceedsWorkHours = isAfter(slotEnd, workEnd);
+
+            if (exceedsWorkHours) {
+                const tolerance = Number(openingHours.overtime_tolerance_percent || 0);
+
+                // Only evaluate tolerance if configured and if the slot starts BEFORE closing time
+                if (tolerance > 0 && current < workEnd) {
+                    const remainingMs = workEnd.getTime() - current.getTime(); // Time left until close
+                    const excessMs = slotEnd.getTime() - workEnd.getTime();    // Time exceeding close
+
+                    if (remainingMs > 0) { // Avoid division by zero if current is exactly workEnd
+                        const ratio = (excessMs / remainingMs) * 100;
+                        // Example: 20min excess / 30min remaining = 66.6%. If tolerance is 70, it passes.
+                        if (ratio <= tolerance) {
+                            exceedsWorkHours = false; // Authorized by tolerance
+                        }
+                    }
+                }
+
+                // If still exceeding (or tolerance logic failed), stop generating slots
+                if (exceedsWorkHours) break;
             }
 
             // Check collision

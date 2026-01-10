@@ -63,7 +63,8 @@ export default function BarbershopSettingsPage() {
         start_time: '09:00',
         end_time: '19:00',
         lunch_duration: 60,
-        lunch_enabled: true
+        lunch_enabled: true,
+        overtime_tolerance_percent: 0
     });
 
 
@@ -111,7 +112,8 @@ export default function BarbershopSettingsPage() {
                         start_time: data.opening_hours.start_time || '09:00',
                         end_time: data.opening_hours.end_time || '19:00',
                         lunch_duration: data.opening_hours.lunch_duration !== undefined ? data.opening_hours.lunch_duration : 60,
-                        lunch_enabled: data.opening_hours.lunch_duration > 0
+                        lunch_enabled: data.opening_hours.lunch_duration > 0,
+                        overtime_tolerance_percent: data.opening_hours.overtime_tolerance_percent || 0
                     });
                 }
 
@@ -213,7 +215,8 @@ export default function BarbershopSettingsPage() {
                 slug: slug,
                 opening_hours: {
                     ...openingHours,
-                    lunch_duration: openingHours.lunch_enabled ? Number(openingHours.lunch_duration) : 0
+                    lunch_duration: openingHours.lunch_enabled ? Number(openingHours.lunch_duration) : 0,
+                    overtime_tolerance_percent: Number(openingHours.overtime_tolerance_percent)
                 },
                 // Bank Info
                 pix_key: pixKey,
@@ -607,6 +610,28 @@ export default function BarbershopSettingsPage() {
                                                 </div>
                                             )}
                                         </div>
+
+                                        <div className="pt-4 border-t border-slate-800 space-y-3">
+                                            <div className="space-y-1">
+                                                <Label className="text-slate-200">Tolerância de Atendimento (%)</Label>
+                                                <p className="text-xs text-slate-500">
+                                                    Permite agendar além do horário se o tempo extra for até X% do tempo restante.
+                                                    Ex: Faltam 30min, serviço 50min (excesso 20min = 66% do restante). Se tolerância for 70%, aceita.
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <Input
+                                                    type="number"
+                                                    value={openingHours.overtime_tolerance_percent}
+                                                    onChange={e => setOpeningHours({ ...openingHours, overtime_tolerance_percent: Number(e.target.value) })}
+                                                    className="bg-slate-950 border-slate-800 text-slate-100 w-24"
+                                                    min={0}
+                                                    max={200}
+                                                />
+                                                <span className="text-slate-400 font-bold">%</span>
+                                            </div>
+                                        </div>
+
                                     </CardContent>
                                 </Card>
                             </div>
@@ -936,6 +961,6 @@ export default function BarbershopSettingsPage() {
                     </div>
                 </CardContent>
             </Card>
-        </div>
+        </div >
     );
 }
