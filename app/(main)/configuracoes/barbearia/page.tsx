@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Loader2, Users, CreditCard, Building2, AlertTriangle, Shield } from 'lucide-react';
+import { Upload, Loader2, Users, CreditCard, Building2, AlertTriangle, Shield, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { QRCodeSVG } from 'qrcode.react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -31,6 +32,7 @@ export default function BarbershopSettingsPage() {
     const [hasCnpj, setHasCnpj] = useState(true);
     const [phone, setPhone] = useState('');
     const [logoUrl, setLogoUrl] = useState('');
+    const [slug, setSlug] = useState('');
 
     // Address State
     const [cep, setCep] = useState('');
@@ -63,6 +65,7 @@ export default function BarbershopSettingsPage() {
                 setHasCnpj(data.cnpj ? data.cnpj.replace(/\D/g, '').length > 11 : true);
                 setPhone(data.phone || '');
                 setLogoUrl(data.logo_url || '');
+                setSlug(data.slug || '');
 
                 // Address fields
                 setCep(data.cep || '');
@@ -178,6 +181,7 @@ export default function BarbershopSettingsPage() {
                 city,
                 state,
                 logo_url: logoUrl,
+                slug: slug,
                 // Bank Info
                 pix_key: pixKey,
                 pix_key_type: pixKeyType,
@@ -355,7 +359,112 @@ export default function BarbershopSettingsPage() {
                                     {hasCnpj ? 'Ideal para empresas formalizadas.' : 'Use seu CPF caso não seja empresa formal (MEI/etc).'}
                                 </p>
                             </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="slug" className="text-slate-400 text-xs uppercase font-bold">Slug URL (Identificador Único)</Label>
+                                <Input
+                                    id="slug"
+                                    value={slug}
+                                    onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                                    placeholder="ex: minha-barbearia"
+                                    disabled={!isEditing}
+                                    className="bg-slate-950 border-slate-800 text-blue-400 font-mono h-11"
+                                />
+                                <p className="text-[10px] text-slate-500">
+                                    Seu link será: 791barber.com/cliente/{slug || 'nome-da-barbearia'}
+                                </p>
+                            </div>
                         </div>
+
+                        {/* Public Access Section - NEW */}
+                        {!isEditing && (
+                            <div className="space-y-4 pt-6 border-t border-slate-800/50">
+                                <h3 className="text-sm font-bold uppercase text-slate-400 flex items-center gap-2">
+                                    <Sparkles size={16} className="text-blue-500" /> Divulgação para Clientes
+                                </h3>
+
+                                <Card className="bg-slate-950/50 border-slate-800">
+                                    <CardContent className="pt-6">
+                                        <div className="flex flex-col md:flex-row items-center gap-8">
+                                            <div className="bg-white p-4 rounded-2xl shadow-2xl">
+                                                <QRCodeSVG
+                                                    value={`https://791barber.com/cliente/${slug}`}
+                                                    size={160}
+                                                    includeMargin={true}
+                                                    level="H"
+                                                />
+                                            </div>
+                                            <div className="flex-1 space-y-4 text-center md:text-left">
+                                                <div className="space-y-1">
+                                                    <h4 className="text-xl font-black text-slate-100 uppercase italic">App do Cliente</h4>
+                                                    <p className="text-sm text-slate-400">Este QR Code leva seus clientes direto para a sua fila digital.</p>
+                                                </div>
+
+                                                <div className="flex flex-col sm:flex-row gap-3">
+                                                    <Button
+                                                        variant="outline"
+                                                        className="border-slate-700 hover:bg-slate-800 gap-2"
+                                                        onClick={() => {
+                                                            const url = `https://791barber.com/cliente/${slug}`;
+                                                            navigator.clipboard.writeText(url);
+                                                            alert('Link copiado!');
+                                                        }}
+                                                    >
+                                                        Copiar Link
+                                                    </Button>
+                                                    <Button
+                                                        className="bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-lg shadow-blue-900/40"
+                                                        onClick={() => {
+                                                            const printWindow = window.open('', '_blank');
+                                                            if (!printWindow) return;
+                                                            const url = `https://791barber.com/cliente/${slug}`;
+                                                            printWindow.document.write(`
+                                                                <html>
+                                                                    <head>
+                                                                        <title>Imprimir QR Code - ${name}</title>
+                                                                        <style>
+                                                                            body { font-family: sans-serif; display: flex; flex-direction: column; items-center; justify-content: center; height: 100vh; margin: 0; text-align: center; background: white; color: black; }
+                                                                            .card { border: 2px solid #000; padding: 40px; border-radius: 20px; max-width: 400px; }
+                                                                            h1 { margin-top: 0; font-size: 28px; text-transform: uppercase; }
+                                                                            p { color: #666; margin-bottom: 30px; }
+                                                                            .qr-placeholder { margin: 20px 0; }
+                                                                            .footer { font-size: 10px; margin-top: 40px; color: #999; }
+                                                                        </style>
+                                                                    </head>
+                                                                    <body>
+                                                                        <div class="card">
+                                                                            <img src="${logoUrl}" style="height: 80px; margin-bottom: 20px;" />
+                                                                            <h1>${name}</h1>
+                                                                            <p>Escaneie para entrar na fila digital</p>
+                                                                            <div id="qr-container"></div>
+                                                                            <div class="footer">Powered by 791 Barber</div>
+                                                                        </div>
+                                                                        <script>
+                                                                            // Pequeno hack para renderizar o QR code na janela de impressão
+                                                                            window.onload = () => {
+                                                                                const container = document.getElementById('qr-container');
+                                                                                const svg = window.opener.document.querySelector('svg').cloneNode(true);
+                                                                                svg.setAttribute('width', '250');
+                                                                                svg.setAttribute('height', '250');
+                                                                                container.appendChild(svg);
+                                                                                setTimeout(() => { window.print(); window.close(); }, 500);
+                                                                            };
+                                                                        </script>
+                                                                    </body>
+                                                                </html>
+                                                            `);
+                                                            printWindow.document.close();
+                                                        }}
+                                                    >
+                                                        Imprimir QR Code
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
 
                         {/* Address Section */}
                         <div className="space-y-4 pt-6 border-t border-slate-800/50">
