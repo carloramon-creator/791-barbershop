@@ -465,18 +465,18 @@ export default function PlanPage() {
                                         <Button
                                             className={cn(
                                                 'w-full py-6 rounded-xl font-black uppercase tracking-widest',
-                                                (currentPlan === plan.id || (subscriptionStatus === 'active' && currentPlan !== 'trial'))
+                                                currentPlan === plan.id
                                                     ? 'bg-slate-800 light:bg-slate-100 text-slate-500'
                                                     : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20'
                                             )}
-                                            disabled={currentPlan === plan.id || (subscriptionStatus === 'active' && currentPlan !== 'trial')}
+                                            disabled={currentPlan === plan.id}
                                             onClick={() => {
                                                 setSelectedPlan(plan.id);
                                                 setPaymentMethod('card');
                                                 setOpenDialog(true);
                                             }}
                                         >
-                                            {currentPlan === plan.id ? 'Plano Atual' : (subscriptionStatus === 'active' && currentPlan !== 'trial' ? 'Já Ativo' : 'Contratar')}
+                                            {currentPlan === plan.id ? 'Plano Atual' : 'Contratar'}
                                         </Button>
                                     </CardContent>
                                 </Card>

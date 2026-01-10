@@ -92,6 +92,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         .update({
             plan: plan,
             stripe_customer_id: session.customer as string,
+            stripe_subscription_id: session.subscription as string,
             subscription_status: 'active',
         })
         .eq('id', tenantId);
