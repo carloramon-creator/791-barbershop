@@ -393,6 +393,7 @@ export default function BarbershopSettingsPage() {
                                         <div className="flex flex-col md:flex-row items-center gap-8">
                                             <div className="bg-white p-4 rounded-2xl shadow-2xl">
                                                 <QRCodeSVG
+                                                    id="qr-code-to-print"
                                                     value={`https://frontend-client-six-orpin.vercel.app/${slug}`}
                                                     size={160}
                                                     includeMargin={true}
@@ -430,30 +431,34 @@ export default function BarbershopSettingsPage() {
                                                                         <title>Imprimir QR Code - ${name}</title>
                                                                         <style>
                                                                             body { font-family: sans-serif; display: flex; flex-direction: column; items-center; justify-content: center; height: 100vh; margin: 0; text-align: center; background: white; color: black; }
-                                                                            .card { border: 2px solid #000; padding: 40px; border-radius: 20px; max-width: 400px; }
-                                                                            h1 { margin-top: 0; font-size: 28px; text-transform: uppercase; }
+                                                                            .card { border: 2px solid #000; padding: 40px; border-radius: 20px; max-width: 400px; display: flex; flex-direction: column; align-items: center; }
+                                                                            h1 { margin-top: 0; font-size: 28px; text-transform: uppercase; margin-bottom: 5px; }
                                                                             p { color: #666; margin-bottom: 30px; }
-                                                                            .qr-placeholder { margin: 20px 0; }
-                                                                            .footer { font-size: 10px; margin-top: 40px; color: #999; }
+                                                                            #qr-container { background: white; padding: 10px; border-radius: 10px; }
+                                                                            .footer { font-size: 10px; margin-top: 40px; color: #999; text-transform: uppercase; font-weight: bold; }
                                                                         </style>
                                                                     </head>
                                                                     <body>
                                                                         <div class="card">
-                                                                            <img src="${logoUrl}" style="height: 80px; margin-bottom: 20px;" />
+                                                                            <img src="${logoUrl}" style="height: 60px; max-width: 150px; object-fit: contain; margin-bottom: 20px;" />
                                                                             <h1>${name}</h1>
                                                                             <p>Escaneie para entrar na fila digital</p>
                                                                             <div id="qr-container"></div>
                                                                             <div class="footer">Powered by 791 Barber</div>
                                                                         </div>
                                                                         <script>
-                                                                            // Pequeno hack para renderizar o QR code na janela de impressão
                                                                             window.onload = () => {
                                                                                 const container = document.getElementById('qr-container');
-                                                                                const svg = window.opener.document.querySelector('svg').cloneNode(true);
-                                                                                svg.setAttribute('width', '250');
-                                                                                svg.setAttribute('height', '250');
-                                                                                container.appendChild(svg);
-                                                                                setTimeout(() => { window.print(); window.close(); }, 500);
+                                                                                const originalSvg = window.opener.document.getElementById('qr-code-to-print');
+                                                                                if (originalSvg) {
+                                                                                    const svg = originalSvg.cloneNode(true);
+                                                                                    svg.setAttribute('width', '300');
+                                                                                    svg.setAttribute('height', '300');
+                                                                                    container.appendChild(svg);
+                                                                                    setTimeout(() => { window.print(); window.close(); }, 500);
+                                                                                } else {
+                                                                                    container.innerHTML = "<p>Erro ao gerar QR Code. Tente novamente.</p>";
+                                                                                }
                                                                             };
                                                                         </script>
                                                                     </body>

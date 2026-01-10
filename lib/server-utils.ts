@@ -31,7 +31,7 @@ export async function getCurrentUserAndTenant() {
             let accessToken: string | null = null;
 
             // Tenta encontrar token do Supabase SSR (sb-xxxxx-auth-token)
-            const authCookies = allCookies.filter(c => c.name.endsWith('-auth-token'));
+            const authCookies = allCookies.filter(c => c.name.includes('-auth-token'));
 
             if (authCookies.length > 0) {
                 console.log('[BACKEND] 🍪 Cookies de auth encontrados:', authCookies.map(c => c.name));
@@ -40,7 +40,8 @@ export async function getCurrentUserAndTenant() {
                     const getIndex = (name: string) => {
                         const parts = name.split('.');
                         const last = parts[parts.length - 1];
-                        return (parts.length > 1 && !isNaN(parseInt(last))) ? parseInt(last) : -1;
+                        // Procura por .0, .1, .2 no final do nome do cookie
+                        return (!isNaN(parseInt(last))) ? parseInt(last) : -1;
                     };
                     return getIndex(a.name) - getIndex(b.name);
                 });
