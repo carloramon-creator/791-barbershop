@@ -49,7 +49,10 @@ export async function PUT(req: Request) {
             inter_client_secret: body.inter_client_secret,
             inter_cert_content: body.inter_cert_content,
             inter_key_content: body.inter_key_content,
-            inter_pix_key: body.inter_pix_key
+            inter_pix_key: body.inter_pix_key,
+            // Modules
+            module_queue_enabled: body.module_queue_enabled,
+            module_appointments_enabled: body.module_appointments_enabled
         };
 
         // Limpeza de campos vazios ou undefined
