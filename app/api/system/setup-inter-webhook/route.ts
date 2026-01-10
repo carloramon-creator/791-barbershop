@@ -48,7 +48,8 @@ export async function GET(req: Request) {
         });
 
         // IMPORTANT: Use production URL to ensure Inter calls the right place
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://791barber.com';
+        // Temporariamente forçando o domínio do Railway até a migração DNS ser concluída
+        const baseUrl = 'https://791-barbershop-production.up.railway.app';
         const webhookUrl = `${baseUrl}/api/webhooks/inter`;
 
         console.log('[SETUP] Registering Webhook:', webhookUrl);
