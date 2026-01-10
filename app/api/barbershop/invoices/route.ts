@@ -203,12 +203,13 @@ export async function GET(req: Request) {
             console.error('[STRIPE-SYNC ERROR]', e);
         }
 
-        // 3. Buscar faturas atualizadas
+        // 3. Buscar faturas atualizadas - Ordenado por DATA (mais recente primeiro)
         const { data: invoices, error } = await supabaseAdmin
             .from('finance')
             .select('*')
             .eq('tenant_id', tenant.id)
             .ilike('description', '%SaaS%')
+            .order('date', { ascending: false })
             .order('created_at', { ascending: false });
 
         if (error) throw error;
