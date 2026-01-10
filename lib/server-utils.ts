@@ -5,7 +5,6 @@ import { Plan } from './backend-types';
 
 /**
  * UTILITY PRINCIPAL DE AUTENTICAÇÃO (SSR)
- * Extremamente resiliente para lidar com cookies fragmentados e diferentes ambientes.
  */
 export async function getCurrentUserAndTenant() {
     try {
@@ -28,22 +27,27 @@ export async function getCurrentUserAndTenant() {
             console.log('[AUTH] ⚠️ Sessão padrão falhou, tentando busca manual de token...');
 
             // 2. BUSCA MANUAL DE TOKEN (Fallback para situações de chunking ou proxy)
-            // Procura por cookies que contenham o token de acesso de diversas formas
-            const tokenCookies = allCookies.filter(c =>
-                c.name.includes('-auth-token') ||
-                c.name.includes('access-token') ||
-                c.name.includes('sb-') // Prefixo padrão do Supabase
-            );
+            // Agrupar cookies por base name (ex: sb-xxx-auth-token)
+            const tokenGroups: Record<string, string[]> = {};
 
-            if (tokenCookies.length > 0) {
-                // Ordena por nome para reconstruir caso esteja fragmentado (.0, .1)
-                tokenCookies.sort((a, b) => a.name.localeCompare(b.name));
-                const rawValue = tokenCookies.map(c => c.value).join('');
+            allCookies.forEach(c => {
+                if (c.name.includes('auth-token') || c.name.includes('access-token')) {
+                    const baseName = c.name.split('.')[0];
+                    if (!tokenGroups[baseName]) tokenGroups[baseName] = [];
+                    // Adicionamos o nome completo para ordenar depois
+                    tokenGroups[baseName].push(c.name + '|||' + c.value);
+                }
+            });
+
+            // Tentar cada grupo de cookies
+            for (const baseName in tokenGroups) {
+                const group = tokenGroups[baseName];
+                group.sort((a, b) => a.localeCompare(b)); // Ordena .0, .1...
+                const combinedValue = group.map(item => item.split('|||')[1]).join('');
+
                 let token: string | null = null;
-
                 try {
-                    const decoded = decodeURIComponent(rawValue);
-                    // O valor pode ser um array JSON ["access_token", "refresh_token"]
+                    const decoded = decodeURIComponent(combinedValue);
                     if (decoded.trim().startsWith('[')) {
                         token = JSON.parse(decoded)[0];
                     } else if (decoded.trim().startsWith('{')) {
@@ -52,7 +56,7 @@ export async function getCurrentUserAndTenant() {
                         token = decoded.replace(/^"|"$/g, '');
                     }
                 } catch (e) {
-                    token = rawValue.replace(/^"|"$/g, '');
+                    token = combinedValue.replace(/^"|"$/g, '');
                 }
 
                 if (token && token.length > 40) {
@@ -60,18 +64,34 @@ export async function getCurrentUserAndTenant() {
                     if (adminUser && !adminError) {
                         userAuthId = adminUser.id;
                         userObj = adminUser;
-                        console.log('[AUTH] ✅ Token manual validado com sucesso.');
+                        console.log(`[AUTH] ✅ Token validado manualmente (Grupo: ${baseName})`);
+                        break;
                     }
                 }
             }
         }
 
         if (!userAuthId) {
-            console.error('[AUTH] ❌ Falha crítica: Nenhum token válido encontrado nos cookies.');
+            // Última tentativa: Verificar se há um Authorization header (caso venha de proxy)
+            const headerList = await headers();
+            const authHeader = headerList.get('Authorization');
+            if (authHeader?.startsWith('Bearer ')) {
+                const token = authHeader.substring(7);
+                const { data: { user: headerUser } } = await supabaseAdmin.auth.getUser(token);
+                if (headerUser) {
+                    userAuthId = headerUser.id;
+                    userObj = headerUser;
+                    console.log('[AUTH] ✅ Token validado via Header');
+                }
+            }
+        }
+
+        if (!userAuthId) {
+            console.error('[AUTH] ❌ Falha crítica: Nenhum token válido encontrado.');
             throw new Error('Usuário não autenticado ou sessão expirada');
         }
 
-        // 3. BUSCAR PERFIL COMPLETO
+        // 3. BUSCAR PERFIL COMPLETO via Admin para ignorar RLS
         const { data: userData, error: userError } = await supabaseAdmin
             .from('users')
             .select('*')
@@ -79,24 +99,25 @@ export async function getCurrentUserAndTenant() {
             .single();
 
         if (userError || !userData) {
-            throw new Error('Não foi possível localizar seu perfil de usuário.');
+            throw new Error('Perfil de usuário não localizado no banco.');
         }
 
+        // 4. DETERMINAR ADMIN STATUS
         const isSystemAdmin = userData.is_system_admin === true || userData.role === 'admin';
         let tenantIdToUse = userData.tenant_id;
 
-        // 4. SUPORTE A IMPERSONATE (APENAS PARA ADM)
+        // 5. SUPORTE A IMPERSONATE
         const impersonateId = cookieStore.get('impersonate_tenant_id')?.value;
         if (isSystemAdmin && impersonateId) {
-            console.log(`[AUTH] 🕵️ MODO ADMIN ATIVO: Simulando Barbearia ${impersonateId}`);
+            console.log(`[AUTH] 🕵️ MODO ADMIN: ${impersonateId}`);
             tenantIdToUse = impersonateId;
         }
 
         if (!tenantIdToUse && !isSystemAdmin) {
-            throw new Error('Você não possui uma barbearia vinculada.');
+            throw new Error('Sem barbearia vinculada.');
         }
 
-        // 5. BUSCAR DADOS DO TENANT
+        // 6. CARREGAR DADOS DO TENANT
         let tenantData = null;
         if (tenantIdToUse) {
             const { data: tenant } = await supabaseAdmin
@@ -156,7 +177,7 @@ export async function checkRole(requiredRole: 'owner' | 'barber' | 'staff') {
 export function checkRolePermission(roleOrRoles: string | string[], permission: string) {
     const roles = Array.isArray(roleOrRoles) ? roleOrRoles : [roleOrRoles];
     if (roles.includes('admin') || roles.includes('system_admin')) return true;
-    if (roles.includes('owner')) return true; // Por enquanto owners podem tudo
+    if (roles.includes('owner')) return true;
     return false;
 }
 
