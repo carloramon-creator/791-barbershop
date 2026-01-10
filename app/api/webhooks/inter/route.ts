@@ -34,16 +34,30 @@ export async function POST(req: Request) {
             // --- 2. Payload Cobrança/Boleto (V3) ---
             // Geralmente campos na raiz como "nossoNumero", "seuNumero", "situacao": "PAGO"
             else if (notif.nossoNumero) {
-                console.log(`[INTER WEBHOOK] Processando Cobrança nossoNumero=${notif.nossoNumero}, seuNumero=${notif.seuNumero}`);
-                await processPayment({
-                    identifier: notif.nossoNumero,
-                    identifierType: 'nosso_numero',
-                    secondaryIdentifier: notif.seuNumero, // Backup importantíssimo (seu_numero)
-                    amount: notif.valorNominal || 0,
-                    paidAt: notif.dataHoraSituacao || new Date().toISOString(),
-                    raw: notif
-                });
-                processedCount++;
+                const situacao = notif.situacao || notif.status;
+                console.log(`[INTER WEBHOOK] Recv Cobrança nossoNumero=${notif.nossoNumero}, situacao=${situacao}`);
+
+                const isPaid = situacao === 'PAGO' || situacao === 'RECEBIDO' || situacao === 'CONCLUIDA' || situacao === 'RECEBIDA';
+                const isCanceled = situacao === 'CANCELADO' || situacao === 'EXPIRADO' || situacao === 'REJEITADA';
+
+                if (isPaid) {
+                    await processPayment({
+                        identifier: notif.nossoNumero,
+                        identifierType: 'nosso_numero',
+                        secondaryIdentifier: notif.seuNumero,
+                        amount: notif.valorNominal || 0,
+                        paidAt: notif.dataHoraSituacao || new Date().toISOString(),
+                        raw: notif
+                    });
+                    processedCount++;
+                } else if (isCanceled) {
+                    console.log(`[INTER WEBHOOK] Cobrança ${notif.nossoNumero} marcada como ${situacao}. Atualizando registro.`);
+                    await supabaseAdmin.from('finance')
+                        .update({ metadata: { ...notif, status_inter: situacao } })
+                        .eq('metadata->>nosso_numero', notif.nossoNumero);
+                } else {
+                    console.log(`[INTER WEBHOOK] Ignorando status intermediário: ${situacao}`);
+                }
             }
         }
 
