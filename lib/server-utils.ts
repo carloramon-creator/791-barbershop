@@ -130,7 +130,7 @@ export async function getCurrentUserAndTenant() {
             throw new Error('Perfil de usuário não encontrado');
         }
 
-        const isSystemAdmin = userData.is_system_admin || false;
+        const isSystemAdmin = userData.is_system_admin === true || userData.role === 'admin';
         let tenantIdToUse = userData.tenant_id;
 
         // 5. Se for admin, permitir override via cookie de impersonate

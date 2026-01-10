@@ -408,6 +408,7 @@ export default function BarbershopSettingsPage() {
 
                                                 <div className="flex flex-col sm:flex-row gap-3">
                                                     <Button
+                                                        type="button"
                                                         variant="outline"
                                                         className="border-slate-700 hover:bg-slate-800 gap-2"
                                                         onClick={() => {
@@ -420,6 +421,7 @@ export default function BarbershopSettingsPage() {
                                                         Copiar Link
                                                     </Button>
                                                     <Button
+                                                        type="button"
                                                         className="bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-lg shadow-blue-900/40"
                                                         onClick={() => {
                                                             const printWindow = window.open('', '_blank');
