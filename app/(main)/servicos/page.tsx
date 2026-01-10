@@ -324,9 +324,19 @@ export default function ServicosPage() {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => {
-                                        setEditingService(s);
-                                        setIsEditOpen(true);
+                                    onClick={async () => {
+                                        try {
+                                            // Carregar produtos do serviço
+                                            const serviceProducts = await Api.getServiceProducts(s.id);
+                                            const productIds = serviceProducts.map((sp: any) => sp.product_id);
+
+                                            setEditingService({ ...s, product_ids: productIds });
+                                            setIsEditOpen(true);
+                                        } catch (error) {
+                                            console.error('Erro ao carregar produtos do serviço:', error);
+                                            setEditingService({ ...s, product_ids: [] });
+                                            setIsEditOpen(true);
+                                        }
                                     }}
                                     className="text-slate-600 hover:text-white transition-colors"
                                 >

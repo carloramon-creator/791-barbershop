@@ -39,6 +39,8 @@ export default function ProdutosPage() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [newProduct, setNewProduct] = useState({ name: '', price: '', category_id: '' });
     const [newCategoryName, setNewCategoryName] = useState('');
+    const [isCreatingNewCategory, setIsCreatingNewCategory] = useState(false);
+    const [inlineNewCategoryName, setInlineNewCategoryName] = useState('');
     const { role } = useAuth();
 
     const fetchProdutos = async () => {
@@ -69,13 +71,25 @@ export default function ProdutosPage() {
     const handleAddProduct = async () => {
         try {
             if (!newProduct.name || !newProduct.price) return alert('Preencha todos os campos');
+
+            let categoryId = newProduct.category_id;
+
+            // Se está criando nova categoria inline, criar primeiro
+            if (isCreatingNewCategory && inlineNewCategoryName.trim()) {
+                const newCategory = await Api.createProductCategory({ name: inlineNewCategoryName.trim() });
+                categoryId = newCategory.id;
+                await fetchCategories(); // Atualizar lista de categorias
+            }
+
             await Api.createProduct({
                 name: newProduct.name,
                 price: parseFloat(newProduct.price),
-                category_id: newProduct.category_id || null
+                category_id: categoryId || null
             });
             setIsDialogOpen(false);
             setNewProduct({ name: '', price: '', category_id: '' });
+            setIsCreatingNewCategory(false);
+            setInlineNewCategoryName('');
             fetchProdutos();
         } catch (error: unknown) {
             const err = error as Error;
@@ -211,16 +225,52 @@ export default function ProdutosPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="category">Categoria</Label>
-                                    <Select value={newProduct.category_id} onValueChange={(value) => setNewProduct({ ...newProduct, category_id: value })}>
-                                        <SelectTrigger className="bg-slate-800 border-slate-700">
-                                            <SelectValue placeholder="Selecione uma categoria" />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                                            {categories.map(cat => (
-                                                <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    {!isCreatingNewCategory ? (
+                                        <>
+                                            <Select value={newProduct.category_id} onValueChange={(value) => setNewProduct({ ...newProduct, category_id: value })}>
+                                                <SelectTrigger className="bg-slate-800 border-slate-700">
+                                                    <SelectValue placeholder="Selecione uma categoria" />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                                                    {categories.map(cat => (
+                                                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setIsCreatingNewCategory(true)}
+                                                className="w-full mt-2 border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                                            >
+                                                <FolderPlus size={14} className="mr-2" /> Criar Nova Categoria
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Input
+                                                placeholder="Nome da nova categoria"
+                                                value={inlineNewCategoryName}
+                                                onChange={(e) => setInlineNewCategoryName(e.target.value)}
+                                                className="bg-slate-800 border-slate-700"
+                                            />
+                                            <div className="flex gap-2 mt-2">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setIsCreatingNewCategory(false);
+                                                        setInlineNewCategoryName('');
+                                                    }}
+                                                    className="flex-1 border-slate-700"
+                                                >
+                                                    Cancelar
+                                                </Button>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                             <DialogFooter>

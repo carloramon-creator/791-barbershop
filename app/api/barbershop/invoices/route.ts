@@ -133,65 +133,93 @@ export async function GET(req: Request) {
                     // Processar Sessões
                     for (const session of sessions.data) {
                         if (session.payment_status === 'paid') {
+                            const planFromMeta = session.metadata?.plan || 'premium';
+
+                            // Atualizar tenant (sem criar registro financeiro)
+                            await supabaseAdmin.from('tenants').update({
+                                plan: planFromMeta,
+                                subscription_status: 'active',
+                                stripe_subscription_id: session.subscription as string,
+                            }).eq('id', tenant.id);
+
+                            // Criar registro APENAS na tabela finance para histórico de faturas
+                            // NÃO aparece no módulo Financeiro da barbearia
                             const { data: exists } = await supabaseAdmin
                                 .from('finance')
-                                .select('id, is_paid')
+                                .select('id')
                                 .eq('metadata->>stripe_session_id', session.id)
                                 .eq('tenant_id', tenant.id)
                                 .maybeSingle();
 
-                            if (!exists || !exists.is_paid) {
-                                const planFromMeta = session.metadata?.plan || 'premium';
-                                await supabaseAdmin.from('tenants').update({
-                                    plan: planFromMeta,
-                                    subscription_status: 'active',
-                                    stripe_subscription_id: session.subscription as string,
-                                }).eq('id', tenant.id);
-
-                                if (!exists) {
-                                    await supabaseAdmin.from('finance').insert({
-                                        tenant_id: tenant.id,
-                                        type: 'revenue',
-                                        value: (session.amount_total || 0) / 100,
-                                        description: `SaaS - Plano ${planFromMeta} (Cartão)`,
-                                        date: new Date(session.created * 1000).toISOString().split('T')[0],
-                                        is_paid: true,
-                                        metadata: { stripe_session_id: session.id, stripe_customer_id: stripeCustomerId, method: 'stripe_card' }
-                                    });
-                                } else {
-                                    await supabaseAdmin.from('finance').update({ is_paid: true, description: `SaaS - Plano ${planFromMeta} (Cartão)` }).eq('id', exists.id);
-                                }
+                            if (!exists) {
+                                await supabaseAdmin.from('finance').insert({
+                                    tenant_id: tenant.id,
+                                    type: 'expense', // MUDADO: expense ao invés de revenue
+                                    value: (session.amount_total || 0) / 100,
+                                    description: `ASSINATURA SAAS - Plano ${planFromMeta} (Stripe CSS)`,
+                                    date: new Date(session.created * 1000).toISOString().split('T')[0],
+                                    is_paid: true,
+                                    metadata: {
+                                        stripe_session_id: session.id,
+                                        stripe_customer_id: stripeCustomerId,
+                                        stripe_subscription_id: session.subscription,
+                                        method: 'stripe_card',
+                                        is_saas_payment: true // Flag para identificar
+                                    }
+                                });
                             }
                         }
                     }
 
-                    // Processar Invoices
+                    // Processar Invoices (Renovações)
                     for (const inv of invoicesStripe.data) {
-                        const { data: exists } = await supabaseAdmin
+                        // Verificar se JÁ existe por invoice_id
+                        const { data: existsByInvoice } = await supabaseAdmin
                             .from('finance')
-                            .select('id, is_paid')
+                            .select('id')
                             .eq('metadata->>stripe_invoice_id', inv.id)
                             .eq('tenant_id', tenant.id)
                             .maybeSingle();
 
-                        if (!exists || !exists.is_paid) {
-                            const amount = inv.amount_paid / 100;
-                            if (amount > 0) {
-                                if (!exists) {
-                                    await supabaseAdmin.from('finance').insert({
-                                        tenant_id: tenant.id,
-                                        type: 'revenue',
-                                        value: amount,
-                                        description: `SaaS - Renovação/Upgrade (Cartão)`,
-                                        date: new Date((inv.status_transitions?.paid_at || inv.created) * 1000).toISOString().split('T')[0],
-                                        is_paid: true,
-                                        metadata: { stripe_invoice_id: inv.id, stripe_customer_id: stripeCustomerId, method: 'stripe_card' }
-                                    });
-                                } else {
-                                    await supabaseAdmin.from('finance').update({ is_paid: true }).eq('id', exists.id);
+                        // Verificar se JÁ existe por subscription_id (evitar duplicata com session)
+                        let existsBySubscription = null;
+                        const subscriptionId = (inv as any).subscription;
+                        if (subscriptionId) {
+                            const { data: subCheck } = await supabaseAdmin
+                                .from('finance')
+                                .select('id')
+                                .eq('tenant_id', tenant.id)
+                                .eq('metadata->>stripe_subscription_id', subscriptionId)
+                                .gte('created_at', new Date(inv.created * 1000 - 60000).toISOString()) // 1 min antes
+                                .lte('created_at', new Date(inv.created * 1000 + 60000).toISOString()) // 1 min depois
+                                .maybeSingle();
+                            existsBySubscription = subCheck;
+                        }
+
+                        // Se já existe (por qualquer método), pular
+                        if (existsByInvoice || existsBySubscription) {
+                            continue;
+                        }
+
+                        // Criar novo registro apenas se não existir
+                        const amount = inv.amount_paid / 100;
+                        if (amount > 0) {
+                            await supabaseAdmin.from('finance').insert({
+                                tenant_id: tenant.id,
+                                type: 'expense', // MUDADO: expense ao invés de revenue
+                                value: amount,
+                                description: `RENOVAÇÃO SAAS (Stripe INV)`,
+                                date: new Date((inv.status_transitions?.paid_at || inv.created) * 1000).toISOString().split('T')[0],
+                                is_paid: true,
+                                metadata: {
+                                    stripe_invoice_id: inv.id,
+                                    stripe_customer_id: stripeCustomerId,
+                                    stripe_subscription_id: subscriptionId,
+                                    method: 'stripe_card',
+                                    is_saas_payment: true // Flag para identificar
                                 }
-                                await supabaseAdmin.from('tenants').update({ subscription_status: 'active' }).eq('id', tenant.id);
-                            }
+                            });
+                            await supabaseAdmin.from('tenants').update({ subscription_status: 'active' }).eq('id', tenant.id);
                         }
                     }
                 }

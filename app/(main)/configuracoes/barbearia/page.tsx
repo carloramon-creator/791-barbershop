@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Loader2, Users, CreditCard, Building2, AlertTriangle, Shield, Sparkles } from 'lucide-react';
+import { Upload, Loader2, Users, CreditCard, Building2, AlertTriangle, Shield, Sparkles, Calendar } from 'lucide-react';
 import Image from 'next/image';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -53,6 +53,10 @@ export default function BarbershopSettingsPage() {
     const [bankAccountHolder, setBankAccountHolder] = useState('');
     const [bankAccountDoc, setBankAccountDoc] = useState('');
 
+    // Modules State
+    const [moduleQueueEnabled, setModuleQueueEnabled] = useState(true);
+    const [moduleAppointmentsEnabled, setModuleAppointmentsEnabled] = useState(false);
+
 
     const loadBarbershop = async () => {
         try {
@@ -85,6 +89,10 @@ export default function BarbershopSettingsPage() {
                 setBankAccountDigit(data.bank_account_digit || '');
                 setBankAccountHolder(data.bank_account_holder || data.name || '');
                 setBankAccountDoc(data.bank_account_doc || data.cnpj || '');
+
+                // Modules
+                setModuleQueueEnabled(data.module_queue_enabled !== false);
+                setModuleAppointmentsEnabled(data.module_appointments_enabled === true);
 
             }
         } catch (error) {
@@ -191,6 +199,9 @@ export default function BarbershopSettingsPage() {
                 bank_account_digit: bankAccountDigit,
                 bank_account_holder: bankAccountHolder,
                 bank_account_doc: bankAccountDoc,
+                // Modules
+                module_queue_enabled: moduleQueueEnabled,
+                module_appointments_enabled: moduleAppointmentsEnabled,
             };
             await Api.updateBarbershop(payload);
             await refresh(); // Global context refresh
@@ -635,6 +646,66 @@ export default function BarbershopSettingsPage() {
                                 <div className="space-y-2">
                                     <Label className="text-slate-500 text-[10px] uppercase font-bold">CPF/CNPJ do Titular</Label>
                                     <Input value={bankAccountDoc} onChange={e => setBankAccountDoc(e.target.value)} disabled={!isEditing} className="h-9 text-xs bg-slate-950 border-slate-800" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Modules Section - NEW */}
+                        <div className="space-y-4 pt-6 border-t border-slate-800/50">
+                            <h3 className="text-sm font-bold uppercase text-slate-400 flex items-center gap-2">
+                                <Sparkles size={16} className="text-blue-500" /> Módulos do Sistema
+                            </h3>
+                            <p className="text-xs text-slate-500 mb-4">
+                                Escolha quais funcionalidades estarão disponíveis no seu painel. Você pode ativar apenas Fila, apenas Agendamentos, ou ambos.
+                            </p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-slate-950/30 p-4 rounded-lg border border-slate-800/30 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 bg-blue-600/10 rounded-lg flex items-center justify-center">
+                                                <Users size={16} className="text-blue-500" />
+                                            </div>
+                                            <div>
+                                                <Label className="text-slate-200 font-bold text-sm">Módulo de Fila</Label>
+                                                <p className="text-[10px] text-slate-500">Sistema de fila digital para atendimento</p>
+                                            </div>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={moduleQueueEnabled}
+                                                onChange={(e) => setModuleQueueEnabled(e.target.checked)}
+                                                disabled={!isEditing}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 peer-disabled:opacity-50"></div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="bg-slate-950/30 p-4 rounded-lg border border-slate-800/30 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 bg-emerald-600/10 rounded-lg flex items-center justify-center">
+                                                <Calendar size={16} className="text-emerald-500" />
+                                            </div>
+                                            <div>
+                                                <Label className="text-slate-200 font-bold text-sm">Módulo de Agendamentos</Label>
+                                                <p className="text-[10px] text-slate-500">Sistema de agendamento por horário</p>
+                                            </div>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={moduleAppointmentsEnabled}
+                                                onChange={(e) => setModuleAppointmentsEnabled(e.target.checked)}
+                                                disabled={!isEditing}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600 peer-disabled:opacity-50"></div>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
