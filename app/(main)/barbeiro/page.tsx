@@ -15,7 +15,8 @@ import {
     AlertCircle,
     Trash2,
     RefreshCw,
-    BarChart3
+    BarChart3,
+    Plus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -29,6 +30,16 @@ import {
 } from '@/components/ui/table';
 import { CloseSaleDialog } from '@/components/sales/close-sale-dialog';
 import { supabaseClient } from '@/lib/supabase-client';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 export default function BarberPage() {
     const [allBarbers, setAllBarbers] = useState<BarberQueueStatus[]>([]);
@@ -39,6 +50,9 @@ export default function BarberPage() {
     const [finishedQueueId, setFinishedQueueId] = useState<string | null>(null);
     const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
     const [isUnifiedView, setIsUnifiedView] = useState(false);
+    const [showWalkInDialog, setShowWalkInDialog] = useState(false);
+    const [walkInName, setWalkInName] = useState('');
+    const [submittingWalkIn, setSubmittingWalkIn] = useState(false);
 
     const { user, role, roles, loading: authLoading } = useAuth();
 
@@ -168,6 +182,23 @@ export default function BarberPage() {
             fetchStatus();
         } catch (err: any) {
             alert(err.message);
+        }
+    };
+
+    const handleWalkIn = async () => {
+        const targetBarberId = currentBarber?.barber_id;
+        if (!targetBarberId) return;
+
+        setSubmittingWalkIn(true);
+        try {
+            await Api.startWalkIn(targetBarberId, walkInName || 'Cliente Avulso');
+            setShowWalkInDialog(false);
+            setWalkInName('');
+            fetchStatus();
+        } catch (err: any) {
+            alert(err.message);
+        } finally {
+            setSubmittingWalkIn(false);
         }
     };
 
@@ -345,15 +376,33 @@ export default function BarberPage() {
                             </Card>
                         )}
 
-                        {!isUnifiedView && currentWaiting.length > 0 && currentAttending.length === 0 && (
-                            <div className="pt-4 animate-in fade-in zoom-in-95">
-                                <Button
-                                    className="w-full bg-blue-600 hover:bg-blue-700 h-16 text-md font-black uppercase italic tracking-widest shadow-lg shadow-blue-900/40"
-                                    onClick={() => handleCallNext()}
-                                >
-                                    <Play className="mr-2 fill-current" size={20} />
-                                    Chamar Próximo
-                                </Button>
+                        {!isUnifiedView && (
+                            <div className="pt-4 space-y-3">
+                                {currentWaiting.length > 0 && currentAttending.length === 0 && (
+                                    <Button
+                                        className="w-full bg-blue-600 hover:bg-blue-700 h-16 text-md font-black uppercase italic tracking-widest shadow-lg shadow-blue-900/40"
+                                        onClick={() => handleCallNext()}
+                                    >
+                                        <Play className="mr-2 fill-current" size={20} />
+                                        Chamar Próximo
+                                    </Button>
+                                )}
+
+                                {currentAttending.length === 0 && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setShowWalkInDialog(true)}
+                                        className={cn(
+                                            "w-full font-black uppercase tracking-widest transition-all",
+                                            currentWaiting.length === 0
+                                                ? "h-16 bg-emerald-600/10 text-emerald-500 border-emerald-500/30 hover:bg-emerald-600 hover:text-white italic"
+                                                : "h-12 border-slate-800 text-slate-500 hover:bg-slate-800"
+                                        )}
+                                    >
+                                        <Plus className="mr-2" size={currentWaiting.length === 0 ? 20 : 16} />
+                                        Atendimento Direto
+                                    </Button>
+                                )}
                             </div>
                         )}
                     </div>
@@ -456,6 +505,39 @@ export default function BarberPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {showWalkInDialog && (
+                <Dialog open={showWalkInDialog} onOpenChange={setShowWalkInDialog}>
+                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
+                        <DialogHeader>
+                            <DialogTitle className="uppercase italic font-black">Atendimento Direto</DialogTitle>
+                            <DialogDescription>Inicie um atendimento agora para um cliente que já está na cadeira.</DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-4">
+                            <div className="space-y-2">
+                                <Label>Nome do Cliente (Opcional)</Label>
+                                <Input
+                                    placeholder="Ex: Cliente Avulso"
+                                    className="bg-slate-950 border-slate-800"
+                                    value={walkInName}
+                                    onChange={e => setWalkInName(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="ghost" onClick={() => setShowWalkInDialog(false)}>Cancelar</Button>
+                            <Button
+                                onClick={handleWalkIn}
+                                disabled={submittingWalkIn}
+                                className="bg-blue-600 hover:bg-blue-700 font-black uppercase italic"
+                            >
+                                {submittingWalkIn ? 'Iniciando...' : 'Começar Agora'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
 
             {showSaleDialog && finishedQueueId && (
                 <CloseSaleDialog

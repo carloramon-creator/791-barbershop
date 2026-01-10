@@ -14,7 +14,8 @@ import {
     Settings,
     ShieldCheck,
     Menu,
-    X
+    X,
+    Calendar
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,7 @@ export function Sidebar() {
     const menuItems = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['owner', 'staff'], feature: 'queue' },
         { name: 'Fila (Barbeiro)', href: '/barbeiro', icon: UserCheck, roles: ['owner', 'barber', 'staff'], feature: 'queue' },
+        { name: 'Agendamentos', href: '/agendamentos', icon: Calendar, roles: ['owner', 'barber', 'staff'], feature: 'queue' },
         { name: 'Barbeiros', href: '/barbeiros', icon: Users, roles: ['owner', 'staff'], feature: 'queue' },
         { name: 'Serviços', href: '/servicos', icon: Scissors, roles: ['owner', 'staff'], feature: 'queue' },
         { name: 'Produtos', href: '/produtos', icon: ShoppingBag, roles: ['owner', 'staff'], feature: 'queue' },

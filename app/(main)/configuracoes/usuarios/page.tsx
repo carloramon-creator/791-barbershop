@@ -36,7 +36,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import { cn, isValidCNPJ } from '@/lib/utils';
 import { Api } from '@/lib/api';
 import { User, UserRole } from '@/lib/types';
 import { useAuth } from '@/lib/auth-provider';
@@ -71,6 +71,7 @@ export default function UsersPage() {
   const [inviteAvgTime, setInviteAvgTime] = useState('30');
   const [inviteCommType, setInviteCommType] = useState<'fixed' | 'percentage'>('percentage');
   const [inviteCommValue, setInviteCommValue] = useState('50');
+  const [inviteCnpjMei, setInviteCnpjMei] = useState('');
   const [generatedLink, setGeneratedLink] = useState('');
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [isViewOnly, setIsViewOnly] = useState(false);
@@ -109,6 +110,7 @@ export default function UsersPage() {
     setInviteAvgTime('30');
     setInviteCommType('percentage');
     setInviteCommValue('50');
+    setInviteCnpjMei('');
     setGeneratedLink('');
     setEditingUserId(null);
     setIsViewOnly(false);
@@ -165,6 +167,7 @@ export default function UsersPage() {
         avg_service_time: parseInt(inviteAvgTime) || 30,
         commission_type: inviteCommType,
         commission_value: parseFloat(inviteCommValue) || 0,
+        cnpj_mei: inviteCnpjMei,
         generateInvite: !editingUserId
       };
 
@@ -213,6 +216,7 @@ export default function UsersPage() {
     setInviteAvgTime(u.avg_service_time?.toString() || '30');
     setInviteCommType(u.commission_type || 'percentage');
     setInviteCommValue(u.commission_value?.toString() || '50');
+    setInviteCnpjMei(u.cnpj_mei || '');
     setIsInviteOpen(true);
   };
 
@@ -508,6 +512,21 @@ export default function UsersPage() {
                             </Label>
                             <Input disabled={isViewOnly} type="number" value={inviteCommValue} onChange={e => setInviteCommValue(e.target.value)} className="bg-slate-950 border-slate-800" />
                           </div>
+                          <div className="md:col-span-3 space-y-2">
+                            <Label htmlFor="cnpj_mei" className="text-blue-400">CNPJ MEI (Obrigatório para emissão de NFS-e)</Label>
+                            <MaskedInput
+                              id="cnpj_mei"
+                              disabled={isViewOnly}
+                              mask="99.999.999/9999-99"
+                              value={inviteCnpjMei}
+                              onChange={e => setInviteCnpjMei(e.target.value)}
+                              className="bg-slate-950 border-slate-800"
+                              placeholder="00.000.000/0000-00"
+                            />
+                            {inviteCnpjMei && inviteCnpjMei.replace(/\D/g, '').length === 14 && !isValidCNPJ(inviteCnpjMei) && (
+                              <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest mt-1">CNPJ inválido</p>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -666,26 +685,6 @@ export default function UsersPage() {
                                 <Pencil className="mr-2 h-4 w-4" />
                                 Editar Usuário
                               </DropdownMenuItem>
-                              <DropdownMenuSeparator className="bg-slate-800" />
-                              <DropdownMenuLabel>Alterar Função</DropdownMenuLabel>
-                              {u.role !== 'owner' && (
-                                <DropdownMenuItem onClick={() => handleRoleUpdate(u.id, 'owner')}>
-                                  <Shield className="mr-2 h-4 w-4" />
-                                  Tornar Proprietário
-                                </DropdownMenuItem>
-                              )}
-                              {u.role !== 'barber' && (
-                                <DropdownMenuItem onClick={() => handleRoleUpdate(u.id, 'barber')}>
-                                  <UserIcon className="mr-2 h-4 w-4" />
-                                  Tornar Barbeiro
-                                </DropdownMenuItem>
-                              )}
-                              {u.role !== 'staff' && (
-                                <DropdownMenuItem onClick={() => handleRoleUpdate(u.id, 'staff')}>
-                                  <UserIcon className="mr-2 h-4 w-4" />
-                                  Tornar Funcionário
-                                </DropdownMenuItem>
-                              )}
                               <DropdownMenuSeparator className="bg-slate-800" />
                               <DropdownMenuItem onClick={() => handleGenerateLink(u.id)} className="text-blue-400 focus:text-blue-400">
                                 <Key className="mr-2 h-4 w-4" />

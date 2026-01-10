@@ -54,6 +54,24 @@ export const Api = {
         apiFetch(`/api/queue/${queueId}/start`, { method: 'PUT' }),
     cancelClient: (queueId: string) =>
         apiFetch(`/api/queue/${queueId}/cancel`, { method: 'PUT' }),
+    startWalkIn: (barberId: string, clientName: string) =>
+        apiFetch(`/api/barbers/${barberId}/walk-in`, { method: 'POST', body: JSON.stringify({ clientName }) }),
+
+    // Appointments
+    getAppointments: (date?: string, barberId?: string) => {
+        let url = '/api/appointments';
+        const params = new URLSearchParams();
+        if (date) params.append('date', date);
+        if (barberId) params.append('barberId', barberId);
+        if (params.toString()) url += `?${params.toString()}`;
+        return apiFetch(url);
+    },
+    createAppointment: (payload: Record<string, unknown>) =>
+        apiFetch('/api/appointments', { method: 'POST', body: JSON.stringify(payload) }),
+    updateAppointment: (id: string, payload: Record<string, unknown>) =>
+        apiFetch(`/api/appointments/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+    deleteAppointment: (id: string) =>
+        apiFetch(`/api/appointments/${id}`, { method: 'DELETE' }),
 
     // Sales
     createSale: (queueId: string, payload: Record<string, unknown>) =>

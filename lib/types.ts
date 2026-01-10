@@ -43,6 +43,7 @@ export interface User {
     city?: string;
     state?: string;
     photo_url?: string;
+    cnpj_mei?: string;
     avg_service_time?: number;
     commission_type?: 'fixed' | 'percentage';
     commission_value?: number;
