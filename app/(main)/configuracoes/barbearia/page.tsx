@@ -371,7 +371,7 @@ export default function BarbershopSettingsPage() {
                                     className="bg-slate-950 border-slate-800 text-blue-400 font-mono h-11"
                                 />
                                 <p className="text-[10px] text-slate-500">
-                                    Seu link será: 791barber.com/cliente/{slug || 'nome-da-barbearia'}
+                                    Seu link será: frontend-client-six-orpin.vercel.app/{slug || 'nome-da-barbearia'}
                                 </p>
                             </div>
                         </div>
@@ -388,7 +388,7 @@ export default function BarbershopSettingsPage() {
                                         <div className="flex flex-col md:flex-row items-center gap-8">
                                             <div className="bg-white p-4 rounded-2xl shadow-2xl">
                                                 <QRCodeSVG
-                                                    value={`https://791barber.com/cliente/${slug}`}
+                                                    value={`https://frontend-client-six-orpin.vercel.app/${slug}`}
                                                     size={160}
                                                     includeMargin={true}
                                                     level="H"
@@ -405,7 +405,7 @@ export default function BarbershopSettingsPage() {
                                                         variant="outline"
                                                         className="border-slate-700 hover:bg-slate-800 gap-2"
                                                         onClick={() => {
-                                                            const url = `https://791barber.com/cliente/${slug}`;
+                                                            const url = `https://frontend-client-six-orpin.vercel.app/${slug}`;
                                                             navigator.clipboard.writeText(url);
                                                             alert('Link copiado!');
                                                         }}
@@ -417,7 +417,7 @@ export default function BarbershopSettingsPage() {
                                                         onClick={() => {
                                                             const printWindow = window.open('', '_blank');
                                                             if (!printWindow) return;
-                                                            const url = `https://791barber.com/cliente/${slug}`;
+                                                            const url = `https://frontend-client-six-orpin.vercel.app/${slug}`;
                                                             printWindow.document.write(`
                                                                 <html>
                                                                     <head>
