@@ -48,34 +48,42 @@ export async function getCurrentUserAndTenant() {
             let accessToken: string | null = null;
 
             // Tenta encontrar o token de acesso nos cookies
-            for (const cookie of allCookies) {
-                // Se for o formato antigo (JSON no cookie)
-                if (cookie.name.includes('session') && cookie.value.includes('{')) {
-                    try {
-                        const parsed = JSON.parse(decodeURIComponent(cookie.value));
-                        if (parsed.access_token) accessToken = parsed.access_token;
-                        if (parsed.user?.id) {
-                            userAuthId = parsed.user.id;
-                            userObj = parsed.user;
-                        }
-                    } catch (e) { }
-                }
+            const authCookies = allCookies.filter(c => c.name.endsWith('-auth-token'));
 
-                // Formato novo do @supabase/ssr: sb-xxx-auth-token
-                // Nota: O ideal é usar o createServerClient, mas se ele falhar (ex: projeto-ref errado no default)
-                // tentamos validar o token via supabaseAdmin
-                if (cookie.name.endsWith('-auth-token')) {
-                    try {
-                        const parsed = JSON.parse(decodeURIComponent(cookie.value));
-                        // No novo formato, o valor do cookie é um array de strings [access_token, refresh_token, ...]
-                        if (Array.isArray(parsed) && parsed[0]) {
-                            accessToken = parsed[0];
-                        } else if (parsed.access_token) {
-                            accessToken = parsed.access_token;
-                        }
-                    } catch (e) {
-                        // Se não for JSON, pode ser o token direto ou parte dele
-                        if (cookie.value.length > 50) accessToken = cookie.value;
+            if (authCookies.length > 0) {
+                // Ordenar cookies por sufixo numérico (.0, .1, etc.) se existirem
+                authCookies.sort((a, b) => {
+                    const getIndex = (name: string) => {
+                        const parts = name.split('.');
+                        return parts.length > 1 ? parseInt(parts[parts.length - 1]) : -1;
+                    };
+                    return getIndex(a.name) - getIndex(b.name);
+                });
+
+                const rawValue = authCookies.map(c => c.value).join('');
+                try {
+                    const parsed = JSON.parse(decodeURIComponent(rawValue));
+                    if (Array.isArray(parsed) && parsed[0]) {
+                        accessToken = parsed[0];
+                    } else if (parsed.access_token) {
+                        accessToken = parsed.access_token;
+                    } else {
+                        // Se não for JSON ou array esperado, tenta usar o valor bruto se parecer um JWT
+                        if (rawValue.length > 50) accessToken = rawValue;
+                    }
+                } catch (e) {
+                    if (rawValue.length > 50) accessToken = rawValue;
+                }
+            }
+
+            // Fallback para cookies de sessão antigos
+            if (!accessToken) {
+                for (const cookie of allCookies) {
+                    if (cookie.name.includes('session') && cookie.value.includes('{')) {
+                        try {
+                            const parsed = JSON.parse(decodeURIComponent(cookie.value));
+                            if (parsed.access_token) accessToken = parsed.access_token;
+                        } catch (e) { }
                     }
                 }
             }

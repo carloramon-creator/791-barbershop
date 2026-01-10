@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function GET(req: Request) {
@@ -13,28 +12,30 @@ export async function GET(req: Request) {
         const tenantId = searchParams.get('tenant_id');
         const stop = searchParams.get('stop');
 
-        const cookieStore = await cookies();
-
         if (stop === 'true') {
-            (await cookieStore).delete('impersonate_tenant_id');
-            return NextResponse.redirect(new URL('/geral/barbearias', req.url));
+            const response = NextResponse.redirect(new URL('/geral/barbearias', req.url));
+            response.cookies.delete('impersonate_tenant_id');
+            return response;
         }
 
         if (!tenantId) {
             return NextResponse.json({ error: 'Tenant ID não informado' }, { status: 400 });
         }
 
-        (await cookieStore).set('impersonate_tenant_id', tenantId, {
+        const response = NextResponse.redirect(new URL('/dashboard', req.url));
+
+        response.cookies.set('impersonate_tenant_id', tenantId, {
             path: '/',
             maxAge: 60 * 60 * 24, // 1 dia
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: true,
             sameSite: 'lax',
         });
 
-        // Redirecionar para o dashboard (agora com o cookie setado)
-        return NextResponse.redirect(new URL('/dashboard', req.url));
+        console.log(`[IMPERSONATE] Cookie setado para: ${tenantId}`);
+        return response;
     } catch (error: any) {
+        console.error('[IMPERSONATE ERROR]', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

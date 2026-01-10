@@ -772,7 +772,15 @@ export default function PlanPage() {
                                     {invoices.map((inv) => (
                                         <tr key={inv.id} className="hover:bg-slate-800/30 transition-colors">
                                             <td className="px-6 py-4 text-xs text-slate-400">
-                                                {new Date(inv.date).toLocaleDateString('pt-BR')}
+                                                {(() => {
+                                                    const dateStr = inv.date;
+                                                    if (!dateStr) return '---';
+                                                    if (dateStr.length === 10) {
+                                                        const [y, m, d] = dateStr.split('-');
+                                                        return `${d}/${m}/${y}`;
+                                                    }
+                                                    return new Date(dateStr).toLocaleDateString('pt-BR');
+                                                })()}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <p className="text-xs font-bold text-slate-200">{inv.description}</p>
