@@ -66,6 +66,8 @@ export const Api = {
         if (params.toString()) url += `?${params.toString()}`;
         return apiFetch(url);
     },
+    getAvailability: (date: string, barberId: string, duration: number) =>
+        apiFetch(`/api/appointments/availability?date=${date}&barberId=${barberId}&duration=${duration}`),
     createAppointment: (payload: Record<string, unknown>) =>
         apiFetch('/api/appointments', { method: 'POST', body: JSON.stringify(payload) }),
     updateAppointment: (id: string, payload: Record<string, unknown>) =>

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Loader2, Users, CreditCard, Building2, AlertTriangle, Shield, Sparkles, Calendar } from 'lucide-react';
+import { Upload, Loader2, Users, CreditCard, Building2, AlertTriangle, Shield, Sparkles, Calendar, Clock, Check } from 'lucide-react';
 import Image from 'next/image';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -57,6 +57,15 @@ export default function BarbershopSettingsPage() {
     const [moduleQueueEnabled, setModuleQueueEnabled] = useState(true);
     const [moduleAppointmentsEnabled, setModuleAppointmentsEnabled] = useState(false);
 
+    // Opening Hours State
+    const [openingHours, setOpeningHours] = useState({
+        work_days: [1, 2, 3, 4, 5, 6],
+        start_time: '09:00',
+        end_time: '19:00',
+        lunch_duration: 60,
+        lunch_enabled: true
+    });
+
 
     const loadBarbershop = async () => {
         try {
@@ -92,7 +101,19 @@ export default function BarbershopSettingsPage() {
 
                 // Modules
                 setModuleQueueEnabled(data.module_queue_enabled !== false);
+                setModuleQueueEnabled(data.module_queue_enabled !== false);
                 setModuleAppointmentsEnabled(data.module_appointments_enabled === true);
+
+                // Opening Hours
+                if (data.opening_hours) {
+                    setOpeningHours({
+                        work_days: data.opening_hours.work_days || [1, 2, 3, 4, 5, 6],
+                        start_time: data.opening_hours.start_time || '09:00',
+                        end_time: data.opening_hours.end_time || '19:00',
+                        lunch_duration: data.opening_hours.lunch_duration !== undefined ? data.opening_hours.lunch_duration : 60,
+                        lunch_enabled: data.opening_hours.lunch_duration > 0
+                    });
+                }
 
             }
         } catch (error) {
@@ -190,6 +211,10 @@ export default function BarbershopSettingsPage() {
                 state,
                 logo_url: logoUrl,
                 slug: slug,
+                opening_hours: {
+                    ...openingHours,
+                    lunch_duration: openingHours.lunch_enabled ? Number(openingHours.lunch_duration) : 0
+                },
                 // Bank Info
                 pix_key: pixKey,
                 pix_key_type: pixKeyType,
@@ -484,6 +509,103 @@ export default function BarbershopSettingsPage() {
                                                     </Button>
                                                 </div>
                                             </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* --- SEÇÃO DE HORÁRIOS --- */}
+                                <Card className="bg-slate-900 border-slate-800">
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2 text-slate-100">
+                                            <Clock size={20} className="text-blue-500" />
+                                            Horário de Funcionamento
+                                        </CardTitle>
+                                        <CardDescription className="text-slate-400">
+                                            Configure os dias e horários de atendimento da barbearia.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-6">
+                                        <div className="space-y-3">
+                                            <Label className="text-slate-200">Dias de Trabalho</Label>
+                                            <div className="flex gap-2 flex-wrap">
+                                                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, idx) => {
+                                                    const isSelected = openingHours.work_days.includes(idx);
+                                                    return (
+                                                        <div
+                                                            key={idx}
+                                                            className={cn(
+                                                                "px-3 py-2 border rounded-lg cursor-pointer transition-all text-sm font-medium flex items-center gap-2",
+                                                                isSelected
+                                                                    ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-900/20"
+                                                                    : "bg-slate-950/50 border-slate-800 text-slate-400 hover:border-slate-700 hover:bg-slate-900"
+                                                            )}
+                                                            onClick={() => {
+                                                                if (isSelected) setOpeningHours({ ...openingHours, work_days: openingHours.work_days.filter(d => d !== idx) });
+                                                                else setOpeningHours({ ...openingHours, work_days: [...openingHours.work_days, idx] });
+                                                            }}
+                                                        >
+                                                            {isSelected && <Check size={14} />}
+                                                            {day}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label className="text-slate-200">Horário de Abertura</Label>
+                                                <Input
+                                                    type="time"
+                                                    value={openingHours.start_time}
+                                                    onChange={e => setOpeningHours({ ...openingHours, start_time: e.target.value })}
+                                                    className="bg-slate-950 border-slate-800 text-slate-100"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-slate-200">Horário de Fechamento</Label>
+                                                <Input
+                                                    type="time"
+                                                    value={openingHours.end_time}
+                                                    onChange={e => setOpeningHours({ ...openingHours, end_time: e.target.value })}
+                                                    className="bg-slate-950 border-slate-800 text-slate-100"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 border-t border-slate-800 space-y-4">
+                                            <div className="flex items-center space-x-2">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    role="checkbox"
+                                                    aria-checked={openingHours.lunch_enabled}
+                                                    onClick={() => setOpeningHours({ ...openingHours, lunch_enabled: !openingHours.lunch_enabled })}
+                                                    className={cn(
+                                                        "w-5 h-5 p-0 rounded border flex items-center justify-center",
+                                                        openingHours.lunch_enabled ? "bg-blue-600 border-blue-600 text-white" : "border-slate-600 bg-transparent"
+                                                    )}
+                                                >
+                                                    {openingHours.lunch_enabled && <Check size={14} />}
+                                                </Button>
+                                                <Label className="text-slate-200 cursor-pointer" onClick={() => setOpeningHours({ ...openingHours, lunch_enabled: !openingHours.lunch_enabled })}>
+                                                    Possui intervalo de almoço?
+                                                </Label>
+                                            </div>
+
+                                            {openingHours.lunch_enabled && (
+                                                <div className="space-y-2 pl-7 animate-in fade-in slide-in-from-top-2">
+                                                    <Label className="text-slate-200">Duração do Intervalo (minutos)</Label>
+                                                    <Input
+                                                        type="number"
+                                                        value={openingHours.lunch_duration}
+                                                        onChange={e => setOpeningHours({ ...openingHours, lunch_duration: Number(e.target.value) })}
+                                                        className="bg-slate-950 border-slate-800 text-slate-100 w-32"
+                                                        min={0}
+                                                        step={15}
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>
