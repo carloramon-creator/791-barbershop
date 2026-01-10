@@ -644,8 +644,13 @@ export default function PlanPage() {
                                 </Button>
                             </div>
 
-                            <div className="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50">
-                                <p className="text-[10px] text-slate-500 text-center uppercase tracking-widest leading-relaxed font-medium">
+                            <div className="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 space-y-2">
+                                <p className="text-[10px] text-amber-500 text-center uppercase tracking-widest leading-relaxed font-bold">
+                                    ⚠️ ATENÇÃO: O banco pode levar até 20 minutos para registrar o boleto.
+                                    <br />
+                                    Se o PDF não abrir ou der erro, aguarde alguns minutos e tente novamente pelo Histórico de Faturas.
+                                </p>
+                                <p className="text-[10px] text-slate-500 text-center uppercase tracking-widest leading-relaxed font-medium pt-2 border-t border-slate-800/50">
                                     A compensação bancária ocorre em até 2 dias úteis.<br />
                                     Dica: Use o Pix para liberação instantânea.
                                 </p>

@@ -161,57 +161,82 @@ export class InterAPIV3 {
 
     /**
      * Baixa o PDF de uma cobrança do Banco Inter
-     * @param identifier - Pode ser codigoSolicitacao (UUID) ou nossoNumero
-     * Prioriza codigoSolicitacao conforme documentação oficial do Inter
+     * Tenta de forma inteligente: UUID -> Falha -> Busca NossoNumero -> Tenta NossoNumero
      */
     async getBillingPdf(identifier: string): Promise<Buffer> {
         const token = await this.getAccessToken();
 
-        console.log(`[INTER PDF] Tentando baixar PDF com identificador: ${identifier}`);
+        // Função auxiliar para tentar baixar
+        const tryDownload = (id: string) => {
+            const options: https.RequestOptions = {
+                hostname: 'cdpj.partners.bancointer.com.br',
+                port: 443,
+                path: `/cobranca/v3/cobrancas/${id}/pdf`,
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/pdf'
+                },
+                cert: this.config.cert,
+                key: this.config.key,
+                rejectUnauthorized: false,
+                family: 4
+            };
 
-        const options: https.RequestOptions = {
-            hostname: 'cdpj.partners.bancointer.com.br',
-            port: 443,
-            path: `/cobranca/v3/cobrancas/${identifier}/pdf`,
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/pdf'
-            },
-            cert: this.config.cert,
-            key: this.config.key,
-            rejectUnauthorized: false,
-            family: 4
+            return new Promise<Buffer>((resolve, reject) => {
+                const req = https.request(options, (res) => {
+                    const chunks: any[] = [];
+                    res.on('data', (chunk) => chunks.push(chunk));
+                    res.on('end', () => {
+                        if (res.statusCode === 200) {
+                            console.log(`[INTER PDF] ✅ Sucesso com ID: ${id}`);
+                            resolve(Buffer.concat(chunks));
+                        } else {
+                            const errorBody = Buffer.concat(chunks).toString();
+                            console.warn(`[INTER PDF WARN] Falha com ID: ${id} | Status: ${res.statusCode}`);
+                            reject({ statusCode: res.statusCode, body: errorBody });
+                        }
+                    });
+                });
+
+                req.setTimeout(20000, () => {
+                    req.destroy();
+                    reject(new Error('Timeout'));
+                });
+
+                req.on('error', (e) => reject(e));
+                req.end();
+            });
         };
 
-        return new Promise((resolve, reject) => {
-            const req = https.request(options, (res) => {
-                const chunks: any[] = [];
-                res.on('data', (chunk) => chunks.push(chunk));
-                res.on('end', () => {
-                    if (res.statusCode === 200) {
-                        console.log(`[INTER PDF] ✅ PDF baixado com sucesso (${chunks.length} chunks)`);
-                        resolve(Buffer.concat(chunks));
+        try {
+            console.log(`[INTER PDF] Tentativa 1 com ID: ${identifier}`);
+            return await tryDownload(identifier);
+        } catch (error: any) {
+            // Se falhou e o identificador parece ser um UUID, vamos tentar descobrir o nossoNumero
+            if (identifier.length > 20) { // UUID tem 36 chars, nossoNumero tem ~11-20
+                console.log(`[INTER PDF] 🔄 Tentativa 1 falhou. Buscando dados da cobrança para descobrir NossoNumero...`);
+                try {
+                    // Busca dados completos
+                    const details = await this.getBillingBySolicitacao(identifier);
+
+                    // Tenta encontrar nossoNumero em vários lugares possíveis na resposta
+                    const nossoNumero =
+                        details.cobranca?.boleto?.nossoNumero ||
+                        details.boleto?.nossoNumero ||
+                        details.nossoNumero;
+
+                    if (nossoNumero && nossoNumero !== identifier) {
+                        console.log(`[INTER PDF] 💡 NossoNumero descoberto: ${nossoNumero}. Tentando novamente...`);
+                        return await tryDownload(nossoNumero);
                     } else {
-                        const errorBody = Buffer.concat(chunks).toString();
-                        console.error(`[INTER PDF ERROR] ❌ Status: ${res.statusCode} | ID: ${identifier}`);
-                        console.error(`[INTER PDF ERROR] Response: ${errorBody}`);
-                        reject(new Error(`Erro Inter ${res.statusCode}: ${errorBody}`));
+                        console.warn('[INTER PDF] ⚠️ Não foi possível encontrar um NossoNumero diferente nos detalhes.');
                     }
-                });
-            });
-
-            req.setTimeout(20000, () => {
-                console.error(`[INTER PDF ERROR] ⏱️ Timeout ao baixar PDF (20s)`);
-                req.destroy();
-                reject(new Error('Timeout ao baixar PDF do Inter (20s)'));
-            });
-
-            req.on('error', (e) => {
-                console.error(`[INTER PDF REQ ERROR] 🔥 ${e.message}`);
-                reject(e);
-            });
-            req.end();
-        });
+                } catch (detailError) {
+                    console.error('[INTER PDF] ❌ Erro ao buscar detalhes da cobrança:', detailError);
+                }
+            }
+            throw error; // Relança o erro original se a recuperação falhar
+        }
     }
 }
