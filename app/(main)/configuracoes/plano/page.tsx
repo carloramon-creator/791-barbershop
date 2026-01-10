@@ -780,7 +780,7 @@ export default function PlanPage() {
                                                                         if (seuNumero) {
                                                                             const res = await fetch(`/api/barbershop/check-pending-payment?seu_numero=${seuNumero}`);
                                                                             const data = await res.json();
-                                                                            if (data.ready) {
+                                                                            if (data.ready || data.statusUpdated) {
                                                                                 // O pooling já atualiza o is_paid se detectar
                                                                                 alert('Status Atualizado!');
                                                                                 fetchInvoices();
@@ -836,6 +836,14 @@ export default function PlanPage() {
                                                                     <FileText className="w-3 h-3 mr-1" /> PDF
                                                                 </Button>
                                                             )}
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                disabled
+                                                                className="h-8 text-slate-600 border border-slate-800 text-[10px] font-black uppercase opacity-50 cursor-not-allowed group relative"
+                                                            >
+                                                                <Shield className="w-3 h-3 mr-1" /> NF
+                                                            </Button>
                                                         </>
                                                     )}
                                                 </div>

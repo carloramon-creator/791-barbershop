@@ -126,6 +126,7 @@ export async function GET(req: Request) {
                             await supabaseAdmin.from('finance').update({
                                 metadata: { ...meta, status_inter: found.situacao || found.status }
                             }).eq('id', charge.id);
+                            return addCorsHeaders(req, NextResponse.json({ ready: false, statusUpdated: true }));
                         }
 
                         // Se descobriu que está PAGO agora, libera o tenant
