@@ -110,7 +110,7 @@ export async function GET(req: Request) {
             .from('finance')
             .select('*')
             .eq('tenant_id', tenant.id)
-            .ilike('description', 'SaaS%')
+            .ilike('description', '%SaaS%')
             .order('created_at', { ascending: false });
 
         if (error) throw error;

@@ -15,6 +15,7 @@ interface AuthContextType {
     role: string | null;
     roles: string[] | null;
     isSystemAdmin: boolean;
+    isImpersonating: boolean;
     refresh: () => Promise<void>;
 }
 
@@ -27,6 +28,7 @@ const AuthContext = createContext<AuthContextType>({
     role: null,
     roles: null,
     isSystemAdmin: false,
+    isImpersonating: false,
     refresh: async () => { },
 });
 
@@ -39,11 +41,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [roles, setRoles] = useState<string[] | null>(null);
     const [isSystemAdmin, setIsSystemAdmin] = useState<boolean>(false);
 
+    const [isImpersonating, setIsImpersonating] = useState(false);
+
     const fetchSession = async () => {
         try {
             const { data: { session } } = await supabaseClient.auth.getSession();
             setSession(session);
             setUser(session?.user ?? null);
+
+            // Detectar impersonate via cookie no client-side
+            const impersonateCookie = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('impersonate_tenant_id='));
+            setIsImpersonating(!!impersonateCookie);
 
             if (session?.user) {
                 // Obter role do usuário
@@ -123,7 +133,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, session, tenant, loading, signOut, role, roles, isSystemAdmin, refresh: fetchSession }}>
+        <AuthContext.Provider value={{ user, session, tenant, loading, signOut, role, roles, isSystemAdmin, isImpersonating, refresh: fetchSession }}>
             {children}
         </AuthContext.Provider>
     );

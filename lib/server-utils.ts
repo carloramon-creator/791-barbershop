@@ -72,7 +72,7 @@ export async function getCurrentUserAndTenant() {
             if (error) console.error('[PRESENCE UPDATE ERROR]', error.message);
         });
 
-        // Buscar dados do usuário (role e tenant_id)
+        // 4. Buscar dados do usuário (role e tenant_id)
         const { data: userData, error: userError } = await supabaseAdmin
             .from('users')
             .select('*')
@@ -84,16 +84,29 @@ export async function getCurrentUserAndTenant() {
             throw new Error('Perfil de usuário não encontrado');
         }
 
-        // Buscar dados da barbearia (todos os campos com *)
+        const isSystemAdmin = userData.is_system_admin || false;
+        let tenantIdToUse = userData.tenant_id;
+
+        // 5. Se for admin, permitir override via cookie de impersonate
+        if (isSystemAdmin) {
+            const cookieStore = await cookies();
+            const impersonateId = cookieStore.get('impersonate_tenant_id')?.value;
+            if (impersonateId) {
+                console.log('[BACKEND] Admin detectado - Sobrescrevendo Tenant por:', impersonateId);
+                tenantIdToUse = impersonateId;
+            }
+        }
+
+        // Buscar dados da barbearia
         const { data: tenant, error: tenantError } = await supabaseAdmin
             .from('tenants')
             .select('*')
-            .eq('id', userData.tenant_id)
+            .eq('id', tenantIdToUse)
             .single();
 
         if (tenantError || !tenant) {
             console.error('[BACKEND] Tenant not found:', tenantError?.message);
-            throw new Error('Barbearia não vinculada ao seu usuário');
+            throw new Error('Barbearia não encontrada ou vinculada');
         }
 
         console.log('[BACKEND] Tenant found:', tenant.name, 'Plan:', tenant.plan);
@@ -102,9 +115,9 @@ export async function getCurrentUserAndTenant() {
         return {
             user: finalUser,
             tenant,
-            role: userData.role, // Mantendo por compatibilidade temporária
-            roles: userData.roles || [userData.role], // Novo padrão
-            isSystemAdmin: userData.is_system_admin || false
+            role: userData.role,
+            roles: userData.roles || [userData.role],
+            isSystemAdmin: isSystemAdmin
         };
     } catch (e: any) {
         console.error('[BACKEND] Critical error in getCurrentUserAndTenant:', e.message);

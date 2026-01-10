@@ -238,8 +238,8 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                         size="icon"
                                         className="border-slate-800 bg-slate-950 text-slate-400 hover:text-blue-500 hover:border-blue-500/50"
                                         onClick={() => {
-                                            // Navigate to dashboard as hidden user (impersonation)
-                                            window.open(`${window.location.origin}/dashboard?tenant_id=${tenant.id}&impersonate=true`, '_blank');
+                                            // Navigate to dashboard as hidden user (impersonation) via API to set cookie
+                                            window.open(`/api/system/impersonate?tenant_id=${tenant.id}`, '_blank');
                                         }}
                                         title="Acessar como usuário oculto"
                                     >

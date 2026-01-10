@@ -86,6 +86,9 @@ export default function PlanPage() {
     const [error, setError] = useState<string | null>(null);
     const [invoices, setInvoices] = useState<any[]>([]);
     const [loadingInvoices, setLoadingInvoices] = useState(false);
+    const [stripeSubscriptionId, setStripeSubscriptionId] = useState<string | null>(null);
+    const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+    const [canceling, setCanceling] = useState(false);
 
     const tabs = [
         { name: 'Geral', href: '/configuracoes/barbearia', icon: Building2 },
@@ -113,6 +116,8 @@ export default function PlanPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             setCurrentPlan(data.currentPlan || 'trial');
+            setStripeSubscriptionId(data.stripeSubscriptionId);
+            setSubscriptionStatus(data.subscriptionStatus);
 
             // Also check if tenant has CNPJ/CPF
             const tenantRes = await fetch(`${API_URL}/api/barbershop`, {
@@ -306,6 +311,35 @@ export default function PlanPage() {
         }
     }
 
+    async function handleCancelSubscription() {
+        if (!confirm('Tem certeza que deseja cancelar sua assinatura? Você continuará com acesso até o final do período pago.')) return;
+
+        try {
+            setCanceling(true);
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) return;
+
+            const res = await fetch('/api/checkout/cancel-subscription', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`
+                }
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Erro ao cancelar');
+            }
+
+            alert('Assinatura cancelada com sucesso! Você continuará com acesso até o final do período atual.');
+            fetchCurrentPlan();
+        } catch (e: any) {
+            alert('Erro: ' + e.message);
+        } finally {
+            setCanceling(false);
+        }
+    }
+
     return (
         <div className="max-w-6xl mx-auto space-y-6">
             {isExpired && (
@@ -363,9 +397,27 @@ export default function PlanPage() {
                                             R$ {PLANS[currentPlan]?.price || 0}/mês
                                         </p>
                                     </div>
-                                    <span className="px-4 py-2 bg-green-500/10 text-green-500 text-sm rounded-full border border-green-500/20">
-                                        Ativo
-                                    </span>
+                                    <div className="flex flex-col items-end gap-2">
+                                        <span className={cn(
+                                            "px-4 py-2 text-sm rounded-full border",
+                                            subscriptionStatus === 'canceled'
+                                                ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                                                : "bg-green-500/10 text-green-500 border-green-500/20"
+                                        )}>
+                                            {subscriptionStatus === 'canceled' ? 'Cancelamento Pendente' : 'Ativo'}
+                                        </span>
+                                        {stripeSubscriptionId && subscriptionStatus !== 'canceled' && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-[10px] text-red-500 hover:text-red-400 font-bold uppercase"
+                                                onClick={handleCancelSubscription}
+                                                disabled={canceling}
+                                            >
+                                                {canceling ? 'Processando...' : 'Cancelar Assinatura'}
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>
@@ -413,18 +465,18 @@ export default function PlanPage() {
                                         <Button
                                             className={cn(
                                                 'w-full py-6 rounded-xl font-black uppercase tracking-widest',
-                                                currentPlan === plan.id
+                                                (currentPlan === plan.id || (subscriptionStatus === 'active' && currentPlan !== 'trial'))
                                                     ? 'bg-slate-800 light:bg-slate-100 text-slate-500'
                                                     : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20'
                                             )}
-                                            disabled={currentPlan === plan.id}
+                                            disabled={currentPlan === plan.id || (subscriptionStatus === 'active' && currentPlan !== 'trial')}
                                             onClick={() => {
                                                 setSelectedPlan(plan.id);
                                                 setPaymentMethod('card');
                                                 setOpenDialog(true);
                                             }}
                                         >
-                                            {currentPlan === plan.id ? 'Plano Atual' : 'Contratar'}
+                                            {currentPlan === plan.id ? 'Plano Atual' : (subscriptionStatus === 'active' && currentPlan !== 'trial' ? 'Já Ativo' : 'Contratar')}
                                         </Button>
                                     </CardContent>
                                 </Card>

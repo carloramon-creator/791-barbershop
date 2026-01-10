@@ -32,7 +32,7 @@ export async function GET(req: Request) {
 
         const { data: tenant, error } = await supabaseAdmin
             .from('tenants')
-            .select('id, plan')
+            .select('id, plan, stripe_subscription_id, subscription_status, stripe_customer_id')
             .eq('id', tenantId)
             .maybeSingle(); // Safe query
 
@@ -50,7 +50,9 @@ export async function GET(req: Request) {
         }
 
         const response = NextResponse.json({
-            currentPlan: tenant.plan || 'basic'
+            currentPlan: tenant.plan || 'basic',
+            stripeSubscriptionId: tenant.stripe_subscription_id,
+            subscriptionStatus: tenant.subscription_status
         });
         return addCorsHeaders(req, response);
     } catch (error: any) {
