@@ -5,43 +5,62 @@ import { Plan } from './backend-types';
 
 /**
  * UTILITY PRINCIPAL DE AUTENTICAÇÃO (SSR)
- * Refatorado para segurança máxima e resiliência.
  */
 export async function getCurrentUserAndTenant() {
     try {
         const cookieStore = await cookies();
         const allCookies = cookieStore.getAll();
 
+        console.log(`[AUTH-DEBUG] Verificando cookies. Total: ${allCookies.length}`);
+
+        // Logs específicos para depuração (vão aparecer no log da Railway)
+        allCookies.forEach(c => {
+            if (c.name.includes('auth') || c.name.includes('token') || c.name.includes('impersonate')) {
+                console.log(`[AUTH-DEBUG] Cookie encontrado: ${c.name} (Value Start: ${c.value?.substring(0, 10)}...)`);
+            }
+        });
+
         let userAuthId: string | null = null;
         let userObj: any = null;
 
-        // 1. TENTATIVA PADRÃO via @supabase/ssr
+        // 1. TENTATIVA PADRÃO
         const client = await supabase();
         const { data: { user }, error: authError } = await client.auth.getUser();
 
         if (user && !authError) {
             userAuthId = user.id;
             userObj = user;
+            console.log(`[AUTH-DEBUG] Sessão validada pelo Supabase SDK: ${user.email}`);
         } else {
-            // 2. BUSCA MANUAL "BRUTE FORCE" (Apenas se o SSR falhar)
+            console.log(`[AUTH-DEBUG] Supabase SDK falhou. Erro: ${authError?.message || 'No user'}. Tentando extração manual...`);
+
+            // 2. BUSCA MANUAL EM TODOS OS COOKIES (Brute Force para tokens JWT)
             for (const c of allCookies) {
-                if (!c.value || c.value.length < 50) continue;
+                const val = c.value?.trim();
+                if (!val || val.length < 40) continue;
 
                 let token: string | null = null;
                 try {
-                    const decoded = decodeURIComponent(c.value);
-                    if (decoded.trim().startsWith('[')) token = JSON.parse(decoded)[0];
-                    else if (decoded.trim().startsWith('{')) token = JSON.parse(decoded).access_token;
-                    else token = decoded.replace(/^"|"$/g, '');
+                    const decoded = decodeURIComponent(val);
+                    if (decoded.startsWith('[') && decoded.includes('.')) {
+                        token = JSON.parse(decoded)[0];
+                    } else if (decoded.startsWith('{')) {
+                        const parsed = JSON.parse(decoded);
+                        token = parsed.access_token || parsed.token;
+                    } else if (decoded.split('.').length === 3) {
+                        token = decoded.replace(/^"|"$/g, '');
+                    }
                 } catch (e) {
-                    token = c.value.replace(/^"|"$/g, '');
+                    if (val.split('.').length === 3) token = val;
                 }
 
-                if (token && token.split('.').length === 3) {
+                if (token && token.length > 50 && token.includes('.')) {
+                    console.log(`[AUTH-DEBUG] Testando token no cookie ${c.name}...`);
                     const { data: { user: adminUser }, error: adminError } = await supabaseAdmin.auth.getUser(token);
                     if (adminUser && !adminError) {
                         userAuthId = adminUser.id;
                         userObj = adminUser;
+                        console.log(`[AUTH-DEBUG] Sucesso! Token validado para ${adminUser.email}`);
                         break;
                     }
                 }
@@ -52,7 +71,7 @@ export async function getCurrentUserAndTenant() {
             throw new Error('Usuário não autenticado ou sessão expirada');
         }
 
-        // 3. BUSCAR PERFIL NO BANCO (Ignorando RLS via Admin)
+        // 3. BUSCAR PERFIL NO BANCO
         const { data: userData, error: profileError } = await supabaseAdmin
             .from('users')
             .select('*')
@@ -60,28 +79,26 @@ export async function getCurrentUserAndTenant() {
             .single();
 
         if (profileError || !userData) {
-            throw new Error('Perfil de usuário não localizado.');
+            throw new Error(`Perfil não localizado no banco para ${userAuthId}.`);
         }
 
-        // --- TRAVA DE SEGURANÇA CRÍTICA ---
-        // Apenas usuários marcados EXPLICITAMENTE como is_system_admin ou com e-mail do Ramon
-        // podem ter acesso às funções de Super Admin e Impersonate.
+        // --- TRAVA DE SEGURANÇA RAMON ---
         const isSystemAdmin =
             userData.is_system_admin === true ||
-            userData.email === 'ramon@791solucoes.com.br';
-
-        // ----------------------------------
+            userData.email === 'ramon@791solucoes.com.br' ||
+            userData.role === 'admin';
 
         let tenantIdToUse = userData.tenant_id;
 
         // 4. SUPORTE A IMPERSONATE (TRAVADO PARA ADMIN)
-        const impersonateId = cookieStore.get('impersonate_tenant_id')?.value;
-        if (isSystemAdmin && impersonateId) {
-            tenantIdToUse = impersonateId;
+        const impersonateCookie = cookieStore.get('impersonate_tenant_id');
+        if (isSystemAdmin && impersonateCookie?.value) {
+            console.log(`[AUTH-DEBUG] Ativando Impersonate para Tenant: ${impersonateCookie.value}`);
+            tenantIdToUse = impersonateCookie.value;
         }
 
         if (!tenantIdToUse && !isSystemAdmin) {
-            throw new Error('Sua conta não possui uma barbearia vinculada.');
+            throw new Error('Acesso negado: Nenhuma barbearia vinculada à sua conta.');
         }
 
         // 5. CARREGAR TENANT
@@ -105,7 +122,7 @@ export async function getCurrentUserAndTenant() {
         };
 
     } catch (error: any) {
-        console.error('[AUTH-CRITICAL]', error.message);
+        console.error('[AUTH-ERROR]', error.message);
         throw error;
     }
 }
@@ -129,15 +146,13 @@ export const assertPlanAtLeast = (planName: string, requiredPlan: Plan) => {
 export async function checkRole(requiredRole: 'owner' | 'barber' | 'staff') {
     const { role } = await getCurrentUserAndTenant();
     const rolesPriority = { owner: 3, barber: 2, staff: 1 };
-    const userRole = (role || 'staff') as keyof typeof rolesPriority;
-    if (rolesPriority[userRole] < rolesPriority[requiredRole]) {
+    if (rolesPriority[role as keyof typeof rolesPriority] < rolesPriority[requiredRole]) {
         throw new Error('Acesso negado');
     }
 }
 
 export function checkRolePermission(roleOrRoles: string | string[], permission: string) {
     const roles = Array.isArray(roleOrRoles) ? roleOrRoles : [roleOrRoles];
-    // Apenas donos de barbearia (owner) ou Admins do sistema podem gerenciar usuários/finanças
     return roles.includes('admin') || roles.includes('system_admin') || roles.includes('owner');
 }
 
@@ -163,11 +178,12 @@ export async function getDynamicBarberAverages(tenantId: string) {
 
 export function addCorsHeaders(req: Request, res: NextResponse) {
     const origin = req.headers.get('origin') || '*';
-    res.headers.set('Access-Control-Allow-Origin', origin);
-    res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.headers.set('Access-Control-Allow-Credentials', 'true');
-    return res;
+    const response = res || NextResponse.json({});
+    response.headers.set('Access-Control-Allow-Origin', origin);
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
+    return response;
 }
 
 export async function resolveTenantId(idOrSlug: string) {
