@@ -7,8 +7,11 @@ export async function GET(req: Request) {
         const tenantId = searchParams.get('tenant_id');
         const stop = searchParams.get('stop');
 
+        console.log('[IMPERSONATE-DEBUG] Iniciando...');
+
         // Verifica se quem está tentando é admin
-        const { isSystemAdmin } = await getCurrentUserAndTenant();
+        const { isSystemAdmin, user } = await getCurrentUserAndTenant();
+        console.log(`[IMPERSONATE-DEBUG] Usuário identificado: ${user?.email}, é Admin? ${isSystemAdmin}`);
 
         if (!isSystemAdmin) {
             return NextResponse.json({ error: 'Acesso negado: Somente administradores' }, { status: 403 });

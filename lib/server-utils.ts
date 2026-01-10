@@ -5,74 +5,64 @@ import { Plan } from './backend-types';
 
 /**
  * UTILITY PRINCIPAL DE AUTENTICAÇÃO (SSR)
+ * Refatorado para máxima resiliência no ambiente Railway.
  */
 export async function getCurrentUserAndTenant() {
     try {
-        console.log('[AUTH] Verificando sessão no servidor...');
         const cookieStore = await cookies();
         const allCookies = cookieStore.getAll();
+
+        console.log(`[AUTH-DEBUG] Verificando cookies (${allCookies.length} encontrados)`);
+        allCookies.forEach(c => console.log(`[AUTH-DEBUG] Cookie: ${c.name} (len: ${c.value?.length || 0})`));
 
         let userAuthId: string | null = null;
         let userObj: any = null;
 
         // 1. TENTATIVA PADRÃO via @supabase/ssr
-        // Carrega o cliente SSR que deve gerenciar cookies automaticamente
         const client = await supabase();
         const { data: { user }, error: authError } = await client.auth.getUser();
 
         if (user && !authError) {
             userAuthId = user.id;
             userObj = user;
-            console.log('[AUTH] ✅ Sessão padrão encontrada:', user.id);
+            console.log('[AUTH-DEBUG] ✅ Sessão SSR validada:', user.id);
         } else {
-            console.log('[AUTH] ⚠️ Sessão padrão falhou. Tentando busca manual exaustiva em todos os cookies...');
+            console.log('[AUTH-DEBUG] ⚠️ SSR falhou (Code: ' + (authError?.code || 'unknown') + '). Tentando busca manual...');
 
-            // 2. BUSCA MANUAL "BRUTE FORCE" EM TODOS OS COOKIES
-            // Tentamos encontrar qualquer cookie que contenha um JWT válido de acesso
-            const potentialTokens: string[] = [];
+            // 2. BUSCA MANUAL "ABSOLUTA"
+            // Procura tokens em cookies de forma agnóstica ao nome do projeto
+            for (const c of allCookies) {
+                // Tokens costumam ser grandes (JWT > 100 char) e conter o padrão de 3 partes separadas por ponto
+                if (!c.value || c.value.length < 50) continue;
 
-            // Agrupar por nomes base para lidar com chunks (.0, .1)
-            const groups: Record<string, string[]> = {};
-            allCookies.forEach(c => {
-                const name = c.name;
-                const value = c.value;
-                if (!value || value.length < 10) return;
-
-                // Extrai o nome base (remove .0, .1 etc)
-                const baseName = name.includes('.') ? name.split('.')[0] : name;
-                if (!groups[baseName]) groups[baseName] = [];
-                groups[baseName].push(name + '|||' + value);
-            });
-
-            for (const base in groups) {
-                const parts = groups[base];
-                parts.sort((a, b) => a.localeCompare(b));
-                const combined = parts.map(p => p.split('|||')[1]).join('');
-                potentialTokens.push(combined);
-
-                // Também tenta cada parte individualmente (caso não seja chunked mas tenha ponto no nome)
-                parts.forEach(p => potentialTokens.push(p.split('|||')[1]));
-            }
-
-            for (const raw of potentialTokens) {
                 let token: string | null = null;
+                const raw = c.value;
+
                 try {
-                    // Tenta limpar o valor (pode vir como JSON stringified ou URI encoded)
                     const decoded = decodeURIComponent(raw);
-                    if (decoded.trim().startsWith('[')) token = JSON.parse(decoded)[0];
-                    else if (decoded.trim().startsWith('{')) token = JSON.parse(decoded).access_token || JSON.parse(decoded).token;
-                    else if (decoded.includes('.') && decoded.split('.').length === 3) token = decoded.replace(/^"|"$/g, '');
-                    else token = raw.replace(/^"|"$/g, '');
+                    // Padrão Supabase SSR: ["token", "refresh", ...]
+                    if (decoded.trim().startsWith('[')) {
+                        token = JSON.parse(decoded)[0];
+                    }
+                    // Padrão Supabase antigo ou personalizado: {"access_token": "..."}
+                    else if (decoded.trim().startsWith('{')) {
+                        const parsed = JSON.parse(decoded);
+                        token = parsed.access_token || parsed.token || parsed.access;
+                    }
+                    // String direta
+                    else {
+                        token = decoded.replace(/^"|"$/g, '');
+                    }
                 } catch (e) {
                     token = raw.replace(/^"|"$/g, '');
                 }
 
-                if (token && token.length > 50 && token.includes('.')) {
-                    const { data: { user: foundUser }, error: err } = await supabaseAdmin.auth.getUser(token);
-                    if (foundUser && !err) {
-                        userAuthId = foundUser.id;
-                        userObj = foundUser;
-                        console.log('[AUTH] ✅ Token validado manualmente via cookies brute-force');
+                if (token && token.split('.').length === 3) {
+                    const { data: { user: adminUser }, error: adminError } = await supabaseAdmin.auth.getUser(token);
+                    if (adminUser && !adminError) {
+                        userAuthId = adminUser.id;
+                        userObj = adminUser;
+                        console.log(`[AUTH-DEBUG] ✅ Token validado extraído do cookie: ${c.name}`);
                         break;
                     }
                 }
@@ -80,24 +70,11 @@ export async function getCurrentUserAndTenant() {
         }
 
         if (!userAuthId) {
-            // Tenta via Authorization Header (caso o middleware ou proxy passe)
-            const headerList = await headers();
-            const authHeader = headerList.get('Authorization');
-            if (authHeader?.startsWith('Bearer ')) {
-                const token = authHeader.substring(7);
-                const { data: { user: headerUser } } = await supabaseAdmin.auth.getUser(token);
-                if (headerUser) {
-                    userAuthId = headerUser.id;
-                    userObj = headerUser;
-                }
-            }
-        }
-
-        if (!userAuthId) {
+            console.error('[AUTH-DEBUG] ❌ FALHA: Nenhum token de acesso válido localizado nos cookies.');
             throw new Error('Usuário não autenticado ou sessão expirada');
         }
 
-        // 3. BUSCAR PERFIL NO BANCO
+        // 3. BUSCAR PERFIL NO BANCO (Ignorando RLS via Admin)
         const { data: userData, error: profileError } = await supabaseAdmin
             .from('users')
             .select('*')
@@ -105,21 +82,22 @@ export async function getCurrentUserAndTenant() {
             .single();
 
         if (profileError || !userData) {
-            // Se autenticou mas não tem perfil, pode ser um erro de sincronia ou usuário novo incompleto
-            throw new Error(`Perfil não localizado para o ID ${userAuthId}`);
+            console.error('[AUTH-DEBUG] ❌ Erro de Perfil:', profileError?.message || 'Não encontrado');
+            throw new Error('Perfil de usuário não localizado.');
         }
 
-        const isSystemAdmin = userData.is_system_admin === true || userData.role === 'admin';
+        const isSystemAdmin = userData.is_system_admin === true || userData.role === 'admin' || userData.role === 'owner';
         let tenantIdToUse = userData.tenant_id;
 
         // 4. SUPORTE A IMPERSONATE
         const impersonateId = cookieStore.get('impersonate_tenant_id')?.value;
         if (isSystemAdmin && impersonateId) {
+            console.log(`[AUTH-DEBUG] 🕵️ Impersonate Ativo: ${impersonateId}`);
             tenantIdToUse = impersonateId;
         }
 
         if (!tenantIdToUse && !isSystemAdmin) {
-            throw new Error('Sua conta não possui uma barbearia vinculada.');
+            throw new Error('Sem barbearia vinculada.');
         }
 
         // 5. CARREGAR TENANT
@@ -143,7 +121,7 @@ export async function getCurrentUserAndTenant() {
         };
 
     } catch (error: any) {
-        console.error('[AUTH CRITICAL ERROR]', error.message);
+        console.error('[AUTH-CRITICAL]', error.message);
         throw error;
     }
 }
