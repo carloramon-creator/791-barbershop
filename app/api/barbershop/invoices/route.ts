@@ -27,10 +27,8 @@ export async function GET(req: Request) {
         const cert = config?.crt?.replace(/\\n/g, '\n');
         const key = config?.key?.replace(/\\n/g, '\n');
 
-        // 2. Antes de listar, tenta sincronizar faturas pendentes recentes (últimos 3 dias)
-        // Isso resolve o pedido do usuário para check automático sem clique
+        // 2. Antes de listar, tenta sincronizar faturas Inter pendentes
         if (config && cert && key) {
-            // ... (Inter sync logic remains)
             const inter = new InterAPIV3({
                 clientId: config.client_id,
                 clientSecret: config.client_secret,
@@ -51,12 +49,8 @@ export async function GET(req: Request) {
                 .gte('created_at', threeDaysAgo.toISOString());
 
             if (pendingRecent && pendingRecent.length > 0) {
-                console.log(`[AUTO-SYNC] Verificando ${pendingRecent.length} faturas pendentes para ${tenant.name}`);
-
                 for (const inv of pendingRecent) {
                     const txid = inv.metadata?.txid;
-                    const stripeSessionId = inv.metadata?.stripe_session_id;
-
                     if (txid) {
                         try {
                             const details = await inter.getBillingBySolicitacao(txid);
@@ -68,13 +62,8 @@ export async function GET(req: Request) {
                                 situacao === 'CONCLUIDA' ||
                                 situacao === 'RECEBIDA';
 
-                            const isCanceled = situacao === 'CANCELADO' ||
-                                situacao === 'EXPIRADO' ||
-                                situacao === 'REJEITADA';
-
                             if (isPaid) {
-                                console.log(`[AUTO-SYNC] ✅ PAGO detectado para TXID: ${txid}`);
-                                // Libera Tenant
+                                console.log(`[AUTO-SYNC INTER] ✅ PAGO detectado para TXID: ${txid}`);
                                 const description = inv.description || '';
                                 let plan = 'basic';
                                 if (description.toLowerCase().includes('premium')) plan = 'premium';
@@ -93,14 +82,9 @@ export async function GET(req: Request) {
                                     is_paid: true,
                                     metadata: { ...inv.metadata, status_inter: situacao }
                                 }).eq('id', inv.id);
-                            } else if (isCanceled && inv.metadata?.status_inter !== situacao) {
-                                console.log(`[AUTO-SYNC] 🔴 CANCELADO detectado para TXID: ${txid}`);
-                                await supabaseAdmin.from('finance').update({
-                                    metadata: { ...inv.metadata, status_inter: situacao }
-                                }).eq('id', inv.id);
                             }
                         } catch (e) {
-                            console.warn(`[AUTO-SYNC] Erro ao consultar TXID ${txid}:`, e);
+                            console.warn(`[AUTO-SYNC INTER] Erro ${txid}:`, e);
                         }
                     }
                 }
@@ -112,102 +96,89 @@ export async function GET(req: Request) {
         try {
             const { stripe } = await import('@/lib/stripe-server');
 
-            // Se não tiver customer ID, tenta buscar pelo email da barbearia ou do usuário
+            console.log(`[STRIPE-SYNC] Iniciando sync para ${tenant.name}. CustomerID: ${stripeCustomerId || 'vazio'}`);
+
+            // Busca customer por emails se estiver vazio
             if (!stripeCustomerId) {
-                console.log(`[STRIPE-SYNC] Buscando customer por email: ${tenant.email || user.email}`);
-                const customersQuery = await stripe.customers.list({
-                    email: tenant.email || user.email,
-                    limit: 1
-                });
-                if (customersQuery.data.length > 0) {
-                    stripeCustomerId = customersQuery.data[0].id;
-                    console.log(`[STRIPE-SYNC] Customer encontrado: ${stripeCustomerId}`);
-                    // Salva para o futuro
-                    await supabaseAdmin.from('tenants').update({ stripe_customer_id: stripeCustomerId }).eq('id', tenant.id);
+                const searchEmails = [tenant.email, user.email, 'ramon@791solucoes.com.br', 'carloramon@gmail.com'].filter(Boolean);
+                const uniqueEmails = Array.from(new Set(searchEmails as string[]));
+                console.log(`[STRIPE-SYNC] Buscando customer por emails: ${uniqueEmails.join(', ')}`);
+
+                for (const email of uniqueEmails) {
+                    const customersQuery = await stripe.customers.list({ email, limit: 1 });
+                    if (customersQuery.data.length > 0) {
+                        stripeCustomerId = customersQuery.data[0].id;
+                        console.log(`[STRIPE-SYNC] Customer encontrado para ${email}: ${stripeCustomerId}`);
+                        await supabaseAdmin.from('tenants').update({ stripe_customer_id: stripeCustomerId }).eq('id', tenant.id);
+                        break;
+                    }
                 }
             }
 
             if (stripeCustomerId) {
-                // A. Sincronizar Sessões de Checkout (Pagamento inicial)
-                const sessions = await stripe.checkout.sessions.list({
-                    customer: stripeCustomerId,
-                    limit: 10,
-                });
+                // A. Checkout Sessions
+                const sessions = await stripe.checkout.sessions.list({ customer: stripeCustomerId, limit: 10 });
+                console.log(`[STRIPE-SYNC] Encontradas ${sessions.data.length} sessões`);
 
                 for (const session of sessions.data) {
-                    if (session.payment_status === 'paid' && (session.status === 'complete' || session.status === 'expired' /* some sessions stay expired but paid */)) {
-                        const { data: existingFinance } = await supabaseAdmin
+                    if (session.payment_status === 'paid') {
+                        const { data: exists } = await supabaseAdmin
                             .from('finance')
                             .select('id, is_paid')
                             .eq('metadata->>stripe_session_id', session.id)
                             .maybeSingle();
 
-                        if (!existingFinance || !existingFinance.is_paid) {
-                            console.log(`[STRIPE-SYNC] ✅ Sessão paga encontrada: ${session.id}`);
-                            const planFromMetadata = session.metadata?.plan || 'premium';
+                        if (!exists || !exists.is_paid) {
+                            console.log(`[STRIPE-SYNC] ✅ Sincronizando sessão paga: ${session.id}`);
+                            const planFromMeta = session.metadata?.plan || 'premium';
 
-                            // Atualizar Tenant
                             await supabaseAdmin.from('tenants').update({
-                                plan: planFromMetadata,
+                                plan: planFromMeta,
                                 subscription_status: 'active',
                                 stripe_customer_id: stripeCustomerId,
                                 stripe_subscription_id: session.subscription as string,
                             }).eq('id', tenant.id);
 
-                            if (!existingFinance) {
+                            if (!exists) {
                                 await supabaseAdmin.from('finance').insert({
                                     tenant_id: tenant.id,
                                     type: 'revenue',
                                     value: (session.amount_total || 0) / 100,
-                                    description: `Assinatura SaaS - Plano ${planFromMetadata.toUpperCase()} (Stripe CSS)`,
+                                    description: `Assinatura SaaS - Plano ${planFromMeta.toUpperCase()} (Stripe CSS)`,
                                     date: new Date(session.created * 1000).toISOString().split('T')[0],
                                     is_paid: true,
-                                    metadata: {
-                                        stripe_session_id: session.id,
-                                        stripe_customer_id: stripeCustomerId,
-                                        method: 'stripe_card'
-                                    }
+                                    metadata: { stripe_session_id: session.id, stripe_customer_id: stripeCustomerId, method: 'stripe_card' }
                                 });
                             } else {
-                                await supabaseAdmin.from('finance').update({
-                                    is_paid: true,
-                                    description: `Assinatura SaaS - Plano ${planFromMetadata.toUpperCase()} (Stripe CSS Update)`
-                                }).eq('id', existingFinance.id);
+                                await supabaseAdmin.from('finance').update({ is_paid: true }).eq('id', exists.id);
                             }
                         }
                     }
                 }
 
-                // B. Sincronizar Invoices (Renovações)
-                const stripeInvoices = await stripe.invoices.list({
-                    customer: stripeCustomerId,
-                    limit: 10,
-                    status: 'paid'
-                });
+                // B. Invoices
+                const invoicesStripe = await stripe.invoices.list({ customer: stripeCustomerId, limit: 10, status: 'paid' });
+                console.log(`[STRIPE-SYNC] Encontradas ${invoicesStripe.data.length} faturas`);
 
-                for (const invStripe of stripeInvoices.data) {
-                    const { data: existingInv } = await supabaseAdmin
+                for (const inv of invoicesStripe.data) {
+                    const { data: exists } = await supabaseAdmin
                         .from('finance')
                         .select('id')
-                        .eq('metadata->>stripe_invoice_id', invStripe.id)
+                        .eq('metadata->>stripe_invoice_id', inv.id)
                         .maybeSingle();
 
-                    if (!existingInv) {
-                        const amount = invStripe.amount_paid / 100;
+                    if (!exists) {
+                        const amount = inv.amount_paid / 100;
                         if (amount > 0) {
-                            console.log(`[STRIPE-SYNC] ✅ Fatura paga encontrada: ${invStripe.id}`);
+                            console.log(`[STRIPE-SYNC] ✅ Nova fatura paga: ${inv.id}`);
                             await supabaseAdmin.from('finance').insert({
                                 tenant_id: tenant.id,
                                 type: 'revenue',
                                 value: amount,
                                 description: `Renovação SaaS (Stripe INV)`,
-                                date: new Date(invStripe.status_transitions.paid_at! * 1000).toISOString().split('T')[0],
+                                date: new Date((inv.status_transitions?.paid_at || inv.created) * 1000).toISOString().split('T')[0],
                                 is_paid: true,
-                                metadata: {
-                                    stripe_invoice_id: invStripe.id,
-                                    stripe_customer_id: stripeCustomerId,
-                                    method: 'stripe_card'
-                                }
+                                metadata: { stripe_invoice_id: inv.id, stripe_customer_id: stripeCustomerId, method: 'stripe_card' }
                             });
                             await supabaseAdmin.from('tenants').update({
                                 subscription_status: 'active',

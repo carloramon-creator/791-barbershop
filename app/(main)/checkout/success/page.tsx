@@ -13,10 +13,21 @@ export default function CheckoutSuccessPage() {
     const sessionId = searchParams.get('session_id');
 
     useEffect(() => {
-        // Simular verificação da sessão
-        setTimeout(() => {
-            setLoading(false);
-        }, 1500);
+        const verifyPayment = async () => {
+            try {
+                // Chama a API de faturas que contém a lógica de AUTO-SYNC
+                const res = await fetch('/api/barbershop/invoices');
+                if (res.ok) {
+                    console.log('Pagamento sincronizado com sucesso via Auto-Sync');
+                }
+            } catch (error) {
+                console.error('Erro ao sincronizar pagamento:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        verifyPayment();
     }, []);
 
     if (loading) {
