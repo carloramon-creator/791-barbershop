@@ -40,10 +40,11 @@ export function Sidebar() {
         }
     }, [tenant]);
 
+
     const menuItems = [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['owner', 'staff'], feature: 'queue' },
-        { name: 'Fila (Barbeiro)', href: '/barbeiro', icon: UserCheck, roles: ['owner', 'barber', 'staff'], feature: 'queue' },
-        { name: 'Agendamentos', href: '/agendamentos', icon: Calendar, roles: ['owner', 'barber', 'staff'], feature: 'queue' },
+        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['owner', 'staff'], feature: 'queue', module: 'queue' },
+        { name: 'Fila (Barbeiro)', href: '/barbeiro', icon: UserCheck, roles: ['owner', 'barber', 'staff'], feature: 'queue', module: 'queue' },
+        { name: 'Agendamentos', href: '/agendamentos', icon: Calendar, roles: ['owner', 'barber', 'staff'], feature: 'queue', module: 'appointments' },
         { name: 'Barbeiros', href: '/barbeiros', icon: Users, roles: ['owner', 'staff'], feature: 'queue' },
         { name: 'Serviços', href: '/servicos', icon: Scissors, roles: ['owner', 'staff'], feature: 'queue' },
         { name: 'Produtos', href: '/produtos', icon: ShoppingBag, roles: ['owner', 'staff'], feature: 'queue' },
@@ -57,10 +58,16 @@ export function Sidebar() {
         if ((item as any).isSystemOnly && !isSystemAdmin) return false;
         const roleAllowed = !item.roles || (role && item.roles.includes(role));
         if (!roleAllowed) return false;
+
+        // Filtrar por módulo ativo
+        if ((item as any).module === 'queue' && !tenant?.module_queue_enabled) return false;
+        if ((item as any).module === 'appointments' && !tenant?.module_appointments_enabled) return false;
+
         if (item.feature === 'finance') return planConfig.features.includes('finance') || planConfig.features.includes('all');
         if (item.feature === 'inventory') return planConfig.features.includes('all');
         return true;
     });
+
 
     return (
         <>

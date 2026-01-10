@@ -92,6 +92,22 @@ export const Api = {
     updateProduct: (id: string, payload: Record<string, unknown>) => apiFetch(`/api/products/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
     deleteProduct: (id: string) => apiFetch(`/api/products/${id}`, { method: 'DELETE' }),
 
+    // Product Categories
+    getProductCategories: () => apiFetch('/api/products/categories'),
+    createProductCategory: (payload: Record<string, unknown>) => apiFetch('/api/products/categories', { method: 'POST', body: JSON.stringify(payload) }),
+    updateProductCategory: (id: string, payload: Record<string, unknown>) => apiFetch(`/api/products/categories/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+    deleteProductCategory: (id: string) => apiFetch(`/api/products/categories/${id}`, { method: 'DELETE' }),
+
+    // Service Products (produtos utilizados em um serviço)
+    getServiceProducts: (serviceId: string) => apiFetch(`/api/services/${serviceId}/products`),
+    updateServiceProducts: (serviceId: string, productIds: string[]) =>
+        apiFetch(`/api/services/${serviceId}/products`, { method: 'PUT', body: JSON.stringify({ productIds }) }),
+
+    // Barber Services (serviços que um barbeiro pode executar)
+    getBarberServices: (barberId: string) => apiFetch(`/api/barbers/${barberId}/services`),
+    updateBarberServices: (barberId: string, serviceIds: string[]) =>
+        apiFetch(`/api/barbers/${barberId}/services`, { method: 'PUT', body: JSON.stringify({ serviceIds }) }),
+
     // Finance
     getDre: (start: string, end: string) =>
         apiFetch(`/api/finance/dre?start=${start}&end=${end}`),

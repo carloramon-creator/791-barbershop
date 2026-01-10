@@ -22,6 +22,8 @@ export interface Tenant {
     logo_url?: string;
     subscription_status?: string;
     subscription_current_period_end?: string;
+    module_queue_enabled?: boolean;
+    module_appointments_enabled?: boolean;
     created_at: string;
 }
 
@@ -85,6 +87,15 @@ export interface Service {
     tenant_id: string;
     name: string;
     price: number;
+    duration_minutes?: number;
+    product_ids?: string[];
+    created_at: string;
+}
+
+export interface ProductCategory {
+    id: string;
+    tenant_id: string;
+    name: string;
     created_at: string;
 }
 
@@ -96,8 +107,11 @@ export interface Product {
     cost_price?: number;
     stock_quantity?: number;
     min_stock?: number;
+    category_id?: string;
+    category_name?: string;
     created_at: string;
 }
+
 
 
 
