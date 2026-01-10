@@ -78,9 +78,12 @@ export async function GET(req: Request) {
                     // Estratégia 2: Listagem (Fallback)
                     if (!found) {
                         console.log('[POLLING] Buscando por listagem (fallback)...');
-                        const today = new Date().toISOString().split('T')[0];
-                        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                        const response = await inter.listBillings(yesterday, today);
+                        // Janela de segurança ampliada para evitar problemas de fuso horário (UTC vs BRT)
+                        // Busca de 2 dias atrás até Amanhã
+                        const dStart = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString().split('T')[0];
+                        const dEnd = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+                        const response = await inter.listBillings(dStart, dEnd);
                         const items = response.cobrancas || response.content || [];
                         found = items.find((it: any) => it.seuNumero === seuNumero);
                     }
