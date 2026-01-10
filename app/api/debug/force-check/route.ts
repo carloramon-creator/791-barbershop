@@ -84,10 +84,11 @@ export async function GET(req: Request) {
         }
 
         let updated = false;
+
+        const isCanceled = details?.situacao === 'CANCELADO' || details?.situacao === 'EXPIRADO' || details?.status === 'REJEITADA';
+
         if (charge && isPaid && !charge.is_paid) {
             console.log('Atualizando status para PAGO...');
-
-            // Logica de liberar tenant
             const description = charge.description || '';
             let plan = 'basic';
             if (description.toLowerCase().includes('premium')) plan = 'premium';
@@ -104,7 +105,16 @@ export async function GET(req: Request) {
                 }).eq('id', charge.metadata.tenant_id);
             }
 
-            await supabaseAdmin.from('finance').update({ is_paid: true, metadata: { ...charge.metadata, ...details } }).eq('id', charge.id);
+            await supabaseAdmin.from('finance').update({
+                is_paid: true,
+                metadata: { ...charge.metadata, ...details, status_inter: details.situacao || details.status }
+            }).eq('id', charge.id);
+            updated = true;
+        } else if (charge && isCanceled && !charge.is_paid) {
+            console.log('Atualizando status para CANCELADO/EXPIRADO...');
+            await supabaseAdmin.from('finance').update({
+                metadata: { ...charge.metadata, ...details, status_inter: details.situacao || details.status }
+            }).eq('id', charge.id);
             updated = true;
         }
 
