@@ -5,11 +5,11 @@ import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function GET(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const { tenant } = await getCurrentUserAndTenant();
-        const barberId = params.id;
+        const { id: barberId } = await params;
 
         // Verify if barber belongs to tenant (implicit check via join if needed, or simple select)
         // Here we just fetch directly from barber_services. 
@@ -33,11 +33,11 @@ export async function GET(
 
 export async function PUT(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const { tenant } = await getCurrentUserAndTenant();
-        const barberId = params.id;
+        const { id: barberId } = await params;
         const { serviceIds } = await request.json();
 
         if (!Array.isArray(serviceIds)) {
