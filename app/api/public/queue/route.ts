@@ -31,6 +31,7 @@ export async function GET(req: Request) {
         }
 
         // 0. Buscar dados do Tenant (Branding)
+        console.log(`[PUBLIC QUEUE] Fetching branding for ID: "${tenantId}"`);
         const { data: tenant, error: tenantError } = await supabaseAdmin
             .from('tenants')
             .select('name, logo_url, module_queue_enabled, module_appointments_enabled, address_street, address_city')
@@ -38,6 +39,7 @@ export async function GET(req: Request) {
             .single();
 
         if (tenantError || !tenant) {
+            console.error(`[PUBLIC QUEUE] Tenant Fetch Error:`, tenantError);
             return addCorsHeaders(req, NextResponse.json({ error: 'Barbearia não encontrada' }, { status: 404 }));
         }
 
