@@ -141,9 +141,9 @@ export default function ClientsPage() {
 
     const handleShareLink = (client: Client) => {
         if (!tenant) return;
-        const slug = tenant.slug || encodeURIComponent(tenant.name.toLowerCase().replace(/\s+/g, '-'));
-        const baseUrl = 'https://frontend-client-six-orpin.vercel.app'; // URL correta do app cliente no Vercel
-        const personalizedUrl = `${baseUrl}/${slug}?c=${client.id}`;
+        const slugOrId = tenant.slug || tenant.id;
+        const baseUrl = 'https://frontend-client-six-orpin.vercel.app';
+        const personalizedUrl = `${baseUrl}/${slugOrId}?c=${client.id}`;
 
         const message = `Olá ${client.name}! Use nosso aplicativo para agendar um horário rapidamente: ${personalizedUrl}`;
         const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;

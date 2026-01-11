@@ -21,19 +21,8 @@ export async function GET(req: Request) {
             tenantId = await resolveTenantId(tenantId);
         }
 
-        // Se não vier tenant_id ou não resolveu, buscar o primeiro tenant disponível (para demo/dev)
         if (!tenantId) {
-            const { data: firstTenant } = await supabaseAdmin
-                .from('tenants')
-                .select('id')
-                .limit(1)
-                .single();
-
-            tenantId = firstTenant?.id;
-        }
-
-        if (!tenantId) {
-            return NextResponse.json({ error: 'Nenhuma barbearia encontrada' }, { status: 404 });
+            return NextResponse.json({ error: 'Barbearia não especificada ou não encontrada' }, { status: 404 });
         }
 
         // 0. Buscar dados do Tenant (Branding)
