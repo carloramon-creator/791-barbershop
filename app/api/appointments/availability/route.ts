@@ -62,9 +62,10 @@ export async function GET(req: Request) {
         const dayOfWeek = baseDate.getDay(); // 0=Sun, 1=Mon...
         let startH, startM, endHour, endMin;
 
-        // Priority 1: Individual Day config
-        if (openingHours.days && openingHours.days[dayOfWeek]) {
-            const dayConfig = openingHours.days[dayOfWeek];
+        // Priority 1: Individual Day config (Handle both number and string keys from Supabase)
+        const dayConfig = openingHours.days ? (openingHours.days[dayOfWeek] || openingHours.days[String(dayOfWeek)]) : null;
+
+        if (dayConfig) {
             if (!dayConfig.active) {
                 console.log(`Day ${dayOfWeek} is inactive for tenant ${tenant.id}`);
                 return NextResponse.json([]);
@@ -73,7 +74,7 @@ export async function GET(req: Request) {
             [endHour, endMin] = (dayConfig.end || '19:00').split(':').map(Number);
         } else {
             // Priority 2: Generic Work Days
-            const workDays = Array.isArray(openingHours.work_days) ? openingHours.work_days : [1, 2, 3, 4, 5, 6];
+            const workDays = Array.isArray(openingHours.work_days) ? openingHours.work_days.map(Number) : [1, 2, 3, 4, 5, 6];
             if (!workDays.includes(dayOfWeek)) {
                 console.log(`Day ${dayOfWeek} not in workDays [${workDays}] for tenant ${tenant.id}`);
                 return NextResponse.json([]);
@@ -95,8 +96,8 @@ export async function GET(req: Request) {
             const start = new Date(baseDate);
             start.setHours(brTime.getUTCHours(), brTime.getUTCMinutes(), 0, 0);
 
-            const durationMs = new Date(apt.end_time).getTime() - new Date(apt.start_time).getTime();
-            const end = addMinutes(start, durationMs / 60000);
+            const diffMs = new Date(apt.end_time).getTime() - new Date(apt.start_time).getTime();
+            const end = addMinutes(start, Math.round(diffMs / 60000));
             return { start, end };
         }).filter(apt => isSameDay(apt.start, baseDate)) || [];
 
@@ -106,10 +107,9 @@ export async function GET(req: Request) {
         effLunchStart.setHours(lH, lM, 0, 0);
         let effLunchEnd = addMinutes(effLunchStart, Number(openingHours.lunch_duration || 0));
 
-        // If an appointment overlaps the NOMINAL start of lunch, push lunch to after that appointment.
         if (openingHours.lunch_duration > 0) {
             const blockingApt = normalizedAppointments.find(apt =>
-                apt.start <= effLunchStart && apt.end > effLunchStart
+                (apt.start.getTime() <= effLunchStart.getTime() && apt.end.getTime() > effLunchStart.getTime())
             );
             if (blockingApt) {
                 effLunchStart = new Date(blockingApt.end);
@@ -119,9 +119,10 @@ export async function GET(req: Request) {
 
         const slots: any[] = [];
         let current = workStart;
+        const safeDuration = duration > 0 ? duration : 30; // Evitar loop infinito ou erros se duration for 0
 
         while (current < workEnd) {
-            const slotEnd = addMinutes(current, duration);
+            const slotEnd = addMinutes(current, safeDuration);
             let status: 'available' | 'occupied' | 'lunch' | 'offline' = 'available';
 
             // Work hours check
@@ -142,12 +143,13 @@ export async function GET(req: Request) {
             if (isOffline) {
                 status = 'offline';
             }
-            else if (openingHours.lunch_duration > 0 && current < effLunchEnd && slotEnd > effLunchStart) {
+            else if (openingHours.lunch_duration > 0 && current.getTime() < effLunchEnd.getTime() && slotEnd.getTime() > effLunchStart.getTime()) {
                 status = 'lunch';
             }
             else {
                 const isOccupied = normalizedAppointments.some((apt: any) => {
-                    return (current < apt.end && slotEnd > apt.start);
+                    // Overlap check: Current slot overlaps with an existing appointment
+                    return (current.getTime() < apt.end.getTime() && slotEnd.getTime() > apt.start.getTime());
                 });
                 if (isOccupied) status = 'occupied';
             }
