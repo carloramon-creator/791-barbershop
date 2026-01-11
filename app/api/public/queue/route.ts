@@ -42,13 +42,17 @@ export async function GET(req: Request) {
         // 2. Buscar todos barbeiros ATIVOS e NÃO-OFFLINE do tenant
         const { data: barbers, error: barbersError } = await supabaseAdmin
             .from('barbers')
-            .select('*, users!inner(last_seen_at, photo_url, name, nickname)')
+            .select('*, users(last_seen_at, photo_url, name, nickname)')
             .eq('tenant_id', tenantId)
             .eq('is_active', true)
-            .neq('status', 'offline')
             .order('name', { ascending: true });
 
         if (barbersError) throw barbersError;
+
+        console.log(`[PUBLIC QUEUE] Tenant: ${tenantId}, Barbers found: ${barbers?.length || 0}`);
+        if (barbers && barbers.length > 0) {
+            console.log(`[PUBLIC QUEUE] Barber IDs: ${barbers.map(b => b.id).join(', ')}`);
+        }
 
         // 1.1 Para o app público, mostramos todos os barbeiros ativos do tenant
         const activeBarbers = barbers || [];
@@ -128,7 +132,7 @@ export async function GET(req: Request) {
                 name: tenant.name,
                 logo_url: tenant.logo_url,
                 module_queue_enabled: tenant.module_queue_enabled ?? true,
-                module_appointments_enabled: tenant.module_appointments_enabled ?? false,
+                module_appointments_enabled: tenant.module_appointments_enabled ?? true,
                 address_street: tenant.address_street,
                 address_city: tenant.address_city
             }
