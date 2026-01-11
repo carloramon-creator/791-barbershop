@@ -207,7 +207,7 @@ export default function AppointmentsPage() {
                 barber_id: selectedBarber.id,
                 start_time: startISO,
                 end_time: endISO,
-                status: wizardMode === 'walkin' ? 'in_service' : 'scheduled',
+                status: 'scheduled', // Iniciar sempre como scheduled para o Api.startAppointment funcionar de forma padrão
                 service_id: selectedServices[0]?.id,
                 service_ids: selectedServices.map(s => s.id),
                 notes: `Serviços: ${serviceNames}`
@@ -215,8 +215,6 @@ export default function AppointmentsPage() {
 
             // Se for walk-in, precisamos também criar a entrada na fila (para que o queue_id exista)
             if (wizardMode === 'walkin') {
-                // O backend /api/appointments/[id]/start já faz isso!
-                // Então vamos chamar o start logo em seguida
                 await Api.startAppointment(res.id);
             }
 
