@@ -43,7 +43,7 @@ export async function POST(
                 client_name: appt.client_name,
                 client_phone: appt.client_phone,
                 status: 'attending',
-                start_time: new Date().toISOString(),
+                started_at: new Date().toISOString(),
                 position: 0 // Início imediato
             })
             .select()
