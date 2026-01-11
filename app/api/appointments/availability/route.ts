@@ -86,20 +86,33 @@ export async function GET(req: Request) {
         const workStart = new Date(baseDate); workStart.setHours(startH, startM, 0, 0);
         const workEnd = new Date(baseDate); workEnd.setHours(endHour, endMin, 0, 0);
 
-        // 4. Normalize appointments to Local Clock Time (GMT-3)
+        // 4. Normalize appointments to Local Clock Time (GMT-3 / Brazil)
         const normalizedAppointments = appointments?.map((apt: any) => {
-            const date = new Date(apt.start_time);
+            const startUTC = new Date(apt.start_time);
+            const endUTC = new Date(apt.end_time);
 
-            // Adjust to Brazil time (-3h) for clock-time comparison
-            const brTime = new Date(date.getTime() - (3 * 60 * 60 * 1000));
+            // Adjust to Brazil Wall Clock Time (-3h)
+            const startBr = new Date(startUTC.getTime() - (3 * 60 * 60 * 1000));
 
-            const start = new Date(baseDate);
-            start.setHours(brTime.getUTCHours(), brTime.getUTCMinutes(), 0, 0);
+            // Components for grid comparison
+            const h = startBr.getUTCHours();
+            const m = startBr.getUTCMinutes();
 
-            const diffMs = new Date(apt.end_time).getTime() - new Date(apt.start_time).getTime();
-            const end = addMinutes(start, Math.round(diffMs / 60000));
-            return { start, end };
-        }).filter(apt => isSameDay(apt.start, baseDate)) || [];
+            // Represent this appointment on the target date grid (baseDate is 00:00:00 of requested date)
+            const startGrid = new Date(baseDate);
+            startGrid.setHours(h, m, 0, 0);
+
+            const durationMin = Math.round((endUTC.getTime() - startUTC.getTime()) / 60000);
+            const endGrid = addMinutes(startGrid, durationMin);
+
+            // Check if THIS instance belongs to the requested day IN Brazil
+            const isSameDayInBR =
+                startBr.getUTCFullYear() === baseDate.getFullYear() &&
+                startBr.getUTCMonth() === baseDate.getMonth() &&
+                startBr.getUTCDate() === baseDate.getDate();
+
+            return { start: startGrid, end: endGrid, isSameDayInBR };
+        }).filter(a => a.isSameDayInBR) || [];
 
         // 5. Lunch Logic - DYNAMIC DISPLACEMENT
         let effLunchStart = new Date(baseDate);
@@ -116,6 +129,10 @@ export async function GET(req: Request) {
                 effLunchEnd = addMinutes(effLunchStart, Number(openingHours.lunch_duration));
             }
         }
+
+        console.log(`[AVAILABILITY] Tenant: ${tenant.id}, Date: ${dateStr}, Duration: ${duration}`);
+        console.log(`[AVAILABILITY] Work: ${startH}:${startM} - ${endHour}:${endMin}`);
+        console.log(`[AVAILABILITY] Lunch: ${format(effLunchStart, 'HH:mm')} - ${format(effLunchEnd, 'HH:mm')} (Dur: ${openingHours.lunch_duration})`);
 
         const slots: any[] = [];
         let current = workStart;
