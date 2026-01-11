@@ -36,7 +36,18 @@ export const supabase = async () => {
   });
 };
 
-export const supabaseAdmin = createClient(
-  (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_URL).trim(),
-  (process.env.SUPABASE_SERVICE_ROLE_KEY || SERVICE_KEY).trim()
-);
+export const getSupabaseAdmin = () => {
+  return createClient(
+    (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_URL).trim(),
+    (process.env.SUPABASE_SERVICE_ROLE_KEY || SERVICE_KEY).trim(),
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  );
+};
+
+// Mantendo para compatibilidade, mas agora usa factory
+export const supabaseAdmin = getSupabaseAdmin();

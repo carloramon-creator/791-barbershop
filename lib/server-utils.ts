@@ -1,6 +1,6 @@
 import { cookies, headers } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { supabase, supabaseAdmin } from './supabase-server';
+import { supabase, supabaseAdmin, getSupabaseAdmin } from './supabase-server';
 import { Plan } from './backend-types';
 
 /**
@@ -198,18 +198,20 @@ export async function resolveTenantId(idOrSlug: string) {
     if (cleanId.length > 30 && cleanId.includes('-')) return cleanId;
 
     console.log(`[RESOLVE_TENANT] Resolving: "${cleanId}"`);
+    const admin = getSupabaseAdmin();
 
     // Busca exata por slug
-    const { data, error } = await supabaseAdmin
+    const { data: results, error } = await admin
         .from('tenants')
         .select('id')
-        .ilike('slug', cleanId.toLowerCase())
-        .maybeSingle();
+        .ilike('slug', cleanId.toLowerCase());
 
     if (error) {
         console.error('[RESOLVE_TENANT_ERROR]', error);
         return null;
     }
+
+    const data = results && results.length > 0 ? results[0] : null;
 
     if (!data) {
         console.log(`[RESOLVE_TENANT] No tenant found for slug: "${cleanId}"`);

@@ -21,7 +21,9 @@ export async function GET(req: Request) {
         console.log(`[PUBLIC QUEUE] Request for ID/Slug: "${idOrSlug}"`);
         let tenantId = idOrSlug;
         if (tenantId) {
+            console.log(`[PUBLIC QUEUE] Attempting to resolve: "${tenantId}"`);
             tenantId = await resolveTenantId(tenantId);
+            console.log(`[PUBLIC QUEUE] Resolved ID: "${tenantId}"`);
         }
 
         if (!tenantId) {
