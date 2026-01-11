@@ -53,6 +53,29 @@ export async function POST(req: Request) {
         const { tenant } = await getCurrentUserAndTenant();
         const payload = await req.json();
 
+        // 1. Basic Validation
+        if (!payload.barber_id || !payload.start_time || !payload.end_time) {
+            return NextResponse.json({ error: 'Campos obrigatórios ausentes' }, { status: 400 });
+        }
+
+        // 2. Overlap Check (Strict Backend Guard)
+        // Check for any appointment for the SAME barber that overlaps with the NEW one
+        const { data: overlaps, error: overlapError } = await supabaseAdmin
+            .from('appointments')
+            .select('id')
+            .eq('tenant_id', tenant.id)
+            .eq('barber_id', payload.barber_id)
+            .neq('status', 'cancelled')
+            .lt('start_time', payload.end_time) // Start existing < End new
+            .gt('end_time', payload.start_time)  // End existing > Start new
+            .limit(1);
+
+        if (overlapError) throw overlapError;
+        if (overlaps && overlaps.length > 0) {
+            return NextResponse.json({ error: 'Este horário já foi preenchido. Por favor, escolha outro.' }, { status: 409 });
+        }
+
+        // 3. Insert
         const { data, error } = await supabaseAdmin
             .from('appointments')
             .insert({

@@ -234,7 +234,13 @@ export default function BarbershopSettingsPage() {
                 logo_url: logoUrl,
                 slug: slug,
                 opening_hours: {
-                    days: openingHours.days, // New structure
+                    ...openingHours, // Include legacy fields
+                    days: openingHours.days,
+                    work_days: Object.entries(openingHours.days || {})
+                        .filter(([_, cfg]) => cfg.active)
+                        .map(([day, _]) => Number(day)),
+                    start_time: openingHours.days?.[1]?.start || '09:00', // Use Monday as representative start
+                    end_time: openingHours.days?.[1]?.end || '19:00',     // Use Monday as representative end
                     lunch_duration: openingHours.lunch_enabled ? Number(openingHours.lunch_duration) : 0,
                     overtime_tolerance_percent: Number(openingHours.overtime_tolerance_percent)
                 },

@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
-import { addMinutes, format, parse, isBefore, isAfter } from 'date-fns';
+import { addMinutes, format, parse, isBefore, isAfter, addDays, subDays } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,8 +20,9 @@ export async function GET(req: Request) {
 
         // 1. Fetch appointments for that day
         // Using strict ISO filtering to avoid timezone issues, assuming DB stores UTC or compatible
-        const startDay = `${dateStr}T00:00:00`;
-        const endDay = `${dateStr}T23:59:59`;
+        // Widen range to catch appointments that might overlap due to timezone (e.g. GMT-3)
+        const startDay = `${dateStr}T00:00:00Z`;
+        const endDay = `${format(addDays(parse(dateStr, 'yyyy-MM-dd', new Date()), 1), 'yyyy-MM-dd')}T23:59:59Z`;
 
         const { data: appointments, error } = await supabaseAdmin
             .from('appointments')

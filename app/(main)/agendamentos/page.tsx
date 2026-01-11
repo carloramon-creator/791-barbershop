@@ -18,7 +18,8 @@ import {
     CalendarCheck,
     Scissors,
     Trash2,
-    Phone
+    Phone,
+    Loader2
 } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, startOfDay, addDays, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -62,6 +63,7 @@ export default function AppointmentsPage() {
     const [clientPhone, setClientPhone] = useState('');
     const [availableSlots, setAvailableSlots] = useState<string[]>([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Calendar Helper State
     const [calendarMonth, setCalendarMonth] = useState(new Date());
@@ -149,11 +151,12 @@ export default function AppointmentsPage() {
     };
 
     const handleConfirm = async () => {
-        if (!selectedBarber || !selectedTime || !selectedServices.length || !clientName) return;
+        if (!selectedBarber || !selectedTime || !selectedServices.length || !clientName || isSubmitting) return;
 
+        setIsSubmitting(true);
         try {
             const dateStr = format(selectedDate, 'yyyy-MM-dd');
-            const startStr = `${dateStr}T${selectedTime}:00`;
+            const startStr = `${dateStr}T${selectedTime}:00`; // Local time string
             const duration = selectedServices.reduce((acc, s) => acc + (s.duration_minutes || 30), 0);
             const startTime = new Date(startStr);
             const endTime = new Date(startTime.getTime() + duration * 60000);
@@ -168,14 +171,28 @@ export default function AppointmentsPage() {
                 start_time: startTime.toISOString(),
                 end_time: endTime.toISOString(),
                 status: 'scheduled',
-                notes: `Serviços: ${serviceNames}` // Simple way to store multi-service for now
+                notes: `Serviços: ${serviceNames}`
             });
 
             setIsWizardOpen(false);
             fetchAppointments();
             alert('Agendamento realizado com sucesso!');
+        } catch (error: any) {
+            console.error('Error creating appointment:', error);
+            alert('Erro ao agendar: ' + (error.message || 'Tente novamente.'));
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Tem certeza que deseja excluir/cancelar este agendamento?')) return;
+        try {
+            await Api.deleteAppointment(id);
+            fetchAppointments();
+            alert('Agendamento removido com sucesso!');
         } catch (error) {
-            alert('Erro ao agendar.');
+            alert('Erro ao remover agendamento.');
         }
     };
 
@@ -476,10 +493,11 @@ export default function AppointmentsPage() {
                                 ) : (
                                     <Button
                                         onClick={handleConfirm}
-                                        disabled={!clientName}
-                                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 shadow-lg shadow-emerald-900/20"
+                                        disabled={!clientName || isSubmitting}
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 shadow-lg shadow-emerald-900/20 min-w-[200px]"
                                     >
-                                        <CheckCircle2 size={16} className="mr-2" /> Confirmar Agendamento
+                                        {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle2 size={16} className="mr-2" />}
+                                        {isSubmitting ? 'Agendando...' : 'Confirmar Agendamento'}
                                     </Button>
                                 )}
                             </div>
@@ -523,13 +541,16 @@ export default function AppointmentsPage() {
                                         {appt.notes && <p className="text-xs text-blue-400 mt-2 bg-blue-900/20 px-2 py-1 rounded w-fit">{appt.notes}</p>}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <Badge className={cn("capitalize",
+                                <div className="flex items-center gap-4">
+                                    <Badge className={cn("capitalize h-fit",
                                         appt.status === 'scheduled' ? "bg-blue-500" :
                                             appt.status === 'completed' ? "bg-emerald-500" : "bg-slate-600"
                                     )}>
                                         {appt.status === 'scheduled' ? 'Agendado' : appt.status}
                                     </Badge>
+                                    <Button variant="ghost" size="icon" onClick={() => handleDelete(appt.id)} className="text-slate-500 hover:text-red-500 transition-colors">
+                                        <Trash2 size={18} />
+                                    </Button>
                                 </div>
                             </div>
                         ))}

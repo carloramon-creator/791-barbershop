@@ -190,7 +190,7 @@ export async function PUT(req: Request) {
     // Sincronizar com a tabela de barbeiros
     const currentRoles = data.roles || [];
     if (currentRoles.includes('barber')) {
-      await supabaseAdmin.from('barbers').upsert({
+      const { data: barberData } = await supabaseAdmin.from('barbers').upsert({
         tenant_id: tenant.id,
         user_id: body.id,
         name: data.name,
@@ -199,7 +199,11 @@ export async function PUT(req: Request) {
         avg_time_minutes: data.avg_service_time || 30,
         commission_percentage: data.commission_type === 'percentage' ? data.commission_value : 0,
         is_active: true
-      }, { onConflict: 'tenant_id,user_id' });
+      }, { onConflict: 'tenant_id,user_id' }).select().single();
+
+      if (barberData) {
+        (data as any).barber = barberData;
+      }
     } else {
       // Se não for mais barbeiro, desativar na tabela de barbeiros
       await supabaseAdmin.from('barbers').update({ is_active: false }).eq('tenant_id', tenant.id).eq('user_id', body.id);

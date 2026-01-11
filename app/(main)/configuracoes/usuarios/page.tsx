@@ -184,10 +184,11 @@ export default function UsersPage() {
       };
 
       if (editingUserId) {
-        await Api.updateUser(payload);
+        const result = await Api.updateUser(payload);
 
-        if (currentBarberId && inviteRoles.includes('barber')) {
-          await Api.updateBarberServices(currentBarberId, selectedServiceIds);
+        const bId = result.barber?.id || currentBarberId;
+        if (bId && inviteRoles.includes('barber')) {
+          await Api.updateBarberServices(bId, selectedServiceIds);
         }
 
         setIsInviteOpen(false);
