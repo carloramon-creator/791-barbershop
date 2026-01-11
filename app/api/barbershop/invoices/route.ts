@@ -131,16 +131,22 @@ export async function GET(req: Request) {
                     ]);
 
                     // Processar Sessões
+                    let planUpdated = false;
                     for (const session of sessions.data) {
                         if (session.payment_status === 'paid') {
                             const planFromMeta = session.metadata?.plan || 'premium';
 
                             // Atualizar tenant (sem criar registro financeiro)
-                            await supabaseAdmin.from('tenants').update({
-                                plan: planFromMeta,
-                                subscription_status: 'active',
-                                stripe_subscription_id: session.subscription as string,
-                            }).eq('id', tenant.id);
+                            // APENAS para a primeira sessão encontrada (a mais recente)
+                            if (!planUpdated) {
+                                await supabaseAdmin.from('tenants').update({
+                                    plan: planFromMeta,
+                                    subscription_status: 'active',
+                                    stripe_subscription_id: session.subscription as string,
+                                }).eq('id', tenant.id);
+                                planUpdated = true;
+                                console.log(`[STRIPE-SYNC] Plano atualizado para ${planFromMeta} (Sessão: ${session.id})`);
+                            }
 
                             // Criar registro APENAS na tabela finance para histórico de faturas
                             // NÃO aparece no módulo Financeiro da barbearia
