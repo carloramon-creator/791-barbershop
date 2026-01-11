@@ -178,4 +178,10 @@ export const Api = {
     enterPublicQueue: (payload: Record<string, any>) => apiFetch('/api/public/queue/enter', { method: 'POST', body: JSON.stringify(payload) }),
     getPublicTicket: (ticketId: string) => apiFetch(`/api/public/queue/ticket?id=${ticketId}`),
     cancelPublicTicket: (ticketId: string) => apiFetch(`/api/public/queue/cancel`, { method: 'PUT', body: JSON.stringify({ ticketId }) }),
+
+    // Clients
+    getClients: (search?: string) => apiFetch(`/api/clients${search ? `?search=${search}` : ''}`),
+    createClient: (payload: Record<string, unknown>) => apiFetch('/api/clients', { method: 'POST', body: JSON.stringify(payload) }),
+    updateClient: (id: string, payload: Record<string, unknown>) => apiFetch(`/api/clients?id=${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+    deleteClient: (id: string) => apiFetch(`/api/clients?id=${id}`, { method: 'DELETE' }),
 };

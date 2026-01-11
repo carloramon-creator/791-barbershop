@@ -45,6 +45,7 @@ export function Sidebar() {
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['owner', 'staff'], feature: 'queue' },
         { name: 'Fila (Profissional)', href: '/barbeiro', icon: UserCheck, roles: ['owner', 'barber', 'staff'], feature: 'queue', module: 'queue' },
         { name: 'Agendamentos', href: '/agendamentos', icon: Calendar, roles: ['owner', 'barber', 'staff'], feature: 'queue', module: 'appointments' },
+        { name: 'Clientes', href: '/clientes', icon: Users, roles: ['owner', 'barber', 'staff'], feature: 'queue' },
         { name: 'Profissionais', href: '/barbeiros', icon: Users, roles: ['owner', 'staff'], feature: 'queue' },
         { name: 'Serviços', href: '/servicos', icon: Scissors, roles: ['owner', 'staff'], feature: 'queue' },
         { name: 'Produtos', href: '/produtos', icon: ShoppingBag, roles: ['owner', 'staff'], feature: 'queue' },

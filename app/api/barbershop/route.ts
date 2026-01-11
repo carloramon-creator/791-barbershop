@@ -18,6 +18,8 @@ export async function PUT(req: Request) {
         if (!roles.includes('owner') && !roles.includes('staff')) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
 
         const body = await req.json();
+        console.log('[BARBERSHOP PUT] START for tenant:', tenant.id);
+        console.log('[BARBERSHOP PUT] Current plan in tenant object:', tenant.plan);
         console.log('[BARBERSHOP PUT] Payload received:', JSON.stringify(body, null, 2));
 
         // Mapeamento explícito para garantir que salve independente do nome enviado (tradução)
@@ -74,6 +76,7 @@ export async function PUT(req: Request) {
         }
 
         console.log('[BARBERSHOP PUT] Success for tenant:', tenant.id);
+        console.log('[BARBERSHOP PUT] Resulting plan in DB:', data.plan);
         return NextResponse.json(data);
     } catch (error: any) {
         console.error('[BARBERSHOP PUT] Error:', error.message);

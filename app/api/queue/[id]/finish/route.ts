@@ -48,6 +48,12 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         // 3. Resetar status do barbeiro para 'available' (Livre) pois ele acabou de terminar um atendimento
         await client.from('barbers').update({ status: 'available' }).eq('id', queueEntry.barber_id);
 
+        // 3.1 Se houver agendamento vinculado a este item da fila, marcá-lo como finalizado
+        await client
+            .from('appointments')
+            .update({ status: 'completed' })
+            .eq('queue_id', queueId);
+
         // 4. Retornar se o plano permite venda (intermediate, complete, premium ou trial)
         const canCreateSale = ['intermediate', 'complete', 'premium', 'trial'].includes(tenant.plan);
 

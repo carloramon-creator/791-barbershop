@@ -692,15 +692,17 @@ export default function AppointmentsPage() {
 
                                     {/* COLUNA 4: AÇÕES */}
                                     <div className="flex items-center gap-2 border-l border-slate-800/50 md:pl-6">
-                                        <Button
-                                            variant="secondary"
-                                            size="sm"
-                                            onClick={() => handleNotify(appt)}
-                                            className="bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20 gap-2 h-10 px-4"
-                                        >
-                                            <MessageSquare size={16} />
-                                            <span className="hidden xl:inline">Notificar</span>
-                                        </Button>
+                                        {appt.status === 'scheduled' && (
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={() => handleNotify(appt)}
+                                                className="bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20 gap-2 h-10 px-4"
+                                            >
+                                                <MessageSquare size={16} />
+                                                <span className="hidden xl:inline">Notificar</span>
+                                            </Button>
+                                        )}
 
                                         {showStartBtn && appt.status === 'scheduled' && (
                                             <Button
