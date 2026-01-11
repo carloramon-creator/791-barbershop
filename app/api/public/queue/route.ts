@@ -14,7 +14,7 @@ export async function OPTIONS(req: Request) {
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
-        const idOrSlug = searchParams.get('tenantId') || searchParams.get('slug') || '';
+        const idOrSlug = searchParams.get('tenantId') || searchParams.get('tenant_id') || searchParams.get('slug') || '';
         console.log(`[PUBLIC QUEUE] Request for ID/Slug: "${idOrSlug}"`);
         let tenantId = idOrSlug;
 

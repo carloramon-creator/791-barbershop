@@ -524,15 +524,15 @@ export default function FinanceiroPage() {
                         </TableHeader>
                         <TableBody>
                             {loading ? (
-                                <TableRow><TableCell colSpan={5} className="text-center py-20">
+                                <TableRow><TableCell colSpan={7} className="text-center py-20">
                                     <div className="flex flex-col items-center gap-2">
                                         <RefreshCw className="animate-spin text-blue-500 w-8 h-8 opacity-50" />
                                         <span className="text-slate-600 text-sm font-medium">Sincronizando registros...</span>
                                     </div>
                                 </TableCell></TableRow>
                             ) : filteredRecords.length === 0 ? (
-                                <TableRow><TableCell colSpan={5} className="text-center py-20 text-slate-700">Nenhum lançamento encontrado neste filtro.</TableCell></TableRow>
-                            ) : filteredRecords.map((r: { id: string; date: string; description: string; category: string; type: string; method: string, value: number | string; barber: string; barber_id?: string; is_paid: boolean }) => (
+                                <TableRow><TableCell colSpan={7} className="text-center py-20 text-slate-700">Nenhum lançamento encontrado neste filtro.</TableCell></TableRow>
+                            ) : filteredRecords.map((r: FinanceItem) => (
                                 <TableRow key={r.id} className="border-slate-800 hover:bg-slate-800/30 transition-colors group">
                                     <TableCell className="text-slate-500 font-mono text-[11px] py-4">
                                         {new Date(r.date).toLocaleDateString('pt-BR')}
