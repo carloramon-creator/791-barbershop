@@ -17,26 +17,12 @@ export async function GET(req: Request) {
         const idOrSlug = searchParams.get('tenantId') || searchParams.get('tenant_id') || searchParams.get('slug') || '';
         console.log(`[PUBLIC QUEUE] Request for ID/Slug: "${idOrSlug}"`);
         let tenantId = idOrSlug;
-
-        // Se Vier um slug ou ID, resolvemos para o ID real
         if (tenantId) {
             tenantId = await resolveTenantId(tenantId);
         }
 
         if (!tenantId) {
-            // FALLBACK: Se não vier tenant_id, pegamos o primeiro cadastrado (geralmente do superadmin)
-            const { data: firstTenant } = await supabaseAdmin
-                .from('tenants')
-                .select('id')
-                .limit(1)
-                .maybeSingle();
-
-            tenantId = firstTenant?.id || null;
-            console.log(`[PUBLIC QUEUE] Fallback triggered. Found tenantId: ${tenantId}`);
-        }
-
-        if (!tenantId) {
-            return NextResponse.json({ error: 'Barbearia não especificada ou não encontrada' }, { status: 404 });
+            return addCorsHeaders(req, NextResponse.json({ error: 'Barbearia não encontrada' }, { status: 404 }));
         }
 
         // 0. Buscar dados do Tenant (Branding)

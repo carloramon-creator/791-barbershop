@@ -18,6 +18,15 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "791 Barber - Gestão de Barbearia",
   description: "Sistema completo de gestão para barbearias tradicionais",
+  icons: {
+    icon: [
+      { url: "https://791barber.com/favicon.ico?v=205", sizes: "any" },
+      { url: "https://791barber.com/favicon.ico?v=205", type: "image/x-icon" },
+    ],
+    apple: [
+      { url: "https://791barber.com/favicon.ico?v=205", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 export default function RootLayout({
