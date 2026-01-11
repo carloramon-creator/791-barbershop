@@ -573,7 +573,7 @@ export default function AppointmentsPage() {
                                 <Button variant="outline" onClick={() => {
                                     setStep(step - 1);
                                     if (step === 2) setStepTitle('Selecionar Serviços');
-                                    if (step === 3) setStepTitle('Escolher Profissional');
+                                    if (step === 3) setStepTitle(wizardMode === 'walkin' ? 'Selecionar Serviços' : 'Escolher Profissional');
                                     if (step === 4) setStepTitle('Data e Hora');
                                 }} className="border-slate-700 text-slate-400 hover:text-white">
                                     <ChevronLeft size={16} className="mr-1" /> Voltar
@@ -583,18 +583,23 @@ export default function AppointmentsPage() {
                             <div className="flex items-center gap-4">
                                 {step === 1 && <span className="text-sm font-bold text-slate-400">{selectedServices.length} selecionados • {totalDuration} min</span>}
 
-                                {step < 4 ? (
+                                {((wizardMode === 'booking' && step < 4) || (wizardMode === 'walkin' && step < 3)) ? (
                                     <Button
                                         onClick={() => {
-                                            setStep(step + 1);
-                                            if (step === 1) setStepTitle('Escolher Profissional');
-                                            if (step === 2) setStepTitle('Data e Hora');
-                                            if (step === 3) setStepTitle('Confirmar Agendamento');
+                                            if (wizardMode === 'walkin' && step === 2) {
+                                                setStep(3);
+                                                setStepTitle('Informações do Cliente');
+                                            } else {
+                                                setStep(step + 1);
+                                                if (step === 1) setStepTitle('Escolher Profissional');
+                                                if (step === 2) setStepTitle('Data e Hora');
+                                                if (step === 3) setStepTitle('Confirmar Agendamento');
+                                            }
                                         }}
                                         disabled={
                                             (step === 1 && selectedServices.length === 0) ||
                                             (step === 2 && !selectedBarber) ||
-                                            (step === 3 && (!selectedDate || !selectedTime))
+                                            (step === 3 && wizardMode === 'booking' && (!selectedDate || !selectedTime))
                                         }
                                         className="bg-blue-600 hover:bg-blue-700 text-white px-8"
                                     >
@@ -603,11 +608,11 @@ export default function AppointmentsPage() {
                                 ) : (
                                     <Button
                                         onClick={handleConfirm}
-                                        disabled={!clientName || !clientPhone || isSubmitting}
+                                        disabled={isSubmitting}
                                         className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 shadow-lg shadow-emerald-900/20 min-w-[200px]"
                                     >
                                         {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle2 size={16} className="mr-2" />}
-                                        {isSubmitting ? 'Agendando...' : 'Confirmar Agendamento'}
+                                        {isSubmitting ? 'Agendando...' : (wizardMode === 'walkin' ? 'Iniciar Atendimento' : 'Confirmar Agendamento')}
                                     </Button>
                                 )}
                             </div>
