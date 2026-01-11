@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { getStatusColor, getDynamicBarberAverages, addCorsHeaders, resolveTenantId } from '@/lib/server-utils';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function OPTIONS(req: Request) {
     return addCorsHeaders(req, new NextResponse(null, { status: 200 }));
 }
@@ -33,7 +36,7 @@ export async function GET(req: Request) {
             .single();
 
         if (tenantError || !tenant) {
-            return NextResponse.json({ error: 'Barbearia não encontrada' }, { status: 404 });
+            return addCorsHeaders(req, NextResponse.json({ error: 'Barbearia não encontrada' }, { status: 404 }));
         }
 
         // 1. Médias dinâmicas
