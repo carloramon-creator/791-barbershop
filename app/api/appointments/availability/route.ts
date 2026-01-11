@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
-import { addMinutes, format, parse, isBefore, isAfter, addDays, subDays } from 'date-fns';
+import { addMinutes, format, parse, isBefore, isAfter, addDays, subDays, isSameDay } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,11 +18,10 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Missing date or barberId' }, { status: 400 });
         }
 
-        // 1. Fetch appointments for that day
-        // Using strict ISO filtering to avoid timezone issues, assuming DB stores UTC or compatible
-        // Widen range to catch appointments that might overlap due to timezone (e.g. GMT-3)
-        const startDay = `${dateStr}T00:00:00Z`;
-        const endDay = `${format(addDays(parse(dateStr, 'yyyy-MM-dd', new Date()), 1), 'yyyy-MM-dd')}T23:59:59Z`;
+        // 1. Fetch appointments for that day (+/- 1 day to catch timezone overlaps GMT-3)
+        const baseDate = parse(dateStr, 'yyyy-MM-dd', new Date());
+        const startWindow = format(subDays(baseDate, 1), "yyyy-MM-dd'T'00:00:00'Z'");
+        const endWindow = format(addDays(baseDate, 1), "yyyy-MM-dd'T'23:59:59'Z'");
 
         const { data: appointments, error } = await supabaseAdmin
             .from('appointments')
@@ -30,8 +29,8 @@ export async function GET(req: Request) {
             .eq('tenant_id', tenant.id)
             .eq('barber_id', barberId)
             .neq('status', 'cancelled')
-            .gte('start_time', startDay)
-            .lte('start_time', endDay);
+            .gte('start_time', startWindow)
+            .lte('start_time', endWindow);
 
         if (error) throw error;
 
@@ -47,7 +46,7 @@ export async function GET(req: Request) {
         const isTodayRequested = dateStr === format(new Date(), 'yyyy-MM-dd');
         const isOffline = isTodayRequested && barber?.status === 'offline';
 
-        // 3. Generate slots
+        // 3. Generate slots base config
         const openingHours = (tenant as any).opening_hours || {
             work_days: [1, 2, 3, 4, 5, 6],
             start_time: '09:00',
@@ -58,9 +57,7 @@ export async function GET(req: Request) {
             overtime_tolerance_percent: 0
         };
 
-        const baseDate = parse(dateStr, 'yyyy-MM-dd', new Date());
         const dayOfWeek = baseDate.getDay();
-
         let startH, startM, endHour, endMin;
 
         if (openingHours.days && openingHours.days[dayOfWeek]) {
@@ -79,10 +76,36 @@ export async function GET(req: Request) {
         const workStart = new Date(baseDate); workStart.setHours(startH, startM, 0, 0);
         const workEnd = new Date(baseDate); workEnd.setHours(endHour, endMin, 0, 0);
 
-        // Lunch logic
+        // 4. Normalize appointments to Local Clock Time (GMT-3)
+        const normalizedAppointments = appointments?.map((apt: any) => {
+            const date = new Date(apt.start_time);
+            // ISO strings in DB are UTC (Z). In Brazil (GMT-3), 14:30Z is 11:30 Local.
+            const h = date.getUTCHours();
+            const m = date.getUTCMinutes();
+            const localH = h - 3;
+
+            const start = new Date(baseDate); start.setHours(localH, m, 0, 0);
+            const durationMs = new Date(apt.end_time).getTime() - new Date(apt.start_time).getTime();
+            const end = addMinutes(start, durationMs / 60000);
+            return { start, end };
+        }).filter(apt => isSameDay(apt.start, baseDate)) || [];
+
+        // 5. Lunch Logic - DYNAMIC DISPLACEMENT
+        let effLunchStart = new Date(baseDate);
         const [lH, lM] = (openingHours.lunch_start || '12:00').split(':').map(Number);
-        const lunchStart = new Date(baseDate); lunchStart.setHours(lH, lM, 0, 0);
-        const lunchEnd = addMinutes(lunchStart, Number(openingHours.lunch_duration || 0));
+        effLunchStart.setHours(lH, lM, 0, 0);
+        let effLunchEnd = addMinutes(effLunchStart, Number(openingHours.lunch_duration || 0));
+
+        // If an appointment overlaps the NOMINAL start of lunch, push lunch to after that appointment.
+        if (openingHours.lunch_duration > 0) {
+            const blockingApt = normalizedAppointments.find(apt =>
+                apt.start <= effLunchStart && apt.end > effLunchStart
+            );
+            if (blockingApt) {
+                effLunchStart = new Date(blockingApt.end);
+                effLunchEnd = addMinutes(effLunchStart, Number(openingHours.lunch_duration));
+            }
+        }
 
         const slots: any[] = [];
         let current = workStart;
@@ -91,6 +114,7 @@ export async function GET(req: Request) {
             const slotEnd = addMinutes(current, duration);
             let status: 'available' | 'occupied' | 'lunch' | 'offline' = 'available';
 
+            // Work hours check
             let exceedsWorkHours = isAfter(slotEnd, workEnd);
             if (exceedsWorkHours) {
                 const tolerance = Number(openingHours.overtime_tolerance_percent || 0);
@@ -104,25 +128,16 @@ export async function GET(req: Request) {
                 if (exceedsWorkHours) break;
             }
 
-            // check offline
+            // Status decision
             if (isOffline) {
                 status = 'offline';
             }
-            // check lunch
-            else if (openingHours.lunch_duration > 0 && current < lunchEnd && slotEnd > lunchStart) {
+            else if (openingHours.lunch_duration > 0 && current < effLunchEnd && slotEnd > effLunchStart) {
                 status = 'lunch';
             }
-            // check collision
             else {
-                // IMPORTANT: A slot is only occupied if there's an appointment STARTING or ENDING during its requested duration.
-                // However, we must be careful: if a service takes 90min, it blocks starting at X if an appointment exists between X and X+90.
-                const isOccupied = appointments?.some((apt: any) => {
-                    const aptStart = new Date(apt.start_time);
-                    const aptEnd = new Date(apt.end_time);
-
-                    // A slot (current -> current + duration) is blocked if any appointment overlaps with it.
-                    // Strict Overlap: (StartA < EndB) AND (EndA > StartB)
-                    return (current < aptEnd && slotEnd > aptStart);
+                const isOccupied = normalizedAppointments.some((apt: any) => {
+                    return (current < apt.end && slotEnd > apt.start);
                 });
                 if (isOccupied) status = 'occupied';
             }

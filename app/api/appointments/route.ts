@@ -14,7 +14,7 @@ export async function GET(req: Request) {
 
         let query = supabaseAdmin
             .from('appointments')
-            .select('*, barbers(name, nickname)')
+            .select('*, barbers(name, nickname, user_id)')
             .eq('tenant_id', tenant.id);
 
         if (date) {
@@ -31,12 +31,30 @@ export async function GET(req: Request) {
 
         if (error) throw error;
 
-        // Flatten data to include barber name/nickname directly
+        // Flatten data and include barber details
         const flattened = data.map((appt: any) => ({
             ...appt,
             barber_name: appt.barbers?.name,
-            barber_nickname: appt.barbers?.nickname
+            barber_nickname: appt.barbers?.nickname,
+            barber_user_id: appt.barbers?.user_id
         }));
+
+        // Fetch client photos for these appointments
+        const phones = Array.from(new Set(flattened.map(a => a.client_phone).filter(Boolean)));
+        if (phones.length > 0) {
+            const { data: clients } = await supabaseAdmin
+                .from('clients')
+                .select('phone, photo_url')
+                .eq('tenant_id', tenant.id)
+                .in('phone', phones);
+
+            if (clients) {
+                const photoMap = Object.fromEntries(clients.map(c => [c.phone, c.photo_url]));
+                flattened.forEach(a => {
+                    if (a.client_phone) a.client_photo = photoMap[a.client_phone];
+                });
+            }
+        }
 
         return NextResponse.json(flattened);
     } catch (error: any) {

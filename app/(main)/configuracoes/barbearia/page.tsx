@@ -66,6 +66,7 @@ export default function BarbershopSettingsPage() {
         lunch_start: string;
         lunch_enabled: boolean;
         overtime_tolerance_percent: number;
+        whatsapp_reminder_minutes: number;
         days?: Record<number, { active: boolean; start: string; end: string }>;
     }>({
         work_days: [1, 2, 3, 4, 5, 6],
@@ -75,6 +76,7 @@ export default function BarbershopSettingsPage() {
         lunch_start: '12:00',
         lunch_enabled: true,
         overtime_tolerance_percent: 0,
+        whatsapp_reminder_minutes: 30,
         days: {}
     });
 
@@ -136,7 +138,8 @@ export default function BarbershopSettingsPage() {
                         lunch_duration: data.opening_hours.lunch_duration !== undefined ? data.opening_hours.lunch_duration : 0,
                         lunch_start: data.opening_hours.lunch_start || '12:00',
                         lunch_enabled: Number(data.opening_hours.lunch_duration) > 0,
-                        overtime_tolerance_percent: data.opening_hours.overtime_tolerance_percent || 0
+                        overtime_tolerance_percent: data.opening_hours.overtime_tolerance_percent || 0,
+                        whatsapp_reminder_minutes: data.opening_hours.whatsapp_reminder_minutes || 30
                     });
                 }
 
@@ -246,7 +249,8 @@ export default function BarbershopSettingsPage() {
                     end_time: openingHours.days?.[1]?.end || '19:00',
                     lunch_duration: openingHours.lunch_enabled ? Number(openingHours.lunch_duration) : 0,
                     lunch_start: openingHours.lunch_start || '12:00',
-                    overtime_tolerance_percent: Number(openingHours.overtime_tolerance_percent)
+                    overtime_tolerance_percent: Number(openingHours.overtime_tolerance_percent),
+                    whatsapp_reminder_minutes: Number(openingHours.whatsapp_reminder_minutes || 30)
                 },
                 // Bank Info
                 pix_key: pixKey,
@@ -660,25 +664,47 @@ export default function BarbershopSettingsPage() {
                                     )}
                                 </div>
 
-                                <div className="pt-4 border-t border-slate-800 space-y-3">
-                                    <div className="space-y-1">
-                                        <Label className="text-slate-200">Tolerância de Atendimento (%)</Label>
-                                        <p className="text-xs text-slate-500">
-                                            Permite agendar além do horário se o tempo extra for até X% do tempo restante.
-                                            Ex: Faltam 30min, serviço 50min (excesso 20min = 66% do restante). Se tolerância for 70%, aceita.
-                                        </p>
+                                <div className="pt-4 border-t border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-3">
+                                        <div className="space-y-1">
+                                            <Label className="text-slate-200">Tolerância de Atendimento (%)</Label>
+                                            <p className="text-[10px] text-slate-500">
+                                                Permite agendar além do horário se o excesso for até X% do tempo restante.
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <Input
+                                                type="number"
+                                                disabled={!isEditing}
+                                                value={openingHours.overtime_tolerance_percent}
+                                                onChange={e => setOpeningHours({ ...openingHours, overtime_tolerance_percent: Number(e.target.value) })}
+                                                className="bg-slate-950 border-slate-800 text-slate-100 w-24"
+                                                min={0}
+                                                max={200}
+                                            />
+                                            <span className="text-slate-400 font-bold">%</span>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-4">
-                                        <Input
-                                            type="number"
-                                            disabled={!isEditing}
-                                            value={openingHours.overtime_tolerance_percent}
-                                            onChange={e => setOpeningHours({ ...openingHours, overtime_tolerance_percent: Number(e.target.value) })}
-                                            className="bg-slate-950 border-slate-800 text-slate-100 w-24"
-                                            min={0}
-                                            max={200}
-                                        />
-                                        <span className="text-slate-400 font-bold">%</span>
+
+                                    <div className="space-y-3">
+                                        <div className="space-y-1">
+                                            <Label className="text-slate-200">Lembrete WhatsApp (minutos)</Label>
+                                            <p className="text-[10px] text-slate-500">
+                                                Tempo de antecedência para disparo do lembrete automático.
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <Input
+                                                type="number"
+                                                disabled={!isEditing}
+                                                value={openingHours.whatsapp_reminder_minutes}
+                                                onChange={e => setOpeningHours({ ...openingHours, whatsapp_reminder_minutes: Number(e.target.value) })}
+                                                className="bg-slate-950 border-slate-800 text-slate-100 w-24"
+                                                min={0}
+                                                step={5}
+                                            />
+                                            <span className="text-slate-400 font-bold">min</span>
+                                        </div>
                                     </div>
                                 </div>
 

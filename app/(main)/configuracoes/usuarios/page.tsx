@@ -119,7 +119,6 @@ export default function UsersPage() {
     setInviteCnpjMei('');
     setGeneratedLink('');
     setEditingUserId(null);
-    setEditingUserId(null);
     setIsViewOnly(false);
 
     // Reset Services
@@ -186,7 +185,7 @@ export default function UsersPage() {
       if (editingUserId) {
         const result = await Api.updateUser(payload);
 
-        const bId = result.barber?.id || currentBarberId;
+        const bId = result.barber?.id || result.id || currentBarberId;
         if (bId && inviteRoles.includes('barber')) {
           await Api.updateBarberServices(bId, selectedServiceIds);
         }

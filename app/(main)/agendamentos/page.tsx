@@ -19,8 +19,12 @@ import {
     Scissors,
     Trash2,
     Phone,
-    Loader2
+    Loader2,
+    MessageSquare,
+    Play,
+    Image as ImageIcon
 } from 'lucide-react';
+import { MaskedInput } from '@/components/ui/masked-input';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, startOfDay, addDays, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -186,15 +190,38 @@ export default function AppointmentsPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Tem certeza que deseja excluir/cancelar este agendamento?')) return;
+        if (!confirm('Excluir este agendamento?')) return;
         try {
             await Api.deleteAppointment(id);
             fetchAppointments();
-            alert('Agendamento removido com sucesso!');
         } catch (error) {
-            alert('Erro ao remover agendamento.');
+            alert('Erro ao excluir');
         }
     };
+
+    const handleNotify = (appt: any) => {
+        const phone = appt.client_phone?.replace(/\D/g, '');
+        if (!phone) return alert('Telefone não disponível');
+        const message = encodeURIComponent(`Olá ${appt.client_name}, passando para lembrar do seu agendamento hoje às ${format(new Date(appt.start_time), 'HH:mm')}. Até logo!`);
+        window.open(`https://wa.me/55${phone}?text=${message}`, '_blank');
+    };
+
+    const handleStartProcedure = async (appt: any) => {
+        try {
+            const res = await fetch(`/api/appointments/${appt.id}/start`, { method: 'POST' });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || 'Erro ao iniciar');
+            }
+            alert('Atendimento iniciado! O cliente agora está na fila de atendimento ativo.');
+            fetchAppointments();
+        } catch (error: any) {
+            alert(error.message);
+        }
+    };
+
+    const { role, user: currentUser } = useAuth();
+    const isOwner = role === 'owner';
 
     // --- Steps Logic ---
 
@@ -461,8 +488,9 @@ export default function AppointmentsPage() {
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label>Telefone (Opcional)</Label>
-                                            <Input
+                                            <Label>Telefone (Obrigatório para lembretes)</Label>
+                                            <MaskedInput
+                                                mask="(99) 99999-9999"
                                                 value={clientPhone}
                                                 onChange={e => setClientPhone(e.target.value)}
                                                 placeholder="(00) 00000-0000"
@@ -509,7 +537,7 @@ export default function AppointmentsPage() {
                                 ) : (
                                     <Button
                                         onClick={handleConfirm}
-                                        disabled={!clientName || isSubmitting}
+                                        disabled={!clientName || !clientPhone || isSubmitting}
                                         className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 shadow-lg shadow-emerald-900/20 min-w-[200px]"
                                     >
                                         {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle2 size={16} className="mr-2" />}
@@ -534,42 +562,112 @@ export default function AppointmentsPage() {
                 </div>
 
                 {loadingAppts ? (
-                    <div className="text-center py-12 text-slate-500">Carregando agenda...</div>
+                    <div className="flex flex-col items-center justify-center py-24 text-slate-500 gap-4">
+                        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                        <p>Carregando sua agenda...</p>
+                    </div>
                 ) : appointments.length === 0 ? (
-                    <div className="text-center py-12 text-slate-500 bg-slate-900/20 rounded-xl border border-dashed border-slate-800">
-                        Nenhum agendamento para este dia.
+                    <div className="text-center py-24 text-slate-500 bg-slate-900/20 rounded-2xl border border-dashed border-slate-800">
+                        <div className="bg-slate-800/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <CalendarCheck className="text-slate-600" size={32} />
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-300">Nenhum agendamento</h3>
+                        <p className="text-sm text-slate-500">Não há serviços marcados para este dia.</p>
                     </div>
                 ) : (
-                    <div className="grid gap-3">
-                        {appointments.map(appt => (
-                            <div key={appt.id} className="flex items-center justify-between p-4 bg-slate-800 rounded-lg border border-slate-700 hover:border-slate-600 transition-all">
-                                <div className="flex items-center gap-4">
-                                    <div className="text-center px-4 py-2 bg-slate-900 rounded border border-slate-800 min-w-[80px]">
-                                        <span className="block text-lg font-bold text-slate-200">{format(new Date(appt.start_time), 'HH:mm')}</span>
-                                        <span className="text-xs text-slate-500">{format(new Date(appt.end_time), 'HH:mm')}</span>
+                    <div className="grid gap-4">
+                        {appointments.map(appt => {
+                            const showStartBtn = isOwner || (currentUser?.id === appt.barber_user_id);
+
+                            return (
+                                <div key={appt.id} className="group relative flex flex-col md:flex-row items-center gap-6 p-5 bg-slate-900/80 rounded-2xl border border-slate-800 hover:border-blue-500/50 hover:bg-slate-800/80 transition-all shadow-lg">
+                                    {/* COLUNA 1: HORÁRIO */}
+                                    <div className="flex flex-col items-center justify-center px-6 py-4 bg-slate-950 rounded-xl border border-slate-800 min-w-[120px] shadow-inner">
+                                        <span className="text-2xl font-black text-blue-400 leading-none">{format(new Date(appt.start_time), 'HH:mm')}</span>
+                                        <span className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-1">Até {format(new Date(appt.end_time), 'HH:mm')}</span>
                                     </div>
-                                    <div>
-                                        <h3 className="font-bold text-lg text-slate-100">{appt.client_name}</h3>
-                                        <div className="flex items-center gap-3 text-sm text-slate-400 mt-1">
-                                            <span className="flex items-center gap-1"><User size={12} /> {appt.barber_nickname || appt.barber_name}</span>
-                                            {appt.client_phone && <span className="flex items-center gap-1"><Phone size={12} /> {appt.client_phone}</span>}
+
+                                    {/* COLUNA 2: CLIENTE (Destaque conforme solicitado) */}
+                                    <div className="flex-1 flex items-center gap-4 min-w-[200px]">
+                                        <div className="w-14 h-14 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
+                                            {appt.client_photo ? (
+                                                <img src={appt.client_photo} alt="" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <ImageIcon className="text-slate-600" size={24} />
+                                            )}
                                         </div>
-                                        {appt.notes && <p className="text-xs text-blue-400 mt-2 bg-blue-900/20 px-2 py-1 rounded w-fit">{appt.notes}</p>}
+                                        <div>
+                                            <h3 className="font-black text-xl text-slate-100 tracking-tight leading-none">{appt.client_name}</h3>
+                                            <div className="flex items-center gap-2 text-sm text-slate-400 mt-1.5">
+                                                <Phone size={12} className="text-blue-500" />
+                                                <span className="font-medium">{appt.client_phone}</span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-1.5 mt-2">
+                                                {(appt.services_names || appt.notes || '').split(',').map((s: string, i: number) => (
+                                                    <span key={i} className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border border-blue-500/20">
+                                                        {s.trim()}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* COLUNA 3: PROFISSIONAL (Destaque conforme solicitado) */}
+                                    <div className="flex flex-col items-center md:items-end justify-center min-w-[150px] border-l border-slate-800/50 md:pl-6">
+                                        <span className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">Profissional</span>
+                                        <div className="flex items-center gap-2 text-blue-400 font-black text-lg bg-blue-500/5 px-4 py-1.5 rounded-lg border border-blue-500/20">
+                                            <User size={16} />
+                                            {appt.barber_nickname || appt.barber_name}
+                                        </div>
+                                    </div>
+
+                                    {/* COLUNA 4: AÇÕES */}
+                                    <div className="flex items-center gap-2 border-l border-slate-800/50 md:pl-6">
+                                        {appt.status === 'scheduled' && (
+                                            <>
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    onClick={() => handleNotify(appt)}
+                                                    className="bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20 gap-2 h-10 px-4"
+                                                >
+                                                    <MessageSquare size={16} />
+                                                    <span className="hidden xl:inline">Notificar</span>
+                                                </Button>
+
+                                                {showStartBtn && (
+                                                    <Button
+                                                        variant="secondary"
+                                                        size="sm"
+                                                        onClick={() => handleStartProcedure(appt)}
+                                                        className="bg-blue-600 text-white hover:bg-blue-700 gap-2 h-10 px-4 shadow-lg shadow-blue-900/20"
+                                                    >
+                                                        <Play size={16} fill="currentColor" />
+                                                        <span className="hidden xl:inline">Iniciar</span>
+                                                    </Button>
+                                                )}
+                                            </>
+                                        )}
+
+                                        <Badge className={cn("capitalize px-3 py-1 text-[10px] font-black tracking-widest h-fit border-0",
+                                            appt.status === 'scheduled' ? "bg-blue-500/20 text-blue-400" :
+                                                appt.status === 'completed' ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-600/20 text-slate-500"
+                                        )}>
+                                            {appt.status === 'scheduled' ? 'Confirmado' : appt.status}
+                                        </Badge>
+
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleDelete(appt.id)}
+                                            className="text-slate-600 hover:text-red-500 hover:bg-red-500/10 transition-colors rounded-full"
+                                        >
+                                            <Trash2 size={18} />
+                                        </Button>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-4">
-                                    <Badge className={cn("capitalize h-fit",
-                                        appt.status === 'scheduled' ? "bg-blue-500" :
-                                            appt.status === 'completed' ? "bg-emerald-500" : "bg-slate-600"
-                                    )}>
-                                        {appt.status === 'scheduled' ? 'Agendado' : appt.status}
-                                    </Badge>
-                                    <Button variant="ghost" size="icon" onClick={() => handleDelete(appt.id)} className="text-slate-500 hover:text-red-500 transition-colors">
-                                        <Trash2 size={18} />
-                                    </Button>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
