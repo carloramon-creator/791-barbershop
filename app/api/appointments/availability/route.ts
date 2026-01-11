@@ -35,91 +35,94 @@ export async function GET(req: Request) {
 
         if (error) throw error;
 
-        // 2. Generate slots
-        // Parse opening hours from tenant or use defaults
+        // 2. Fetch barber status for "offline" check
+        const { data: barber, error: barberError } = await supabaseAdmin
+            .from('barbers')
+            .select('status')
+            .eq('id', barberId)
+            .single();
+
+        if (barberError) throw barberError;
+
+        const isTodayRequested = dateStr === format(new Date(), 'yyyy-MM-dd');
+        const isOffline = isTodayRequested && barber?.status === 'offline';
+
+        // 3. Generate slots
         const openingHours = (tenant as any).opening_hours || {
             work_days: [1, 2, 3, 4, 5, 6],
             start_time: '09:00',
             end_time: '19:00',
-            days: null
+            days: null,
+            lunch_start: '12:00',
+            lunch_duration: 0,
+            overtime_tolerance_percent: 0
         };
 
         const baseDate = parse(dateStr, 'yyyy-MM-dd', new Date());
-        const dayOfWeek = baseDate.getDay(); // 0=Sun, 6=Sat
+        const dayOfWeek = baseDate.getDay();
 
         let startH, startM, endHour, endMin;
 
-        // NEW LOGIC: Check for per-day configuration first
         if (openingHours.days && openingHours.days[dayOfWeek]) {
             const dayConfig = openingHours.days[dayOfWeek];
-
-            if (!dayConfig.active) {
-                return NextResponse.json([]); // Closed specific day
-            }
-
+            if (!dayConfig.active) return NextResponse.json([]);
             [startH, startM] = (dayConfig.start || '09:00').split(':').map(Number);
             [endHour, endMin] = (dayConfig.end || '19:00').split(':').map(Number);
-        }
-        // FALLBACK LOGIC: Global configuration
-        else {
+        } else {
             if (Array.isArray(openingHours.work_days) && !openingHours.work_days.includes(dayOfWeek)) {
-                return NextResponse.json([]); // Closed globally
+                return NextResponse.json([]);
             }
             [startH, startM] = (openingHours.start_time || '09:00').split(':').map(Number);
-            // Fix previous typo/bug where end time was using start_time fallback
             [endHour, endMin] = (openingHours.end_time || '19:00').split(':').map(Number);
         }
 
         const workStart = new Date(baseDate); workStart.setHours(startH, startM, 0, 0);
         const workEnd = new Date(baseDate); workEnd.setHours(endHour, endMin, 0, 0);
 
+        // Lunch logic
+        const [lH, lM] = (openingHours.lunch_start || '12:00').split(':').map(Number);
+        const lunchStart = new Date(baseDate); lunchStart.setHours(lH, lM, 0, 0);
+        const lunchEnd = addMinutes(lunchStart, Number(openingHours.lunch_duration || 0));
 
-        const slots: string[] = [];
+        const slots: any[] = [];
         let current = workStart;
 
-        // Generate candidates every 30 minutes
         while (current < workEnd) {
             const slotEnd = addMinutes(current, duration);
+            let status: 'available' | 'occupied' | 'lunch' | 'offline' = 'available';
 
-            // Check if slot exceeds working hours
             let exceedsWorkHours = isAfter(slotEnd, workEnd);
-
             if (exceedsWorkHours) {
                 const tolerance = Number(openingHours.overtime_tolerance_percent || 0);
-
-                // Only evaluate tolerance if configured and if the slot starts BEFORE closing time
                 if (tolerance > 0 && current < workEnd) {
-                    const remainingMs = workEnd.getTime() - current.getTime(); // Time left until close
-                    const excessMs = slotEnd.getTime() - workEnd.getTime();    // Time exceeding close
-
-                    if (remainingMs > 0) { // Avoid division by zero if current is exactly workEnd
-                        const ratio = (excessMs / remainingMs) * 100;
-                        // Example: 20min excess / 30min remaining = 66.6%. If tolerance is 70, it passes.
-                        if (ratio <= tolerance) {
-                            exceedsWorkHours = false; // Authorized by tolerance
-                        }
+                    const remainingMs = workEnd.getTime() - current.getTime();
+                    const excessMs = slotEnd.getTime() - workEnd.getTime();
+                    if (remainingMs > 0 && (excessMs / remainingMs) * 100 <= tolerance) {
+                        exceedsWorkHours = false;
                     }
                 }
-
-                // If still exceeding (or tolerance logic failed), stop generating slots
                 if (exceedsWorkHours) break;
             }
 
-            // Check collision
-            const isOccupied = appointments?.some((apt: any) => {
-                const aptStart = new Date(apt.start_time);
-                const aptEnd = new Date(apt.end_time);
-
-                // Basic Overlap logic: (StartA < EndB) and (EndA > StartB)
-                // Note: 'current' is StartA, 'slotEnd' is EndA
-                return (current < aptEnd && slotEnd > aptStart);
-            });
-
-            if (!isOccupied) {
-                slots.push(format(current, 'HH:mm'));
+            if (isOffline) {
+                status = 'offline';
+            } else if (openingHours.lunch_duration > 0 && current < lunchEnd && slotEnd > lunchStart) {
+                status = 'lunch';
+            } else {
+                const isOccupied = appointments?.some((apt: any) => {
+                    const aptStart = new Date(apt.start_time);
+                    const aptEnd = new Date(apt.end_time);
+                    return (current < aptEnd && slotEnd > aptStart);
+                });
+                if (isOccupied) status = 'occupied';
             }
 
-            // Increment 30 mins for next possible start time
+            slots.push({
+                time: format(current, 'HH:mm'),
+                status,
+                available: status === 'available'
+            });
+
             current = addMinutes(current, 30);
         }
 

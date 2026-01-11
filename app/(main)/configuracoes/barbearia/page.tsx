@@ -63,6 +63,7 @@ export default function BarbershopSettingsPage() {
         start_time: string;
         end_time: string;
         lunch_duration: number;
+        lunch_start: string;
         lunch_enabled: boolean;
         overtime_tolerance_percent: number;
         days?: Record<number, { active: boolean; start: string; end: string }>;
@@ -71,6 +72,7 @@ export default function BarbershopSettingsPage() {
         start_time: '09:00',
         end_time: '19:00',
         lunch_duration: 60,
+        lunch_start: '12:00',
         lunch_enabled: true,
         overtime_tolerance_percent: 0,
         days: {}
@@ -130,9 +132,10 @@ export default function BarbershopSettingsPage() {
                         work_days: data.opening_hours.work_days || [1, 2, 3, 4, 5, 6],
                         start_time: data.opening_hours.start_time || '09:00',
                         end_time: data.opening_hours.end_time || '19:00',
-                        days: data.opening_hours.days || defaultDays,
-                        lunch_duration: data.opening_hours.lunch_duration !== undefined ? data.opening_hours.lunch_duration : 60,
-                        lunch_enabled: data.opening_hours.lunch_duration > 0,
+                        days: (data.opening_hours.days && Object.keys(data.opening_hours.days).length > 0) ? data.opening_hours.days : defaultDays,
+                        lunch_duration: data.opening_hours.lunch_duration !== undefined ? data.opening_hours.lunch_duration : 0,
+                        lunch_start: data.opening_hours.lunch_start || '12:00',
+                        lunch_enabled: Number(data.opening_hours.lunch_duration) > 0,
                         overtime_tolerance_percent: data.opening_hours.overtime_tolerance_percent || 0
                     });
                 }
@@ -239,9 +242,10 @@ export default function BarbershopSettingsPage() {
                     work_days: Object.entries(openingHours.days || {})
                         .filter(([_, cfg]) => cfg.active)
                         .map(([day, _]) => Number(day)),
-                    start_time: openingHours.days?.[1]?.start || '09:00', // Use Monday as representative start
-                    end_time: openingHours.days?.[1]?.end || '19:00',     // Use Monday as representative end
+                    start_time: openingHours.days?.[1]?.start || '09:00',
+                    end_time: openingHours.days?.[1]?.end || '19:00',
                     lunch_duration: openingHours.lunch_enabled ? Number(openingHours.lunch_duration) : 0,
+                    lunch_start: openingHours.lunch_start || '12:00',
                     overtime_tolerance_percent: Number(openingHours.overtime_tolerance_percent)
                 },
                 // Bank Info
@@ -629,17 +633,29 @@ export default function BarbershopSettingsPage() {
                                     </div>
 
                                     {openingHours.lunch_enabled && (
-                                        <div className="space-y-2 pl-7 animate-in fade-in slide-in-from-top-2">
-                                            <Label className="text-slate-200">Duração do Intervalo (minutos)</Label>
-                                            <Input
-                                                type="number"
-                                                disabled={!isEditing}
-                                                value={openingHours.lunch_duration}
-                                                onChange={e => setOpeningHours({ ...openingHours, lunch_duration: Number(e.target.value) })}
-                                                className="bg-slate-950 border-slate-800 text-slate-100 w-32"
-                                                min={0}
-                                                step={15}
-                                            />
+                                        <div className="flex flex-wrap gap-4 pl-7 animate-in fade-in slide-in-from-top-2">
+                                            <div className="space-y-2">
+                                                <Label className="text-slate-200">Início do Almoço</Label>
+                                                <Input
+                                                    type="time"
+                                                    disabled={!isEditing}
+                                                    value={openingHours.lunch_start}
+                                                    onChange={e => setOpeningHours({ ...openingHours, lunch_start: e.target.value })}
+                                                    className="bg-slate-950 border-slate-800 text-slate-100 w-32"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-slate-200">Duração (minutos)</Label>
+                                                <Input
+                                                    type="number"
+                                                    disabled={!isEditing}
+                                                    value={openingHours.lunch_duration}
+                                                    onChange={e => setOpeningHours({ ...openingHours, lunch_duration: Number(e.target.value) })}
+                                                    className="bg-slate-950 border-slate-800 text-slate-100 w-32"
+                                                    min={0}
+                                                    step={15}
+                                                />
+                                            </div>
                                         </div>
                                     )}
                                 </div>

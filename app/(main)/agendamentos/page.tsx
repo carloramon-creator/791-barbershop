@@ -61,7 +61,7 @@ export default function AppointmentsPage() {
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
     const [clientName, setClientName] = useState('');
     const [clientPhone, setClientPhone] = useState('');
-    const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+    const [availableSlots, setAvailableSlots] = useState<{ time: string, status: string, available: boolean }[]>([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -337,7 +337,10 @@ export default function AppointmentsPage() {
                                             {availableBarbers.map(barber => (
                                                 <div
                                                     key={barber.id}
-                                                    onClick={() => setSelectedBarber(barber)}
+                                                    onClick={() => {
+                                                        setSelectedBarber(barber);
+                                                        setStep(3); // Auto-advance
+                                                    }}
                                                     className={cn(
                                                         "flex flex-col items-center p-6 rounded-xl border cursor-pointer transition-all hover:scale-105",
                                                         selectedBarber?.id === barber.id
@@ -379,22 +382,35 @@ export default function AppointmentsPage() {
                                                 </div>
                                             ) : (
                                                 <div className="grid grid-cols-3 gap-2">
-                                                    {availableSlots.map(time => (
+                                                    {availableSlots.map(slot => (
                                                         <button
-                                                            key={time}
-                                                            onClick={() => setSelectedTime(time)}
+                                                            key={slot.time}
+                                                            disabled={!slot.available}
+                                                            onClick={() => slot.available && setSelectedTime(slot.time)}
                                                             className={cn(
                                                                 "py-2 rounded text-sm font-mono border transition-all",
-                                                                selectedTime === time
-                                                                    ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-900/50"
-                                                                    : "bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300"
+                                                                slot.available
+                                                                    ? (selectedTime === slot.time
+                                                                        ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-900/50"
+                                                                        : "bg-slate-800 border-slate-700 hover:bg-emerald-600/20 text-emerald-400 border-emerald-900/30")
+                                                                    : "bg-slate-900/50 border-slate-800 text-slate-600 cursor-not-allowed opacity-50"
                                                             )}
                                                         >
-                                                            {time}
+                                                            {slot.time}
                                                         </button>
                                                     ))}
                                                 </div>
                                             )}
+                                        </div>
+                                        <div className="mt-3 p-3 bg-slate-950/50 rounded-lg border border-slate-800 flex flex-wrap gap-4 items-center justify-center text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+                                            <div className="flex items-center gap-1.5">
+                                                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                                <span>Disponível</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <div className="w-2 h-2 rounded-full bg-slate-700" />
+                                                <span>Ocupado / Intervalo</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
