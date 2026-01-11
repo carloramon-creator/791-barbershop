@@ -516,6 +516,7 @@ export default function FinanceiroPage() {
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px] w-32">Data</TableHead>
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px]">Lançamento / Categoria</TableHead>
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px]">Barbeiro</TableHead>
+                                <TableHead className="text-slate-500 font-bold uppercase text-[10px]">Método</TableHead>
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px]">Status</TableHead>
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px] text-right pr-6">Valor</TableHead>
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px] w-20"></TableHead>
@@ -531,7 +532,7 @@ export default function FinanceiroPage() {
                                 </TableCell></TableRow>
                             ) : filteredRecords.length === 0 ? (
                                 <TableRow><TableCell colSpan={5} className="text-center py-20 text-slate-700">Nenhum lançamento encontrado neste filtro.</TableCell></TableRow>
-                            ) : filteredRecords.map((r: { id: string; date: string; description: string; category: string; type: string; value: number | string; barber: string; barber_id?: string; is_paid: boolean }) => (
+                            ) : filteredRecords.map((r: { id: string; date: string; description: string; category: string; type: string; method: string, value: number | string; barber: string; barber_id?: string; is_paid: boolean }) => (
                                 <TableRow key={r.id} className="border-slate-800 hover:bg-slate-800/30 transition-colors group">
                                     <TableCell className="text-slate-500 font-mono text-[11px] py-4">
                                         {new Date(r.date).toLocaleDateString('pt-BR')}
@@ -546,6 +547,18 @@ export default function FinanceiroPage() {
                                     </TableCell>
                                     <TableCell>
                                         <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{r.barber}</span>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant="outline" className={cn(
+                                            "text-[9px] font-bold uppercase border-slate-800",
+                                            r.method === 'pix' && "text-blue-400 border-blue-500/20 bg-blue-500/5",
+                                            r.method === 'card' && "text-purple-400 border-purple-500/20 bg-purple-500/5",
+                                            r.method === 'cash' && "text-emerald-400 border-emerald-500/20 bg-emerald-500/5"
+                                        )}>
+                                            {r.method === 'pix' ? 'Pix' :
+                                                r.method === 'card' ? 'Cartão' :
+                                                    r.method === 'cash' ? 'Dinheiro' : '-'}
+                                        </Badge>
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant="secondary" className={cn(
