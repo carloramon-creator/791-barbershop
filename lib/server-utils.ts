@@ -197,13 +197,25 @@ export async function resolveTenantId(idOrSlug: string) {
     const cleanId = idOrSlug.trim();
     if (cleanId.length > 30 && cleanId.includes('-')) return cleanId;
 
-    // Busca case-insensitive e sem espaços
+    console.log(`[RESOLVE_TENANT] Resolving: "${cleanId}"`);
+
+    // Busca exata por slug
     const { data, error } = await supabaseAdmin
         .from('tenants')
         .select('id')
         .ilike('slug', cleanId.toLowerCase())
         .maybeSingle();
 
-    if (error) console.error('[RESOLVE_TENANT_ERROR]', error);
-    return data?.id || null;
+    if (error) {
+        console.error('[RESOLVE_TENANT_ERROR]', error);
+        return null;
+    }
+
+    if (!data) {
+        console.log(`[RESOLVE_TENANT] No tenant found for slug: "${cleanId}"`);
+        return null;
+    }
+
+    console.log(`[RESOLVE_TENANT] Success: ${cleanId} -> ${data.id}`);
+    return data.id;
 }
