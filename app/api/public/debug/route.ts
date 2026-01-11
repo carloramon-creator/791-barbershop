@@ -10,6 +10,9 @@ export async function GET(req: Request) {
         const { data: list } = await supabaseAdmin.from('tenants').select('id, slug, name');
 
         const testSlug = 'ingleses';
+        const { resolveTenantId } = await import('@/lib/server-utils');
+        const resolvedId = await resolveTenantId(testSlug);
+
         const { data: testResult, error: testError } = await supabaseAdmin
             .from('tenants')
             .select('id')
@@ -23,7 +26,8 @@ export async function GET(req: Request) {
             tenants: list,
             test: {
                 slug: testSlug,
-                result: testResult,
+                resolvedId: resolvedId,
+                rawResult: testResult,
                 error: testError
             }
         }));
