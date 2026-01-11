@@ -87,6 +87,23 @@ export async function DELETE(req: Request) {
 
         if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
+        // 1. Limpar referências na fila (client_queue) ou agendamentos
+        // Em vez de deletar da fila (o que apagaria o histórico de atendimentos), 
+        // vamos apenas anular o client_id para manter os registros de atendimento 
+        // para fins estatísticos nas barbearias.
+        await supabaseAdmin
+            .from('client_queue')
+            .update({ client_id: null })
+            .eq('client_id', id)
+            .eq('tenant_id', tenant.id);
+
+        await supabaseAdmin
+            .from('appointments')
+            .update({ client_id: null })
+            .eq('client_id', id)
+            .eq('tenant_id', tenant.id);
+
+        // 2. Agora excluir o cliente
         const { error } = await supabaseAdmin
             .from('clients')
             .delete()
