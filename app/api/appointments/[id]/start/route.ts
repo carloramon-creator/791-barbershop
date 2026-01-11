@@ -51,11 +51,16 @@ export async function POST(
 
         if (queueError) throw queueError;
 
-        // 4. Marcar agendamento como concluído/processado
-        await supabaseAdmin
+        // 4. Marcar agendamento como 'in_service' e vincular a entrada da fila
+        const { error: updateError } = await supabaseAdmin
             .from('appointments')
-            .update({ status: 'completed' })
+            .update({
+                status: 'in_service',
+                queue_id: queueEntry.id
+            })
             .eq('id', id);
+
+        if (updateError) throw updateError;
 
         return NextResponse.json({ success: true, queueId: queueEntry.id });
 

@@ -29,6 +29,7 @@ interface CloseSaleDialogProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     queueId: string;
+    initialServiceIds?: string[];
     onSuccess?: () => void;
 }
 
@@ -40,7 +41,7 @@ interface SelectedItem {
     qty: number;
 }
 
-export function CloseSaleDialog({ isOpen, onOpenChange, queueId, onSuccess }: CloseSaleDialogProps) {
+export function CloseSaleDialog({ isOpen, onOpenChange, queueId, initialServiceIds, onSuccess }: CloseSaleDialogProps) {
     const [step, setStep] = useState<'selection' | 'payment' | 'pix'>('selection');
     const [services, setServices] = useState<Service[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
@@ -53,8 +54,23 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, onSuccess }: Cl
         const fetchData = async () => {
             try {
                 const [s, p] = await Promise.all([Api.getServices(), Api.getProducts()]);
-                setServices(s || []);
+                const servicesData = s || [];
+                setServices(servicesData);
                 setProducts(p || []);
+
+                // Pre-fill if initialServiceIds provided
+                if (initialServiceIds && initialServiceIds.length > 0) {
+                    const prefilled = servicesData
+                        .filter((srv: Service) => initialServiceIds.includes(srv.id))
+                        .map((srv: Service) => ({
+                            id: srv.id,
+                            name: srv.name,
+                            price: srv.price,
+                            type: 'service' as const,
+                            qty: 1
+                        }));
+                    setSelectedItems(prefilled);
+                }
             } catch (err) {
                 console.error('Erro ao buscar dados para venda:', err);
             }

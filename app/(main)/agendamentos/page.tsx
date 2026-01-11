@@ -25,6 +25,7 @@ import {
     Image as ImageIcon
 } from 'lucide-react';
 import { MaskedInput } from '@/components/ui/masked-input';
+import { CloseSaleDialog } from '@/components/sales/close-sale-dialog';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, startOfDay, addDays, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -51,6 +52,7 @@ export default function AppointmentsPage() {
 
     // Wizard State
     const [isWizardOpen, setIsWizardOpen] = useState(false);
+    const [wizardMode, setWizardMode] = useState<'booking' | 'walkin'>('booking');
     const [step, setStep] = useState(1);
     const [loadingData, setLoadingData] = useState(false);
     const [stepTitle, setStepTitle] = useState('Selecionar Serviços');
@@ -69,6 +71,11 @@ export default function AppointmentsPage() {
     const [availableSlots, setAvailableSlots] = useState<{ time: string, status: string, available: boolean }[]>([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Checkout State
+    const [showSaleDialog, setShowSaleDialog] = useState(false);
+    const [activeQueueId, setActiveQueueId] = useState<string | null>(null);
+    const [initialServiceIds, setInitialServiceIds] = useState<string[]>([]);
 
     // Calendar Helper State
     const [calendarMonth, setCalendarMonth] = useState(new Date());
@@ -91,16 +98,22 @@ export default function AppointmentsPage() {
     useEffect(() => {
         if (!isWizardOpen) {
             setStep(1);
+            setWizardMode('booking');
             setSelectedServices([]);
             setSelectedBarber(null);
+            setSelectedDate(new Date());
             setSelectedTime(null);
             setClientName('');
             setClientPhone('');
             setAvailableSlots([]);
-        } else {
-            loadWizardData();
         }
     }, [isWizardOpen]);
+
+    const openWizard = (mode: 'booking' | 'walkin') => {
+        setWizardMode(mode);
+        setIsWizardOpen(true);
+        loadWizardData();
+    };
 
     // Fetch slots when date or barber changes (Step 3)
     useEffect(() => {
@@ -166,35 +179,53 @@ export default function AppointmentsPage() {
     };
 
     const handleConfirm = async () => {
-        if (!selectedBarber || !selectedTime || !selectedServices.length || !clientName || isSubmitting) return;
+        if (!selectedBarber || !selectedServices.length || (wizardMode === 'booking' && !selectedTime) || isSubmitting) return;
 
         setIsSubmitting(true);
         try {
-            const dateStr = format(selectedDate, 'yyyy-MM-dd');
-            const startStr = `${dateStr}T${selectedTime}:00`; // Local time string
+            let startISO: string;
+            let endISO: string;
             const duration = selectedServices.reduce((acc, s) => acc + (s.duration_minutes || 30), 0);
-            const startTime = new Date(startStr);
-            const endTime = new Date(startTime.getTime() + duration * 60000);
 
-            // Construct description with service names
+            if (wizardMode === 'walkin') {
+                const now = new Date();
+                startISO = now.toISOString();
+                endISO = new Date(now.getTime() + duration * 60000).toISOString();
+            } else {
+                const dateStr = format(selectedDate, 'yyyy-MM-dd');
+                const startStr = `${dateStr}T${selectedTime}:00`;
+                const startTime = new Date(startStr);
+                startISO = startTime.toISOString();
+                endISO = new Date(startTime.getTime() + duration * 60000).toISOString();
+            }
+
             const serviceNames = selectedServices.map(s => s.name).join(', ');
 
-            await Api.createAppointment({
-                client_name: clientName,
+            const res = await Api.createAppointment({
+                client_name: clientName || (wizardMode === 'walkin' ? 'Cliente Balcão' : ''),
                 client_phone: clientPhone,
                 barber_id: selectedBarber.id,
-                start_time: startTime.toISOString(),
-                end_time: endTime.toISOString(),
-                status: 'scheduled',
+                start_time: startISO,
+                end_time: endISO,
+                status: wizardMode === 'walkin' ? 'in_service' : 'scheduled',
+                service_id: selectedServices[0]?.id,
+                service_ids: selectedServices.map(s => s.id),
                 notes: `Serviços: ${serviceNames}`
             });
 
+            // Se for walk-in, precisamos também criar a entrada na fila (para que o queue_id exista)
+            if (wizardMode === 'walkin') {
+                // O backend /api/appointments/[id]/start já faz isso!
+                // Então vamos chamar o start logo em seguida
+                await Api.startAppointment(res.id);
+            }
+
             setIsWizardOpen(false);
             fetchAppointments();
-            alert('Agendamento realizado com sucesso!');
+            alert(wizardMode === 'walkin' ? 'Atendimento iniciado!' : 'Agendamento realizado com sucesso!');
         } catch (error: any) {
             console.error('Error creating appointment:', error);
-            alert('Erro ao agendar: ' + (error.message || 'Tente novamente.'));
+            alert('Erro: ' + (error.message || 'Tente novamente.'));
         } finally {
             setIsSubmitting(false);
         }
@@ -221,11 +252,20 @@ export default function AppointmentsPage() {
     const handleStartProcedure = async (appt: any) => {
         try {
             await Api.startAppointment(appt.id);
-            alert('Atendimento iniciado! O cliente agora está na fila de atendimento ativo.');
             fetchAppointments();
         } catch (error: any) {
             alert(error.message);
         }
+    };
+
+    const handleFinishProcedure = (appt: any) => {
+        if (!appt.queue_id) {
+            alert('ID da fila não encontrado para este agendamento.');
+            return;
+        }
+        setActiveQueueId(appt.queue_id);
+        setInitialServiceIds(appt.service_ids || []);
+        setShowSaleDialog(true);
     };
 
     const { role, user: currentUser } = useAuth();
@@ -303,24 +343,32 @@ export default function AppointmentsPage() {
                     <p className="text-slate-400 font-medium">Gerencie agendamentos e horários.</p>
                 </div>
 
+                <div className="flex gap-2">
+                    <Button variant="outline" className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10" onClick={() => openWizard('walkin')}>
+                        <Scissors size={16} className="mr-2" /> Novo Atendimento
+                    </Button>
+                    <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => openWizard('booking')}>
+                        <Plus size={16} className="mr-2" /> Novo Agendamento
+                    </Button>
+                </div>
+
                 <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
-                    <DialogTrigger asChild>
-                        <Button className="bg-blue-600 hover:bg-blue-700">
-                            <Plus size={16} className="mr-2" /> Novo Agendamento
-                        </Button>
-                    </DialogTrigger>
                     <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-4xl h-[600px] flex flex-col p-0 gap-0 overflow-hidden">
                         <DialogHeader className="p-6 border-b border-slate-800 bg-slate-950/50">
                             <div className="flex items-center justify-between">
-                                <DialogTitle>{stepTitle}</DialogTitle>
+                                <DialogTitle>{wizardMode === 'walkin' ? 'Novo Atendimento' : stepTitle}</DialogTitle>
                                 <div className="flex items-center gap-2 text-sm text-slate-500">
                                     <span className={cn("w-6 h-6 rounded-full flex items-center justify-center border", step >= 1 ? "bg-blue-600 border-blue-600 text-white" : "border-slate-700")}>1</span>
                                     <span className="w-8 h-[1px] bg-slate-800" />
                                     <span className={cn("w-6 h-6 rounded-full flex items-center justify-center border", step >= 2 ? "bg-blue-600 border-blue-600 text-white" : "border-slate-700")}>2</span>
                                     <span className="w-8 h-[1px] bg-slate-800" />
-                                    <span className={cn("w-6 h-6 rounded-full flex items-center justify-center border", step >= 3 ? "bg-blue-600 border-blue-600 text-white" : "border-slate-700")}>3</span>
-                                    <span className="w-8 h-[1px] bg-slate-800" />
-                                    <span className={cn("w-6 h-6 rounded-full flex items-center justify-center border", step >= 4 ? "bg-blue-600 border-blue-600 text-white" : "border-slate-700")}>4</span>
+                                    <span className={cn("w-6 h-6 rounded-full flex items-center justify-center border", step >= 3 ? (wizardMode === 'walkin' ? "bg-blue-600 border-blue-600 text-white" : "bg-blue-600 border-blue-600 text-white") : "border-slate-700")}>3</span>
+                                    {wizardMode === 'booking' && (
+                                        <>
+                                            <span className="w-8 h-[1px] bg-slate-800" />
+                                            <span className={cn("w-6 h-6 rounded-full flex items-center justify-center border", step >= 4 ? "bg-blue-600 border-blue-600 text-white" : "border-slate-700")}>4</span>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </DialogHeader>
@@ -374,7 +422,12 @@ export default function AppointmentsPage() {
                                                     key={barber.id}
                                                     onClick={() => {
                                                         setSelectedBarber(barber);
-                                                        setStep(3); // Auto-advance
+                                                        if (wizardMode === 'walkin') {
+                                                            setStep(3); // For walk-in, skip date/time and go to client info
+                                                            setStepTitle('Informações do Cliente');
+                                                        } else {
+                                                            setStep(3); // For booking, go to date/time
+                                                        }
                                                     }}
                                                     className={cn(
                                                         "flex flex-col items-center p-6 rounded-xl border cursor-pointer transition-all hover:scale-105",
@@ -399,8 +452,8 @@ export default function AppointmentsPage() {
                                 </div>
                             )}
 
-                            {/* STEP 3: DATE & TIME */}
-                            {step === 3 && (
+                            {/* STEP 3: DATE & TIME or CLIENT INFO (for walk-in) */}
+                            {step === 3 && wizardMode === 'booking' && (
                                 <div className="flex flex-col md:flex-row gap-6 h-full">
                                     <div className="w-full md:w-1/2">
                                         <h3 className="text-sm font-bold text-slate-400 mb-3 uppercase">1. Escolha o Dia</h3>
@@ -451,17 +504,22 @@ export default function AppointmentsPage() {
                                 </div>
                             )}
 
-                            {/* STEP 4: CONFIRMATION */}
-                            {step === 4 && (
-                                <div className="max-w-md mx-auto space-y-6 pt-4">
+                            {/* STEP 4: CLIENT (for booking) OR STEP 3: CLIENT (for walk-in) */}
+                            {((step === 4 && wizardMode === 'booking') || (step === 3 && wizardMode === 'walkin')) && (
+                                <div className="max-w-md mx-auto w-full space-y-6 pt-10">
                                     <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 space-y-4">
                                         <div className="flex items-center gap-4 border-b border-slate-700 pb-4">
                                             <div className="w-12 h-12 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-500">
                                                 <CalendarCheck size={24} />
                                             </div>
                                             <div>
-                                                <h3 className="font-bold text-lg text-slate-200">Resumo do Agendamento</h3>
-                                                <p className="text-sm text-slate-400">{format(selectedDate, "dd 'de' MMMM", { locale: ptBR })} às {selectedTime}</p>
+                                                <h3 className="font-bold text-lg text-slate-200">{wizardMode === 'walkin' ? 'Confirmar Atendimento' : 'Resumo do Agendamento'}</h3>
+                                                {wizardMode === 'booking' && (
+                                                    <p className="text-sm text-slate-400">{format(selectedDate, "dd 'de' MMMM", { locale: ptBR })} às {selectedTime}</p>
+                                                )}
+                                                {wizardMode === 'walkin' && (
+                                                    <p className="text-sm text-slate-400">Início Imediato</p>
+                                                )}
                                             </div>
                                         </div>
 
@@ -631,37 +689,48 @@ export default function AppointmentsPage() {
 
                                     {/* COLUNA 4: AÇÕES */}
                                     <div className="flex items-center gap-2 border-l border-slate-800/50 md:pl-6">
-                                        {appt.status === 'scheduled' && (
-                                            <>
-                                                <Button
-                                                    variant="secondary"
-                                                    size="sm"
-                                                    onClick={() => handleNotify(appt)}
-                                                    className="bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20 gap-2 h-10 px-4"
-                                                >
-                                                    <MessageSquare size={16} />
-                                                    <span className="hidden xl:inline">Notificar</span>
-                                                </Button>
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={() => handleNotify(appt)}
+                                            className="bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20 gap-2 h-10 px-4"
+                                        >
+                                            <MessageSquare size={16} />
+                                            <span className="hidden xl:inline">Notificar</span>
+                                        </Button>
 
-                                                {showStartBtn && (
-                                                    <Button
-                                                        variant="secondary"
-                                                        size="sm"
-                                                        onClick={() => handleStartProcedure(appt)}
-                                                        className="bg-blue-600 text-white hover:bg-blue-700 gap-2 h-10 px-4 shadow-lg shadow-blue-900/20"
-                                                    >
-                                                        <Play size={16} fill="currentColor" />
-                                                        <span className="hidden xl:inline">Iniciar</span>
-                                                    </Button>
-                                                )}
-                                            </>
+                                        {showStartBtn && appt.status === 'scheduled' && (
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={() => handleStartProcedure(appt)}
+                                                className="bg-blue-600 text-white hover:bg-blue-700 gap-2 h-10 px-4 shadow-lg shadow-blue-900/20"
+                                            >
+                                                <Play size={16} fill="currentColor" />
+                                                <span className="hidden xl:inline">Iniciar</span>
+                                            </Button>
+                                        )}
+
+                                        {showStartBtn && appt.status === 'in_service' && (
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={() => handleFinishProcedure(appt)}
+                                                className="bg-emerald-600 text-white hover:bg-emerald-700 gap-2 h-10 px-4 shadow-lg shadow-emerald-900/20"
+                                            >
+                                                <CheckCircle2 size={16} />
+                                                <span className="hidden xl:inline">Finalizar</span>
+                                            </Button>
                                         )}
 
                                         <Badge className={cn("capitalize px-3 py-1 text-[10px] font-black tracking-widest h-fit border-0",
                                             appt.status === 'scheduled' ? "bg-blue-500/20 text-blue-400" :
-                                                appt.status === 'completed' ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-600/20 text-slate-500"
+                                                appt.status === 'in_service' ? "bg-amber-500/20 text-amber-500 border border-amber-500/30" :
+                                                    appt.status === 'completed' ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-600/20 text-slate-500"
                                         )}>
-                                            {appt.status === 'scheduled' ? 'Confirmado' : appt.status}
+                                            {appt.status === 'scheduled' ? 'Confirmado' :
+                                                appt.status === 'in_service' ? 'Em Atendimento' :
+                                                    appt.status === 'completed' ? 'Finalizado' : appt.status}
                                         </Badge>
 
                                         <Button
@@ -679,6 +748,17 @@ export default function AppointmentsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Close Sale Dialog */}
+            {showSaleDialog && activeQueueId && (
+                <CloseSaleDialog
+                    isOpen={showSaleDialog}
+                    onOpenChange={setShowSaleDialog}
+                    queueId={activeQueueId}
+                    initialServiceIds={initialServiceIds}
+                    onSuccess={() => fetchAppointments()}
+                />
+            )}
         </div>
     );
 }
