@@ -20,7 +20,9 @@ export async function POST(
             .single();
 
         if (apptError || !appt) throw new Error('Agendamento não encontrado');
-        if (appt.status !== 'scheduled') throw new Error('Agendamento já processado ou cancelado');
+        if (appt.status !== 'scheduled' && appt.status !== 'in_service') {
+            throw new Error('Agendamento já processado ou cancelado');
+        }
 
         // 2. Encontrar ou Criar Cliente
         const client = await findOrCreateClientByPhone(
