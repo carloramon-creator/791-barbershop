@@ -14,7 +14,9 @@ export async function OPTIONS(req: Request) {
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
-        let tenantId = searchParams.get('tenant_id');
+        const idOrSlug = searchParams.get('tenantId') || searchParams.get('slug') || '';
+        console.log(`[PUBLIC QUEUE] Request for ID/Slug: "${idOrSlug}"`);
+        let tenantId = idOrSlug;
 
         // Se Vier um slug ou ID, resolvemos para o ID real
         if (tenantId) {
@@ -30,6 +32,7 @@ export async function GET(req: Request) {
                 .maybeSingle();
 
             tenantId = firstTenant?.id || null;
+            console.log(`[PUBLIC QUEUE] Fallback triggered. Found tenantId: ${tenantId}`);
         }
 
         if (!tenantId) {
