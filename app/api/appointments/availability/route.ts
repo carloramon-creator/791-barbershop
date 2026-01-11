@@ -39,22 +39,35 @@ export async function GET(req: Request) {
         const openingHours = (tenant as any).opening_hours || {
             work_days: [1, 2, 3, 4, 5, 6],
             start_time: '09:00',
-            end_time: '19:00'
+            end_time: '19:00',
+            days: null
         };
 
         const baseDate = parse(dateStr, 'yyyy-MM-dd', new Date());
-
-        // Check if working day
         const dayOfWeek = baseDate.getDay(); // 0=Sun, 6=Sat
-        if (Array.isArray(openingHours.work_days) && !openingHours.work_days.includes(dayOfWeek)) {
-            return NextResponse.json([]); // Closed on this day
+
+        let startH, startM, endHour, endMin;
+
+        // NEW LOGIC: Check for per-day configuration first
+        if (openingHours.days && openingHours.days[dayOfWeek]) {
+            const dayConfig = openingHours.days[dayOfWeek];
+
+            if (!dayConfig.active) {
+                return NextResponse.json([]); // Closed specific day
+            }
+
+            [startH, startM] = (dayConfig.start || '09:00').split(':').map(Number);
+            [endHour, endMin] = (dayConfig.end || '19:00').split(':').map(Number);
         }
-
-        const [startH, startM] = (openingHours.start_time || '09:00').split(':').map(Number);
-        const [endH, endM] = (openingHours.start_time || '19:00').split(':').map(Number); // Typo protection if user sends bad data, but logic below corrected manually
-
-        // Correct logic for end time based on end_time
-        const [endHour, endMin] = (openingHours.end_time || '19:00').split(':').map(Number);
+        // FALLBACK LOGIC: Global configuration
+        else {
+            if (Array.isArray(openingHours.work_days) && !openingHours.work_days.includes(dayOfWeek)) {
+                return NextResponse.json([]); // Closed globally
+            }
+            [startH, startM] = (openingHours.start_time || '09:00').split(':').map(Number);
+            // Fix previous typo/bug where end time was using start_time fallback
+            [endHour, endMin] = (openingHours.end_time || '19:00').split(':').map(Number);
+        }
 
         const workStart = new Date(baseDate); workStart.setHours(startH, startM, 0, 0);
         const workEnd = new Date(baseDate); workEnd.setHours(endHour, endMin, 0, 0);

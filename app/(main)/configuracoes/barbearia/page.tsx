@@ -58,13 +58,22 @@ export default function BarbershopSettingsPage() {
     const [moduleAppointmentsEnabled, setModuleAppointmentsEnabled] = useState(false);
 
     // Opening Hours State
-    const [openingHours, setOpeningHours] = useState({
+    const [openingHours, setOpeningHours] = useState<{
+        work_days: number[];
+        start_time: string;
+        end_time: string;
+        lunch_duration: number;
+        lunch_enabled: boolean;
+        overtime_tolerance_percent: number;
+        days?: Record<number, { active: boolean; start: string; end: string }>;
+    }>({
         work_days: [1, 2, 3, 4, 5, 6],
         start_time: '09:00',
         end_time: '19:00',
         lunch_duration: 60,
         lunch_enabled: true,
-        overtime_tolerance_percent: 0
+        overtime_tolerance_percent: 0,
+        days: {}
     });
 
 
@@ -107,10 +116,21 @@ export default function BarbershopSettingsPage() {
 
                 // Opening Hours
                 if (data.opening_hours) {
+                    // Normalize to new format or use existing
+                    const defaultDays: any = {};
+                    [0, 1, 2, 3, 4, 5, 6].forEach(d => {
+                        defaultDays[d] = {
+                            active: (data.opening_hours.work_days || []).includes(d),
+                            start: data.opening_hours.start_time || '09:00',
+                            end: data.opening_hours.end_time || '19:00'
+                        };
+                    });
+
                     setOpeningHours({
                         work_days: data.opening_hours.work_days || [1, 2, 3, 4, 5, 6],
                         start_time: data.opening_hours.start_time || '09:00',
                         end_time: data.opening_hours.end_time || '19:00',
+                        days: data.opening_hours.days || defaultDays,
                         lunch_duration: data.opening_hours.lunch_duration !== undefined ? data.opening_hours.lunch_duration : 60,
                         lunch_enabled: data.opening_hours.lunch_duration > 0,
                         overtime_tolerance_percent: data.opening_hours.overtime_tolerance_percent || 0
@@ -214,7 +234,7 @@ export default function BarbershopSettingsPage() {
                 logo_url: logoUrl,
                 slug: slug,
                 opening_hours: {
-                    ...openingHours,
+                    days: openingHours.days, // New structure
                     lunch_duration: openingHours.lunch_enabled ? Number(openingHours.lunch_duration) : 0,
                     overtime_tolerance_percent: Number(openingHours.overtime_tolerance_percent)
                 },
@@ -530,54 +550,50 @@ export default function BarbershopSettingsPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                <div className="space-y-3">
-                                    <Label className="text-slate-200">Dias de Trabalho</Label>
-                                    <div className="flex gap-2 flex-wrap">
-                                        {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, idx) => {
-                                            const isSelected = openingHours.work_days.includes(idx);
+                                <div className="space-y-4">
+                                    <Label className="text-slate-200">Configuração Semanal</Label>
+                                    <div className="space-y-2">
+                                        {['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'].map((dayName, idx) => {
+                                            const dayConfig = openingHours.days?.[idx] || { active: false, start: '09:00', end: '19:00' };
                                             return (
-                                                <div
-                                                    key={idx}
-                                                    className={cn(
-                                                        "px-3 py-2 border rounded-lg cursor-pointer transition-all text-sm font-medium flex items-center gap-2",
-                                                        isSelected
-                                                            ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-900/20"
-                                                            : "bg-slate-950/50 border-slate-800 text-slate-400 hover:border-slate-700 hover:bg-slate-900"
+                                                <div key={idx} className={cn("grid grid-cols-12 gap-2 items-center p-3 rounded-lg border transition-colors", dayConfig.active ? "bg-slate-950 border-slate-700" : "bg-slate-900/50 border-slate-800 opacity-60")}>
+                                                    <div className="col-span-4 md:col-span-3 flex items-center gap-3">
+                                                        <div
+                                                            className={cn("w-10 h-6 rounded-full relative cursor-pointer transition-colors", dayConfig.active ? "bg-blue-600" : "bg-slate-700")}
+                                                            onClick={() => isEditing && setOpeningHours(prev => ({ ...prev, days: { ...prev.days, [idx]: { ...dayConfig, active: !dayConfig.active } } }))}
+                                                        >
+                                                            <div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white transition-all", dayConfig.active ? "left-5" : "left-1")} />
+                                                        </div>
+                                                        <span className="text-sm font-medium text-slate-200">{dayName}</span>
+                                                    </div>
+
+                                                    {dayConfig.active && (
+                                                        <div className="col-span-8 md:col-span-9 grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-left-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs text-slate-500">Abre:</span>
+                                                                <Input
+                                                                    type="time"
+                                                                    value={dayConfig.start}
+                                                                    className="h-8 bg-slate-900 border-slate-700"
+                                                                    disabled={!isEditing}
+                                                                    onChange={e => setOpeningHours(prev => ({ ...prev, days: { ...prev.days, [idx]: { ...dayConfig, start: e.target.value } } }))}
+                                                                />
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs text-slate-500">Fecha:</span>
+                                                                <Input
+                                                                    type="time"
+                                                                    value={dayConfig.end}
+                                                                    className="h-8 bg-slate-900 border-slate-700"
+                                                                    disabled={!isEditing}
+                                                                    onChange={e => setOpeningHours(prev => ({ ...prev, days: { ...prev.days, [idx]: { ...dayConfig, end: e.target.value } } }))}
+                                                                />
+                                                            </div>
+                                                        </div>
                                                     )}
-                                                    onClick={() => {
-                                                        if (!isEditing) return; // Prevent click if not editing
-                                                        if (isSelected) setOpeningHours({ ...openingHours, work_days: openingHours.work_days.filter(d => d !== idx) });
-                                                        else setOpeningHours({ ...openingHours, work_days: [...openingHours.work_days, idx] });
-                                                    }}
-                                                >
-                                                    {isSelected && <Check size={14} />}
-                                                    {day}
                                                 </div>
                                             );
                                         })}
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-slate-200">Horário de Abertura</Label>
-                                        <Input
-                                            type="time"
-                                            disabled={!isEditing}
-                                            value={openingHours.start_time}
-                                            onChange={e => setOpeningHours({ ...openingHours, start_time: e.target.value })}
-                                            className="bg-slate-950 border-slate-800 text-slate-100"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-slate-200">Horário de Fechamento</Label>
-                                        <Input
-                                            type="time"
-                                            disabled={!isEditing}
-                                            value={openingHours.end_time}
-                                            onChange={e => setOpeningHours({ ...openingHours, end_time: e.target.value })}
-                                            className="bg-slate-950 border-slate-800 text-slate-100"
-                                        />
                                     </div>
                                 </div>
 
