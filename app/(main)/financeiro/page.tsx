@@ -242,7 +242,7 @@ export default function FinanceiroPage() {
                 is_recurring: false,
                 is_paid: true
             })),
-            ...financeRecords.filter(r => r.is_paid && r.date <= todayStr).map(r => ({
+            ...financeRecords.filter(r => r.is_paid && r.date.startsWith(currentMonth)).map(r => ({
                 id: r.id,
                 date: r.date,
                 description: r.description,
@@ -251,8 +251,8 @@ export default function FinanceiroPage() {
                 value: r.value,
                 category: r.finance_categories?.name || 'Diversos',
                 barber: r.barbers?.name || '-',
-                barber_id: r.barber_id, // Add barber_id
-                is_recurring: !!r.is_recurring, // Force boolean
+                barber_id: r.barber_id,
+                is_recurring: !!r.is_recurring,
                 is_paid: true
             }))
         ].sort((a, b) => b.date.localeCompare(a.date))

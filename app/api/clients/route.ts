@@ -143,6 +143,12 @@ export async function DELETE(req: Request) {
             .eq('client_id', id)
             .eq('tenant_id', tenant.id);
 
+        await supabaseAdmin
+            .from('sales')
+            .update({ client_id: null })
+            .eq('client_id', id)
+            .eq('tenant_id', tenant.id);
+
         // 2. Agora excluir o cliente
         const { error } = await supabaseAdmin
             .from('clients')
