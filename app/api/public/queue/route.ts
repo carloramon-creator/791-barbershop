@@ -22,6 +22,17 @@ export async function GET(req: Request) {
         }
 
         if (!tenantId) {
+            // FALLBACK: Se não vier tenant_id, pegamos o primeiro cadastrado (geralmente do superadmin)
+            const { data: firstTenant } = await supabaseAdmin
+                .from('tenants')
+                .select('id')
+                .limit(1)
+                .maybeSingle();
+
+            tenantId = firstTenant?.id || null;
+        }
+
+        if (!tenantId) {
             return NextResponse.json({ error: 'Barbearia não especificada ou não encontrada' }, { status: 404 });
         }
 
