@@ -644,7 +644,7 @@ export default function BarbershopSettingsPage() {
                                                     disabled={!isEditing}
                                                     value={openingHours.lunch_start}
                                                     onChange={e => setOpeningHours({ ...openingHours, lunch_start: e.target.value })}
-                                                    className="bg-slate-800 border-slate-700 text-white w-32 font-medium"
+                                                    className="bg-slate-800 border-slate-700 text-white w-32 font-medium [color-scheme:dark]"
                                                 />
                                             </div>
                                             <div className="space-y-2">
