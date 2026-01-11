@@ -46,27 +46,36 @@ export async function GET(req: Request) {
         const isTodayRequested = dateStr === format(new Date(), 'yyyy-MM-dd');
         const isOffline = isTodayRequested && barber?.status === 'offline';
 
-        // 3. Generate slots base config
-        const openingHours = (tenant as any).opening_hours || {
+        // 3. Generate slots base config with deep merging defaults
+        const rawOpeningHours = (tenant as any).opening_hours || {};
+        const openingHours = {
             work_days: [1, 2, 3, 4, 5, 6],
             start_time: '09:00',
             end_time: '19:00',
-            days: null,
             lunch_start: '12:00',
             lunch_duration: 0,
-            overtime_tolerance_percent: 0
+            overtime_tolerance_percent: 0,
+            ...rawOpeningHours,
+            days: rawOpeningHours.days || null
         };
 
-        const dayOfWeek = baseDate.getDay();
+        const dayOfWeek = baseDate.getDay(); // 0=Sun, 1=Mon...
         let startH, startM, endHour, endMin;
 
+        // Priority 1: Individual Day config
         if (openingHours.days && openingHours.days[dayOfWeek]) {
             const dayConfig = openingHours.days[dayOfWeek];
-            if (!dayConfig.active) return NextResponse.json([]);
+            if (!dayConfig.active) {
+                console.log(`Day ${dayOfWeek} is inactive for tenant ${tenant.id}`);
+                return NextResponse.json([]);
+            }
             [startH, startM] = (dayConfig.start || '09:00').split(':').map(Number);
             [endHour, endMin] = (dayConfig.end || '19:00').split(':').map(Number);
         } else {
-            if (Array.isArray(openingHours.work_days) && !openingHours.work_days.includes(dayOfWeek)) {
+            // Priority 2: Generic Work Days
+            const workDays = Array.isArray(openingHours.work_days) ? openingHours.work_days : [1, 2, 3, 4, 5, 6];
+            if (!workDays.includes(dayOfWeek)) {
+                console.log(`Day ${dayOfWeek} not in workDays [${workDays}] for tenant ${tenant.id}`);
                 return NextResponse.json([]);
             }
             [startH, startM] = (openingHours.start_time || '09:00').split(':').map(Number);
@@ -79,12 +88,13 @@ export async function GET(req: Request) {
         // 4. Normalize appointments to Local Clock Time (GMT-3)
         const normalizedAppointments = appointments?.map((apt: any) => {
             const date = new Date(apt.start_time);
-            // ISO strings in DB are UTC (Z). In Brazil (GMT-3), 14:30Z is 11:30 Local.
-            const h = date.getUTCHours();
-            const m = date.getUTCMinutes();
-            const localH = h - 3;
 
-            const start = new Date(baseDate); start.setHours(localH, m, 0, 0);
+            // Adjust to Brazil time (-3h) for clock-time comparison
+            const brTime = new Date(date.getTime() - (3 * 60 * 60 * 1000));
+
+            const start = new Date(baseDate);
+            start.setHours(brTime.getUTCHours(), brTime.getUTCMinutes(), 0, 0);
+
             const durationMs = new Date(apt.end_time).getTime() - new Date(apt.start_time).getTime();
             const end = addMinutes(start, durationMs / 60000);
             return { start, end };

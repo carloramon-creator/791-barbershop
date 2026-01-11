@@ -15,36 +15,50 @@ export async function getCurrentUserAndTenant() {
         let userAuthId: string | null = null;
         let userObj: any = null;
 
-        // 1. Tentar ler o token manualmente para lidar com fragmentação ou headers
-        for (const c of allCookies) {
-            if (!c.value || c.value.length < 50) continue;
-
-            try {
-                const val = decodeURIComponent(c.value);
-                let token = val;
-
-                if (val.startsWith('[')) {
-                    token = JSON.parse(val)[0];
-                } else if (val.startsWith('{')) {
-                    token = JSON.parse(val).access_token || JSON.parse(val).token;
-                } else {
-                    token = val.replace(/^"|"$/g, '');
-                }
-
-                if (token && token.split('.').length === 3) {
-                    const { data: { user: adminUser }, error: adminError } = await supabaseAdmin.auth.getUser(token);
-                    if (adminUser && !adminError) {
-                        userAuthId = adminUser.id;
-                        userObj = adminUser;
-                        break;
-                    }
-                }
-            } catch (e) {
-                // Ignore
+        // 1. Tentar ler o token do Header Authorization (prioridade para chamadas via API)
+        const headerStore = await headers();
+        const authHeader = headerStore.get('authorization');
+        if (authHeader?.startsWith('Bearer ')) {
+            const token = authHeader.substring(7);
+            const { data: { user: adminUser }, error: adminError } = await supabaseAdmin.auth.getUser(token);
+            if (adminUser && !adminError) {
+                userAuthId = adminUser.id;
+                userObj = adminUser;
             }
         }
 
-        // 2. Fallback para o SDK
+        // 2. Tentar ler o token manualmente dos cookies (fallback para SSR)
+        if (!userAuthId) {
+            for (const c of allCookies) {
+                if (!c.value || c.value.length < 50) continue;
+
+                try {
+                    const val = decodeURIComponent(c.value);
+                    let token = val;
+
+                    if (val.startsWith('[')) {
+                        token = JSON.parse(val)[0];
+                    } else if (val.startsWith('{')) {
+                        token = JSON.parse(val).access_token || JSON.parse(val).token;
+                    } else {
+                        token = val.replace(/^"|"$/g, '');
+                    }
+
+                    if (token && token.split('.').length === 3) {
+                        const { data: { user: adminUser }, error: adminError } = await supabaseAdmin.auth.getUser(token);
+                        if (adminUser && !adminError) {
+                            userAuthId = adminUser.id;
+                            userObj = adminUser;
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    // Ignore
+                }
+            }
+        }
+
+        // 3. Fallback para o SDK
         if (!userAuthId) {
             const client = await supabase();
             const { data: { user }, error } = await client.auth.getUser();

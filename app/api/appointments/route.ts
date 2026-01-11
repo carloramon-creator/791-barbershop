@@ -15,7 +15,8 @@ export async function GET(req: Request) {
         let query = supabaseAdmin
             .from('appointments')
             .select('*, barbers(name, nickname, user_id)')
-            .eq('tenant_id', tenant.id);
+            .eq('tenant_id', tenant.id)
+            .neq('status', 'cancelled');
 
         if (date) {
             const start = `${date}T00:00:00Z`;

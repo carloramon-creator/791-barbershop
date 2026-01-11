@@ -47,6 +47,7 @@ export default function AppointmentsPage() {
     const [viewDate, setViewDate] = useState(new Date());
     const [appointments, setAppointments] = useState<any[]>([]);
     const [loadingAppts, setLoadingAppts] = useState(true);
+    const [barbershopName, setBarbershopName] = useState('');
 
     // Wizard State
     const [isWizardOpen, setIsWizardOpen] = useState(false);
@@ -74,7 +75,17 @@ export default function AppointmentsPage() {
 
     useEffect(() => {
         fetchAppointments();
+        loadBarbershopInfo();
     }, [viewDate]);
+
+    const loadBarbershopInfo = async () => {
+        try {
+            const data = await Api.getBarbershop();
+            setBarbershopName(data.name || '');
+        } catch (error) {
+            console.error('Erro ao buscar info da barbearia', error);
+        }
+    };
 
     // Reset wizard when closed
     useEffect(() => {
@@ -202,17 +213,14 @@ export default function AppointmentsPage() {
     const handleNotify = (appt: any) => {
         const phone = appt.client_phone?.replace(/\D/g, '');
         if (!phone) return alert('Telefone não disponível');
-        const message = encodeURIComponent(`Olá ${appt.client_name}, passando para lembrar do seu agendamento hoje às ${format(new Date(appt.start_time), 'HH:mm')}. Até logo!`);
+        const company = barbershopName ? `A ${barbershopName}` : 'Nossa barbearia';
+        const message = encodeURIComponent(`Olá ${appt.client_name}, ${company} passando para lembrar do seu agendamento hoje às ${format(new Date(appt.start_time), 'HH:mm')}. Até logo!`);
         window.open(`https://wa.me/55${phone}?text=${message}`, '_blank');
     };
 
     const handleStartProcedure = async (appt: any) => {
         try {
-            const res = await fetch(`/api/appointments/${appt.id}/start`, { method: 'POST' });
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error || 'Erro ao iniciar');
-            }
+            await Api.startAppointment(appt.id);
             alert('Atendimento iniciado! O cliente agora está na fila de atendimento ativo.');
             fetchAppointments();
         } catch (error: any) {
