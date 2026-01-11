@@ -138,8 +138,8 @@ export async function GET(req: Request) {
             tenant: {
                 name: tenant.name,
                 logo_url: tenant.logo_url,
-                module_queue_enabled: tenant.module_queue_enabled,
-                module_appointments_enabled: tenant.module_appointments_enabled,
+                module_queue_enabled: tenant.module_queue_enabled ?? true,
+                module_appointments_enabled: tenant.module_appointments_enabled ?? false,
                 address_street: tenant.address_street,
                 address_city: tenant.address_city
             }

@@ -256,7 +256,7 @@ export default function FinanceiroPage() {
                 is_paid: true
             }))
         ].sort((a, b) => b.date.localeCompare(a.date))
-        : financeRecords.filter(r => !r.is_paid).map(r => ({
+        : financeRecords.filter(r => !r.is_paid && r.type === 'expense').map(r => ({
             id: r.id,
             date: r.date,
             description: r.description,

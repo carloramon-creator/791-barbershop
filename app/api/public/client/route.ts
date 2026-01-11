@@ -25,7 +25,7 @@ export async function GET(req: Request) {
         // 2. Buscar dados básicos do cliente
         const { data: client, error } = await supabaseAdmin
             .from('clients')
-            .select('id, name, phone, photo_url, tenant_id')
+            .select('id, name, phone, photo_url, cpf, tenant_id')
             .eq('id', clientId)
             .eq('tenant_id', tenantId)
             .single();
@@ -38,7 +38,8 @@ export async function GET(req: Request) {
             id: client.id,
             name: client.name,
             phone: client.phone,
-            photo_url: client.photo_url
+            photo_url: client.photo_url,
+            cpf: client.cpf
         }));
     } catch (error: any) {
         console.error('[PUBLIC CLIENT GET] Error:', error.message);

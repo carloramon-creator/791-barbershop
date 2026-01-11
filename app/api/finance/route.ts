@@ -21,6 +21,12 @@ export async function GET() {
             .from('finance')
             .select('*')
             .eq('tenant_id', tenantId)
+            // Strict SaaS exclusion: must not be marked as saas in metadata, AND must not have s-a-a-s or assinatura or plano in description
+            .or(`metadata->>is_saas_payment.neq.true,metadata->>is_saas_payment.is.null`)
+            .not('description', 'ilike', '%SaaS%')
+            .not('description', 'ilike', '%Assinatura%')
+            .not('description', 'ilike', '%791 Barber%')
+            .not('description', 'ilike', '%Plano %')
             .order('date', { ascending: false });
 
         if (error) {
