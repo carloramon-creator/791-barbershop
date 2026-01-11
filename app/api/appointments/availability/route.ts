@@ -161,7 +161,15 @@ export async function GET(req: Request) {
                 status = 'offline';
             }
             else if (openingHours.lunch_duration > 0 && current.getTime() < effLunchEnd.getTime() && slotEnd.getTime() > effLunchStart.getTime()) {
-                status = 'lunch';
+                // Calculate actual overlap with lunch
+                const overlapStart = Math.max(current.getTime(), effLunchStart.getTime());
+                const overlapEnd = Math.min(slotEnd.getTime(), effLunchEnd.getTime());
+                const overlapMs = overlapEnd - overlapStart;
+                const toleranceMs = 30 * 60 * 1000; // 30 minutes tolerance
+
+                if (overlapMs > toleranceMs) {
+                    status = 'lunch';
+                }
             }
             else {
                 const isOccupied = normalizedAppointments.some((apt: any) => {
