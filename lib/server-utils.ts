@@ -192,10 +192,18 @@ export function addCorsHeaders(req: Request, res: NextResponse) {
     return response;
 }
 
-/** Resolução de Tenant por Slug ou ID */
 export async function resolveTenantId(idOrSlug: string) {
     if (!idOrSlug) return null;
-    if (idOrSlug.length > 30 && idOrSlug.includes('-')) return idOrSlug;
-    const { data } = await supabaseAdmin.from('tenants').select('id').ilike('slug', idOrSlug).maybeSingle();
+    const cleanId = idOrSlug.trim();
+    if (cleanId.length > 30 && cleanId.includes('-')) return cleanId;
+
+    // Busca case-insensitive e sem espaços
+    const { data, error } = await supabaseAdmin
+        .from('tenants')
+        .select('id')
+        .ilike('slug', cleanId.toLowerCase())
+        .maybeSingle();
+
+    if (error) console.error('[RESOLVE_TENANT_ERROR]', error);
     return data?.id || null;
 }

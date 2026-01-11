@@ -587,7 +587,7 @@ export default function BarbershopSettingsPage() {
                                                                 <Input
                                                                     type="time"
                                                                     value={dayConfig.start}
-                                                                    className="h-8 text-sm bg-slate-800 border-slate-700 px-2 text-white font-medium"
+                                                                    className="h-8 text-sm bg-slate-800 border-slate-700 px-2 text-white font-medium [color-scheme:dark]"
                                                                     disabled={!isEditing}
                                                                     onChange={e => setOpeningHours(prev => ({ ...prev, days: { ...prev.days, [idx]: { ...dayConfig, start: e.target.value } } }))}
                                                                 />
@@ -597,7 +597,7 @@ export default function BarbershopSettingsPage() {
                                                                 <Input
                                                                     type="time"
                                                                     value={dayConfig.end}
-                                                                    className="h-8 text-sm bg-slate-800 border-slate-700 px-2 text-white font-medium"
+                                                                    className="h-8 text-sm bg-slate-800 border-slate-700 px-2 text-white font-medium [color-scheme:dark]"
                                                                     disabled={!isEditing}
                                                                     onChange={e => setOpeningHours(prev => ({ ...prev, days: { ...prev.days, [idx]: { ...dayConfig, end: e.target.value } } }))}
                                                                 />
