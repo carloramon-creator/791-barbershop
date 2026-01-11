@@ -115,7 +115,6 @@ export default function BarbershopSettingsPage() {
 
                 // Modules
                 setModuleQueueEnabled(data.module_queue_enabled !== false);
-                setModuleQueueEnabled(data.module_queue_enabled !== false);
                 setModuleAppointmentsEnabled(data.module_appointments_enabled === true);
 
                 // Opening Hours
