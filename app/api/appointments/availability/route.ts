@@ -104,14 +104,24 @@ export async function GET(req: Request) {
                 if (exceedsWorkHours) break;
             }
 
+            // check offline
             if (isOffline) {
                 status = 'offline';
-            } else if (openingHours.lunch_duration > 0 && current < lunchEnd && slotEnd > lunchStart) {
+            }
+            // check lunch
+            else if (openingHours.lunch_duration > 0 && current < lunchEnd && slotEnd > lunchStart) {
                 status = 'lunch';
-            } else {
+            }
+            // check collision
+            else {
+                // IMPORTANT: A slot is only occupied if there's an appointment STARTING or ENDING during its requested duration.
+                // However, we must be careful: if a service takes 90min, it blocks starting at X if an appointment exists between X and X+90.
                 const isOccupied = appointments?.some((apt: any) => {
                     const aptStart = new Date(apt.start_time);
                     const aptEnd = new Date(apt.end_time);
+
+                    // A slot (current -> current + duration) is blocked if any appointment overlaps with it.
+                    // Strict Overlap: (StartA < EndB) AND (EndA > StartB)
                     return (current < aptEnd && slotEnd > aptStart);
                 });
                 if (isOccupied) status = 'occupied';
