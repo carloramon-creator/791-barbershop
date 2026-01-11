@@ -18,10 +18,50 @@ export async function GET(req: Request) {
             query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%,cpf.ilike.%${search}%`);
         }
 
-        const { data, error } = await query;
+        const { data: clients, error } = await query;
         if (error) throw error;
 
-        return NextResponse.json(data);
+        // 1. Buscar últimos atendimentos na fila para estes clientes
+        const clientIds = clients.map(c => c.id);
+
+        const [queueRes, appoRes] = await Promise.all([
+            supabaseAdmin
+                .from('client_queue')
+                .select('client_id, finished_at')
+                .in('client_id', clientIds)
+                .eq('status', 'finished')
+                .order('finished_at', { ascending: false }),
+            supabaseAdmin
+                .from('appointments')
+                .select('client_id, date, start_time')
+                .in('client_id', clientIds)
+                .eq('status', 'finished')
+                .order('date', { ascending: false })
+        ]);
+
+        // 2. Mapear as datas mais recentes
+        const lastServiceMap: Record<string, string> = {};
+
+        (queueRes.data || []).forEach(item => {
+            if (!lastServiceMap[item.client_id] || item.finished_at > lastServiceMap[item.client_id]) {
+                lastServiceMap[item.client_id] = item.finished_at;
+            }
+        });
+
+        (appoRes.data || []).forEach(item => {
+            // Unificar data e hora se disponível
+            const dateStr = item.date;
+            if (!lastServiceMap[item.client_id] || dateStr > lastServiceMap[item.client_id]) {
+                lastServiceMap[item.client_id] = dateStr;
+            }
+        });
+
+        const clientsWithLastService = clients.map(client => ({
+            ...client,
+            last_service_at: lastServiceMap[client.id] || null
+        }));
+
+        return NextResponse.json(clientsWithLastService);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

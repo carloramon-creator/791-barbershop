@@ -19,7 +19,8 @@ import {
     ArrowUpDown,
     MessageSquare,
     Copy,
-    ExternalLink
+    ExternalLink,
+    UserCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -53,6 +54,7 @@ interface Client {
     phone: string;
     cpf?: string;
     photo_url?: string;
+    last_service_at?: string;
     created_at: string;
 }
 
@@ -251,9 +253,17 @@ export default function ClientsPage() {
                                                         </div>
                                                         <div>
                                                             <div className="font-bold text-slate-100">{client.name}</div>
-                                                            <div className="text-[10px] text-slate-500 flex items-center gap-1 uppercase">
-                                                                <Calendar size={10} />
-                                                                Deste {format(new Date(client.created_at), 'MM/yyyy')}
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <div className="text-[10px] text-slate-500 flex items-center gap-1 uppercase">
+                                                                    <Calendar size={10} />
+                                                                    Deste {format(new Date(client.created_at), 'MM/yyyy')}
+                                                                </div>
+                                                                {client.last_service_at && (
+                                                                    <div className="text-[10px] text-emerald-500 flex items-center gap-1 uppercase font-bold">
+                                                                        <UserCheck size={10} />
+                                                                        Atendido em: {format(new Date(client.last_service_at), 'dd/MM/yyyy')}
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
