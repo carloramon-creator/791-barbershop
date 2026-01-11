@@ -22,7 +22,9 @@ import {
     Loader2,
     MessageSquare,
     Play,
-    Image as ImageIcon
+    Image as ImageIcon,
+    Eye,
+    EyeOff
 } from 'lucide-react';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { CloseSaleDialog } from '@/components/sales/close-sale-dialog';
@@ -49,6 +51,7 @@ export default function AppointmentsPage() {
     const [appointments, setAppointments] = useState<any[]>([]);
     const [loadingAppts, setLoadingAppts] = useState(true);
     const [barbershopName, setBarbershopName] = useState('');
+    const [showFinished, setShowFinished] = useState(false);
 
     // Wizard State
     const [isWizardOpen, setIsWizardOpen] = useState(false);
@@ -626,8 +629,25 @@ export default function AppointmentsPage() {
                     <div className="flex-1 text-center">
                         <h2 className="text-xl font-bold text-slate-100 capitalize">{format(viewDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}</h2>
                     </div>
-                    <Button variant="ghost" className="text-slate-400" onClick={() => setViewDate(addDays(viewDate, 1))}><ChevronRight /></Button>
-                    <Button variant="outline" size="sm" onClick={() => setViewDate(new Date())} className="ml-4 border-slate-700">Hoje</Button>
+                    <Button
+                        variant="ghost"
+                        className="text-slate-400"
+                        onClick={() => setViewDate(addDays(viewDate, 1))}
+                    >
+                        <ChevronRight />
+                    </Button>
+                    <div className="flex gap-2 ml-4">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowFinished(!showFinished)}
+                            className={cn("border-slate-700 gap-2", showFinished ? "bg-slate-800 text-blue-400" : "text-slate-400")}
+                        >
+                            {showFinished ? <EyeOff size={14} /> : <Eye size={14} />}
+                            {showFinished ? "Ocultar Finalizados" : "Ver Finalizados"}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setViewDate(new Date())} className="border-slate-700">Hoje</Button>
+                    </div>
                 </div>
 
                 {loadingAppts ? (
@@ -645,7 +665,8 @@ export default function AppointmentsPage() {
                     </div>
                 ) : (
                     <div className="grid gap-4">
-                        {appointments.map(appt => {
+                        {/* ATENDIMENTOS ATIVOS / AGENDADOS */}
+                        {appointments.filter(a => a.status !== 'completed').map(appt => {
                             const showStartBtn = isOwner || (currentUser?.id === appt.barber_user_id);
 
                             return (
@@ -750,6 +771,34 @@ export default function AppointmentsPage() {
                                 </div>
                             );
                         })}
+
+                        {/* ATENDIMENTOS FINALIZADOS (EXPANSÍVEL) */}
+                        {showFinished && (
+                            <div className="mt-8 space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                                <div className="flex items-center gap-3 px-2">
+                                    <div className="h-[1px] flex-1 bg-slate-800" />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Atendimentos Finalizados</span>
+                                    <div className="h-[1px] flex-1 bg-slate-800" />
+                                </div>
+
+                                {appointments.filter(a => a.status === 'completed').length === 0 ? (
+                                    <p className="text-center py-8 text-slate-600 text-xs italic">Nenhum atendimento finalizado para exibir.</p>
+                                ) : (
+                                    appointments.filter(a => a.status === 'completed').map(appt => (
+                                        <div key={appt.id} className="flex items-center gap-4 p-4 bg-slate-900/40 rounded-xl border border-slate-800/50 opacity-60 hover:opacity-100 transition-opacity">
+                                            <div className="px-3 py-1 bg-slate-950 rounded border border-slate-800 text-xs font-mono text-slate-500">
+                                                {format(new Date(appt.start_time), 'HH:mm')}
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="font-bold text-slate-300 text-sm">{appt.client_name}</h4>
+                                                <p className="text-[10px] text-slate-500 uppercase font-bold">{appt.barber_nickname || appt.barber_name}</p>
+                                            </div>
+                                            <Badge className="bg-emerald-500/10 text-emerald-500 border-0 text-[9px] uppercase font-black">Finalizado</Badge>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
