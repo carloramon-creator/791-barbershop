@@ -20,6 +20,7 @@ export interface Tenant {
     city?: string;
     state?: string;
     logo_url?: string;
+    slug?: string;
     subscription_status?: string;
     subscription_current_period_end?: string;
     module_queue_enabled?: boolean;

@@ -56,16 +56,27 @@ export function Sidebar() {
     ];
 
     const filteredMenu = menuItems.filter(item => {
+        // Admins do sistema vêem tudo
+        if (isSystemAdmin) return true;
+
         if ((item as any).isSystemOnly && !isSystemAdmin) return false;
         const roleAllowed = !item.roles || (role && item.roles.includes(role));
         if (!roleAllowed) return false;
 
-        // Filtrar por módulo ativo
+        // Filtrar por módulo ativo (se definido no item)
         if ((item as any).module === 'queue' && !tenant?.module_queue_enabled) return false;
         if ((item as any).module === 'appointments' && !tenant?.module_appointments_enabled) return false;
 
-        if (item.feature === 'finance') return planConfig.features.includes('finance') || planConfig.features.includes('all');
-        if (item.feature === 'inventory') return planConfig.features.includes('all');
+        const plan = (tenant?.plan || 'basic').toLowerCase();
+        
+        if (item.feature === 'finance') {
+            return plan === 'premium' || plan === 'complete' || planConfig.features.includes('finance') || planConfig.features.includes('all');
+        }
+
+        if (item.feature === 'inventory') {
+            return plan === 'premium' || planConfig.features.includes('all');
+        }
+
         return true;
     });
 

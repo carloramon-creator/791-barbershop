@@ -16,7 +16,10 @@ import {
     Upload,
     Loader2,
     Calendar,
-    ArrowUpDown
+    ArrowUpDown,
+    MessageSquare,
+    Copy,
+    ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -132,6 +135,18 @@ export default function ClientsPage() {
         } catch (error: any) {
             alert('Erro ao excluir: ' + error.message);
         }
+    };
+
+    const handleShareLink = (client: Client) => {
+        if (!tenant) return;
+        const slug = tenant.slug || encodeURIComponent(tenant.name.toLowerCase().replace(/\s+/g, '-'));
+        const baseUrl = 'https://app.791barber.com'; // URL do app cliente
+        const personalizedUrl = `${baseUrl}/${slug}?c=${client.id}`;
+
+        const message = `Olá ${client.name}! Use nosso aplicativo para agendar ou entrar na fila rapidamente: ${personalizedUrl}`;
+        const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+
+        window.open(whatsappUrl, '_blank');
     };
 
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -269,6 +284,10 @@ export default function ClientsPage() {
                                                             <DropdownMenuItem onClick={() => handleEdit(client)} className="gap-2 focus:bg-slate-800 focus:text-slate-100">
                                                                 <Edit2 size={16} /> Editar Cadastro
                                                             </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleShareLink(client)} className="gap-2 text-green-400 focus:bg-green-400/10 focus:text-green-400 cursor-pointer">
+                                                                <MessageSquare size={16} /> Enviar Link WhatsApp
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator className="bg-slate-800" />
                                                             <DropdownMenuItem onClick={() => handleDelete(client.id)} className="gap-2 text-red-400 focus:bg-red-400/10 focus:text-red-400 cursor-pointer">
                                                                 <Trash2 size={16} /> Remover Cliente
                                                             </DropdownMenuItem>
