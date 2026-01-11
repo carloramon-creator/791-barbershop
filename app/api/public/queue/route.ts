@@ -39,7 +39,7 @@ export async function GET(req: Request) {
         // 0. Buscar dados do Tenant (Branding)
         const { data: tenant, error: tenantError } = await supabaseAdmin
             .from('tenants')
-            .select('name, logo_url')
+            .select('name, logo_url, module_queue_enabled, module_appointments_enabled, address_street, address_city')
             .eq('id', tenantId)
             .single();
 
@@ -137,7 +137,11 @@ export async function GET(req: Request) {
             barbers: consolidatedBarbers,
             tenant: {
                 name: tenant.name,
-                logo_url: tenant.logo_url
+                logo_url: tenant.logo_url,
+                module_queue_enabled: tenant.module_queue_enabled,
+                module_appointments_enabled: tenant.module_appointments_enabled,
+                address_street: tenant.address_street,
+                address_city: tenant.address_city
             }
         }));
     } catch (error: any) {

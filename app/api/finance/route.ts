@@ -7,15 +7,20 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
     try {
-        const { tenant } = await getCurrentUserAndTenant();
+        const { tenant, tenantId } = await getCurrentUserAndTenant();
+
+        if (!tenantId) {
+            console.error('[FINANCE API] No tenantId found for user');
+            return NextResponse.json({ error: 'Tenant não localizado' }, { status: 404 });
+        }
+
+        console.log('[FINANCE API] Fetching for tenant:', tenantId);
+
         // Fetch finance records without joins to avoid filtering
         const { data: financeData, error } = await supabaseAdmin
             .from('finance')
             .select('*')
-            .eq('tenant_id', tenant.id)
-            .not('metadata->>is_saas_payment', 'eq', 'true') // Exclui novos
-            .not('description', 'ilike', '%SaaS%') // Exclui antigos/legado
-            .not('description', 'ilike', '%Assinatura%') // Exclui antigos/legado (backup)
+            .eq('tenant_id', tenantId)
             .order('date', { ascending: false });
 
         if (error) {

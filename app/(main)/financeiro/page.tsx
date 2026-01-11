@@ -109,6 +109,9 @@ export default function FinanceiroPage() {
             setSales(salesData || []);
             setFinanceRecords(financeData || []);
             setCategories(categoriesData || []);
+            console.log('[FINANCE DEBUG] Sales:', salesData?.length);
+            console.log('[FINANCE DEBUG] Finance Records:', financeData?.length);
+            console.log('[FINANCE DEBUG] Categories:', categoriesData?.length);
         } catch (err) {
             console.error('Erro ao buscar dados:', err);
         } finally {
