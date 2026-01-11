@@ -197,10 +197,11 @@ export async function resolveTenantId(idOrSlug: string) {
     const cleanId = idOrSlug.trim();
     if (cleanId.length > 30 && cleanId.includes('-')) return cleanId;
 
-    console.log(`[RESOLVE_TENANT] Resolving: "${cleanId}"`);
+    console.log(`[RESOLVE_TENANT] Final cleanId: "${cleanId}"`);
     const admin = getSupabaseAdmin();
 
     // Busca exata por slug
+    console.log(`[RESOLVE_TENANT] Querying Supabase for slug ilike: "${cleanId.toLowerCase()}"`);
     const { data: results, error } = await admin
         .from('tenants')
         .select('id')
@@ -211,6 +212,7 @@ export async function resolveTenantId(idOrSlug: string) {
         return null;
     }
 
+    console.log(`[RESOLVE_TENANT] Results from DB:`, results);
     const data = results && results.length > 0 ? results[0] : null;
 
     if (!data) {
