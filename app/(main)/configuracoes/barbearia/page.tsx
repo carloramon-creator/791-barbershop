@@ -552,39 +552,39 @@ export default function BarbershopSettingsPage() {
                             <CardContent className="space-y-6">
                                 <div className="space-y-4">
                                     <Label className="text-slate-200">Configuração Semanal</Label>
-                                    <div className="space-y-2">
-                                        {['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'].map((dayName, idx) => {
+                                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                                        {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((dayName, idx) => {
                                             const dayConfig = openingHours.days?.[idx] || { active: false, start: '09:00', end: '19:00' };
                                             return (
-                                                <div key={idx} className={cn("grid grid-cols-12 gap-2 items-center p-3 rounded-lg border transition-colors", dayConfig.active ? "bg-slate-950 border-slate-700" : "bg-slate-900/50 border-slate-800 opacity-60")}>
-                                                    <div className="col-span-4 md:col-span-3 flex items-center gap-3">
+                                                <div key={idx} className={cn("flex flex-col gap-2 p-2 rounded-lg border text-center transition-colors h-full", dayConfig.active ? "bg-slate-950 border-slate-700" : "bg-slate-900/50 border-slate-800 opacity-60")}>
+                                                    <div className="flex flex-col items-center gap-2 mb-2">
+                                                        <span className="text-sm font-bold text-slate-200">{dayName}</span>
                                                         <div
-                                                            className={cn("w-10 h-6 rounded-full relative cursor-pointer transition-colors", dayConfig.active ? "bg-blue-600" : "bg-slate-700")}
+                                                            className={cn("w-8 h-5 rounded-full relative cursor-pointer transition-colors", dayConfig.active ? "bg-blue-600" : "bg-slate-700")}
                                                             onClick={() => isEditing && setOpeningHours(prev => ({ ...prev, days: { ...prev.days, [idx]: { ...dayConfig, active: !dayConfig.active } } }))}
                                                         >
-                                                            <div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white transition-all", dayConfig.active ? "left-5" : "left-1")} />
+                                                            <div className={cn("absolute top-1 w-3 h-3 rounded-full bg-white transition-all", dayConfig.active ? "left-4" : "left-1")} />
                                                         </div>
-                                                        <span className="text-sm font-medium text-slate-200">{dayName}</span>
                                                     </div>
 
                                                     {dayConfig.active && (
-                                                        <div className="col-span-8 md:col-span-9 grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-left-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-xs text-slate-500">Abre:</span>
+                                                        <div className="space-y-2 animate-in fade-in zoom-in-95 duration-200">
+                                                            <div className="space-y-1">
+                                                                <span className="text-[10px] text-slate-500 uppercase tracking-wider">Abre</span>
                                                                 <Input
                                                                     type="time"
                                                                     value={dayConfig.start}
-                                                                    className="h-8 bg-slate-900 border-slate-700"
+                                                                    className="h-7 text-xs bg-slate-900 border-slate-700 px-1 text-center"
                                                                     disabled={!isEditing}
                                                                     onChange={e => setOpeningHours(prev => ({ ...prev, days: { ...prev.days, [idx]: { ...dayConfig, start: e.target.value } } }))}
                                                                 />
                                                             </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-xs text-slate-500">Fecha:</span>
+                                                            <div className="space-y-1">
+                                                                <span className="text-[10px] text-slate-500 uppercase tracking-wider">Fecha</span>
                                                                 <Input
                                                                     type="time"
                                                                     value={dayConfig.end}
-                                                                    className="h-8 bg-slate-900 border-slate-700"
+                                                                    className="h-7 text-xs bg-slate-900 border-slate-700 px-1 text-center"
                                                                     disabled={!isEditing}
                                                                     onChange={e => setOpeningHours(prev => ({ ...prev, days: { ...prev.days, [idx]: { ...dayConfig, end: e.target.value } } }))}
                                                                 />

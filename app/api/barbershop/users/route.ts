@@ -101,7 +101,7 @@ export async function POST(req: Request) {
 
       // Sincronizar com a tabela de barbeiros se a role barber estiver presente
       if (finalRoles.includes('barber')) {
-        await supabaseAdmin.from('barbers').upsert({
+        const { data: barberData } = await supabaseAdmin.from('barbers').upsert({
           tenant_id: tenant.id,
           user_id: userId,
           name: name || targetEmail.split('@')[0],
@@ -110,7 +110,11 @@ export async function POST(req: Request) {
           avg_time_minutes: body.avg_service_time || 30,
           commission_percentage: body.commission_type === 'percentage' ? body.commission_value : 0,
           is_active: true
-        }, { onConflict: 'tenant_id,user_id' });
+        }, { onConflict: 'tenant_id,user_id' }).select().single();
+
+        if (barberData) {
+          (finalUserRecord as any).barber = barberData;
+        }
       }
     } else {
       const { data: existing } = await supabaseAdmin.from('users').select('*').eq('id', userId).single();

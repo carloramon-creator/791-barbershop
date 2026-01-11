@@ -52,7 +52,8 @@ export async function PUT(req: Request) {
             inter_pix_key: body.inter_pix_key,
             // Modules
             module_queue_enabled: body.module_queue_enabled,
-            module_appointments_enabled: body.module_appointments_enabled
+            module_appointments_enabled: body.module_appointments_enabled,
+            opening_hours: body.opening_hours
         };
 
         // Limpeza de campos vazios ou undefined

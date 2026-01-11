@@ -185,15 +185,22 @@ export default function UsersPage() {
 
       if (editingUserId) {
         await Api.updateUser(payload);
-        setIsInviteOpen(false);
-        resetForm();
-        if (editingUserId && currentBarberId && inviteRoles.includes('barber')) {
+
+        if (currentBarberId && inviteRoles.includes('barber')) {
           await Api.updateBarberServices(currentBarberId, selectedServiceIds);
         }
 
+        setIsInviteOpen(false);
+        resetForm();
         alert('Usuário atualizado com sucesso!');
       } else {
         const result = await Api.inviteUser(payload);
+
+        // Link services if barber was created
+        if (result.barber?.id && inviteRoles.includes('barber') && selectedServiceIds.length > 0) {
+          await Api.updateBarberServices(result.barber.id, selectedServiceIds);
+        }
+
         if (result.inviteLink) {
           setGeneratedLink(result.inviteLink);
         } else {
@@ -244,19 +251,34 @@ export default function UsersPage() {
   const loadBarberData = async (userId: string) => {
     setLoadingServices(true);
     try {
-      // 1. Get Barber ID
+      // 1. Get All Services (Always load this if we don't have it)
+      if (services.length === 0) {
+        const allServices = await Api.getServices();
+        setServices(allServices);
+      }
+
+      // 2. Get Barber ID and Linked Services
       const { data: barber } = await supabaseClient.from('barbers').select('id').eq('user_id', userId).single();
       if (barber) {
         setCurrentBarberId(barber.id);
-        // 2. Get All Services
-        const allServices = await Api.getServices();
-        setServices(allServices);
-        // 3. Get Linked Services
         const linkedIds = await Api.getBarberServices(barber.id);
         setSelectedServiceIds(linkedIds || []);
       }
     } catch (err) {
       console.error("Error loading barber services", err);
+    } finally {
+      setLoadingServices(false);
+    }
+  };
+
+  const loadAllServicesOnly = async () => {
+    if (services.length > 0) return;
+    setLoadingServices(true);
+    try {
+      const allServices = await Api.getServices();
+      setServices(allServices);
+    } catch (err) {
+      console.error("Error loading services", err);
     } finally {
       setLoadingServices(false);
     }
@@ -514,7 +536,9 @@ export default function UsersPage() {
                                 checked={inviteRoles.includes(role.id)}
                                 onCheckedChange={(checked) => {
                                   if (checked) {
-                                    setInviteRoles([...inviteRoles, role.id]);
+                                    const newRoles = [...inviteRoles, role.id];
+                                    setInviteRoles(newRoles);
+                                    if (role.id === 'barber') loadAllServicesOnly();
                                   } else {
                                     setInviteRoles(inviteRoles.filter(r => r !== role.id));
                                   }
@@ -523,6 +547,20 @@ export default function UsersPage() {
                               <Label htmlFor={`role-${role.id}`} className="cursor-pointer">{role.label}</Label>
                             </div>
                           ))}
+                        </div>
+                        <div className="mt-2 p-3 bg-slate-950/50 rounded-lg border border-slate-800/50 space-y-1">
+                          <p className="text-[10px] text-slate-500 flex items-start gap-1.5">
+                            <span className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                            <strong>Proprietário:</strong> Dono da barbearia com acesso total.
+                          </p>
+                          <p className="text-[10px] text-slate-500 flex items-start gap-1.5">
+                            <span className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                            <strong>Profissional:</strong> Barbeiros, cabeleireiros(as), manicures, pedicures, etc.
+                          </p>
+                          <p className="text-[10px] text-slate-500 flex items-start gap-1.5">
+                            <span className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                            <strong>Funcionário:</strong> Administrativo, recepção e suporte.
+                          </p>
                         </div>
                       </div>
 
@@ -573,7 +611,7 @@ export default function UsersPage() {
                       )}
 
                       {/* SERVICES SECTION FOR BARBERS */}
-                      {editingUserId && inviteRoles.includes('barber') && (
+                      {inviteRoles.includes('barber') && (
                         <div className="md:col-span-2 space-y-2 pt-4 border-t border-slate-800 animate-in fade-in">
                           <Label className="flex items-center gap-2 mb-2 text-slate-200">
                             <Scissors size={16} className="text-blue-500" />
