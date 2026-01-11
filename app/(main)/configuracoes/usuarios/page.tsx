@@ -390,7 +390,7 @@ export default function UsersPage() {
                   Adicionar Usuário
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-4xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+              <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-5xl max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <DialogHeader>
                   <DialogTitle>
                     {isViewOnly ? 'Detalhes do Usuário' : (editingUserId ? 'Editar Usuário' : 'Adicionar novo usuário')}
