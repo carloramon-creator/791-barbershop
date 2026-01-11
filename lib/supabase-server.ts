@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies, headers } from 'next/headers';
 
 const DEFAULT_URL = 'https://mfbiwvhxztejuzcasclv.supabase.co';
-const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1mYml3dmh4enRlanV6Y2FzY2x2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc1ODM4NjUsImV4cCI6MjA4Mjc1OTg2NX0.DcGhBBvGlj_sipsryHgojiSZoLSVggqPFjLG7hj2OY4k';
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1mYml3dmh4enRlanV6Y2FzY2x2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzU4Mzg2NSwiZXhwIjoyMDgyNzU5ODY1fQ.4_P_B9_B_B_B_B_B_B_B_B_B_B_B_B_B_B_B_B_B_B_Y'; // Placeholder if needed
+const DEFAULT_KEY = 'sb_publishable_lXhPQ7Wm-pio1CZbPXChmw_ebrxgveT';
+const SERVICE_KEY = 'sb_secret_CO1qjgf7SMQ4QQRzugzbGg_U5uVpcwS';
 
 export const supabase = async () => {
   const headerList = await headers();

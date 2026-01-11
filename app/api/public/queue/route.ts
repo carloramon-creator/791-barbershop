@@ -71,18 +71,18 @@ export async function GET(req: Request) {
         if (queueError) throw queueError;
 
         // 3. Consolidar os dados
-        const consolidatedBarbers = activeBarbers.map(barber => {
-            const barberQueue = allQueueItems?.filter(q => q.barber_id === barber.id) || [];
-            const attendingItem = barberQueue.find(q => q.status === 'attending');
-            const waitingItems = barberQueue.filter(q => q.status === 'waiting');
+        const consolidatedBarbers = activeBarbers.map((barber: any) => {
+            const barberQueue = allQueueItems?.filter((q: any) => q.barber_id === barber.id) || [];
+            const attendingItem = barberQueue.find((q: any) => q.status === 'attending');
+            const waitingItems = barberQueue.filter((q: any) => q.status === 'waiting');
 
             const avgTime = dynamicAverages[barber.id] || barber.avg_time_minutes;
 
-            const formattedQueue = barberQueue.map(q => {
+            const formattedQueue = barberQueue.map((q: any) => {
                 let itemWait = 0;
 
                 if (q.status === 'waiting') {
-                    const posInWaiting = waitingItems.findIndex(w => w.id === q.id);
+                    const posInWaiting = waitingItems.findIndex((w: any) => w.id === q.id);
                     itemWait = posInWaiting * avgTime;
 
                     if (attendingItem && attendingItem.started_at) {
