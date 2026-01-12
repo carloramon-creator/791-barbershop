@@ -33,6 +33,7 @@ export default function BarbershopSettingsPage() {
     const [phone, setPhone] = useState('');
     const [logoUrl, setLogoUrl] = useState('');
     const [slug, setSlug] = useState('');
+    const [businessType, setBusinessType] = useState<'barbershop' | 'beauty_salon'>('barbershop');
 
     // Address State
     const [cep, setCep] = useState('');
@@ -93,6 +94,7 @@ export default function BarbershopSettingsPage() {
                 setPhone(data.phone || '');
                 setLogoUrl(data.logo_url || '');
                 setSlug(data.slug || '');
+                setBusinessType(data.business_type || 'barbershop');
 
                 // Address fields
                 setCep(data.cep || '');
@@ -263,6 +265,7 @@ export default function BarbershopSettingsPage() {
                 // Modules
                 module_queue_enabled: moduleQueueEnabled,
                 module_appointments_enabled: moduleAppointmentsEnabled,
+                business_type: businessType,
             };
             await Api.updateBarbershop(payload);
             await refresh(); // Global context refresh
@@ -362,6 +365,54 @@ export default function BarbershopSettingsPage() {
                                         </p>
                                     )}
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Business Type Selector - NEW */}
+                        <div className="space-y-4 bg-slate-950/50 p-6 rounded-lg border border-slate-800/50">
+                            <Label className="text-slate-200 font-bold uppercase text-xs tracking-wider">Tipo de Atendimento</Label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <button
+                                    type="button"
+                                    disabled={!isEditing}
+                                    onClick={() => setBusinessType('barbershop')}
+                                    className={cn(
+                                        "flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
+                                        businessType === 'barbershop'
+                                            ? "border-blue-500 bg-blue-500/10"
+                                            : "border-slate-800 bg-slate-900/40 hover:border-slate-700 opacity-60"
+                                    )}
+                                >
+                                    <div className={cn("p-2 rounded-lg", businessType === 'barbershop' ? "bg-blue-600" : "bg-slate-800")}>
+                                        <Users size={24} className="text-white" />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-slate-100">Barbearia</p>
+                                        <p className="text-xs text-slate-400 font-medium">Foco em público masculino</p>
+                                    </div>
+                                    {businessType === 'barbershop' && <Check className="ml-auto text-blue-500" size={20} />}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    disabled={!isEditing}
+                                    onClick={() => setBusinessType('beauty_salon')}
+                                    className={cn(
+                                        "flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
+                                        businessType === 'beauty_salon'
+                                            ? "border-pink-500 bg-pink-500/10"
+                                            : "border-slate-800 bg-slate-900/40 hover:border-slate-700 opacity-60"
+                                    )}
+                                >
+                                    <div className={cn("p-2 rounded-lg", businessType === 'beauty_salon' ? "bg-pink-600" : "bg-slate-800")}>
+                                        <Sparkles size={24} className="text-white" />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-slate-100">Salão de Beleza</p>
+                                        <p className="text-xs text-slate-400 font-medium">Unissex e cuidado estético</p>
+                                    </div>
+                                    {businessType === 'beauty_salon' && <Check className="ml-auto text-pink-500" size={20} />}
+                                </button>
                             </div>
                         </div>
 

@@ -43,6 +43,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/lib/auth-provider';
+import { getBusinessTexts } from '@/lib/business-dictionary';
 import Image from 'next/image';
 import { supabaseClient } from '@/lib/supabase-client';
 import { format } from 'date-fns';
@@ -60,6 +61,7 @@ interface Client {
 
 export default function ClientsPage() {
     const { tenant } = useAuth();
+    const texts = getBusinessTexts(tenant?.business_type);
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -184,8 +186,8 @@ export default function ClientsPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-100 tracking-tighter">Clientes</h1>
-                    <p className="text-slate-500 text-sm">Gerencie o cadastro e histórico dos seus clientes.</p>
+                    <h1 className="text-3xl font-bold text-slate-100 tracking-tighter">{texts.clients}</h1>
+                    <p className="text-slate-500 text-sm">Gerencie o cadastro e histórico dos seus {texts.clients.toLowerCase()}.</p>
                 </div>
                 <Button
                     onClick={() => {
@@ -196,7 +198,7 @@ export default function ClientsPage() {
                     className="bg-blue-600 hover:bg-blue-700 text-white gap-2 h-12 px-6 rounded-xl shadow-lg shadow-blue-600/20"
                 >
                     <Plus size={20} />
-                    Novo Cliente
+                    Novo {texts.client}
                 </Button>
             </div>
 
@@ -221,19 +223,19 @@ export default function ClientsPage() {
                         {loading ? (
                             <div className="flex flex-col items-center justify-center p-20 gap-4 text-slate-500">
                                 <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
-                                <p>Carregando clientes...</p>
+                                <p>Carregando {texts.clients.toLowerCase()}...</p>
                             </div>
                         ) : clients.length === 0 ? (
                             <div className="flex flex-col items-center justify-center p-20 gap-4 text-slate-600">
                                 <Users size={48} className="opacity-20" />
-                                <p>Nenhum cliente encontrado.</p>
+                                <p>Nenhum {texts.client.toLowerCase()} encontrado.</p>
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="border-b border-slate-800 bg-slate-800/20">
-                                            <th className="p-4 px-6 text-xs uppercase font-black text-slate-500 tracking-wider">Cliente</th>
+                                            <th className="p-4 px-6 text-xs uppercase font-black text-slate-500 tracking-wider">{texts.client}</th>
                                             <th className="p-4 px-6 text-xs uppercase font-black text-slate-500 tracking-wider">Contato</th>
                                             <th className="p-4 px-6 text-xs uppercase font-black text-slate-500 tracking-wider">CPF</th>
                                             <th className="p-4 px-6 text-xs uppercase font-black text-slate-500 tracking-wider text-right">Ações</th>
@@ -299,7 +301,7 @@ export default function ClientsPage() {
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator className="bg-slate-800" />
                                                             <DropdownMenuItem onClick={() => handleDelete(client.id)} className="gap-2 text-red-400 focus:bg-red-400/10 focus:text-red-400 cursor-pointer">
-                                                                <Trash2 size={16} /> Remover Cliente
+                                                                <Trash2 size={16} /> Remover {texts.client}
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
@@ -318,7 +320,7 @@ export default function ClientsPage() {
                     <Card className="bg-gradient-to-br from-blue-600 to-indigo-700 border-none shadow-xl text-white">
                         <CardContent className="pt-6">
                             <div className="space-y-1">
-                                <p className="text-blue-100 text-xs font-bold uppercase tracking-wider">Total de Clientes</p>
+                                <p className="text-blue-100 text-xs font-bold uppercase tracking-wider">Total de {texts.clients}</p>
                                 <h3 className="text-4xl font-black">{clients.length}</h3>
                             </div>
                             <div className="mt-4 flex items-center gap-2 text-xs text-blue-100 bg-white/10 w-fit px-2 py-1 rounded-full">
@@ -361,7 +363,7 @@ export default function ClientsPage() {
                 <DialogContent className="bg-slate-950 border-slate-800 text-slate-100 max-w-lg">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-black text-slate-100 tracking-tight">
-                            {editingClient ? 'Editar Cliente' : 'Cadastrar Cliente'}
+                            {editingClient ? `Editar ${texts.client}` : `Cadastrar ${texts.client}`}
                         </DialogTitle>
                         <DialogDescription className="text-slate-500">
                             Preencha as informações básicas para o cadastro.
@@ -432,7 +434,7 @@ export default function ClientsPage() {
                                 Cancelar
                             </Button>
                             <Button type="submit" disabled={saving || uploading} className="bg-blue-600 hover:bg-blue-700 text-white h-full px-8 rounded-xl shrink-0">
-                                {saving ? <Loader2 className="animate-spin" /> : editingClient ? 'Salvar Alterações' : 'Cadastrar Cliente'}
+                                {saving ? <Loader2 className="animate-spin" /> : editingClient ? 'Salvar Alterações' : `Cadastrar ${texts.client}`}
                             </Button>
                         </DialogFooter>
                     </form>

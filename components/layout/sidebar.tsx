@@ -21,12 +21,17 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { PLAN_CONFIG } from '@/lib/constants';
 import Image from 'next/image';
+import { getBusinessTexts } from '@/lib/business-dictionary';
+import { getBusinessTheme } from '@/lib/business-theme';
 
 export function Sidebar() {
     const pathname = usePathname();
     const { role, tenant, signOut, isSystemAdmin } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const planConfig = PLAN_CONFIG[(tenant?.plan as keyof typeof PLAN_CONFIG) || 'basic'];
+
+    const texts = getBusinessTexts(tenant?.business_type);
+    const theme = getBusinessTheme(tenant?.business_type);
 
     // Close sidebar on navigation
     useEffect(() => {
@@ -43,11 +48,11 @@ export function Sidebar() {
 
     const menuItems = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['owner', 'staff'], feature: 'queue' },
-        { name: 'Fila (Profissional)', href: '/barbeiro', icon: UserCheck, roles: ['owner', 'barber', 'staff'], feature: 'queue', module: 'queue' },
+        { name: `Fila (${texts.professional})`, href: '/barbeiro', icon: UserCheck, roles: ['owner', 'barber', 'staff'], feature: 'queue', module: 'queue' },
         { name: 'Agendamentos', href: '/agendamentos', icon: Calendar, roles: ['owner', 'barber', 'staff'], feature: 'queue', module: 'appointments' },
-        { name: 'Clientes', href: '/clientes', icon: Users, roles: ['owner', 'barber', 'staff'], feature: 'queue' },
-        { name: 'Profissionais', href: '/barbeiros', icon: Users, roles: ['owner', 'staff'], feature: 'queue' },
-        { name: 'Serviços', href: '/servicos', icon: Scissors, roles: ['owner', 'staff'], feature: 'queue' },
+        { name: texts.clients, href: '/clientes', icon: Users, roles: ['owner', 'barber', 'staff'], feature: 'queue' },
+        { name: texts.professionals, href: '/barbeiros', icon: Users, roles: ['owner', 'staff'], feature: 'queue' },
+        { name: texts.services, href: '/servicos', icon: Scissors, roles: ['owner', 'staff'], feature: 'queue' },
         { name: 'Produtos', href: '/produtos', icon: ShoppingBag, roles: ['owner', 'staff'], feature: 'queue' },
         { name: 'Estoque', href: '/estoque', icon: ShoppingBag, roles: ['owner', 'staff'], feature: 'inventory' },
         { name: 'Financeiro', href: '/financeiro', icon: BarChart3, roles: ['owner'], feature: 'finance' },
@@ -86,7 +91,10 @@ export function Sidebar() {
             {/* Mobile Trigger */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95 border-4 border-slate-950 light:border-white"
+                className={cn(
+                    "fixed bottom-6 right-6 z-50 w-14 h-14 text-white rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95 border-4 border-slate-950 light:border-white",
+                    tenant?.business_type === 'beauty_salon' ? "bg-pink-600" : "bg-blue-600"
+                )}
             >
                 {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -113,10 +121,10 @@ export function Sidebar() {
                             </>
                         ) : (
                             <>
-                                <div className="bg-blue-600 p-1.5 rounded-lg text-white">
-                                    <Scissors className="w-5 h-5" />
+                                <div className={cn("p-1.5 rounded-lg text-white", tenant?.business_type === 'beauty_salon' ? "bg-pink-600" : "bg-blue-600")}>
+                                    {tenant?.business_type === 'beauty_salon' ? <Sparkles className="w-5 h-5" /> : <Scissors className="w-5 h-5" />}
                                 </div>
-                                791 <span className="text-slate-100">Barber</span>
+                                791 <span className="text-slate-100">{tenant?.business_type === 'beauty_salon' ? 'Beauty' : 'Barber'}</span>
                             </>
                         )}
                     </div>
@@ -130,7 +138,9 @@ export function Sidebar() {
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold transition-all relative group",
                                 pathname === item.href
-                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                                    ? tenant?.business_type === 'beauty_salon'
+                                        ? "bg-pink-600 text-white shadow-lg shadow-pink-600/30"
+                                        : "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
                                     : "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
                             )}
                         >

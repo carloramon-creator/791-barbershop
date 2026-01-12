@@ -35,7 +35,7 @@ export async function GET(req: Request) {
         console.log(`[PUBLIC QUEUE] Fetching branding for ID: "${tenantId}"`);
         const { data: tenant, error: tenantError } = await supabaseAdmin
             .from('tenants')
-            .select('name, logo_url, module_queue_enabled, module_appointments_enabled')
+            .select('name, logo_url, business_type, module_queue_enabled, module_appointments_enabled')
             .eq('id', tenantId)
             .single();
 
@@ -142,6 +142,7 @@ export async function GET(req: Request) {
             tenant: {
                 name: tenant.name,
                 logo_url: tenant.logo_url,
+                business_type: tenant.business_type || 'barbershop',
                 module_queue_enabled: tenant.module_queue_enabled ?? true,
                 module_appointments_enabled: tenant.module_appointments_enabled ?? true
             }

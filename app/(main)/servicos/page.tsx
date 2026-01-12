@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-provider';
+import { getBusinessTexts } from '@/lib/business-dictionary';
 import {
     Table,
     TableBody,
@@ -42,7 +43,8 @@ export default function ServicosPage() {
         duration_minutes: '30',
         product_ids: [] as string[]
     });
-    const { role } = useAuth();
+    const { role, tenant } = useAuth();
+    const texts = getBusinessTexts(tenant?.business_type);
 
     const fetchServicos = async () => {
         try {
@@ -137,7 +139,7 @@ export default function ServicosPage() {
             fetchServicos();
         } catch (error: unknown) {
             const err = error as Error;
-            alert('Erro ao remover serviço: ' + err.message);
+            alert(`Erro ao remover ${texts.service.toLowerCase()}: ` + err.message);
         }
     };
 
@@ -158,9 +160,9 @@ export default function ServicosPage() {
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-2">
-                        <Scissors size={24} className="text-blue-500" /> Catálogo de Serviços
+                        <Scissors size={24} className="text-blue-500" /> Catálogo de {texts.services}
                     </h1>
-                    <p className="text-slate-400 font-medium">Defina os serviços, duração e produtos utilizados.</p>
+                    <p className="text-slate-400 font-medium">Defina os {texts.services.toLowerCase()}, duração e produtos utilizados.</p>
                 </div>
 
                 <div className="flex gap-2">
@@ -170,18 +172,18 @@ export default function ServicosPage() {
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>
                             <Button className="bg-blue-600 hover:bg-blue-700">
-                                <Plus size={16} className="mr-2" /> Novo Serviço
+                                <Plus size={16} className="mr-2" /> Novo {texts.service}
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-2xl max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
-                                <DialogTitle>Adicionar Serviço</DialogTitle>
-                                <DialogDescription>Configure o serviço, tempo de duração e produtos utilizados.</DialogDescription>
+                                <DialogTitle>Adicionar {texts.service}</DialogTitle>
+                                <DialogDescription>Configure o {texts.service.toLowerCase()}, tempo de duração e produtos utilizados.</DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2 col-span-2">
-                                        <Label htmlFor="name">Nome do Serviço *</Label>
+                                        <Label htmlFor="name">Nome do {texts.service} *</Label>
                                         <Input
                                             id="name"
                                             placeholder="Ex: Corte Degradê"
@@ -240,14 +242,14 @@ export default function ServicosPage() {
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Editar Serviço</DialogTitle>
-                        <DialogDescription>Atualize as informações do serviço.</DialogDescription>
+                        <DialogTitle>Editar {texts.service}</DialogTitle>
+                        <DialogDescription>Atualize as informações do {texts.service.toLowerCase()}.</DialogDescription>
                     </DialogHeader>
                     {editingService && (
                         <div className="space-y-4 py-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2 col-span-2">
-                                    <Label htmlFor="edit-name">Nome do Serviço *</Label>
+                                    <Label htmlFor="edit-name">Nome do {texts.service} *</Label>
                                     <Input
                                         id="edit-name"
                                         value={editingService.name}
@@ -301,7 +303,7 @@ export default function ServicosPage() {
             <Table>
                 <TableHeader>
                     <TableRow className="border-slate-800 hover:bg-transparent">
-                        <TableHead className="text-slate-500">Serviço</TableHead>
+                        <TableHead className="text-slate-500">{texts.service}</TableHead>
                         <TableHead className="text-slate-500">Duração</TableHead>
                         <TableHead className="text-slate-500">Preço</TableHead>
                         <TableHead className="text-slate-500 text-right">Ações</TableHead>
@@ -311,7 +313,7 @@ export default function ServicosPage() {
                     {loading ? (
                         <TableRow><TableCell colSpan={4} className="text-center py-8 text-slate-500">Carregando...</TableCell></TableRow>
                     ) : servicos.length === 0 ? (
-                        <TableRow><TableCell colSpan={4} className="text-center py-8 text-slate-500">Nenhum serviço cadastrado.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={4} className="text-center py-8 text-slate-500">Nenhum {texts.service.toLowerCase()} cadastrado.</TableCell></TableRow>
                     ) : servicos.map((s) => (
                         <TableRow key={s.id} className="border-slate-800 group hover:bg-slate-900/50 transition-colors">
                             <TableCell className="font-bold text-slate-100 uppercase tracking-tighter">{s.name}</TableCell>

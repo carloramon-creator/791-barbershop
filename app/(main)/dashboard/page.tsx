@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Api } from '@/lib/api';
 import { DashboardSummary, BarberQueueStatus } from '@/lib/types';
+import { getBusinessTexts } from '@/lib/business-dictionary';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,8 +22,12 @@ import {
     TableRow
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth-provider';
 
 export default function DashboardPage() {
+    const { tenant } = useAuth();
+    const texts = getBusinessTexts(tenant?.business_type);
+
     const [summary, setSummary] = useState<DashboardSummary | null>(null);
     const [queueStatus, setQueueStatus] = useState<BarberQueueStatus[]>([]);
     const [loading, setLoading] = useState(true);
@@ -85,7 +90,7 @@ export default function DashboardPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-100">Visão Geral</h1>
-                    <p className="text-slate-400 font-medium">Acompanhe o movimento da sua barbearia.</p>
+                    <p className="text-slate-400 font-medium">Acompanhe o movimento do seu estabelecimento.</p>
                 </div>
 
                 <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800">
@@ -166,7 +171,7 @@ export default function DashboardPage() {
 
                 <Card className="bg-slate-900 border-slate-800 shadow-xl">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-xs uppercase font-bold tracking-widest text-slate-500">Barbeiros Online</CardTitle>
+                        <CardTitle className="text-xs uppercase font-bold tracking-widest text-slate-500">{texts.professionals} Online</CardTitle>
                         <div className="bg-emerald-500/10 p-2 rounded-lg">
                             <UserCheckIcon className="h-4 w-4 text-emerald-500" />
                         </div>
@@ -204,13 +209,13 @@ export default function DashboardPage() {
 
             <Card className="bg-slate-900 border-slate-800">
                 <CardHeader>
-                    <CardTitle className="text-slate-100">Status dos Barbeiros</CardTitle>
+                    <CardTitle className="text-slate-100">Status dos {texts.professionals}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow className="border-slate-800 hover:bg-transparent">
-                                <TableHead className="text-slate-400">Barbeiro</TableHead>
+                                <TableHead className="text-slate-400">{texts.professional}</TableHead>
                                 <TableHead className="text-slate-400">Status</TableHead>
                                 <TableHead className="text-slate-400">Atendimento</TableHead>
                                 <TableHead className="text-slate-400 text-center">Fila</TableHead>
@@ -227,7 +232,7 @@ export default function DashboardPage() {
                             ) : queueStatus.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={5} className="text-center py-8 text-slate-500">
-                                        Nenhum barbeiro cadastrado.
+                                        Nenhum {texts.professional.toLowerCase()} cadastrado.
                                     </TableCell>
                                 </TableRow>
                             ) : (

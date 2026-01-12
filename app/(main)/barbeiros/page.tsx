@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-provider';
+import { getBusinessTexts } from '@/lib/business-dictionary';
 import {
     Table,
     TableBody,
@@ -51,7 +52,8 @@ export default function BarbeirosPage() {
     const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
     const [loadingServices, setLoadingServices] = useState(false);
 
-    const { role } = useAuth();
+    const { role, tenant } = useAuth();
+    const texts = getBusinessTexts(tenant?.business_type);
 
     const fetchBarbeiros = async () => {
         try {
@@ -122,7 +124,7 @@ export default function BarbeirosPage() {
             fetchBarbeiros();
         } catch (err: unknown) {
             const error = err as Error;
-            alert('Erro ao atualizar barbeiro: ' + (error.message || 'Erro desconhecido'));
+            alert(`Erro ao atualizar ${texts.professional.toLowerCase()}: ` + (error.message || 'Erro desconhecido'));
         }
     };
 
@@ -170,9 +172,9 @@ export default function BarbeirosPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-2">
-                        <Users className="text-blue-500" /> Equipe de Profissionais
+                        <Users className="text-blue-500" /> Equipe de {texts.professionals}
                     </h1>
-                    <p className="text-slate-400 font-medium">Visualize o status e disponibilidade dos profissionais.</p>
+                    <p className="text-slate-400 font-medium">Visualize o status e disponibilidade dos {texts.professionals.toLowerCase()}.</p>
                 </div>
 
                 <div className="flex gap-2">
@@ -203,7 +205,7 @@ export default function BarbeirosPage() {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="block mb-2">Profissionais</Label>
+                                    <Label className="block mb-2">{texts.professionals}</Label>
                                     <div className="flex flex-wrap gap-4 bg-slate-800/50 p-4 rounded-lg">
                                         <div className="flex items-center space-x-2 w-full border-b border-slate-700 pb-2 mb-2">
                                             <Checkbox id="all"
@@ -250,7 +252,7 @@ export default function BarbeirosPage() {
                 <ShieldAlert className="text-blue-400 w-5 h-5 mt-0.5" />
                 <div className="text-sm">
                     <p className="text-blue-100 font-bold">Otimização do Sistema</p>
-                    <p className="text-blue-400/80">Para adicionar novos profissionais, utilize o botão <span className="text-white font-bold">Gerenciar Equipe</span>. Lá você define e-mail, foto, endereço e comissões de forma centralizada.</p>
+                    <p className="text-blue-400/80">Para adicionar novos {texts.professionals.toLowerCase()}, utilize o botão <span className="text-white font-bold">Gerenciar Equipe</span>. Lá você define e-mail, foto, endereço e comissões de forma centralizada.</p>
                 </div>
             </div>
 
@@ -258,7 +260,7 @@ export default function BarbeirosPage() {
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Editar Perfil Público do Profissional</DialogTitle>
+                        <DialogTitle>Editar Perfil Público do {texts.professional}</DialogTitle>
                     </DialogHeader>
                     {editingBarber && (
                         <div className="space-y-4 py-4">
@@ -293,14 +295,14 @@ export default function BarbeirosPage() {
                                     />
                                 </div>
                                 <div className="flex items-center space-x-2 col-span-2 pt-2">
-                                    <Label className="flex-1">Profissional Ativo</Label>
+                                    <Label className="flex-1">{texts.professional} Ativo</Label>
                                     <Button
                                         variant={editingBarber.is_active ? 'default' : 'outline'}
                                         size="sm"
                                         onClick={() => {
                                             // Se está tentando desativar, pede confirmação
                                             if (editingBarber.is_active) {
-                                                if (confirm(`⚠️ ATENÇÃO: Deseja realmente DESATIVAR ${editingBarber.name}?\n\nO profissional ficará "FORA DE OPERAÇÃO" e não aparecerá mais para os clientes.\n\nEsta ação deve ser usada apenas quando o profissional não trabalha mais na barbearia.`)) {
+                                                if (confirm(`⚠️ ATENÇÃO: Deseja realmente DESATIVAR ${editingBarber.name}?\n\nO ${texts.professional.toLowerCase()} ficará "FORA DE OPERAÇÃO" e não aparecerá mais para os clientes.\n\nEsta ação deve ser usada apenas quando o ${texts.professional.toLowerCase()} não trabalha mais no estabelecimento.`)) {
                                                     setEditingBarber({ ...editingBarber, is_active: false });
                                                 }
                                             } else {
@@ -344,7 +346,7 @@ export default function BarbeirosPage() {
                                         ))
                                     )}
                                 </div>
-                                <p className="text-[10px] text-slate-500">Selecione quais serviços este profissional pode realizar.</p>
+                                <p className="text-[10px] text-slate-500">Selecione quais serviços este {texts.professional.toLowerCase()} pode realizar.</p>
                             </div>
 
                         </div>
@@ -359,7 +361,7 @@ export default function BarbeirosPage() {
                 <TableHeader>
                     <TableRow className="border-slate-800 hover:bg-transparent">
                         <TableHead className="text-slate-500 w-[80px]">Foto</TableHead>
-                        <TableHead className="text-slate-500">Profissional</TableHead>
+                        <TableHead className="text-slate-500">{texts.professional}</TableHead>
                         <TableHead className="text-slate-500">Status</TableHead>
                         <TableHead className="text-slate-500">Atendimento</TableHead>
                         <TableHead className="text-slate-500 text-right">Ações</TableHead>
@@ -369,7 +371,7 @@ export default function BarbeirosPage() {
                     {loading ? (
                         <TableRow><TableCell colSpan={5} className="text-center py-8 text-slate-500">Carregando...</TableCell></TableRow>
                     ) : barbeiros.length === 0 ? (
-                        <TableRow><TableCell colSpan={5} className="text-center py-8 text-slate-500">Nenhum profissional ativo encontrado.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={5} className="text-center py-8 text-slate-500">Nenhum {texts.professional.toLowerCase()} ativo encontrado.</TableCell></TableRow>
                     ) : barbeiros.map((b) => (
                         <TableRow key={b.id} className={cn("border-slate-800 group hover:bg-slate-900/50 transition-colors", !b.is_active && "opacity-50")}>
                             <TableCell>

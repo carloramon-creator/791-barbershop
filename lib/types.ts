@@ -20,6 +20,7 @@ export interface Tenant {
     city?: string;
     state?: string;
     logo_url?: string;
+    business_type?: 'barbershop' | 'beauty_salon';
     slug?: string;
     subscription_status?: string;
     subscription_current_period_end?: string;

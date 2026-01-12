@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-provider';
 import { Sale, FinanceRecord, FinanceCategory } from '@/lib/types';
+import { getBusinessTexts } from '@/lib/business-dictionary';
 // Ensuring FinanceRecord in types has barber_id. If not, we cast it.
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -33,6 +34,8 @@ import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation'; // Added for refresh if needed
 
 export default function FinanceiroPage() {
+    const { tenant } = useAuth();
+    const texts = getBusinessTexts(tenant?.business_type);
     // ... existing ...
     const [sales, setSales] = useState<Sale[]>([]);
 
@@ -52,7 +55,7 @@ export default function FinanceiroPage() {
             // But the API route is nested under /barbers/[id].
             // Let's assume the record has barber_id (it should).
             if (!barberId && !financeId) {
-                alert('Erro: ID do fechamento ou barbeiro não encontrado.');
+                alert(`Erro: ID do fechamento ou ${texts.professional.toLowerCase()} não encontrado.`);
                 return;
             }
 
@@ -67,7 +70,7 @@ export default function FinanceiroPage() {
             alert('Fechamento revertido com sucesso!');
             fetchData();
         } catch (err: any) {
-            alert('Erro ao reverter fechamento: ' + (err.message || 'Erro desconhecido'));
+            alert(`Erro ao reverter fechamento de ${texts.professional.toLowerCase()}: ` + (err.message || 'Erro desconhecido'));
             console.error(err);
         } finally {
             setLoading(false);
@@ -506,7 +509,7 @@ export default function FinanceiroPage() {
             <Card className="bg-slate-900 border-slate-800 shadow-2xl">
                 <CardHeader className="border-b border-slate-800/50 bg-slate-800/10">
                     <CardTitle className="text-slate-100 tracking-tighter">
-                        {view === 'main' ? 'Histórico de Pagamentos' : 'Contas à Pagar'}
+                        {view === 'main' ? 'Extrato de Lançamentos' : 'Contas à Pagar'}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -515,7 +518,7 @@ export default function FinanceiroPage() {
                             <TableRow className="border-slate-800">
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px] w-32">Data</TableHead>
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px]">Lançamento / Categoria</TableHead>
-                                <TableHead className="text-slate-500 font-bold uppercase text-[10px]">Barbeiro</TableHead>
+                                <TableHead className="text-slate-500 font-bold uppercase text-[10px]">{texts.professional}</TableHead>
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px]">Método</TableHead>
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px]">Status</TableHead>
                                 <TableHead className="text-slate-500 font-bold uppercase text-[10px] text-right pr-6">Valor</TableHead>
@@ -574,13 +577,13 @@ export default function FinanceiroPage() {
                                     <TableCell>
                                         {r.type === 'expense' && (
                                             <div className="flex items-center gap-2 justify-end">
-                                                {r.description.includes('Fechamento Barbeiro') && !r.is_paid && (
+                                                {r.description.includes(`Fechamento ${texts.professional}`) && !r.is_paid && (
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
                                                         className="h-8 px-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-900/20 transition-all"
                                                         onClick={() => {
-                                                            if (confirm('Deseja reverter este fechamento de barbeiro? As vendas voltarão para "não pagas".')) {
+                                                            if (confirm(`Deseja reverter este fechamento de ${texts.professional.toLowerCase()}? As vendas voltarão para "não pagas".`)) {
                                                                 handleRevertClosing(r.id, r.barber_id || '');
                                                             }
                                                         }}

@@ -55,6 +55,7 @@ export async function PUT(req: Request) {
             // Modules
             module_queue_enabled: body.module_queue_enabled,
             module_appointments_enabled: body.module_appointments_enabled,
+            business_type: body.business_type || body.tipo_negocio,
             opening_hours: body.opening_hours
         };
 
@@ -67,7 +68,7 @@ export async function PUT(req: Request) {
             .from('tenants')
             .update(updates)
             .eq('id', tenant.id)
-            .select()
+            .select('*')
             .single();
 
         if (error) {
