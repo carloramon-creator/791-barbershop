@@ -142,7 +142,7 @@ export default function ClientsPage() {
     const handleShareLink = (client: Client) => {
         if (!tenant) return;
         const slugOrId = tenant.slug || tenant.id;
-        const baseUrl = 'https://frontend-client-six-orpin.vercel.app';
+        const baseUrl = 'https://791barber.com';
         const personalizedUrl = `${baseUrl}/${slugOrId}?c=${client.id}`;
 
         const message = `Olá ${client.name}! Use nosso aplicativo para agendar um horário rapidamente: ${personalizedUrl}`;
