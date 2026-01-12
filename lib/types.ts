@@ -20,6 +20,14 @@ export interface Tenant {
     city?: string;
     state?: string;
     logo_url?: string;
+    pix_key?: string;
+    pix_key_type?: string;
+    bank_code?: string;
+    bank_agency?: string;
+    bank_account?: string;
+    bank_account_digit?: string;
+    bank_account_holder?: string;
+    bank_account_doc?: string;
     business_type?: 'barbershop' | 'beauty_salon';
     slug?: string;
     subscription_status?: string;
