@@ -19,6 +19,8 @@ export function BusinessThemeProvider({ children }: { children: React.ReactNode 
         root.style.setProperty('--main-bg', theme.mainBg);
         root.style.setProperty('--card-bg', theme.cardBg);
         root.style.setProperty('--card-border', theme.cardBorder);
+        root.style.setProperty('--text-primary', theme.textPrimary);
+        root.style.setProperty('--text-secondary', theme.textSecondary);
         root.style.setProperty('--text-branding', theme.textBranding);
         root.style.setProperty('--primary-muted', theme.primaryMuted);
 
