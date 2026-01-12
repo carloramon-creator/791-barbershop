@@ -78,7 +78,86 @@ export async function POST(req: Request) {
 
         return addCorsHeaders(req, NextResponse.json(appointment));
     } catch (error: any) {
-        console.error('[PUBLIC APPOINTMENT ERROR]', error);
+        return addCorsHeaders(req, NextResponse.json({ error: error.message }, { status: 500 }));
+    }
+}
+
+export async function GET(req: Request) {
+    try {
+        const { searchParams } = new URL(req.url);
+        const slug = searchParams.get('slug');
+        const phone = searchParams.get('phone');
+
+        if (!slug || !phone) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'Slug e Telefone são obrigatórios' }, { status: 400 }));
+        }
+
+        const tenantId = await resolveTenantId(slug);
+        if (!tenantId) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'Barbearia não encontrada' }, { status: 404 }));
+        }
+
+        // Limpa telefone para garantir apenas números
+        const phoneClean = phone.replace(/\D/g, '');
+
+        let query = supabaseAdmin
+            .from('appointments')
+            .select(`
+                *,
+                barbers (
+                    name,
+                    nickname,
+                    users (
+                        photo_url
+                    )
+                ),
+                service_ids
+            `)
+            .eq('tenant_id', tenantId)
+            // Busca por telefone exato (com máscara se vier) OU telefone limpo (se salvo apenas números)
+            // IMPORTANTE: Valores com caracteres especiais (espaço, parenteses) devem estar entre aspas duplas na string do PostgREST
+            .or(`client_phone.eq."${phone}",client_phone.eq."${phoneClean}",client_phone.eq."${phoneClean.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}"`)
+            .order('start_time', { ascending: true });
+
+        // Pega desde o início do dia para evitar problemas de timezone
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        query = query.gte('start_time', today.toISOString());
+
+        const { data: appointments, error } = await query;
+
+        if (error) throw error;
+
+        // Se precisarmos expandir os serviços, faríamos aqui, mas o front pode lidar com IDs ou podemos fazer join se o schema permitir
+        // Por enquanto retornamos os IDs e o front já tem a lista de serviços carregada, ou podemos fazer um fetch extra. 
+        // Simplificação: Front já tem serviços carregados no wizard, pode reaproveitar ou buscar novamente.
+        // Melhor: Retornar detalhes dos serviços se possível, mas o schema atual usa array de IDs.
+        // Vamos buscar os serviços para enriquecer a resposta
+
+        let enrichedAppointments = appointments;
+
+        if (appointments && appointments.length > 0) {
+            const allServiceIds = Array.from(new Set(appointments.flatMap(a => a.service_ids || [])));
+            if (allServiceIds.length > 0) {
+                const { data: services } = await supabaseAdmin
+                    .from('services')
+                    .select('id, name, price, duration_minutes')
+                    .in('id', allServiceIds);
+
+                if (services) {
+                    const serviceMap = new Map(services.map(s => [s.id, s]));
+                    enrichedAppointments = appointments.map(a => ({
+                        ...a,
+                        services_details: (a.service_ids || []).map((id: string) => serviceMap.get(id)).filter(Boolean)
+                    }));
+                }
+            }
+        }
+
+        return addCorsHeaders(req, NextResponse.json(enrichedAppointments));
+
+    } catch (error: any) {
+        console.error('[GET APPOINTMENTS ERROR]', error);
         return addCorsHeaders(req, NextResponse.json({ error: error.message }, { status: 500 }));
     }
 }

@@ -9,8 +9,10 @@ export async function GET(req: Request) {
     try {
         const { tenant } = await getCurrentUserAndTenant();
         const { searchParams } = new URL(req.url);
-        const date = searchParams.get('date'); // YYYY-MM-DD
+        const date = searchParams.get('date');
         const barberId = searchParams.get('barberId');
+        const startDate = searchParams.get('startDate');
+        const endDate = searchParams.get('endDate');
 
         let query = supabaseAdmin
             .from('appointments')
@@ -22,6 +24,8 @@ export async function GET(req: Request) {
             const start = `${date}T00:00:00Z`;
             const end = `${date}T23:59:59Z`;
             query = query.gte('start_time', start).lte('start_time', end);
+        } else if (startDate && endDate) {
+            query = query.gte('start_time', startDate).lte('start_time', endDate);
         }
 
         if (barberId) {
