@@ -159,16 +159,21 @@ export default function AppointmentsPage() {
                 const data = await Api.getAppointmentsHistory(startStr, endStr);
                 setAppointments(data || []);
             } else if (viewMode === 'pending') {
-                // Busca últimos 30 dias até hoje
-                const end = new Date();
-                const start = subDays(end, 30);
+                // Busca histórico amplo para garantir que pegamos tudo
+                // Usuário pediu para ignorar data e pegar tudo "pra trás e pra frente" que esteja pendente
+                const start = new Date('2024-01-01');
+                const end = addMonths(new Date(), 12); // Pega 1 ano pra frente
                 const data = await Api.getAppointmentsHistory(format(start, 'yyyy-MM-dd'), format(end, 'yyyy-MM-dd'));
-                // Filtra no client-side apenas os não finalizados e passados
+
+                // Filtra no client-side apenas os não finalizados (scheduled ou in_service)
+                // Ignora completed e cancelled explicitamente
                 const pending = (data || []).filter((a: any) =>
                     a.status !== 'completed' &&
-                    a.status !== 'cancelled' &&
-                    new Date(a.end_time) < new Date()
+                    a.status !== 'cancelled'
                 );
+
+                // Ordena por data (mais recente primeiro)
+                pending.sort((a: any, b: any) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
                 setAppointments(pending);
             }
         } catch (error) {
