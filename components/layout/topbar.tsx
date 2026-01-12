@@ -10,7 +10,7 @@ export function Topbar() {
     const { theme, toggleTheme } = useTheme();
 
     return (
-        <header className="flex flex-col border-b border-[var(--primary-muted)] bg-[var(--sidebar-bg)] transition-colors shadow-lg">
+        <header className="flex flex-col border-b border-slate-800 bg-slate-950 transition-colors shadow-lg">
             {isImpersonating && (
                 <div className="bg-amber-600 text-white text-[10px] font-black uppercase tracking-widest py-1.5 px-4 flex items-center justify-between animate-pulse">
                     <div className="flex items-center gap-2">
@@ -28,7 +28,7 @@ export function Topbar() {
                     <div className="text-sm font-bold text-slate-400 hidden md:block uppercase tracking-widest">
                         Painel Administrativo
                     </div>
-                    <div className="md:hidden text-lg font-black text-[var(--text-branding)]">791</div>
+                    <div className="md:hidden text-lg font-black text-blue-600">791</div>
                 </div>
 
                 <div className="flex items-center gap-2 md:gap-4">

@@ -15,15 +15,6 @@ export function BusinessThemeProvider({ children }: { children: React.ReactNode 
 
         // Define CSS variables based on business theme
         root.style.setProperty('--primary-business', theme.primaryHex);
-        root.style.setProperty('--primary-light', theme.primaryLight);
-        root.style.setProperty('--sidebar-bg', theme.sidebarBg);
-        root.style.setProperty('--main-bg', theme.mainBg);
-        root.style.setProperty('--card-bg', theme.cardBg);
-        root.style.setProperty('--card-border', theme.cardBorder);
-        root.style.setProperty('--text-primary', theme.textPrimary);
-        root.style.setProperty('--text-secondary', theme.textSecondary);
-        root.style.setProperty('--text-branding', theme.textBranding);
-        root.style.setProperty('--primary-muted', theme.primaryMuted);
 
     }, [tenant?.business_type, theme]);
 

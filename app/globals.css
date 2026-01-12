@@ -24,7 +24,7 @@
   --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
-  --color-border: var(--card-border, var(--border));
+  --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -33,22 +33,11 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary-business, var(--primary));
+  --color-primary: var(--primary);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card-bg, var(--card));
-
-  /* Overrides para cores hardcoded em componentes legados */
-  --color-slate-950: var(--main-bg);
-  --color-slate-900: var(--card-bg);
-  --color-slate-800: var(--card-border);
-  --color-slate-400: var(--text-secondary);
-  --color-slate-500: var(--text-secondary);
-  --color-slate-50: var(--text-primary);
-  --color-blue-600: var(--primary-business);
-  --color-blue-500: var(--primary-business);
-
+  --color-card: var(--card);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -133,73 +122,42 @@
   }
 
   body {
-    background-color: var(--main-bg, #020617);
-    color: var(--text-primary);
-    @apply transition-colors duration-300;
+    @apply bg-slate-950 text-slate-50 transition-colors duration-300;
   }
 
   /* Modo Claro - Miolo Branco com Sidebar/Topbar Escuros (Estilo Premium) */
   html.light body {
-    background-color: var(--main-bg, #020617);
+    @apply bg-slate-950;
+    /* Mantém o fundo externo escuro */
   }
 
   .light main {
-    background-color: var(--main-bg);
-    color: var(--text-primary);
+    @apply bg-white text-slate-900;
+    /* Miolo totalmente branco */
   }
 
-  /* Cards e Containers Dinâmicos */
-  .bg-slate-900,
-  .bg-slate-950,
-  .bg-slate-800 {
-    background-color: var(--card-bg) !important;
+  /* Forçar textos escuros dentro do miolo branco */
+  .light main h1,
+  .light main h2,
+  .light main h3,
+  .light main p,
+  .light main span:not(.text-white) {
+    @apply text-slate-900;
   }
 
-  .border-slate-800,
-  .border-slate-700 {
-    border-color: var(--card-border) !important;
+  .light main .text-slate-400,
+  .light main .text-slate-500 {
+    @apply text-slate-500;
   }
 
-  .text-slate-50,
-  .text-slate-100,
-  .text-white {
-    color: var(--text-primary) !important;
+  .light main .border-slate-800 {
+    @apply border-slate-200;
   }
 
-  .text-slate-400,
-  .text-slate-500 {
-    color: var(--text-secondary) !important;
-  }
-
-  /* Enhancements for logo, buttons, and wizard contrast */
-  .shadow-2xl {
-    box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.6) !important;
-  }
-
-  /* Force logos to have a subtle glow/shadow to pop on light backgrounds */
-  img[alt*="Logo"],
-  .w-40.h-40 img {
-    filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1));
-  }
-
-  button.bg-primary-custom,
-  button.bg-\[var\(--primary-business\)\] {
-    color: var(--primary-light) !important;
-    @apply font-black uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg;
-  }
-
-  /* High contrast for selected items (like calendar days or slots) */
-  .bg-primary-custom.text-white,
-  .bg-\[var\(--primary-business\)\].text-white,
-  .text-white.bg-primary-custom {
-    color: var(--primary-light) !important;
-  }
-
-  /* Make sure icons inside primary buttons use the light color */
-  button.bg-primary-custom svg,
-  button.bg-\[var\(--primary-business\)\] svg,
-  .bg-primary-custom svg {
-    color: var(--primary-light) !important;
+  /* Cards dentro do miolo */
+  .light main .bg-slate-900,
+  .light main .bg-slate-800 {
+    @apply bg-white border border-slate-200 shadow-sm;
   }
 }
 

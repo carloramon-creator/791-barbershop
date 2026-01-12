@@ -294,7 +294,7 @@ export default function BarbershopSettingsPage() {
             <Card className="bg-slate-900 border-slate-800 shadow-xl">
                 <CardHeader>
                     <CardTitle className="text-slate-100 flex justify-between items-center">
-                        <span>Dados do {businessType === 'beauty_salon' ? 'Salão' : 'Barbearia'}</span>
+                        <span>Dados da Barbearia</span>
                         {!isEditing && (
                             <Button onClick={() => setIsEditing(true)} variant="outline" size="sm" className="border-slate-700 hover:bg-slate-800">
                                 Editar
@@ -347,58 +347,11 @@ export default function BarbershopSettingsPage() {
                             </div>
                         </div>
 
-                        {/* Business Type Selector - NEW */}
-                        <div className="space-y-4 bg-slate-950/50 p-6 rounded-lg border border-slate-800/50">
-                            <Label className="text-slate-200 font-bold uppercase text-xs tracking-wider">Tipo de Atendimento</Label>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <button
-                                    type="button"
-                                    disabled={!isEditing}
-                                    onClick={() => setBusinessType('barbershop')}
-                                    className={cn(
-                                        "flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
-                                        businessType === 'barbershop'
-                                            ? "border-blue-500 bg-blue-500/10"
-                                            : "border-slate-800 bg-slate-900/40 hover:border-slate-700 opacity-60"
-                                    )}
-                                >
-                                    <div className={cn("p-2 rounded-lg", businessType === 'barbershop' ? "bg-blue-600" : "bg-slate-800")}>
-                                        <Users size={24} className="text-white" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-slate-100">Barbearia</p>
-                                        <p className="text-xs text-slate-400 font-medium">Foco em público masculino</p>
-                                    </div>
-                                    {businessType === 'barbershop' && <Check className="ml-auto text-blue-500" size={20} />}
-                                </button>
-
-                                <button
-                                    type="button"
-                                    disabled={!isEditing}
-                                    onClick={() => setBusinessType('beauty_salon')}
-                                    className={cn(
-                                        "flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
-                                        businessType === 'beauty_salon'
-                                            ? "border-amber-600 bg-amber-600/10"
-                                            : "border-slate-800 bg-slate-900/40 hover:border-slate-700 opacity-60"
-                                    )}
-                                >
-                                    <div className={cn("p-2 rounded-lg", businessType === 'beauty_salon' ? "bg-amber-600" : "bg-slate-800")}>
-                                        <Sparkles size={24} className="text-white" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-slate-100">Salão de Beleza</p>
-                                        <p className="text-xs text-slate-400 font-medium">Unissex e cuidado estético</p>
-                                    </div>
-                                    {businessType === 'beauty_salon' && <Check className="ml-auto text-amber-500" size={20} />}
-                                </button>
-                            </div>
-                        </div>
 
                         {/* Basic Info */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="name" className="text-slate-400 text-xs uppercase font-bold">Nome do {businessType === 'beauty_salon' ? 'Salão' : 'Barbearia'}</Label>
+                                <Label htmlFor="name" className="text-slate-400 text-xs uppercase font-bold">Nome da Barbearia</Label>
                                 <Input
                                     id="name"
                                     value={name}
@@ -411,7 +364,7 @@ export default function BarbershopSettingsPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="email" className="text-slate-400 text-xs uppercase font-bold">E-mail do {businessType === 'beauty_salon' ? 'Salão' : 'Barbearia'}</Label>
+                                <Label htmlFor="email" className="text-slate-400 text-xs uppercase font-bold">E-mail da Barbearia</Label>
                                 <Input
                                     id="email"
                                     type="email"
