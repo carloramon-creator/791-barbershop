@@ -34,6 +34,8 @@ export default function SignupPage() {
     const [services, setServices] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
 
+    const [checkingEmail, setCheckingEmail] = useState(false);
+
     // Load default data on mount or type change
     useEffect(() => {
         if (services.length === 0) setServices(getDefaultServices(formData.businessType));
@@ -41,7 +43,7 @@ export default function SignupPage() {
     }, [formData.businessType]);
 
     // Validation
-    const validateStep = () => {
+    const validateStep = async () => {
         setError('');
 
         if (step === 1) {
@@ -62,6 +64,30 @@ export default function SignupPage() {
                 setError('Email inválido');
                 return false;
             }
+
+            // Check if email already exists
+            setCheckingEmail(true);
+            try {
+                const res = await fetch('/api/auth/check-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: formData.email })
+                });
+                const data = await res.json();
+                if (data.exists) {
+                    setError('Este email já está cadastrado. Tente fazer login.');
+                    return false;
+                }
+            } catch (err) {
+                console.error("Email check failed", err);
+                // Optionally let them pass if check fails, but safer to block or warn. 
+                // For now, keeping it robust: if API fails, we might let them try submitting later?
+                // But user wants to avoid late error. Let's show generic error.
+                setError('Erro ao verificar email. Tente novamente.');
+                return false;
+            } finally {
+                setCheckingEmail(false);
+            }
         }
 
         if (step === 2) {
@@ -74,8 +100,8 @@ export default function SignupPage() {
         return true;
     };
 
-    const handleNext = () => {
-        if (validateStep()) {
+    const handleNext = async () => {
+        if (await validateStep()) {
             setStep(step + 1);
         }
     };
@@ -84,6 +110,15 @@ export default function SignupPage() {
         setError('');
         setStep(step - 1);
     };
+
+    const handleBusinessSelection = (type: BusinessType) => {
+        setFormData({
+            ...formData,
+            businessType: type,
+            serviceMethod: type === 'barbershop' ? 'queue' : 'appointments'
+        });
+    };
+
 
     const handleSkipServices = () => {
         setServices([]);
@@ -172,6 +207,7 @@ export default function SignupPage() {
                             formData={formData}
                             setFormData={setFormData}
                             onNext={handleNext}
+                            checkingEmail={checkingEmail}
                         />
                     )}
 
@@ -181,6 +217,7 @@ export default function SignupPage() {
                             setFormData={setFormData}
                             onNext={handleNext}
                             onBack={handleBack}
+                            onBusinessSelection={handleBusinessSelection}
                         />
                     )}
 
@@ -240,9 +277,10 @@ function getStepTitle(step: number) {
 }
 
 // STEP 1: Create Account
-function Step1({ formData, setFormData, onNext }: any) {
+function Step1({ formData, setFormData, onNext, checkingEmail }: any) {
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+            {/* ... inputs ... */}
             <div>
                 <label className="block text-sm font-bold text-slate-300 mb-2">Nome completo</label>
                 <input
@@ -294,8 +332,16 @@ function Step1({ formData, setFormData, onNext }: any) {
             </div>
 
             <div className="flex justify-end pt-4">
-                <Button onClick={onNext} className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-8">
-                    Continuar <ArrowRight className="ml-2" size={16} />
+                <Button onClick={onNext} className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-8" disabled={checkingEmail}>
+                    {checkingEmail ? (
+                        <>
+                            <Loader2 className="mr-2 animate-spin" size={16} /> Verificando...
+                        </>
+                    ) : (
+                        <>
+                            Continuar <ArrowRight className="ml-2" size={16} />
+                        </>
+                    )}
                 </Button>
             </div>
         </div>
@@ -303,7 +349,7 @@ function Step1({ formData, setFormData, onNext }: any) {
 }
 
 // STEP 2: Barbershop Info & Config
-function Step2({ formData, setFormData, onNext, onBack }: any) {
+function Step2({ formData, setFormData, onNext, onBack, onBusinessSelection }: any) {
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -334,7 +380,7 @@ function Step2({ formData, setFormData, onNext, onBack }: any) {
                 <div className="grid grid-cols-2 gap-4">
                     <button
                         type="button"
-                        onClick={() => setFormData({ ...formData, businessType: 'barbershop' })}
+                        onClick={() => onBusinessSelection('barbershop')}
                         className={cn(
                             "p-4 rounded-xl border-2 transition-all text-left",
                             formData.businessType === 'barbershop'
@@ -349,7 +395,7 @@ function Step2({ formData, setFormData, onNext, onBack }: any) {
 
                     <button
                         type="button"
-                        onClick={() => setFormData({ ...formData, businessType: 'beauty_salon' })}
+                        onClick={() => onBusinessSelection('beauty_salon')}
                         className={cn(
                             "p-4 rounded-xl border-2 transition-all text-left",
                             formData.businessType === 'beauty_salon'
@@ -380,7 +426,6 @@ function Step2({ formData, setFormData, onNext, onBack }: any) {
                         <Users className={cn("mb-3", formData.serviceMethod === 'queue' ? "text-green-400" : "text-slate-400")} size={24} />
                         <h3 className="font-bold text-slate-100 mb-1">Por Ordem de Chegada</h3>
                         <p className="text-xs text-slate-400 mb-2">Cliente chega, entra na fila digital e aguarda.</p>
-                        {formData.serviceMethod === 'queue' && <span className="absolute top-4 right-4 text-green-500 text-xs font-bold bg-green-900/40 px-2 py-0.5 rounded">Recomendado</span>}
                     </button>
 
                     <button
