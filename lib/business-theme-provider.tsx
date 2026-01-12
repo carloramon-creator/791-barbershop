@@ -12,15 +12,17 @@ export function BusinessThemeProvider({ children }: { children: React.ReactNode 
         if (!theme) return;
 
         const root = document.documentElement;
-        root.style.setProperty('--primary-business', theme.primaryHex);
 
-        if (tenant?.business_type === 'beauty_salon') {
-            root.style.setProperty('--sidebar-business', '#1c140a');
-            root.style.setProperty('--bg-business', '#0d0905');
-        } else {
-            root.style.setProperty('--sidebar-business', '#0a1628');
-            root.style.setProperty('--bg-business', '#020617');
-        }
+        // Define CSS variables based on business theme
+        root.style.setProperty('--primary-business', theme.primaryHex);
+        root.style.setProperty('--sidebar-bg', theme.sidebarBg);
+        root.style.setProperty('--main-bg', theme.mainBg);
+        root.style.setProperty('--text-branding', theme.textBranding);
+        root.style.setProperty('--primary-muted', theme.primaryMuted);
+
+        // You can also override standard tailwind colors if needed
+        // but using these custom vars is cleaner for dynamic switches
+
     }, [tenant?.business_type, theme]);
 
     return <>{children}</>;

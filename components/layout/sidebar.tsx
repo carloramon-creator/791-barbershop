@@ -94,7 +94,7 @@ export function Sidebar() {
                 onClick={() => setIsOpen(!isOpen)}
                 className={cn(
                     "fixed bottom-6 right-6 z-50 w-14 h-14 text-white rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95 border-4 border-slate-950 light:border-white md:hidden",
-                    tenant?.business_type === 'beauty_salon' ? "bg-pink-600" : "bg-blue-600"
+                    "bg-[var(--primary-business)]"
                 )}
             >
                 {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -110,11 +110,12 @@ export function Sidebar() {
 
             {/* Sidebar */}
             <div className={cn(
-                "fixed inset-y-0 left-0 z-40 w-72 bg-[#0a1628] border-r border-blue-500/20 flex flex-col h-screen transition-all duration-300 md:relative md:translate-x-0 overflow-hidden shadow-[10px_0_30px_-15px_rgba(37,99,235,0.2)]",
+                "fixed inset-y-0 left-0 z-40 w-72 border-r flex flex-col h-screen transition-all duration-300 md:relative md:translate-x-0 overflow-hidden shadow-2xl",
+                "bg-[var(--sidebar-bg)] border-[var(--primary-muted)]",
                 !isOpen && "-translate-x-full md:translate-x-0"
             )}>
                 <div className="p-6">
-                    <div className="flex items-center gap-3 text-blue-600 font-black text-xl tracking-tighter uppercase">
+                    <div className="flex items-center gap-3 font-black text-xl tracking-tighter uppercase text-[var(--text-branding)]">
                         {tenant?.logo_url ? (
                             <>
                                 <Image src={tenant.logo_url} alt={tenant.name || 'Logo'} width={32} height={32} className="w-8 h-8 rounded-lg object-cover" unoptimized />
@@ -122,7 +123,7 @@ export function Sidebar() {
                             </>
                         ) : (
                             <>
-                                <div className={cn("p-1.5 rounded-lg text-white", tenant?.business_type === 'beauty_salon' ? "bg-pink-600" : "bg-blue-600")}>
+                                <div className={cn("p-1.5 rounded-lg text-white bg-[var(--primary-business)]")}>
                                     {tenant?.business_type === 'beauty_salon' ? <Sparkles className="w-5 h-5" /> : <Scissors className="w-5 h-5" />}
                                 </div>
                                 791 <span className="text-slate-100">{tenant?.business_type === 'beauty_salon' ? 'Beauty' : 'Barber'}</span>
@@ -139,10 +140,8 @@ export function Sidebar() {
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold transition-all relative group",
                                 pathname === item.href
-                                    ? tenant?.business_type === 'beauty_salon'
-                                        ? "bg-pink-600 text-white shadow-lg shadow-pink-600/30"
-                                        : "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
-                                    : "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
+                                    ? "bg-[var(--primary-business)] text-white shadow-lg shadow-black/20"
+                                    : "text-slate-400 hover:text-slate-100 hover:bg-white/5"
                             )}
                         >
                             <item.icon className={cn(
