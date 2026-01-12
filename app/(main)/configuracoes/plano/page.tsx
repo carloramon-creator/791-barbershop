@@ -352,7 +352,7 @@ export default function PlanPage() {
     }
 
     return (
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div className="space-y-6">
             {isExpired && (
                 <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex items-center gap-3 text-red-400">
                     <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -362,27 +362,6 @@ export default function PlanPage() {
                     </div>
                 </div>
             )}
-
-            <div className="flex flex-col gap-4">
-                <h1 className="text-3xl font-bold text-slate-100">Configurações</h1>
-                <div className="flex space-x-1 border-b border-slate-800">
-                    {tabs.map((tab) => (
-                        <Link
-                            key={tab.name}
-                            href={tab.href}
-                            className={cn(
-                                'flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors',
-                                pathname === tab.href
-                                    ? 'border-blue-500 text-blue-500'
-                                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
-                            )}
-                        >
-                            <tab.icon className="w-4 h-4" />
-                            {tab.name}
-                        </Link>
-                    ))}
-                </div>
-            </div>
 
             {loading ? (
                 <div className="text-center py-20 text-slate-400">

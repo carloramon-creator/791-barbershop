@@ -15,6 +15,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import { BusinessThemeProvider } from '@/lib/business-theme-provider';
+
 export const metadata: Metadata = {
   title: "791 Barber - Gestão de Barbearia",
   description: "Sistema completo de gestão para barbearias tradicionais",
@@ -41,7 +43,9 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <AuthProvider>
-            {children}
+            <BusinessThemeProvider>
+              {children}
+            </BusinessThemeProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

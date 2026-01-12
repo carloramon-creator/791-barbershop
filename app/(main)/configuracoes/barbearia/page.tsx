@@ -290,28 +290,7 @@ export default function BarbershopSettingsPage() {
     const isCurrentTab = (href: string) => pathname === href;
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6 pb-20">
-            <div className="flex flex-col gap-4">
-                <h1 className="text-3xl font-bold text-slate-100 tracking-tighter">Configurações</h1>
-                <div className="flex space-x-1 border-b border-slate-800 bg-slate-900/50 p-1 rounded-t-lg overflow-x-auto">
-                    {tabs.map((tab) => (
-                        <Link
-                            key={tab.name}
-                            href={tab.href}
-                            className={cn(
-                                "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all whitespace-nowrap",
-                                isCurrentTab(tab.href)
-                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20"
-                                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-                            )}
-                        >
-                            <tab.icon className="w-4 h-4" />
-                            {tab.name}
-                        </Link>
-                    ))}
-                </div>
-            </div>
-
+        <>
             <Card className="bg-slate-900 border-slate-800 shadow-xl">
                 <CardHeader>
                     <CardTitle className="text-slate-100 flex justify-between items-center">
@@ -1087,6 +1066,6 @@ export default function BarbershopSettingsPage() {
                     </div>
                 </CardContent>
             </Card>
-        </div >
+        </>
     );
 }
