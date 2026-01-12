@@ -17,6 +17,7 @@ interface AuthContextType {
     isSystemAdmin: boolean;
     isImpersonating: boolean;
     refresh: () => Promise<void>;
+    checkPermission: (action: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -30,6 +31,7 @@ const AuthContext = createContext<AuthContextType>({
     isSystemAdmin: false,
     isImpersonating: false,
     refresh: async () => { },
+    checkPermission: () => false,
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -132,8 +134,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(null);
     };
 
+    const checkPermission = (action: string): boolean => {
+        if (!role) return false;
+        if (role === 'owner') return true;
+
+        // If settings not loaded or no permissions config, fallback to default hardcoded? 
+        // Or actually, if we want to support dynamic, we should use some defaults matching current logic if empty.
+        // Current logic is spread across components, so this helper is new.
+        // Let's implement looking at tenant settings.
+
+        if (tenant?.settings?.permissions) {
+            const perm = tenant.settings.permissions.find((p: any) => p.action === action);
+            if (perm) {
+                // @ts-ignore
+                return !!perm[role];
+            }
+        }
+
+        // Fallbacks if not found in custom settings (Backward compatibility)
+        // We can map action strings to logic, but strictly speaking this helper is for the new system.
+        return false;
+    };
+
     return (
-        <AuthContext.Provider value={{ user, session, tenant, loading, signOut, role, roles, isSystemAdmin, isImpersonating, refresh: fetchSession }}>
+        <AuthContext.Provider value={{
+            user, session, tenant, loading, signOut, role, roles, isSystemAdmin, isImpersonating, refresh: fetchSession,
+            checkPermission // Exporting this
+        }}>
             {children}
         </AuthContext.Provider>
     );

@@ -34,6 +34,16 @@ export interface Tenant {
     subscription_current_period_end?: string;
     module_queue_enabled?: boolean;
     module_appointments_enabled?: boolean;
+    settings?: {
+        permissions?: Array<{
+            action: string;
+            owner: boolean;
+            staff: boolean;
+            barber: boolean;
+            desc: string;
+        }>;
+        [key: string]: any;
+    };
     created_at: string;
 }
 

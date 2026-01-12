@@ -13,13 +13,100 @@ import { Scissors, Mail, Lock, CheckCircle2, Loader2, ArrowRight } from 'lucide-
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
-// ... imports
-
 export default function LoginPage() {
     const [view, setView] = useState<'login' | 'updatePassword' | 'forgotPassword'>('login');
-    // ... existing state
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [userEmail, setUserEmail] = useState<string | null>(null);
+    const router = useRouter();
 
-    // ... existing useEffect
+    useEffect(() => {
+        // Escuta mudanças de auth para detectar link de recuperação/convite
+        const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'PASSWORD_RECOVERY') {
+                setView('updatePassword');
+                setUserEmail(session?.user?.email ?? null);
+            }
+            // Se já tiver uma sessão válida
+            if (session) {
+                // Checar se o hash do URL sugere um convite ou recuperação
+                if (window.location.hash.includes('type=recovery') || window.location.hash.includes('type=invite')) {
+                    setView('updatePassword');
+                    setUserEmail(session?.user?.email ?? null);
+                }
+            }
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+        setSuccessMessage(null);
+
+        try {
+            const { data, error: authError } = await supabaseClient.auth.signInWithPassword({
+                email,
+                password,
+            });
+
+            if (authError) throw authError;
+            await redirectUser(data.user.id);
+        } catch (err: unknown) {
+            const error = err as Error;
+            console.error('Login error:', error);
+
+            let message = error.message || 'Erro ao entrar';
+            if (message === 'Failed to fetch' || message === 'Load failed') {
+                message = `Erro de conexão: O domínio ${window.location.hostname} pode estar bloqueado no CORS do Supabase.`;
+            }
+
+            setError(message);
+            setLoading(false);
+        }
+    };
+
+    const handleUpdatePassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newPassword !== confirmPassword) {
+            setError('As senhas não coincidem');
+            return;
+        }
+        if (newPassword.length < 6) {
+            setError('A senha deve ter pelo menos 6 caracteres');
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+        setSuccessMessage(null);
+
+        try {
+            const { data, error: updateError } = await supabaseClient.auth.updateUser({
+                password: newPassword
+            });
+
+            if (updateError) throw updateError;
+
+            setSuccessMessage('Senha definida com sucesso! Entrando no sistema...');
+
+            // Pequeno delay para o usuário ver a mensagem de sucesso
+            setTimeout(() => {
+                redirectUser(data.user.id);
+            }, 1500);
+        } catch (err: unknown) {
+            const error = err as Error;
+            setError(error.message || 'Erro ao atualizar senha');
+            setLoading(false);
+        }
+    };
 
     const handleRecovery = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -39,25 +126,60 @@ export default function LoginPage() {
 
             setSuccessMessage('Se este email estiver cadastrado, você receberá um link para redefinir sua senha.');
         } catch (err: any) {
-            // For security, usually we don't say if email exists or not, but Supabase might return error if rate limited etc.
-            // We'll show generic error or specific if safe.
             setError(err.message || 'Erro ao enviar email de recuperação');
         } finally {
             setLoading(false);
         }
     };
 
-    // ... existing handleLogin and handleUpdatePassword
+    const redirectUser = async (userId: string) => {
+        try {
+            const { data: userData, error: userError } = await supabaseClient
+                .from('users')
+                .select('role')
+                .eq('id', userId)
+                .single();
+
+            if (userError) {
+                console.error('Erro ao buscar perfil:', userError);
+                throw new Error('Perfil não encontrado. Sua conta pode não estar vinculada a uma barbearia.');
+            }
+
+            if (userData.role === 'owner' || userData.role === 'staff') {
+                router.push('/dashboard');
+            } else if (userData.role === 'barber') {
+                router.push('/barbeiro');
+            } else {
+                router.push('/');
+            }
+        } catch (err: unknown) {
+            const error = err as Error;
+            let message = error.message;
+            if (message === 'Failed to fetch' || message === 'Load failed') {
+                message = `Erro de conexão (Role): Verifique o CORS no Supabase para ${window.location.hostname}`;
+            }
+            setError(message);
+            setLoading(false);
+        }
+    };
 
     const isUpdateView = view === 'updatePassword';
     const isRecoveryView = view === 'forgotPassword';
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-slate-950 px-4 relative overflow-hidden">
-            {/* ... background ... */}
+            {/* Background Decorativo */}
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
+                <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full" />
+                <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-purple-600/10 blur-[120px] rounded-full" />
+            </div>
 
             <div className="w-full max-w-md z-10">
-                {/* ... logo ... */}
+                <div className="flex justify-center mb-8 animate-in fade-in zoom-in duration-500">
+                    <div className="bg-gradient-to-br from-blue-600 to-blue-400 p-4 rounded-2xl shadow-lg shadow-blue-500/20">
+                        <Scissors className="w-10 h-10 text-white" />
+                    </div>
+                </div>
 
                 <Card className="border-slate-800 bg-slate-900/80 backdrop-blur-xl shadow-2xl relative">
                     <CardHeader className="space-y-2 pb-6">
@@ -67,7 +189,7 @@ export default function LoginPage() {
                         <CardDescription className="text-center text-slate-400 text-sm">
                             {isUpdateView
                                 ? 'Crie uma senha segura para acessar sua conta.'
-                                : isRecoveryView 
+                                : isRecoveryView
                                     ? 'Digite seu email para receber um link de redefinição.'
                                     : 'Entre com sua conta de dono ou colaborador'}
                         </CardDescription>
@@ -84,8 +206,8 @@ export default function LoginPage() {
                                 {isUpdateView ? (
                                     <Loader2 className="w-5 h-5 animate-spin text-slate-500" />
                                 ) : (
-                                    <Button 
-                                        variant="outline" 
+                                    <Button
+                                        variant="outline"
                                         onClick={() => { setSuccessMessage(null); setView('login'); }}
                                         className="mt-2 border-slate-700 text-slate-300 hover:bg-slate-800"
                                     >
@@ -103,8 +225,7 @@ export default function LoginPage() {
                                     </div>
                                 )}
 
-                                {isUpdateView ? (
-                                    // ... Update Password Fields ...
+                                {isUpdateView && (
                                     <div className="space-y-4">
                                         <div className="p-3 bg-slate-800/50 rounded-xl border border-slate-800 flex items-center gap-3 animate-in fade-in duration-700">
                                             <Mail className="w-4 h-4 text-slate-500" />
@@ -141,8 +262,9 @@ export default function LoginPage() {
                                             </div>
                                         </div>
                                     </div>
-                                ) : isRecoveryView ? (
-                                    // ... Recovery Fields ...
+                                )}
+
+                                {isRecoveryView && (
                                     <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                                         <div className="space-y-2">
                                             <Label htmlFor="email" className="text-slate-300">Email</Label>
@@ -160,8 +282,9 @@ export default function LoginPage() {
                                             </div>
                                         </div>
                                     </div>
-                                ) : (
-                                    // ... Login Fields ...
+                                )}
+
+                                {!isUpdateView && !isRecoveryView && (
                                     <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
                                         <div className="space-y-2">
                                             <Label htmlFor="email" className="text-slate-300">Email</Label>
@@ -234,7 +357,7 @@ export default function LoginPage() {
                                         </Link>
                                     </p>
                                 )}
-                                
+
                                 {isRecoveryView && !successMessage && (
                                     <button
                                         type="button"
@@ -254,50 +377,12 @@ export default function LoginPage() {
                         </form>
                     )}
                 </Card>
-                            <CardFooter className="flex flex-col gap-4 pb-8">
-                                <Button
-                                    type="submit"
-                                    className={cn(
-                                        "w-full h-14 rounded-xl text-white font-bold transition-all duration-300 active:scale-95 group",
-                                        isUpdateView
-                                            ? "bg-emerald-600 hover:bg-emerald-500 shadow-xl shadow-emerald-500/20"
-                                            : "bg-blue-600 hover:bg-blue-500 shadow-xl shadow-blue-500/20"
-                                    )}
-                                    disabled={loading}
-                                >
-                                    {loading ? (
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                    ) : (
-                                        <>
-                                            {isUpdateView ? 'Definir Senha e Entrar' : 'Acessar Painel 791'}
-                                            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                                        </>
-                                    )}
-                                </Button>
-
-                                {!isUpdateView && (
-                                    <p className="text-sm text-slate-400 text-center">
-                                        Não tem uma conta?{' '}
-                                        <Link href="/register" className="text-blue-500 hover:text-blue-400 font-medium hover:underline">
-                                            Cadastre sua barbearia
-                                        </Link>
-                                    </p>
-                                )}
-                                {isUpdateView && (
-                                    <p className="text-xs text-slate-500 text-center px-4">
-                                        Após definir sua senha, você será redirecionado automaticamente para o painel.
-                                    </p>
-                                )}
-                            </CardFooter>
-                        </form>
-                    )}
-                </Card>
 
                 <div className="mt-8 flex justify-center gap-6">
                     <p className="text-[10px] text-slate-600 uppercase tracking-widest font-bold">Privacy Policy</p>
                     <p className="text-[10px] text-slate-600 uppercase tracking-widest font-bold">Terms of Service</p>
                 </div>
-            </div >
-        </div >
+            </div>
+        </div>
     );
 }
