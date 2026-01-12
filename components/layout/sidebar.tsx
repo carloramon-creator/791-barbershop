@@ -68,7 +68,7 @@ export function Sidebar() {
         if ((item as any).module === 'appointments' && !tenant?.module_appointments_enabled) return false;
 
         const plan = (tenant?.plan || 'basic').toLowerCase();
-        
+
         if (item.feature === 'finance') {
             return plan === 'premium' || plan === 'complete' || planConfig.features.includes('finance') || planConfig.features.includes('all');
         }
@@ -122,20 +122,20 @@ export function Sidebar() {
                     </div>
                 </div>
 
-                <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto no-scrollbar">
+                <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto no-scrollbar">
                     {filteredMenu.map((item) => (
                         <Link
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex items-center gap-3 px-4 py-4 rounded-xl text-sm font-bold transition-all relative group",
+                                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold transition-all relative group",
                                 pathname === item.href
                                     ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
                                     : "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
                             )}
                         >
                             <item.icon className={cn(
-                                "w-5 h-5 transition-transform group-hover:scale-110",
+                                "w-4 h-4 transition-transform group-hover:scale-110",
                                 pathname === item.href ? "text-white" : "text-inherit"
                             )} />
                             {item.name}
