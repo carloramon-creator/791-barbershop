@@ -577,7 +577,7 @@ export default function FinanceiroPage() {
                                     <TableCell>
                                         {r.type === 'expense' && (
                                             <div className="flex items-center gap-2 justify-end">
-                                                {r.description.startsWith('Fechamento') && (
+                                                {r.description.startsWith('Fechamento') && !r.is_paid && (
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
