@@ -58,6 +58,7 @@ export const Api = {
         apiFetch(`/api/barbers/${barberId}/walk-in`, { method: 'POST', body: JSON.stringify({ clientName }) }),
 
     // Appointments
+    getAllAppointments: () => apiFetch('/api/appointments'),
     getAppointments: (date?: string, barberId?: string) => {
         let url = '/api/appointments';
         const params = new URLSearchParams();
