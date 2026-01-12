@@ -8,6 +8,8 @@ export interface BusinessTheme {
     gradient: string;
     sidebarBg: string;
     mainBg: string;
+    cardBg: string;
+    cardBorder: string;
     textBranding: string;
     primaryMuted: string;
 }
@@ -21,7 +23,9 @@ export const BUSINESS_THEMES: Record<BusinessType, BusinessTheme> = {
         gradient: 'from-blue-600 to-slate-900',
         sidebarBg: '#0a1628',
         mainBg: '#020617',
-        textBranding: '#3B82F6', // Blue-600
+        cardBg: '#0f172a',
+        cardBorder: '#1e293b',
+        textBranding: '#3B82F6',
         primaryMuted: 'rgba(59, 130, 246, 0.2)',
     },
     beauty_salon: {
@@ -30,9 +34,11 @@ export const BUSINESS_THEMES: Record<BusinessType, BusinessTheme> = {
         secondary: 'orange',
         accent: 'yellow',
         gradient: 'from-[#B45309] to-[#1D1411]',
-        sidebarBg: '#1D1411', // Dark warm brown
-        mainBg: '#0F0A09', // Almost black brown
-        textBranding: '#D97706', // Amber-600 for visibility
+        sidebarBg: '#1D1411',
+        mainBg: '#0F0A09',
+        cardBg: '#1D1411', // Coffee/Sidebar bg
+        cardBorder: '#3D2B28', // Muted Ocre
+        textBranding: '#D97706',
         primaryMuted: 'rgba(180, 83, 9, 0.2)',
     }
 };
