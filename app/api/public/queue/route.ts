@@ -27,7 +27,8 @@ export async function GET(req: Request) {
         }
 
         if (!tenantId) {
-            return addCorsHeaders(req, NextResponse.json({ error: 'Barbearia não encontrada' }, { status: 404 }));
+            console.error(`[PUBLIC QUEUE] resolveTenantId failed for: "${idOrSlug}"`);
+            return addCorsHeaders(req, NextResponse.json({ error: 'Barbearia não identificada pelo slug' }, { status: 404 }));
         }
 
         // 0. Buscar dados do Tenant (Branding)
@@ -39,8 +40,11 @@ export async function GET(req: Request) {
             .single();
 
         if (tenantError || !tenant) {
-            console.error(`[PUBLIC QUEUE] Tenant Fetch Error:`, tenantError);
-            return addCorsHeaders(req, NextResponse.json({ error: 'Barbearia não encontrada' }, { status: 404 }));
+            console.error(`[PUBLIC QUEUE] Tenant Fetch Error for ${tenantId}:`, tenantError);
+            return addCorsHeaders(req, NextResponse.json({
+                error: 'Barbearia encontrada mas dados sumiram',
+                details: tenantError?.message
+            }, { status: 404 }));
         }
 
         // 1. Médias dinâmicas
