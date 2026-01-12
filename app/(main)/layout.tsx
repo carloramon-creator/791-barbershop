@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-provider';
 import { Sidebar } from '@/components/layout/sidebar';
+import { ConfigAlertBar } from '@/components/layout/config-alert-bar';
 import { Topbar } from '@/components/layout/topbar';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -50,6 +51,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <Sidebar />
             <div className="flex-1 flex flex-col overflow-hidden">
                 <Topbar />
+                <ConfigAlertBar />
                 <main className="flex-1 overflow-y-auto p-8 light:bg-white text-slate-50 light:text-slate-900 custom-scrollbar transition-colors">
                     {children}
                     <footer className="mt-8 py-4 text-center text-xs text-slate-600 light:text-slate-400">

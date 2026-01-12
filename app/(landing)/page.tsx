@@ -1,19 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from '@/components/ui/dialog';
 import { CheckCircle } from 'lucide-react';
 import { supabaseClient } from '@/lib/supabase-client';
 
@@ -22,85 +12,28 @@ const API_URL = '';
 
 export default function LandingPage() {
     const router = useRouter();
-    const [openDialog, setOpenDialog] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        password: '',
-        barbershopName: '',
-    });
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState(false);
 
     useEffect(() => {
         const checkSession = async () => {
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
-                // Se o usuário já está logado ou veio por um link de recuperação
-                router.push('/setup-password');
+                // Se o usuário já está logado
+                router.push('/dashboard');
             }
         };
 
         // Escutar mudanças de auth para capturar o evento de recuperação imediatamente
         const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event, session) => {
             if (event === 'PASSWORD_RECOVERY') {
-                router.push('/setup-password');
+                router.push('/reset-password');
             } else if (session && event === 'SIGNED_IN') {
-                // Se logar normalmente, pode mandar pro dashboard se preferir, 
-                // mas aqui focamos em pegar o recovery que cai na home.
-                router.push('/setup-password');
+                router.push('/dashboard');
             }
         });
 
         checkSession();
         return () => subscription.unsubscribe();
     }, [router]);
-
-    async function handleSignUp() {
-        if (!formData.name || !formData.email || !formData.barbershopName || !formData.password) {
-            setError('Preencha todos os campos inclusive a senha');
-            return;
-        }
-
-        if (formData.password.length < 6) {
-            setError('A senha deve ter pelo menos 6 caracteres');
-            return;
-        }
-
-        try {
-            setLoading(true);
-            setError(null);
-
-            // 1. Chamar API de signup do backend
-            const res = await fetch(`${API_URL}/api/auth/signup`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            });
-
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Erro ao cadastrar');
-
-            // 2. Login automático com a senha escolhida
-            const { error: signInError } = await supabaseClient.auth.signInWithPassword({
-                email: formData.email,
-                password: formData.password,
-            });
-
-            if (signInError) throw signInError;
-
-            setSuccess(true);
-            setTimeout(() => {
-                window.location.href = '/configuracoes/barbearia';
-            }, 2000);
-        } catch (err: unknown) {
-            const error = err as Error;
-            setError(error.message);
-        } finally {
-            setLoading(false);
-        }
-    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -146,12 +79,13 @@ export default function LandingPage() {
                         </div>
                     </div>
 
-                    <Button
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 text-lg mt-6 w-full"
-                        onClick={() => setOpenDialog(true)}
-                    >
-                        Comece Grátis por 7 Dias
-                    </Button>
+                    <Link href="/signup">
+                        <Button
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 text-lg mt-6 w-full"
+                        >
+                            Comece Grátis por 7 Dias
+                        </Button>
+                    </Link>
 
                     <p className="text-sm text-slate-500">
                         Sem cartão de crédito necessário. Cancele a qualquer momento.
@@ -166,104 +100,6 @@ export default function LandingPage() {
                     </div>
                 </div>
             </div>
-
-            {/* Modal de Signup */}
-            <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                <DialogContent className="border-slate-800 bg-slate-900 text-slate-100">
-                    <DialogHeader>
-                        <DialogTitle>Comece Seu Teste Grátis</DialogTitle>
-                        <DialogDescription className="text-slate-400">
-                            7 dias de acesso completo ao Premium. Sem cobranças.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    {success ? (
-                        <div className="space-y-4 py-8 text-center">
-                            <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
-                            <h3 className="text-xl font-semibold text-slate-100">
-                                Cadastro realizado com sucesso!
-                            </h3>
-                            <p className="text-slate-400">
-                                Redirecionando para o painel...
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="space-y-4 py-4">
-                            {error && (
-                                <div className="bg-red-500/10 border border-red-500/20 p-3 rounded text-red-400 text-sm">
-                                    {error}
-                                </div>
-                            )}
-
-                            <div className="space-y-2">
-                                <Label htmlFor="name">Nome Completo</Label>
-                                <Input
-                                    id="name"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    placeholder="João Silva"
-                                    className="bg-slate-950 border-slate-800"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="email">E-mail</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    placeholder="seu@email.com"
-                                    className="bg-slate-950 border-slate-800"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="password">Senha</Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    value={formData.password}
-                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                    placeholder="Escolha uma senha"
-                                    className="bg-slate-950 border-slate-800"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="barbershopName">Nome da Barbearia</Label>
-                                <Input
-                                    id="barbershopName"
-                                    value={formData.barbershopName}
-                                    onChange={(e) => setFormData({ ...formData, barbershopName: e.target.value })}
-                                    placeholder="Barbearia do João"
-                                    className="bg-slate-950 border-slate-800"
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {!success && (
-                        <DialogFooter>
-                            <Button
-                                variant="outline"
-                                onClick={() => setOpenDialog(false)}
-                                disabled={loading}
-                                className="border-slate-700 text-slate-300 hover:bg-slate-800"
-                            >
-                                Cancelar
-                            </Button>
-                            <Button
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
-                                onClick={handleSignUp}
-                                disabled={loading}
-                            >
-                                {loading ? 'Cadastrando...' : 'Iniciar Teste Grátis'}
-                            </Button>
-                        </DialogFooter>
-                    )}
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }
