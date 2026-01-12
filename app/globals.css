@@ -170,6 +170,37 @@
   .text-slate-500 {
     color: var(--text-secondary) !important;
   }
+
+  /* Enhancements for logo, buttons, and wizard contrast */
+  .shadow-2xl {
+    box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.6) !important;
+  }
+
+  /* Force logos to have a subtle glow/shadow to pop on light backgrounds */
+  img[alt*="Logo"],
+  .w-40.h-40 img {
+    filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1));
+  }
+
+  button.bg-primary-custom,
+  button.bg-\[var\(--primary-business\)\] {
+    color: var(--primary-light) !important;
+    @apply font-black uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg;
+  }
+
+  /* High contrast for selected items (like calendar days or slots) */
+  .bg-primary-custom.text-white,
+  .bg-\[var\(--primary-business\)\].text-white,
+  .text-white.bg-primary-custom {
+    color: var(--primary-light) !important;
+  }
+
+  /* Make sure icons inside primary buttons use the light color */
+  button.bg-primary-custom svg,
+  button.bg-\[var\(--primary-business\)\] svg,
+  .bg-primary-custom svg {
+    color: var(--primary-light) !important;
+  }
 }
 
 @layer utilities {
