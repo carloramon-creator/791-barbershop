@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Loader2, Users, CreditCard, Building2, AlertTriangle, Shield, Sparkles, Calendar, Clock, Check } from 'lucide-react';
+import { Upload, Loader2, Users, CreditCard, Building2, AlertTriangle, Shield, Sparkles, Calendar, Clock, Check, LayoutDashboard, DollarSign, Package, Settings, LogOut, Scissors, MapPin, Phone, Mail, Building, ChevronRight, Image as ImageIcon, Info, Rocket, ShieldCheck, Box, Megaphone, BarChart3, Receipt } from 'lucide-react';
 import Image from 'next/image';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -433,6 +433,53 @@ export default function BarbershopSettingsPage() {
                                         ⚠️ Defina um slug para o QR Code funcionar corretamente!
                                     </p>
                                 )}
+                            </div>
+
+                            <div className="space-y-4 md:col-span-2 pt-4 border-t border-slate-800/30">
+                                <Label className="text-slate-400 text-xs uppercase font-bold">Tipo de Negócio</Label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <button
+                                        type="button"
+                                        disabled={!isEditing}
+                                        onClick={() => setBusinessType('barbershop')}
+                                        className={cn(
+                                            "flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
+                                            businessType === 'barbershop'
+                                                ? "border-blue-500 bg-blue-500/10"
+                                                : "border-slate-800 hover:border-slate-700 bg-slate-950",
+                                            !isEditing && "opacity-50 cursor-not-allowed"
+                                        )}
+                                    >
+                                        <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", businessType === 'barbershop' ? "bg-blue-500/20" : "bg-slate-800")}>
+                                            <Scissors className={cn(businessType === 'barbershop' ? "text-blue-400" : "text-slate-400")} size={20} />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-slate-100 text-sm">Barbearia</h4>
+                                            <p className="text-[10px] text-slate-500 uppercase font-black">Foco Masculino / Barbeiro</p>
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        disabled={!isEditing}
+                                        onClick={() => setBusinessType('beauty_salon')}
+                                        className={cn(
+                                            "flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
+                                            businessType === 'beauty_salon'
+                                                ? "border-pink-500 bg-pink-500/10"
+                                                : "border-slate-800 hover:border-slate-700 bg-slate-950",
+                                            !isEditing && "opacity-50 cursor-not-allowed"
+                                        )}
+                                    >
+                                        <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", businessType === 'beauty_salon' ? "bg-pink-500/20" : "bg-slate-800")}>
+                                            <Sparkles className={cn(businessType === 'beauty_salon' ? "text-pink-400" : "text-slate-400")} size={20} />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-slate-100 text-sm">Salão de Beleza</h4>
+                                            <p className="text-[10px] text-slate-500 uppercase font-black">Foco Feminino / Profissional</p>
+                                        </div>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 

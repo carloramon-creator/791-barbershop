@@ -323,7 +323,7 @@ export default function FinanceiroPage() {
                                         <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
                                             <DialogTrigger asChild>
                                                 <Button variant="ghost" size="sm" className="h-6 text-[10px] text-blue-400 hover:text-blue-300">
-                                                    + Nova Categoria
+                                                    Desfazer
                                                 </Button>
                                             </DialogTrigger>
                                             <DialogContent className="bg-slate-950 border-slate-800">
@@ -577,7 +577,7 @@ export default function FinanceiroPage() {
                                     <TableCell>
                                         {r.type === 'expense' && (
                                             <div className="flex items-center gap-2 justify-end">
-                                                {r.description.includes(`Fechamento ${texts.professional}`) && !r.is_paid && (
+                                                {r.description.startsWith('Fechamento') && (
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"

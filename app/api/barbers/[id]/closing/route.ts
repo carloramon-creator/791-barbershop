@@ -102,7 +102,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                 tenant_id: tenant.id,
                 barber_id: barberId,
                 type: 'expense',
-                description: `Fechamento Barbeiro - ID ${barberId.slice(0, 8)}`,
+                description: `Fechamento Profissional - ID ${barberId.slice(0, 8)}`,
                 value: body.totalCommission + (body.bonus || 0),
                 date: new Date().toISOString().split('T')[0],
                 is_paid: false

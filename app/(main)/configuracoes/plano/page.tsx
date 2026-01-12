@@ -893,6 +893,60 @@ export default function PlanPage() {
                                                             </>
                                                         )}
 
+                                                    {/* --- AÇÃO: EMITIR NFS-E (SÓ PARA PAGOS SEM NOTA) --- */}
+                                                    {inv.is_paid && !inv.metadata?.nfe_id && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            className="h-8 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 text-[10px] font-black uppercase"
+                                                            onClick={async () => {
+                                                                if (!confirm('Deseja emitir a NFS-e Nacional para este pagamento agora?')) return;
+                                                                try {
+                                                                    const { data: { session } } = await supabaseClient.auth.getSession();
+                                                                    if (!session) return;
+
+                                                                    const res = await fetch('/api/barbershop/invoices/emit-nfse', {
+                                                                        method: 'POST',
+                                                                        headers: {
+                                                                            'Content-Type': 'application/json',
+                                                                            'Authorization': `Bearer ${session.access_token}`
+                                                                        },
+                                                                        body: JSON.stringify({ financeId: inv.id }),
+                                                                    });
+
+                                                                    const data = await res.json();
+                                                                    if (!res.ok) throw new Error(data.error);
+
+                                                                    alert('NFS-e emitida com sucesso! A página será atualizada.');
+                                                                    fetchInvoices();
+                                                                } catch (e: any) {
+                                                                    alert('Erro ao emitir: ' + e.message);
+                                                                }
+                                                                console.log('Emitindo NFS-e...');
+                                                            }}
+                                                        >
+                                                            <FileCheck className="w-3 h-3 mr-1" /> Emitir NFS-e
+                                                        </Button>
+                                                    )}
+
+                                                    {/* --- AÇÃO: VER NOTA (SE JÁ EXISTIR) --- */}
+                                                    {inv.metadata?.nfe_id && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            className="h-8 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-black uppercase"
+                                                            onClick={() => {
+                                                                if (inv.metadata?.nfe_pdf_url) {
+                                                                    window.open(inv.metadata.nfe_pdf_url, '_blank');
+                                                                } else {
+                                                                    alert('PDF da nota não disponível. ID: ' + inv.metadata.nfe_id);
+                                                                }
+                                                            }}
+                                                        >
+                                                            <FileCheck className="w-3 h-3 mr-1" /> Ver NFS-e
+                                                        </Button>
+                                                    )}
+
                                                     {/* Mostra NF apenas se estiver pago */}
                                                     {inv.is_paid && (
                                                         <Button
