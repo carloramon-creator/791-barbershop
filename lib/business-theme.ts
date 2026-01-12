@@ -9,11 +9,11 @@ export const BUSINESS_THEMES = {
         gradient: 'from-blue-600 to-slate-900',
     },
     beauty_salon: {
-        primary: 'pink',
-        primaryHex: '#EC4899',
-        secondary: 'purple',
-        accent: 'amber',
-        gradient: 'from-pink-500 to-purple-900',
+        primary: 'amber',
+        primaryHex: '#D97706',
+        secondary: 'orange',
+        accent: 'yellow',
+        gradient: 'from-amber-600 to-orange-900',
     }
 };
 
