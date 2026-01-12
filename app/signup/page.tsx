@@ -1,14 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Scissors, Sparkles, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { Scissors, Sparkles, ArrowLeft, ArrowRight, Loader2, Calendar, Users, Clock } from 'lucide-react';
 import { WizardProgress } from '@/components/onboarding/WizardProgress';
 import { EditableTable } from '@/components/ui/editable-table';
 import { getDefaultServices, getDefaultProducts, type BusinessType } from '@/lib/default-data';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { supabaseClient } from '@/lib/supabase-client';
+
+type ServiceMethod = 'queue' | 'appointments';
 
 export default function SignupPage() {
     const router = useRouter();
@@ -25,17 +28,17 @@ export default function SignupPage() {
         barbershopName: '',
         phone: '',
         businessType: 'barbershop' as BusinessType,
+        serviceMethod: 'queue' as ServiceMethod, // Default to queue
     });
 
     const [services, setServices] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
 
-    // Update business type and load default data
-    const handleBusinessTypeChange = (type: BusinessType) => {
-        setFormData({ ...formData, businessType: type });
-        setServices(getDefaultServices(type));
-        setProducts(getDefaultProducts(type));
-    };
+    // Load default data on mount or type change
+    useEffect(() => {
+        if (services.length === 0) setServices(getDefaultServices(formData.businessType));
+        if (products.length === 0) setProducts(getDefaultProducts(formData.businessType));
+    }, [formData.businessType]);
 
     // Validation
     const validateStep = () => {
@@ -65,17 +68,6 @@ export default function SignupPage() {
             if (!formData.barbershopName || !formData.phone) {
                 setError('Preencha todos os campos');
                 return false;
-            }
-            // Load default data when moving to step 3
-            if (services.length === 0) {
-                setServices(getDefaultServices(formData.businessType));
-            }
-        }
-
-        if (step === 4) {
-            // Load default products when moving to step 4
-            if (products.length === 0) {
-                setProducts(getDefaultProducts(formData.businessType));
             }
         }
 
@@ -108,6 +100,7 @@ export default function SignupPage() {
         setError('');
 
         try {
+            // 1. Create Account via API
             const response = await fetch('/api/auth/signup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -115,6 +108,9 @@ export default function SignupPage() {
                     ...formData,
                     services,
                     products,
+                    // Map serviceMethod to backend flags
+                    module_queue_enabled: formData.serviceMethod === 'queue',
+                    module_appointments_enabled: formData.serviceMethod === 'appointments',
                 }),
             });
 
@@ -124,7 +120,20 @@ export default function SignupPage() {
                 throw new Error(data.error || 'Erro ao criar conta');
             }
 
-            // Redirect to dashboard
+            // 2. Auto-login on client side
+            const { error: loginError } = await supabaseClient.auth.signInWithPassword({
+                email: formData.email,
+                password: formData.password,
+            });
+
+            if (loginError) {
+                // If login fails but account created, redirect to login page with message
+                console.error("Auto-login failed:", loginError);
+                router.push('/login?signup_success=true');
+                return;
+            }
+
+            // 3. Redirect to dashboard
             router.push('/dashboard');
         } catch (err: any) {
             setError(err.message);
@@ -133,7 +142,7 @@ export default function SignupPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-6">
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
             <div className="w-full max-w-4xl">
                 {/* Logo */}
                 <div className="flex items-center justify-center gap-3 mb-8">
@@ -170,7 +179,6 @@ export default function SignupPage() {
                         <Step2
                             formData={formData}
                             setFormData={setFormData}
-                            onBusinessTypeChange={handleBusinessTypeChange}
                             onNext={handleNext}
                             onBack={handleBack}
                         />
@@ -234,7 +242,7 @@ function getStepTitle(step: number) {
 // STEP 1: Create Account
 function Step1({ formData, setFormData, onNext }: any) {
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <div>
                 <label className="block text-sm font-bold text-slate-300 mb-2">Nome completo</label>
                 <input
@@ -294,63 +302,100 @@ function Step1({ formData, setFormData, onNext }: any) {
     );
 }
 
-// STEP 2: Barbershop Info
-function Step2({ formData, setFormData, onBusinessTypeChange, onNext, onBack }: any) {
+// STEP 2: Barbershop Info & Config
+function Step2({ formData, setFormData, onNext, onBack }: any) {
     return (
-        <div className="space-y-6">
-            <div>
-                <label className="block text-sm font-bold text-slate-300 mb-2">Nome da barbearia</label>
-                <input
-                    type="text"
-                    value={formData.barbershopName}
-                    onChange={(e) => setFormData({ ...formData, barbershopName: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors"
-                    placeholder="Barbearia Ingleses"
-                />
+        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-bold text-slate-300 mb-2">Nome da barbearia</label>
+                    <input
+                        type="text"
+                        value={formData.barbershopName}
+                        onChange={(e) => setFormData({ ...formData, barbershopName: e.target.value })}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors"
+                        placeholder="Barbearia Ingleses"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-bold text-slate-300 mb-2">Telefone (WhatsApp)</label>
+                    <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors"
+                        placeholder="(48) 99999-9999"
+                    />
+                </div>
             </div>
 
-            <div>
-                <label className="block text-sm font-bold text-slate-300 mb-2">Telefone (WhatsApp)</label>
-                <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors"
-                    placeholder="(48) 99999-9999"
-                />
-            </div>
-
-            <div>
-                <label className="block text-sm font-bold text-slate-300 mb-3">Tipo de negócio</label>
+            <div className="border-t border-slate-800 pt-6">
+                <label className="block text-sm font-bold text-slate-300 mb-3">Qual é o seu tipo de negócio?</label>
                 <div className="grid grid-cols-2 gap-4">
                     <button
                         type="button"
-                        onClick={() => onBusinessTypeChange('barbershop')}
+                        onClick={() => setFormData({ ...formData, businessType: 'barbershop' })}
                         className={cn(
-                            "p-6 rounded-xl border-2 transition-all text-left",
+                            "p-4 rounded-xl border-2 transition-all text-left",
                             formData.businessType === 'barbershop'
                                 ? "border-blue-500 bg-blue-500/10"
                                 : "border-slate-700 hover:border-slate-600 bg-slate-800"
                         )}
                     >
-                        <Scissors className={cn("mb-3", formData.businessType === 'barbershop' ? "text-blue-400" : "text-slate-400")} size={32} />
-                        <h3 className="font-black text-lg text-slate-100 mb-1">Barbearia</h3>
+                        <Scissors className={cn("mb-3", formData.businessType === 'barbershop' ? "text-blue-400" : "text-slate-400")} size={24} />
+                        <h3 className="font-bold text-slate-100 mb-1">Barbearia</h3>
                         <p className="text-xs text-slate-400">Foco masculino</p>
                     </button>
 
                     <button
                         type="button"
-                        onClick={() => onBusinessTypeChange('beauty_salon')}
+                        onClick={() => setFormData({ ...formData, businessType: 'beauty_salon' })}
                         className={cn(
-                            "p-6 rounded-xl border-2 transition-all text-left",
+                            "p-4 rounded-xl border-2 transition-all text-left",
                             formData.businessType === 'beauty_salon'
                                 ? "border-pink-500 bg-pink-500/10"
                                 : "border-slate-700 hover:border-slate-600 bg-slate-800"
                         )}
                     >
-                        <Sparkles className={cn("mb-3", formData.businessType === 'beauty_salon' ? "text-pink-400" : "text-slate-400")} size={32} />
-                        <h3 className="font-black text-lg text-slate-100 mb-1">Salão de Beleza</h3>
+                        <Sparkles className={cn("mb-3", formData.businessType === 'beauty_salon' ? "text-pink-400" : "text-slate-400")} size={24} />
+                        <h3 className="font-bold text-slate-100 mb-1">Salão de Beleza</h3>
                         <p className="text-xs text-slate-400">Foco feminino</p>
+                    </button>
+                </div>
+            </div>
+
+            <div className="border-t border-slate-800 pt-6">
+                <label className="block text-sm font-bold text-slate-300 mb-3">Como você atende?</label>
+                <div className="grid grid-cols-2 gap-4">
+                    <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, serviceMethod: 'queue' })}
+                        className={cn(
+                            "p-4 rounded-xl border-2 transition-all text-left relative",
+                            formData.serviceMethod === 'queue'
+                                ? "border-green-500 bg-green-500/10"
+                                : "border-slate-700 hover:border-slate-600 bg-slate-800"
+                        )}
+                    >
+                        <Users className={cn("mb-3", formData.serviceMethod === 'queue' ? "text-green-400" : "text-slate-400")} size={24} />
+                        <h3 className="font-bold text-slate-100 mb-1">Por Ordem de Chegada</h3>
+                        <p className="text-xs text-slate-400 mb-2">Cliente chega, entra na fila digital e aguarda.</p>
+                        {formData.serviceMethod === 'queue' && <span className="absolute top-4 right-4 text-green-500 text-xs font-bold bg-green-900/40 px-2 py-0.5 rounded">Recomendado</span>}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, serviceMethod: 'appointments' })}
+                        className={cn(
+                            "p-4 rounded-xl border-2 transition-all text-left",
+                            formData.serviceMethod === 'appointments'
+                                ? "border-purple-500 bg-purple-500/10"
+                                : "border-slate-700 hover:border-slate-600 bg-slate-800"
+                        )}
+                    >
+                        <Calendar className={cn("mb-3", formData.serviceMethod === 'appointments' ? "text-purple-400" : "text-slate-400")} size={24} />
+                        <h3 className="font-bold text-slate-100 mb-1">Com Hora Marcada</h3>
+                        <p className="text-xs text-slate-400">Cliente escolhe o horário na agenda.</p>
                     </button>
                 </div>
             </div>
@@ -378,7 +423,7 @@ function Step3({ services, setServices, onNext, onBack, onSkip }: any) {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
                 <p className="text-sm text-blue-300">
                     💡 Pré-preenchemos com valores de mercado. Edite à vontade ou pule por enquanto!
@@ -425,7 +470,7 @@ function Step4({ products, setProducts, onNext, onBack, onSkip }: any) {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
                 <p className="text-sm text-blue-300">
                     💡 Produtos comuns para venda. Edite ou pule!
@@ -464,7 +509,7 @@ function Step4({ products, setProducts, onNext, onBack, onSkip }: any) {
 // STEP 5: Complete
 function Step5({ formData, services, products, loading, onSubmit, onBack }: any) {
     return (
-        <div className="space-y-6 text-center">
+        <div className="space-y-6 text-center animate-in fade-in zoom-in-95 duration-500">
             <div className="text-6xl mb-4">🎉</div>
 
             <div>
@@ -476,14 +521,18 @@ function Step5({ formData, services, products, loading, onSubmit, onBack }: any)
                 </p>
             </div>
 
-            <div className="bg-slate-800 rounded-lg p-6 space-y-3 text-left">
+            <div className="bg-slate-800 rounded-lg p-6 space-y-3 text-left border border-slate-700">
                 <div className="flex items-center gap-3 text-sm">
                     <span className="text-green-400">✅</span>
                     <span className="text-slate-300">Conta criada</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                     <span className="text-green-400">✅</span>
-                    <span className="text-slate-300">Barbearia configurada</span>
+                    <span className="text-slate-300">Perfil: {formData.businessType === 'barbershop' ? 'Barbearia' : 'Salão de Beleza'}</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                    <span className="text-green-400">✅</span>
+                    <span className="text-slate-300">Atendimento: {formData.serviceMethod === 'queue' ? 'Fila Digital (Ordem de chegada)' : 'Hora Marcada'}</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                     <span className="text-green-400">✅</span>
@@ -503,6 +552,7 @@ function Step5({ formData, services, products, loading, onSubmit, onBack }: any)
                     <li>• Adicionar logo</li>
                     <li>• Configurar horários</li>
                     <li>• Adicionar endereço</li>
+                    <li>• Cadastrar dados bancários (Pix)</li>
                 </ul>
             </div>
 
@@ -514,7 +564,7 @@ function Step5({ formData, services, products, loading, onSubmit, onBack }: any)
                     {loading ? (
                         <>
                             <Loader2 className="mr-2 animate-spin" size={16} />
-                            Criando conta...
+                            Entrando...
                         </>
                     ) : (
                         <>

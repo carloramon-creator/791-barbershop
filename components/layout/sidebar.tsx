@@ -93,7 +93,7 @@ export function Sidebar() {
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={cn(
-                    "fixed bottom-6 right-6 z-50 w-14 h-14 text-white rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95 border-4 border-slate-950 light:border-white",
+                    "fixed bottom-6 right-6 z-50 w-14 h-14 text-white rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95 border-4 border-slate-950 light:border-white md:hidden",
                     tenant?.business_type === 'beauty_salon' ? "bg-pink-600" : "bg-blue-600"
                 )}
             >

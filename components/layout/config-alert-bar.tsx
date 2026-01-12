@@ -22,8 +22,14 @@ export function ConfigAlertBar() {
             // 1. Check basic tenant fields
             if (!tenant.logo_url) items.push('Logo da barbearia');
             if (!tenant.street || !tenant.city) items.push('Endereço completo');
+            if (!tenant.phone) items.push('Telefone / WhatsApp');
 
-            // 2. Fetch services and products to check counts
+            // 2. Check Financial Data (Pix or Bank)
+            const hasPix = !!tenant.pix_key;
+            const hasBank = !!(tenant.bank_agency && tenant.bank_account);
+            if (!hasPix && !hasBank) items.push('Dados Bancários ou Pix');
+
+            // 3. Fetch services and products to check counts
             try {
                 const [services, products] = await Promise.all([
                     Api.getServices(),
