@@ -22,7 +22,7 @@ export async function GET(req: Request) {
 
         const { data, error } = await supabaseAdmin
             .from('barbers')
-            .select('*, users(photo_url, name, nickname)')
+            .select('*, users(photo_url, name, nickname), barber_services(service_id)')
             .eq('tenant_id', tenantId)
             .eq('is_active', true)
             .order('name');
@@ -35,7 +35,8 @@ export async function GET(req: Request) {
             name: b.name || (b as any).users?.name,
             nickname: b.nickname || (b as any).users?.nickname,
             photo_url: (b as any).users?.photo_url || b.photo_url,
-            status: b.status
+            status: b.status,
+            service_ids: (b as any).barber_services?.map((bs: any) => bs.service_id) || []
         })) || [];
 
         return addCorsHeaders(req, NextResponse.json(formatted));
