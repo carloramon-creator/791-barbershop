@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
+import fs from 'fs';
+import path from 'path';
 import { addCorsHeaders } from '@/lib/server-utils';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
     try {
+        let commitHash = 'unknown';
+        try {
+            commitHash = fs.readFileSync(path.join(process.cwd(), 'commit_hash.txt'), 'utf8').trim();
+        } catch (e) { }
+
         const { data, error } = await supabaseAdmin.from('tenants').select('count', { count: 'exact', head: true });
         const { data: list } = await supabaseAdmin.from('tenants').select('id, slug, name');
 
@@ -21,6 +28,7 @@ export async function GET(req: Request) {
 
         return addCorsHeaders(req, NextResponse.json({
             status: 'online',
+            commit: commitHash,
             count: data,
             error,
             tenants: list,
