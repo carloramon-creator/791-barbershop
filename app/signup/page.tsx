@@ -252,8 +252,13 @@ function Step1({ formData, setFormData, onNext }: any) {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors [&:-webkit-autofill]:!bg-slate-800 [&:-webkit-autofill]:!text-slate-100"
                     placeholder="joao@email.com"
+                    autoComplete="email"
+                    style={{
+                        WebkitTextFillColor: '#f1f5f9',
+                        WebkitBoxShadow: '0 0 0 1000px #1e293b inset',
+                    }}
                 />
             </div>
 
