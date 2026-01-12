@@ -122,7 +122,8 @@
   }
 
   body {
-    @apply bg-[var(--main-bg, #020617)] text-slate-50 transition-colors duration-300;
+    background-color: var(--main-bg, #020617);
+    @apply text-slate-50 transition-colors duration-300;
   }
 
   /* Modo Claro - Miolo Branco com Sidebar/Topbar Escuros (Estilo Premium) */
