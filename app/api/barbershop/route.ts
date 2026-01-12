@@ -56,7 +56,8 @@ export async function PUT(req: Request) {
             module_queue_enabled: body.module_queue_enabled,
             module_appointments_enabled: body.module_appointments_enabled,
             business_type: body.business_type || body.tipo_negocio,
-            opening_hours: body.opening_hours
+            opening_hours: body.opening_hours,
+            settings: body.settings
         };
 
         // Limpeza de campos vazios ou undefined
