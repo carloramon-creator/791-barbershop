@@ -8,12 +8,6 @@ export async function OPTIONS(req: Request) {
     return addCorsHeaders(req, response);
 }
 
-const PLAN_PRICES: Record<string, number> = {
-    basic: 49.00,
-    complete: 99.00,
-    premium: 169.00
-};
-
 export async function POST(req: Request) {
     try {
         const { tenant, user } = await getCurrentUserAndTenant();
@@ -21,14 +15,51 @@ export async function POST(req: Request) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Não autenticado' }, { status: 401 }));
         }
 
-        const { plan, coupon, tempId } = await req.json();
-        let amount = PLAN_PRICES[plan];
+        const { plan: planSlug, addon: addonSlug, coupon, tempId } = await req.json();
 
-        if (!amount) {
-            return addCorsHeaders(req, NextResponse.json({ error: 'Plano inválido' }, { status: 400 }));
+        // 1. Buscar Preço Dinâmico
+        let amount = 0;
+        let itemName = '';
+        let isAddon = false;
+
+        if (addonSlug) {
+            const { data: addon } = await supabaseAdmin
+                .from('system_addons')
+                .select('*')
+                .eq('slug', addonSlug)
+                .single();
+
+            if (!addon) return addCorsHeaders(req, NextResponse.json({ error: 'Add-on inválido' }, { status: 400 }));
+
+            amount = Number(addon.price);
+            itemName = addon.name;
+            isAddon = true;
+        } else {
+            const { data: planData } = await supabaseAdmin
+                .from('system_plans')
+                .select('*')
+                .eq('slug', planSlug)
+                .single();
+
+            if (!planData) return addCorsHeaders(req, NextResponse.json({ error: 'Plano inválido' }, { status: 400 }));
+
+            amount = Number(planData.price);
+            itemName = planData.name;
         }
 
-        // 1. Processar Cupom
+        // --- LÓGICA DE PRO-RATA (INTER) ---
+        // Se for um Add-on sendo adicionado a um plano existente no meio do mês
+        if (isAddon && tenant.plan && tenant.plan !== 'trial') {
+            const now = new Date();
+            const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            const remainingDays = lastDayOfMonth - now.getDate() + 1;
+
+            // Pro-rata: (Preço / Dias no Mês) * Dias Restantes
+            amount = (amount / lastDayOfMonth) * remainingDays;
+            if (amount < 1) amount = 1; // Mínimo R$ 1,00 para evitar erros bancários
+        }
+
+        // 2. Processar Cupom
         let discount = 0;
         let couponApplied = null;
 
@@ -128,7 +159,7 @@ export async function POST(req: Request) {
             valorNominal: amount.toFixed(2),
             dataEmissao: currentDate,
             mensagem: {
-                linha1: `Pix 791 Barber - Plano ${plan}`.substring(0, 80),
+                linha1: `791 Barber - ${itemName}`.substring(0, 80),
                 linha2: (couponApplied ? `Cupom ${couponApplied}` : "").substring(0, 80)
             }
         };
@@ -201,7 +232,7 @@ export async function POST(req: Request) {
                 tenant_id: tenant.id, // CORRIGIDO: estava null antes!
                 type: 'revenue',
                 value: amount,
-                description: `SaaS - Plano ${plan}`,
+                description: `SaaS - ${itemName}`,
                 date: currentDate,
                 is_paid: false,
                 metadata: {
@@ -209,7 +240,9 @@ export async function POST(req: Request) {
                     seu_numero: seuNumero,
                     method: 'pix_inter',
                     pix_payload: pixCopiaECola,
-                    expires_at: dueDate.toISOString()
+                    expires_at: dueDate.toISOString(),
+                    [isAddon ? 'addon' : 'plan']: addonSlug || planSlug,
+                    is_addon: isAddon
                 }
             });
 

@@ -74,13 +74,14 @@ export function Sidebar() {
         if ((item as any).module === 'appointments' && !tenant?.module_appointments_enabled) return false;
 
         const plan = (tenant?.plan || 'basic').toLowerCase();
+        const activeAddons = tenant?.active_addons || [];
 
         if (item.feature === 'finance') {
-            return plan === 'premium' || plan === 'complete' || planConfig.features.includes('finance') || planConfig.features.includes('all');
+            return plan === 'premium' || plan === 'complete' || activeAddons.includes('finance_module') || planConfig.features.includes('finance') || planConfig.features.includes('all');
         }
 
         if (item.feature === 'inventory') {
-            return plan === 'premium' || planConfig.features.includes('all');
+            return plan === 'premium' || activeAddons.includes('inventory') || planConfig.features.includes('all');
         }
 
         return true;

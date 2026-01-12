@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { stripe, StripePlan } from '@/lib/stripe-server';
 import Stripe from 'stripe';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
 import { supabaseAdmin } from '@/lib/supabase-server';
@@ -9,266 +8,193 @@ export async function OPTIONS(req: Request) {
     return addCorsHeaders(req, response);
 }
 
-const PLAN_BASE_PRICES: Record<string, number> = {
-    basic: 49.00,
-    complete: 99.00,
-    premium: 169.00
-};
-
 export async function POST(req: Request) {
     try {
-        // Autenticação
         const { tenant, user } = await getCurrentUserAndTenant();
-
         if (!tenant || !user) {
-            return addCorsHeaders(req,
-                NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-            );
+            return addCorsHeaders(req, NextResponse.json({ error: 'Não autenticado' }, { status: 401 }));
         }
 
-        // Parse do body
         const body = await req.json();
-        const { plan, coupon } = body as { plan: StripePlan; coupon?: string };
+        const { plan: planSlug, addon: addonSlug, coupon } = body as { plan?: string; addon?: string; coupon?: string };
 
-        if (!plan || !PLAN_BASE_PRICES[plan]) {
-            return addCorsHeaders(req,
-                NextResponse.json({ error: 'Plano inválido' }, { status: 400 })
-            );
+        if (!planSlug && !addonSlug) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'Plano ou Add-on não especificado' }, { status: 400 }));
         }
 
-        // 0. Preparar Cliente Stripe com Chave Dinâmica do Banco
+        // 0. Obter Configuração Stripe
         const { data: settingsData } = await supabaseAdmin
             .from('system_settings')
             .select('value')
             .eq('key', 'stripe_config')
             .single();
 
-        const dbKey = settingsData?.value?.secret_key;
-        const envKey = process.env.STRIPE_SECRET_KEY;
-        const finalKey = dbKey || envKey;
-
-        if (!finalKey || finalKey.includes('dummy')) {
-            return addCorsHeaders(req,
-                NextResponse.json({ error: 'Stripe não configurado. Adicione a Secret Key em Geral > Configurações.' }, { status: 500 })
-            );
+        const stripeKey = settingsData?.value?.secret_key;
+        if (!stripeKey || stripeKey.includes('dummy')) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'Stripe não configurado pelo administrador' }, { status: 500 }));
         }
 
-        const stripeClient = new Stripe(finalKey, {
-            apiVersion: '2025-12-15.clover' as any, // Use version from lib or locked version
+        const stripeClient = new Stripe(stripeKey, {
+            apiVersion: '2025-12-15.clover' as any,
             typescript: true,
         });
 
+        // 1. Buscar Preço Dinâmico
+        let itemName = '';
+        let itemPrice = 0;
+        let isAddon = false;
+        let itemMetadata: any = {};
+        let itemSlug = '';
 
-        // 1. Validar e Calcular Valor com Cupom
-        let baseAmount = PLAN_BASE_PRICES[plan];
-        let trialDays = 0;
-        let couponApplied = null;
-        let stripeCouponId = undefined;
-
-        let couponData: any = null;
-
-        if (coupon && coupon.trim() !== '') {
-            // 1. Buscar cupom
-            const { data, error: couponError } = await supabaseAdmin
-                .from('system_coupons')
+        if (addonSlug) {
+            const { data: addon } = await supabaseAdmin
+                .from('system_addons')
                 .select('*')
-                .eq('code', coupon.trim().toUpperCase())
-                .eq('is_active', true)
+                .eq('slug', addonSlug)
                 .single();
 
-            couponData = data;
+            if (!addon) return addCorsHeaders(req, NextResponse.json({ error: 'Add-on inválido' }, { status: 400 }));
 
-            if (!couponData || couponError) {
-                return addCorsHeaders(req,
-                    NextResponse.json({ error: 'Cupom inválido ou expirado' }, { status: 400 })
-                );
-            }
-
-            // 2. Validar expiração
-            if (couponData.expires_at) {
-                const expiresAt = new Date(couponData.expires_at);
-                if (expiresAt < new Date()) {
-                    return addCorsHeaders(req,
-                        NextResponse.json({ error: 'Este cupom já expirou' }, { status: 400 })
-                    );
-                }
-            }
-
-            // 3. Validar limite de usos
-            if (couponData.max_uses && couponData.current_uses >= couponData.max_uses) {
-                return addCorsHeaders(req,
-                    NextResponse.json({ error: 'Este cupom atingiu o limite de usos' }, { status: 400 })
-                );
-            }
-
-            // 4. Verificar se o tenant já usou este cupom
-            const { data: previousUsage } = await supabaseAdmin
-                .from('system_coupon_usage')
-                .select('id')
-                .eq('coupon_id', couponData.id)
-                .eq('tenant_id', tenant.id)
+            itemName = `Add-on: ${addon.name}`;
+            itemPrice = Number(addon.price);
+            isAddon = true;
+            itemMetadata = { addon: addonSlug };
+            itemSlug = addonSlug;
+        } else {
+            const { data: plan } = await supabaseAdmin
+                .from('system_plans')
+                .select('*')
+                .eq('slug', planSlug)
                 .single();
 
-            if (previousUsage) {
-                return addCorsHeaders(req,
-                    NextResponse.json({ error: 'Você já utilizou este cupom anteriormente' }, { status: 400 })
-                );
-            }
+            if (!plan) return addCorsHeaders(req, NextResponse.json({ error: 'Plano inválido' }, { status: 400 }));
 
-            couponApplied = couponData.code;
-            trialDays = couponData.trial_days ? Number(couponData.trial_days) : 0;
-            const discountPercent = couponData.discount_percent ? Number(couponData.discount_percent) : 0;
-            const discountValue = couponData.discount_value ? Number(couponData.discount_value) : 0;
+            itemName = `Plano: ${plan.name}`;
+            itemPrice = Number(plan.price);
+            itemMetadata = { plan: planSlug };
+            itemSlug = planSlug || '';
+        }
 
-            // Generate/Find Stripe Coupon
-            try {
-                // Remove special chars for ID safety
-                const cleanCode = couponApplied.replace(/[^a-zA-Z0-9]/g, '');
-                const uniqueCouponId = `COUPON_${cleanCode}_${discountPercent || discountValue}`; // Improved ID format
+        // --- LÓGICA DE PRO-RATA (APENAS PARA INTER OU ADICIONAIS) ---
+        // Se for INTER, calculamos o valor proporcional se já tiver um plano ativo
+        // Se for CARD, o Stripe lida com isso se atualizarmos a assinatura.
 
-                try {
-                    const existing = await stripeClient.coupons.retrieve(uniqueCouponId);
-                    stripeCouponId = existing.id;
-                } catch (e) {
-                    if (discountPercent > 0) {
-                        const newC = await stripeClient.coupons.create({
-                            id: uniqueCouponId,
-                            percent_off: discountPercent,
-                            duration: 'forever',
-                            name: `Desconto ${couponApplied}`,
-                        });
-                        stripeCouponId = newC.id;
-                    } else if (discountValue > 0) {
-                        const newC = await stripeClient.coupons.create({
-                            id: uniqueCouponId,
-                            amount_off: Math.round(discountValue * 100),
-                            currency: 'brl',
-                            duration: 'forever',
-                            name: `Desconto ${couponApplied}`,
-                        });
-                        stripeCouponId = newC.id;
-                    }
-                }
-            } catch (err) {
-                console.error('Error handling stripe coupon', err);
+        let finalAmount = itemPrice;
+        const isInter = req.url.includes('inter-pix') || req.url.includes('inter-boleto'); // Nota: esse arquivo é o checkout geral, mas se for chamado por outros, o body pode indicar. 
+        // No fluxo atual, o PlanPage chama /api/checkout para CARD e outros endpoints para INTER.
+        // Mas vamos deixar a lógica de cálculo aqui caso queiramos centralizar.
+
+        // Exemplo de Pro-rata simples:
+        const now = new Date();
+        const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const remainingDays = lastDayOfMonth - now.getDate() + 1;
+
+        // Se for um Add-on sendo adicionado a um plano existente no meio do mês
+        if (isAddon && tenant.plan && tenant.plan !== 'trial') {
+            // Se for Inter, cobramos apenas os dias restantes
+            if (isInter) {
+                finalAmount = (itemPrice / lastDayOfMonth) * remainingDays;
+                if (finalAmount < 1) finalAmount = 1; // Mínimo R$ 1,00
             }
         }
 
-        // 2. Buscar ou criar Customer no Stripe
+        // 2. Customer Stripe (Se não for Inter)
         let customerId = tenant.stripe_customer_id;
-
         if (!customerId) {
-            const { data: userProfile } = await supabaseAdmin
-                .from('users')
-                .select('email, name')
-                .eq('id', user.id)
-                .single();
-
             const customer = await stripeClient.customers.create({
-                email: userProfile?.email || `user-${user.id}@791barber.com`,
-                name: userProfile?.name || tenant.name,
-                metadata: {
-                    tenant_id: tenant.id,
-                    user_id: user.id,
-                },
+                email: user.email,
+                name: tenant.name,
+                metadata: { tenant_id: tenant.id }
             });
             customerId = customer.id;
-
-            await supabaseAdmin
-                .from('tenants')
-                .update({ stripe_customer_id: customerId })
-                .eq('id', tenant.id);
+            await supabaseAdmin.from('tenants').update({ stripe_customer_id: customerId }).eq('id', tenant.id);
         }
 
-        // 2.5 Ensure Customer has Address and Tax ID (Required for Boleto)
-        // We update this every time to ensure it's fresh
-        const doc = (tenant.cnpj || tenant.cpf || tenant.cpf_cnpj || '').replace(/\D/g, '');
+        // 2.5 Verificar Assinatura Ativa para Upgrade/Add-on (CARD ONLY)
+        const { data: subscriptionData } = await supabaseAdmin
+            .from('tenants')
+            .select('stripe_subscription_id')
+            .eq('id', tenant.id)
+            .single();
 
-        try {
-            await stripeClient.customers.update(customerId, {
-                name: tenant.name,
-                address: {
-                    line1: tenant.street || tenant.address_street || 'Endereço não informado',
-                    city: tenant.city || tenant.address_city || 'Cidade',
-                    state: tenant.state || tenant.address_state || 'SC',
-                    postal_code: tenant.zip || tenant.address_zip || '88000000',
-                    country: 'BR',
-                },
-                shipping: {
-                    name: tenant.name,
-                    address: {
-                        line1: tenant.street || tenant.address_street || 'Endereço não informado',
-                        city: tenant.city || tenant.address_city || 'Cidade',
-                        state: tenant.state || tenant.address_state || 'SC',
-                        postal_code: tenant.zip || tenant.address_zip || '88000000',
-                        country: 'BR',
-                    }
-                },
-                metadata: {
-                    tax_id: doc // Storing in metadata as hint, real tax_id requires API complexity sometimes
+        const activeSubId = subscriptionData?.stripe_subscription_id;
+
+        if (activeSubId && !isInter) {
+            // Se já tem assinatura, vamos criar um item nela em vez de nova sessão?
+            // Para simplicidade de UX (página de sucesso, cartão etc), vamos usar a Checkout Session
+            // mas configurar para "subscription_update" se o Stripe suportar fácil, 
+            // ou apenas avisar o Stripe via metadata para o Webhook mesclar.
+            // Ramon disse: "Soma para a próxima fatura". 
+        }
+
+        // 3. Criar Desconto Proporcional (Coupon) se necessário
+        let stripeCouponId: string | undefined = undefined;
+
+        if (finalAmount < itemPrice) {
+            try {
+                const discountAmount = Math.round((itemPrice - finalAmount) * 100);
+                if (discountAmount > 0) {
+                    const coupon = await stripeClient.coupons.create({
+                        amount_off: discountAmount,
+                        currency: 'brl',
+                        duration: 'once',
+                        name: `Pro-rata ${itemName}`,
+                    });
+                    stripeCouponId = coupon.id;
                 }
-            });
-        } catch (updateError) {
-            console.log('Erro ao atualizar endereço do cliente Stripe:', updateError);
+            } catch (err) {
+                console.error('Erro ao criar cupom de pro-rata:', err);
+            }
         }
 
-        const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://791barber.com';
-
-        // 3. Criar Checkout Session Dinâmica
+        // 4. Criar Checkout Session Dinâmica
         const session = await stripeClient.checkout.sessions.create({
             customer: customerId,
             payment_method_types: ['card'],
             billing_address_collection: 'auto',
-            phone_number_collection: { enabled: false },
             line_items: [
                 {
                     price_data: {
                         currency: 'brl',
                         product_data: {
-                            name: `791 Barber - Plano ${plan.charAt(0).toUpperCase() + plan.slice(1)}`,
-                            description: 'Assinatura Mensal da Plataforma',
+                            name: `791 Barber - ${itemName}`,
+                            description: isAddon ? 'Habilitação de Módulo Extra' : 'Assinatura Mensal da Plataforma',
                         },
-                        unit_amount: Math.round(baseAmount * 100),
-                        recurring: {
-                            interval: 'month',
-                        },
+                        unit_amount: Math.round(itemPrice * 100), // Preço Cheio para recorrência
+                        recurring: { interval: 'month' },
                     },
                     quantity: 1,
                 },
             ],
             mode: 'subscription',
+            discounts: stripeCouponId ? [{ coupon: stripeCouponId }] : [],
             success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${origin}/checkout/cancel`,
             metadata: {
                 tenant_id: tenant.id,
-                plan: plan,
-                coupon: couponApplied || 'none',
-                coupon_id: couponData?.id || null
+                [isAddon ? 'addon' : 'plan']: itemSlug,
+                is_addon: isAddon ? 'true' : 'false'
             },
             subscription_data: {
                 metadata: {
                     tenant_id: tenant.id,
-                    plan: plan,
-                },
-                ...(trialDays > 0 ? { trial_period_days: trialDays } : {}),
-            },
-            ...(stripeCouponId ? { discounts: [{ coupon: stripeCouponId }] } : {}),
+                    [isAddon ? 'addon' : 'plan']: itemSlug,
+                }
+            }
         });
 
-        console.log('[STRIPE CHECKOUT] Session Criada:', session.id, 'Coupon:', stripeCouponId);
+        console.log(`[STRIPE CHECKOUT] Session Criada para ${tenant.name}:`, session.id);
 
-        const response = NextResponse.json({
+        return addCorsHeaders(req, NextResponse.json({
             sessionId: session.id,
             url: session.url,
-        });
-        return addCorsHeaders(req, response);
+        }));
 
     } catch (error: any) {
         console.error('[STRIPE CHECKOUT ERROR]', error);
-        const response = NextResponse.json(
+        return addCorsHeaders(req, NextResponse.json(
             { error: error.message || 'Erro ao criar sessão de checkout' },
             { status: 500 }
-        );
-        return addCorsHeaders(req, response);
+        ));
     }
 }

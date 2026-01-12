@@ -34,7 +34,7 @@ export async function GET(req: Request) {
             .from('tenants')
             .select('id, plan, stripe_subscription_id, subscription_status, stripe_customer_id')
             .eq('id', tenantId)
-            .maybeSingle(); // Safe query
+            .maybeSingle();
 
         if (error) {
             console.error('[API GET PLAN] DB Error:', error);
@@ -42,26 +42,28 @@ export async function GET(req: Request) {
         }
 
         if (!tenant) {
-            const response = NextResponse.json(
-                { error: `Barbearia não encontrada (ID: ${tenantId})` },
-                { status: 404 }
-            );
-            return addCorsHeaders(req, response);
+            return addCorsHeaders(req, NextResponse.json({ error: `Barbearia não encontrada` }, { status: 404 }));
         }
+
+        // 3. Buscar Add-ons Ativos
+        const { data: addons } = await supabaseAdmin
+            .from('tenant_addons')
+            .select('system_addons(slug)')
+            .eq('tenant_id', tenantId)
+            .eq('status', 'active');
+
+        const activeAddons = addons?.map((a: any) => a.system_addons?.slug).filter(Boolean) || [];
 
         const response = NextResponse.json({
             currentPlan: tenant.plan || 'basic',
             stripeSubscriptionId: tenant.stripe_subscription_id,
-            subscriptionStatus: tenant.subscription_status
+            subscriptionStatus: tenant.subscription_status,
+            activeAddons: activeAddons
         });
         return addCorsHeaders(req, response);
     } catch (error: any) {
         console.error('[API GET PLAN] Erro:', error.message);
-        const response = NextResponse.json(
-            { error: error.message },
-            { status: 400 }
-        );
-        return addCorsHeaders(req, response);
+        return addCorsHeaders(req, NextResponse.json({ error: error.message }, { status: 400 }));
     }
 }
 
@@ -81,22 +83,21 @@ export async function POST(req: Request) {
                     return addCorsHeaders(req, NextResponse.json({ error: 'Apenas proprietários podem mudar o plano' }, { status: 403 }));
                 }
             }
-        } catch (e) {
-            console.log('[API POST PLAN] Session check failed:', e);
-        }
-
-        console.log('[API POST PLAN] Mudando plano para:', newPlan, 'Tenant:', tenantId);
+        } catch (e) { }
 
         if (!tenantId) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Tenant ID required' }, { status: 400 }));
         }
 
-        if (!['basic', 'complete', 'premium'].includes(newPlan)) {
-            const response = NextResponse.json(
-                { error: 'Plano inválido' },
-                { status: 400 }
-            );
-            return addCorsHeaders(req, response);
+        // Validação básica de existência do plano no banco
+        const { data: planExists } = await supabaseAdmin
+            .from('system_plans')
+            .select('id')
+            .eq('slug', newPlan)
+            .single();
+
+        if (!planExists && newPlan !== 'trial') {
+            return addCorsHeaders(req, NextResponse.json({ error: 'Plano inválido' }, { status: 400 }));
         }
 
         const { data: updated, error } = await supabaseAdmin

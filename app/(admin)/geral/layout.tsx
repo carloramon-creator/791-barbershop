@@ -10,7 +10,8 @@ import {
     Ticket,
     Users,
     LogOut,
-    ShieldCheck
+    ShieldCheck,
+    Package
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -39,6 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const navItems = [
         { name: 'Dashboard', href: '/geral', icon: LayoutDashboard },
         { name: 'Barbearias', href: '/geral/barbearias', icon: Store },
+        { name: 'Planos & Extras', href: '/geral/planos', icon: Package },
         { name: 'Cupons', href: '/geral/cupons', icon: Ticket },
         { name: 'Configurações API', href: '/geral/configuracoes', icon: Settings },
         { name: 'Administradores', href: '/geral/usuarios', icon: ShieldCheck },

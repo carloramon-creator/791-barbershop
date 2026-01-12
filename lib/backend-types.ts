@@ -14,6 +14,7 @@ export interface Tenant {
     phone?: string;
     address?: string;
     logo_url?: string;
+    active_addons?: string[];
     created_at: string;
 }
 

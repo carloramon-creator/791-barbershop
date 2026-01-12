@@ -112,33 +112,62 @@ async function processPayment(params: { identifier: string, identifierType: 'txi
         return;
     }
 
-    // Identificar Plano pela descrição
-    // A descrição vem do checkout: "Boleto SaaS Pendente - Plano premium (Nome)"
-    const description = charge.description || '';
-    let plan = 'basic';
-    if (description.toLowerCase().includes('premium')) plan = 'premium';
-    else if (description.toLowerCase().includes('completo')) plan = 'complete';
-    else if (description.toLowerCase().includes('básico') || description.toLowerCase().includes('basic')) plan = 'basic';
+    // Identificar Plano ou Add-on pelos metadados (Novo sistema dinâmico)
+    const metadata = charge.metadata || {};
+    const isAddon = metadata.is_addon === true || metadata.is_addon === 'true';
+    const planSlug = metadata.plan;
+    const addonSlug = metadata.addon;
 
+    // Fallback por descrição (Sistema antigo/legado)
+    const description = charge.description || '';
+    let legacyPlan = 'basic';
+    if (description.toLowerCase().includes('premium')) legacyPlan = 'premium';
+    else if (description.toLowerCase().includes('completo')) legacyPlan = 'complete';
+    else if (description.toLowerCase().includes('básico') || description.toLowerCase().includes('basic')) legacyPlan = 'basic';
+
+    const finalPlan = planSlug || legacyPlan;
     const tenantId = charge.metadata?.tenant_id;
-    console.log(`[INTER WEBHOOK] Encontrado! Atualizando Tenant ${tenantId} para Plano ${plan}`);
+
+    console.log(`[INTER WEBHOOK] Encontrado! Tipo=${isAddon ? 'Addon' : 'Plano'}, Item=${addonSlug || finalPlan}, Tenant=${tenantId}`);
 
     try {
         if (tenantId) {
-            // Liberar Tenant
-            const periodEnd = new Date();
-            periodEnd.setDate(periodEnd.getDate() + 31); // +31 dias de licença
+            if (isAddon && addonSlug) {
+                // É UM ADD-ON: Buscar ID do add-on
+                const { data: addonData } = await supabaseAdmin
+                    .from('system_addons')
+                    .select('id')
+                    .eq('slug', addonSlug)
+                    .single();
 
-            const { error: tenantError } = await supabaseAdmin
-                .from('tenants')
-                .update({
-                    plan: plan,
-                    subscription_status: 'active',
-                    subscription_current_period_end: periodEnd.toISOString()
-                })
-                .eq('id', tenantId);
+                if (addonData) {
+                    // Ativar addon para o tenant
+                    await supabaseAdmin
+                        .from('tenant_addons')
+                        .upsert({
+                            tenant_id: tenantId,
+                            addon_id: addonData.id,
+                            status: 'active'
+                        });
+                    console.log(`[INTER WEBHOOK] Add-on ${addonSlug} ativado para tenant ${tenantId}`);
+                }
+            } else {
+                // É UM PLANO: Liberar ou fazer Upgrade
+                const periodEnd = new Date();
+                periodEnd.setDate(periodEnd.getDate() + 31);
 
-            if (tenantError) throw tenantError;
+                const { error: tenantError } = await supabaseAdmin
+                    .from('tenants')
+                    .update({
+                        plan: finalPlan,
+                        subscription_status: 'active',
+                        subscription_current_period_end: periodEnd.toISOString()
+                    })
+                    .eq('id', tenantId);
+
+                if (tenantError) throw tenantError;
+                console.log(`[INTER WEBHOOK] Plano ${finalPlan} liberado para tenant ${tenantId}`);
+            }
         }
 
         // Marcar Finance como Pago

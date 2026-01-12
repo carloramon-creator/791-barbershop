@@ -110,7 +110,20 @@ export async function getCurrentUserAndTenant() {
                 .select('*')
                 .eq('id', tenantIdToUse)
                 .single();
-            tenantData = tenant;
+
+            if (tenant) {
+                // Carregar Add-ons Ativos
+                const { data: addons } = await supabaseAdmin
+                    .from('tenant_addons')
+                    .select('id, addon_id, system_addons(slug)')
+                    .eq('tenant_id', tenantIdToUse)
+                    .eq('status', 'active');
+
+                tenantData = {
+                    ...tenant,
+                    active_addons: addons?.map((a: any) => a.system_addons?.slug).filter(Boolean) || []
+                };
+            }
         }
 
         return {

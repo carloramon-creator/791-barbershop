@@ -44,6 +44,7 @@ export interface Tenant {
         }>;
         [key: string]: any;
     };
+    active_addons?: string[];
     created_at: string;
 }
 

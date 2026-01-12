@@ -2,9 +2,25 @@
 
 // RAILWAY MIGRATION TRIGGER - GOL DA VITÓRIA ⚽
 import React, { useState, useEffect } from 'react';
-import { Users, Building2, CreditCard, Check, Shield, FileText, ExternalLink, Copy, Activity, Zap, FileCheck } from 'lucide-react';
+import {
+    Users,
+    Building2,
+    CreditCard,
+    Check,
+    Shield,
+    FileText,
+    ExternalLink,
+    Copy,
+    Activity,
+    Zap,
+    FileCheck,
+    CheckCircle2,
+    Package
+} from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Api } from '@/lib/api';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -26,56 +42,19 @@ import { supabaseClient } from '@/lib/supabase-client';
 // Hardcoding production URL to ensure immediate fix
 const API_URL = '';
 
-interface PlanInfo {
-    id: string;
-    name: string;
-    price: number;
-    barbers: string;
-    appointments: string;
-    support: string;
-    features: string[];
-}
-
-const PLANS: Record<string, PlanInfo> = {
-    trial: { id: 'trial', name: 'Período de Teste', price: 0, barbers: 'Total', appointments: 'Ilimitados', support: 'Limitado', features: ['Teste grátis'] },
-    basic: {
-        id: 'basic',
-        name: 'Básico',
-        price: 49,
-        barbers: 'Até 3 barbeiros',
-        appointments: '50 agendamentos/mês',
-        support: 'Suporte por email',
-        features: ['Até 3 barbeiros', '50 agendamentos/mês', 'Suporte por email']
-    },
-    complete: {
-        id: 'complete',
-        name: 'Completo',
-        price: 99,
-        barbers: 'Até 10 barbeiros',
-        appointments: '200 agendamentos/mês',
-        support: 'Suporte por email e chat',
-        features: ['Até 10 barbeiros', '200 agendamentos/mês', 'Suporte por email e chat', 'Módulo financeiro']
-    },
-    premium: {
-        id: 'premium',
-        name: 'Premium',
-        price: 169,
-        barbers: 'Barbeiros ilimitados',
-        appointments: 'Agendamentos ilimitados',
-        support: 'Suporte prioritário',
-        features: ['Barbeiros ilimitados', 'Agendamentos ilimitados', 'Suporte prioritário', 'Módulo financeiro completo', 'Módulo de estoque']
-    }
-};
-
 export default function PlanPage() {
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
     const isExpired = searchParams.get('expired') === 'true';
+
+    const [dynamicPlans, setDynamicPlans] = useState<any[]>([]);
+    const [dynamicAddons, setDynamicAddons] = useState<any[]>([]);
     const [currentPlan, setCurrentPlan] = useState<string>('basic');
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+    const [selectedAddon, setSelectedAddon] = useState<any>(null);
     const [saving, setSaving] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix' | 'boleto-inter' | 'boleto-result'>('card');
     const [couponCode, setCouponCode] = useState('');
@@ -88,6 +67,7 @@ export default function PlanPage() {
     const [loadingInvoices, setLoadingInvoices] = useState(false);
     const [stripeSubscriptionId, setStripeSubscriptionId] = useState<string | null>(null);
     const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+    const [activeAddons, setActiveAddons] = useState<string[]>([]);
     const [canceling, setCanceling] = useState(false);
 
     const tabs = [
@@ -101,9 +81,17 @@ export default function PlanPage() {
         const init = async () => {
             setLoading(true);
             try {
-                // 1. Primeiro sincroniza tudo (Inter e Stripe)
+                // 1. Carregar planos e add-ons do sistema
+                const [plans, addons] = await Promise.all([
+                    Api.getSystemPlans(),
+                    Api.getSystemAddons()
+                ]);
+                setDynamicPlans(plans || []);
+                setDynamicAddons(addons || []);
+
+                // 2. Primeiro sincroniza tudo (Inter e Stripe)
                 await fetchInvoices();
-                // 2. Agora busca o status atualizado do plano
+                // 3. Agora busca o status atualizado do plano
                 await fetchCurrentPlan(false); // Pass false to not reset loading
             } catch (e) {
                 console.error('Erro na inicialização:', e);
@@ -131,6 +119,7 @@ export default function PlanPage() {
             setCurrentPlan(data.currentPlan || 'trial');
             setStripeSubscriptionId(data.stripeSubscriptionId);
             setSubscriptionStatus(data.subscriptionStatus);
+            setActiveAddons(data.activeAddons || []);
 
             // Also check if tenant has CNPJ/CPF
             const tenantRes = await fetch(`${API_URL}/api/barbershop`, {
@@ -228,13 +217,38 @@ export default function PlanPage() {
             if (!session) throw new Error('Usuário não autenticado ou sessão expirada');
 
             if (paymentMethod === 'card') {
+                // SE JÁ TEM ASSINATURA E É ADDON -> ATIVAÇÃO DIRETA
+                if (stripeSubscriptionId && selectedAddon) {
+                    const res = await fetch('/api/barbershop/addons/activate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`
+                        },
+                        body: JSON.stringify({ addonSlug: selectedAddon.slug }),
+                    });
+
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error);
+
+                    alert(data.message || 'Add-on ativado com sucesso!');
+                    setOpenDialog(false);
+                    await fetchCurrentPlan();
+                    return;
+                }
+
+                // CASO CONTRÁRIO -> CHECKOUT STRIPE (Upgrade de plano ou nova assinatura)
                 const res = await fetch(`${API_URL}/api/checkout`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${session.access_token}`
                     },
-                    body: JSON.stringify({ plan: selectedPlan, coupon: couponCode }),
+                    body: JSON.stringify({
+                        plan: selectedPlan,
+                        addon: selectedAddon?.slug,
+                        coupon: couponCode
+                    }),
                 });
 
                 const data = await res.json();
@@ -379,22 +393,27 @@ export default function PlanPage() {
                         <CardContent>
                             <div className="bg-slate-950 p-6 rounded-lg border border-slate-800">
                                 <div className="flex justify-between items-center">
-                                    <div>
-                                        <h3 className="text-2xl font-bold text-slate-100 capitalize">
-                                            {PLANS[currentPlan]?.name || currentPlan}
-                                        </h3>
-                                        <p className="text-sm text-slate-400 mt-1">
-                                            R$ {PLANS[currentPlan]?.price || 0}/mês
-                                        </p>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center font-black text-white text-xl shadow-lg shadow-blue-900/40">
+                                            {currentPlan.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-2xl font-black text-slate-100 capitalize tracking-tight">
+                                                {dynamicPlans.find(p => p.slug === currentPlan)?.name || currentPlan}
+                                            </h3>
+                                            <p className="text-sm text-slate-400 mt-1">
+                                                R$ {(dynamicPlans.find(p => p.slug === currentPlan)?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
+                                            </p>
+                                        </div>
                                     </div>
                                     <div className="flex flex-col items-end gap-2">
                                         <span className={cn(
-                                            "px-4 py-2 text-sm rounded-full border",
+                                            "px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-full border",
                                             subscriptionStatus === 'canceled'
                                                 ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                                                : "bg-green-500/10 text-green-500 border-green-500/20"
+                                                : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                                         )}>
-                                            {subscriptionStatus === 'canceled' ? 'Cancelamento Pendente' : 'Ativo'}
+                                            {subscriptionStatus === 'canceled' ? 'Cancelamento Pendente' : 'Escalável & Ativo'}
                                         </span>
                                         {stripeSubscriptionId && subscriptionStatus !== 'canceled' && (
                                             <Button
@@ -413,15 +432,74 @@ export default function PlanPage() {
                         </CardContent>
                     </Card>
 
-                    <div className="space-y-6">
-                        <h2 className="text-xl md:text-2xl font-black text-slate-100 light:text-slate-900 uppercase">Escolha um Plano</h2>
+                    {/* SEÇÃO TURBINAR PACOTE (ADD-ONS) */}
+                    <div className="space-y-6 pt-4">
+                        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                            <div>
+                                <h2 className="text-xl md:text-2xl font-black text-slate-100 uppercase tracking-tight flex items-center gap-2">
+                                    <Zap className="text-amber-400" size={24} /> Turbinar Pacote
+                                </h2>
+                                <p className="text-slate-500 text-xs font-medium">Adicione recursos específicos sem precisar trocar de plano.</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {dynamicAddons.map((addon) => {
+                                const isActive = activeAddons.includes(addon.slug);
+                                return (
+                                    <Card key={addon.id} className={cn(
+                                        "bg-slate-900 border-slate-800 transition-all hover:border-slate-700 relative overflow-hidden group",
+                                        isActive && "border-emerald-500/50 bg-emerald-500/5"
+                                    )}>
+                                        {isActive && (
+                                            <div className="absolute top-0 right-0 p-2">
+                                                <CheckCircle2 className="text-emerald-500" size={16} />
+                                            </div>
+                                        )}
+                                        <CardContent className="p-6">
+                                            <div className="space-y-1">
+                                                <h3 className="text-sm font-black text-slate-100 uppercase tracking-tight">{addon.name}</h3>
+                                                <p className="text-[10px] text-slate-500 font-medium leading-relaxed h-8 line-clamp-2">{addon.description}</p>
+                                            </div>
+
+                                            <div className="mt-4 flex items-center justify-between">
+                                                <p className="text-xs font-black text-amber-400">
+                                                    + R$ {Number(addon.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}<span className="text-[8px] text-slate-600 ml-1">/mês</span>
+                                                </p>
+                                                <Button
+                                                    size="sm"
+                                                    variant={isActive ? "outline" : "default"}
+                                                    disabled={isActive || saving}
+                                                    onClick={() => {
+                                                        setSelectedAddon(addon);
+                                                        setSelectedPlan(null);
+                                                        setPaymentMethod('card');
+                                                        setOpenDialog(true);
+                                                    }}
+                                                    className={cn(
+                                                        "h-8 text-[9px] font-black uppercase tracking-widest px-4",
+                                                        isActive ? "border-emerald-500/50 text-emerald-500" : "bg-blue-600 hover:bg-blue-500 text-white"
+                                                    )}
+                                                >
+                                                    {isActive ? 'Ativado' : 'Adicionar'}
+                                                </Button>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="space-y-6 pt-10">
+                        <h2 className="text-xl md:text-2xl font-black text-slate-100 light:text-slate-900 uppercase">Deseja migrar de plano?</h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {Object.values(PLANS).filter(p => p.id !== 'trial').map((plan) => (
+                            {dynamicPlans.filter(p => p.slug !== 'trial').map((plan) => (
                                 <Card
                                     key={plan.id}
                                     className={cn(
-                                        'bg-slate-900 light:bg-white border-slate-800 light:border-slate-200 cursor-pointer transition-all hover:border-slate-700 light:hover:border-slate-300 rounded-2xl md:rounded-3xl p-2',
-                                        currentPlan === plan.id && 'border-blue-500 light:border-blue-600 ring-2 ring-blue-500/20'
+                                        'bg-slate-900 light:bg-white border-slate-800 light:border-slate-200 cursor-pointer transition-all hover:border-slate-700 light:hover:border-slate-300 rounded-2xl md:rounded-3xl p-2 relative overflow-hidden',
+                                        currentPlan === plan.slug && 'border-blue-500 light:border-blue-600 ring-2 ring-blue-500/20'
                                     )}
                                 >
                                     <CardHeader>
@@ -434,17 +512,8 @@ export default function PlanPage() {
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-6">
-                                        <div className="space-y-2">
-                                            <p className="text-sm text-slate-400 light:text-slate-500">
-                                                <span className="font-bold text-slate-200 light:text-slate-700">Barbeiros:</span> {plan.barbers}
-                                            </p>
-                                            <p className="text-sm text-slate-400 light:text-slate-500">
-                                                <span className="font-bold text-slate-200 light:text-slate-700">Agendamentos:</span> {plan.appointments}
-                                            </p>
-                                        </div>
-
                                         <div className="space-y-2 pt-4 border-t border-slate-800 light:border-slate-100">
-                                            {plan.features.slice(0, 4).map((feature, i) => (
+                                            {plan.features?.map((feature: any, i: number) => (
                                                 <div key={i} className="flex items-center gap-2">
                                                     <Check className="w-3.5 h-3.5 text-blue-500" />
                                                     <span className="text-xs text-slate-400 light:text-slate-600">{feature}</span>
@@ -455,18 +524,19 @@ export default function PlanPage() {
                                         <Button
                                             className={cn(
                                                 'w-full py-6 rounded-xl font-black uppercase tracking-widest',
-                                                currentPlan === plan.id
+                                                currentPlan === plan.slug
                                                     ? 'bg-slate-800 light:bg-slate-100 text-slate-500'
                                                     : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20'
                                             )}
-                                            disabled={currentPlan === plan.id}
+                                            disabled={currentPlan === plan.slug}
                                             onClick={() => {
-                                                setSelectedPlan(plan.id);
+                                                setSelectedPlan(plan.slug);
+                                                setSelectedAddon(null);
                                                 setPaymentMethod('card');
                                                 setOpenDialog(true);
                                             }}
                                         >
-                                            {currentPlan === plan.id ? 'Plano Atual' : 'Contratar'}
+                                            {currentPlan === plan.slug ? 'Plano Ativo' : 'Migrar Agora'}
                                         </Button>
                                     </CardContent>
                                 </Card>
@@ -491,9 +561,13 @@ export default function PlanPage() {
                     onEscapeKeyDown={() => fetchInvoices()}
                 >
                     <DialogHeader>
-                        <DialogTitle className="font-black text-xl md:text-2xl tracking-tighter uppercase">Confirmar Assinatura</DialogTitle>
+                        <DialogTitle className="font-black text-xl md:text-2xl tracking-tighter uppercase">Confirmar Contratação</DialogTitle>
                         <DialogDescription className="text-slate-400 light:text-slate-500 font-bold">
-                            Plano <span className="text-blue-600 capitalize">{selectedPlan}</span> — R$ {(boletoData?.amount || (selectedPlan ? PLANS[selectedPlan]?.price : 0)).toFixed(2).replace('.', ',')}/mês
+                            {selectedAddon ? (
+                                <>Módulo <span className="text-amber-500 uppercase">{selectedAddon.name}</span> — R$ {Number(selectedAddon.price).toFixed(2).replace('.', ',')}/mês</>
+                            ) : (
+                                <>Plano <span className="text-blue-600 capitalize">{selectedPlan}</span> — R$ {(dynamicPlans.find(p => p.slug === selectedPlan)?.price || 0).toFixed(2).replace('.', ',')}/mês</>
+                            )}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -584,7 +658,7 @@ export default function PlanPage() {
                             <div className="text-center bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl w-full">
                                 <p className="text-[10px] text-emerald-500 uppercase font-black tracking-widest">Valor do Pix</p>
                                 <p className="text-2xl font-black text-slate-100">
-                                    R$ {(pixData.amount || Number(PLANS[selectedPlan || 'basic']?.price || 0)).toFixed(2).replace('.', ',')}
+                                    R$ {(pixData.amount || Number((selectedAddon ? selectedAddon.price : dynamicPlans.find(p => p.slug === selectedPlan)?.price) || 0)).toFixed(2).replace('.', ',')}
                                 </p>
                             </div>
 
@@ -647,7 +721,7 @@ export default function PlanPage() {
                                 <div className="pt-4 flex justify-around border-t border-blue-500/10">
                                     <div className="text-center">
                                         <p className="text-[10px] text-slate-500 uppercase font-bold">Valor</p>
-                                        <p className="text-sm font-black text-slate-100">R$ {(boletoData.amount || (selectedPlan ? PLANS[selectedPlan]?.price : 0)).toFixed(2).replace('.', ',')}</p>
+                                        <p className="text-sm font-black text-slate-100">R$ {(boletoData.amount || Number((selectedAddon ? selectedAddon.price : dynamicPlans.find(p => p.slug === selectedPlan)?.price) || 0)).toFixed(2).replace('.', ',')}</p>
                                     </div>
                                     <div className="text-center">
                                         <p className="text-[10px] text-slate-500 uppercase font-bold">Vencimento</p>

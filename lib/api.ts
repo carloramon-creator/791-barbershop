@@ -176,6 +176,14 @@ export const Api = {
         apiFetch(`/api/system/tenants/${id}`, { method: 'PATCH', body: JSON.stringify(updates) }),
     deleteSystemTenant: (id: string) => apiFetch(`/api/system/tenants/${id}`, { method: 'DELETE' }),
 
+    getSystemPlans: () => apiFetch('/api/system/plans'),
+    createSystemPlan: (payload: Record<string, unknown>) => apiFetch('/api/system/plans', { method: 'POST', body: JSON.stringify(payload) }),
+    updateSystemPlan: (payload: Record<string, unknown>) => apiFetch('/api/system/plans', { method: 'PATCH', body: JSON.stringify(payload) }),
+
+    getSystemAddons: () => apiFetch('/api/system/addons'),
+    createSystemAddon: (payload: Record<string, unknown>) => apiFetch('/api/system/addons', { method: 'POST', body: JSON.stringify(payload) }),
+    updateSystemAddon: (payload: Record<string, unknown>) => apiFetch('/api/system/addons', { method: 'PATCH', body: JSON.stringify(payload) }),
+
     // Public/Client Actions
     getPublicQueueStatus: (tenantId?: string) => apiFetch(`/api/public/queue?tenant_id=${tenantId || ''}`),
     enterPublicQueue: (payload: Record<string, any>) => apiFetch('/api/public/queue/enter', { method: 'POST', body: JSON.stringify(payload) }),

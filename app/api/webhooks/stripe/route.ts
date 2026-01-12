@@ -76,35 +76,57 @@ export async function POST(req: Request) {
 // Função para tratar checkout completado (primeira assinatura)
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const tenantId = session.metadata?.tenant_id;
-    const plan = session.metadata?.plan;
+    const planSlug = session.metadata?.plan;
+    const addonSlug = session.metadata?.addon;
+    const isAddon = session.metadata?.is_addon === 'true';
     const couponId = session.metadata?.coupon_id;
 
-    if (!tenantId || !plan) {
-        console.error('[STRIPE] CRITICAL: Metadata faltando no checkout (tenantId/plan). Session:', session.id, 'Metadata:', session.metadata);
+    if (!tenantId || (!planSlug && !addonSlug)) {
+        console.error('[STRIPE] CRITICAL: Metadata faltando no checkout (tenantId/plan/addon). Session:', session.id, 'Metadata:', session.metadata);
         return;
     }
 
-    console.log(`[STRIPE] Processando Checkout: Tenant=${tenantId}, Plan=${plan}`);
+    console.log(`[STRIPE] Processando Checkout: Tenant=${tenantId}, Item=${addonSlug || planSlug}, Type=${isAddon ? 'Addon' : 'Plan'}`);
 
-    // Atualizar tenant com informações da assinatura
-    await supabaseAdmin
-        .from('tenants')
-        .update({
-            plan: plan,
-            stripe_customer_id: session.customer as string,
-            stripe_subscription_id: session.subscription as string,
-            subscription_status: 'active',
-        })
-        .eq('id', tenantId);
+    if (isAddon && addonSlug) {
+        // 1. Ativar Addon
+        const { data: addonData } = await supabaseAdmin
+            .from('system_addons')
+            .select('id')
+            .eq('slug', addonSlug)
+            .single();
 
-    // Marcar trial como convertido
-    await supabaseAdmin
-        .from('trial_subscriptions')
-        .update({ status: 'converted' })
-        .eq('tenant_id', tenantId)
-        .eq('status', 'active');
+        if (addonData) {
+            await supabaseAdmin
+                .from('tenant_addons')
+                .upsert({
+                    tenant_id: tenantId,
+                    addon_id: addonData.id,
+                    status: 'active',
+                    stripe_subscription_id: session.subscription as string
+                });
+        }
+    } else if (planSlug) {
+        // 2. Atualizar Plano
+        await supabaseAdmin
+            .from('tenants')
+            .update({
+                plan: planSlug,
+                stripe_customer_id: session.customer as string,
+                stripe_subscription_id: session.subscription as string,
+                subscription_status: 'active',
+            })
+            .eq('id', tenantId);
 
-    console.log('[STRIPE] Tenant atualizado:', tenantId);
+        // Marcar trial como convertido
+        await supabaseAdmin
+            .from('trial_subscriptions')
+            .update({ status: 'converted' })
+            .eq('tenant_id', tenantId)
+            .eq('status', 'active');
+    }
+
+    console.log('[STRIPE] Banco de dados atualizado para checkout concluído.');
 
     // Registrar uso do cupom, se aplicável
     if (couponId && couponId !== 'null') {
@@ -121,7 +143,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
                     tenant_id: tenantId,
                     stripe_session_id: session.id,
                     stripe_subscription_id: session.subscription as string,
-                    plan: plan,
+                    plan: planSlug || addonSlug,
                     discount_applied: discountApplied
                 });
 
@@ -147,7 +169,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
                 tenant_id: tenantId, // Associar ao tenant para aparecer no histórico dele
                 type: 'revenue',
                 value: amount,
-                description: `Assinatura SaaS - Plano ${plan} (Stripe - Checkout)`,
+                description: `Assinatura SaaS - ${isAddon ? 'Add-on' : 'Plano'} ${addonSlug || planSlug} (Stripe - Checkout)`,
                 date: new Date().toISOString().split('T')[0],
                 is_paid: true,
                 metadata: {
