@@ -179,8 +179,45 @@ export async function POST(req: Request) {
                     }
                 }
             } catch (error) {
-                console.error('Erro ao validar cupom:', error);
-                // Segue sem cupom para não travar o checkout
+                console.error('Erro ao validar cupom no Stripe:', error);
+            }
+
+            // Fallback: Verificar DB local e tentar sincronizar (Auto-Heal)
+            if (discounts.length === 0) {
+                try {
+                    const { data: dbCoupon } = await supabaseAdmin
+                        .from('system_coupons')
+                        .select('*')
+                        .eq('code', coupon.toUpperCase())
+                        .single();
+
+                    if (dbCoupon && dbCoupon.is_active) {
+                        console.log(`[CHECKOUT] Cupom encontrado no DB mas não no Stripe. Tentando sincronizar: ${coupon}`);
+
+                        try {
+                            const redeemBy = dbCoupon.expires_at ? Math.floor(new Date(dbCoupon.expires_at).getTime() / 1000) : undefined;
+
+                            // Criação on-the-fly no Stripe
+                            await stripeClient.coupons.create({
+                                id: dbCoupon.code,
+                                percent_off: dbCoupon.discount_percent || undefined,
+                                duration: 'once',
+                                name: `Cupom 791: ${dbCoupon.code}`,
+                                redeem_by: redeemBy
+                            });
+                            discounts.push({ coupon: dbCoupon.code });
+                        } catch (stripeErr: any) {
+                            if (stripeErr.message && stripeErr.message.includes('already exists')) {
+                                // Se já existe, força o uso do ID
+                                discounts.push({ coupon: dbCoupon.code });
+                            } else {
+                                console.warn('[CHECKOUT] Erro ao auto-sincronizar cupom:', stripeErr);
+                            }
+                        }
+                    }
+                } catch (dbErr) {
+                    console.warn('[CHECKOUT] Erro no fallback de cupom DB:', dbErr);
+                }
             }
         } else {
             // Se não enviou cupom, habilita o campo na tela do Stripe (será setado no sessionConfig)
