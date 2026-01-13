@@ -257,7 +257,6 @@ export default function PlanPage() {
                             </h2>
                             <div className="grid grid-cols-1 gap-3">
                                 {dynamicAddons.filter(addon => {
-                                    if (currentPlan === 'premium' || currentPlan === 'complete') return false; // Premium/Complete já têm tudo
                                     const currentPlanData = dynamicPlans.find(p => p.slug === currentPlan);
                                     const featuresStr = JSON.stringify(currentPlanData?.features || []).toLowerCase();
                                     return !featuresStr.includes(addon.slug.toLowerCase());
