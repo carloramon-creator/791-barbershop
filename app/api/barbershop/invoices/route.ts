@@ -235,12 +235,12 @@ export async function GET(req: Request) {
         }
 
         // 3. Buscar faturas atualizadas
-        // Removi o filtro ilike rigoroso para garantir que nada fique de fora
+        // Busca abrangente: identifies by metadata flag OR description keywords
         const { data: invoices, error } = await supabaseAdmin
             .from('finance')
             .select('*')
             .eq('tenant_id', tenant.id)
-            .or('description.ilike.%SaaS%,description.ilike.%Assinatura%,description.ilike.%Renovação%')
+            .or('metadata->>is_saas_payment.eq.true,description.ilike.%SaaS%,description.ilike.%Assinatura%,description.ilike.%Renovação%,metadata->>plan.neq.null,metadata->>addon.neq.null')
             .order('date', { ascending: false })
             .order('created_at', { ascending: false });
 

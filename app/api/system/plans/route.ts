@@ -9,10 +9,8 @@ export async function OPTIONS(req: Request) {
 
 export async function GET(req: Request) {
     try {
-        const { isSystemAdmin } = await getCurrentUserAndTenant();
-        if (!isSystemAdmin) {
-            return addCorsHeaders(req, NextResponse.json({ error: 'Acesso negado' }, { status: 403 }));
-        }
+        // Permitir que qualquer usuário autenticado veja os planos
+        await getCurrentUserAndTenant();
 
         const { data: plans, error } = await supabaseAdmin
             .from('system_plans')
