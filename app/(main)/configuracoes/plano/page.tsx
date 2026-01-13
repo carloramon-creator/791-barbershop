@@ -383,32 +383,29 @@ export default function PlanPage() {
                 </div>
             ) : (
                 <>
-                    <Card className="bg-slate-900 border-slate-800">
-                        <CardHeader>
-                            <CardTitle className="text-slate-100">Plano Atual</CardTitle>
-                            <CardDescription className="text-slate-500">
-                                Seu plano ativo e limite de funcionalidades
-                            </CardDescription>
+                    <Card className="bg-slate-900 border-slate-800 shadow-sm">
+                        <CardHeader className="py-3 px-4 border-b border-slate-800/50">
+                            <CardTitle className="text-slate-100 text-sm font-bold">Plano Atual</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="bg-slate-950 p-6 rounded-lg border border-slate-800">
+                        <CardContent className="p-4">
+                            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
                                 <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center font-black text-white text-xl shadow-lg shadow-blue-900/40">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center font-black text-white text-lg shadow-lg shadow-blue-900/40">
                                             {currentPlan.charAt(0).toUpperCase()}
                                         </div>
                                         <div>
-                                            <h3 className="text-2xl font-black text-slate-100 capitalize tracking-tight">
+                                            <h3 className="text-lg font-black text-slate-100 capitalize tracking-tight leading-tight">
                                                 {dynamicPlans.find(p => p.slug === currentPlan)?.name || currentPlan}
                                             </h3>
-                                            <p className="text-sm text-slate-400 mt-1">
+                                            <p className="text-xs text-slate-500 mt-0.5">
                                                 R$ {(dynamicPlans.find(p => p.slug === currentPlan)?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex flex-col items-end gap-2">
+                                    <div className="flex flex-col items-end gap-1.5">
                                         <span className={cn(
-                                            "px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-full border",
+                                            "px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-full border",
                                             subscriptionStatus === 'canceled'
                                                 ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
                                                 : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
@@ -419,7 +416,7 @@ export default function PlanPage() {
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                className="text-[10px] text-red-500 hover:text-red-400 font-bold uppercase"
+                                                className="h-6 text-[8px] text-red-500/70 hover:text-red-500 font-bold uppercase p-0"
                                                 onClick={handleCancelSubscription}
                                                 disabled={canceling}
                                             >
@@ -443,51 +440,60 @@ export default function PlanPage() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {dynamicAddons.map((addon) => {
-                                const isActive = activeAddons.includes(addon.slug);
-                                return (
-                                    <Card key={addon.id} className={cn(
-                                        "bg-slate-900 border-slate-800 transition-all hover:border-slate-700 relative overflow-hidden group",
-                                        isActive && "border-emerald-500/50 bg-emerald-500/5"
-                                    )}>
-                                        {isActive && (
-                                            <div className="absolute top-0 right-0 p-2">
-                                                <CheckCircle2 className="text-emerald-500" size={16} />
-                                            </div>
-                                        )}
-                                        <CardContent className="p-6">
-                                            <div className="space-y-1">
-                                                <h3 className="text-sm font-black text-slate-100 uppercase tracking-tight">{addon.name}</h3>
-                                                <p className="text-[10px] text-slate-500 font-medium leading-relaxed h-8 line-clamp-2">{addon.description}</p>
-                                            </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {dynamicAddons
+                                .filter(addon => {
+                                    const currentPlanData = dynamicPlans.find(p => p.slug === currentPlan);
+                                    if (!currentPlanData) return true;
+                                    // Se o nome do addon ou slug estiver em alguma feature do plano, oculta
+                                    const featuresStr = JSON.stringify(currentPlanData.features || []).toLowerCase();
+                                    return !featuresStr.includes(addon.slug.toLowerCase()) &&
+                                        !featuresStr.includes(addon.name.toLowerCase().replace('módulo ', ''));
+                                })
+                                .map((addon) => {
+                                    const isActive = activeAddons.includes(addon.slug);
+                                    return (
+                                        <Card key={addon.id} className={cn(
+                                            "bg-slate-900 border-slate-800 transition-all hover:border-slate-700 relative overflow-hidden group shadow-sm",
+                                            isActive && "border-emerald-500/50 bg-emerald-500/5"
+                                        )}>
+                                            {isActive && (
+                                                <div className="absolute top-1 right-1">
+                                                    <CheckCircle2 className="text-emerald-500" size={14} />
+                                                </div>
+                                            )}
+                                            <CardContent className="p-4">
+                                                <div className="space-y-0.5">
+                                                    <h3 className="text-xs font-black text-slate-100 uppercase tracking-tight">{addon.name}</h3>
+                                                    <p className="text-[9px] text-slate-500 font-medium leading-tight line-clamp-1">{addon.description}</p>
+                                                </div>
 
-                                            <div className="mt-4 flex items-center justify-between">
-                                                <p className="text-xs font-black text-amber-400">
-                                                    + R$ {Number(addon.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}<span className="text-[8px] text-slate-600 ml-1">/mês</span>
-                                                </p>
-                                                <Button
-                                                    size="sm"
-                                                    variant={isActive ? "outline" : "default"}
-                                                    disabled={isActive || saving}
-                                                    onClick={() => {
-                                                        setSelectedAddon(addon);
-                                                        setSelectedPlan(null);
-                                                        setPaymentMethod('card');
-                                                        setOpenDialog(true);
-                                                    }}
-                                                    className={cn(
-                                                        "h-8 text-[9px] font-black uppercase tracking-widest px-4",
-                                                        isActive ? "border-emerald-500/50 text-emerald-500" : "bg-blue-600 hover:bg-blue-500 text-white"
-                                                    )}
-                                                >
-                                                    {isActive ? 'Ativado' : 'Adicionar'}
-                                                </Button>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                );
-                            })}
+                                                <div className="mt-3 flex items-center justify-between gap-2">
+                                                    <p className="text-xs font-black text-amber-400">
+                                                        + R$ {Number(addon.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}<span className="text-[8px] text-slate-600 ml-1">/mês</span>
+                                                    </p>
+                                                    <Button
+                                                        size="sm"
+                                                        variant={isActive ? "outline" : "default"}
+                                                        disabled={isActive || saving}
+                                                        onClick={() => {
+                                                            setSelectedAddon(addon);
+                                                            setSelectedPlan(null);
+                                                            setPaymentMethod('card');
+                                                            setOpenDialog(true);
+                                                        }}
+                                                        className={cn(
+                                                            "h-7 text-[8px] font-black uppercase tracking-widest px-3",
+                                                            isActive ? "border-emerald-500/50 text-emerald-500" : "bg-blue-600 hover:bg-blue-500 text-white"
+                                                        )}
+                                                    >
+                                                        {isActive ? 'Ativado' : 'Adicionar'}
+                                                    </Button>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
                         </div>
                     </div>
 
