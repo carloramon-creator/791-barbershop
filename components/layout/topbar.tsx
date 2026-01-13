@@ -28,6 +28,39 @@ export function Topbar() {
                     <div className="text-sm font-bold text-slate-400 hidden md:block uppercase tracking-widest">
                         Painel Administrativo
                     </div>
+                    {/* Indicador de Plano */}
+                    {tenant && (
+                        <div className="hidden lg:flex items-center px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-medium">
+                            {tenant.plan === 'trial' || tenant.subscription_status === 'trialing' ? (
+                                (() => {
+                                    let daysLeft = 0;
+                                    if (tenant.subscription_current_period_end) {
+                                        const end = new Date(tenant.subscription_current_period_end);
+                                        const now = new Date();
+                                        // Se a data é futura, calcula a diferença. Se passada, é 0.
+                                        if (end > now) {
+                                            daysLeft = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                                        }
+                                    }
+                                    return (
+                                        <div className="flex items-center gap-2 text-amber-500">
+                                            <Clock size={14} />
+                                            <span>
+                                                Período de teste: <span className="text-amber-400 font-bold">{daysLeft} dias</span>
+                                            </span>
+                                        </div>
+                                    );
+                                })()
+                            ) : (
+                                <div className="flex items-center gap-2 text-blue-400">
+                                    <CreditCard size={14} />
+                                    <span>
+                                        Plano {tenant.plan === 'basic' ? 'Básico' : tenant.plan === 'complete' ? 'Completo' : tenant.plan === 'premium' ? 'Premium' : tenant.plan}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    )}
                     <div className="md:hidden text-lg font-black text-blue-600">791</div>
                 </div>
 
