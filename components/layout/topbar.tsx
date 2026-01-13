@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/lib/auth-provider';
-import { User, Sun, Moon, Menu, AlertTriangle } from 'lucide-react';
+import { User, Sun, Moon, Menu, AlertTriangle, Clock, CreditCard } from 'lucide-react';
 import { useTheme } from '@/lib/theme-provider';
 import { Button } from '@/components/ui/button';
 
