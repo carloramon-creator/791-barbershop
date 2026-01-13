@@ -51,10 +51,12 @@ export async function POST(req: Request) {
                     });
                     processedCount++;
                 } else if (isCanceled) {
-                    console.log(`[INTER WEBHOOK] Cobrança ${notif.nossoNumero} marcada como ${situacao}. Atualizando registro.`);
+                    console.log(`[INTER WEBHOOK] Cobrança ${notif.nossoNumero} marcada como ${situacao}. REMOVENDO registro local.`);
+                    // Em vez de apenas atualizar o metadado, vamos remover para limpar o histórico do usuário
                     await supabaseAdmin.from('finance')
-                        .update({ metadata: { ...notif, status_inter: situacao } })
+                        .delete()
                         .eq('metadata->>nosso_numero', notif.nossoNumero);
+                    processedCount++;
                 } else {
                     console.log(`[INTER WEBHOOK] Ignorando status intermediário: ${situacao}`);
                 }

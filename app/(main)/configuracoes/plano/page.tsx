@@ -549,505 +549,506 @@ export default function PlanPage() {
                             ))}
                         </div>
                     </div>
-                </>
-            )}
+                    {/* O loading agora fecha mais abaixo, englobando tudo */}
 
-            <Dialog open={openDialog} onOpenChange={(open) => {
-                setOpenDialog(open);
-                if (!open) {
-                    setPixData(null);
-                    setBoletoData(null);
-                    setPendingData(null);
-                    setError(null);
-                }
-            }}>
-                <DialogContent
-                    className="border-slate-800 light:border-slate-200 bg-slate-900 light:bg-white text-slate-100 light:text-slate-900 max-w-md rounded-2xl md:rounded-3xl"
-                    onPointerDownOutside={() => fetchInvoices()}
-                    onEscapeKeyDown={() => fetchInvoices()}
-                >
-                    <DialogHeader>
-                        <DialogTitle className="font-black text-xl md:text-2xl tracking-tighter uppercase">Confirmar Contratação</DialogTitle>
-                        <DialogDescription className="text-slate-400 light:text-slate-500 font-bold">
-                            {selectedAddon ? (
-                                <>Módulo <span className="text-amber-500 uppercase">{selectedAddon.name}</span> — R$ {Number(selectedAddon.price).toFixed(2).replace('.', ',')}/mês</>
+                    <Dialog open={openDialog} onOpenChange={(open) => {
+                        setOpenDialog(open);
+                        if (!open) {
+                            setPixData(null);
+                            setBoletoData(null);
+                            setPendingData(null);
+                            setError(null);
+                        }
+                    }}>
+                        <DialogContent
+                            className="border-slate-800 light:border-slate-200 bg-slate-900 light:bg-white text-slate-100 light:text-slate-900 max-w-md rounded-2xl md:rounded-3xl"
+                            onPointerDownOutside={() => fetchInvoices()}
+                            onEscapeKeyDown={() => fetchInvoices()}
+                        >
+                            <DialogHeader>
+                                <DialogTitle className="font-black text-xl md:text-2xl tracking-tighter uppercase">Confirmar Contratação</DialogTitle>
+                                <DialogDescription className="text-slate-400 light:text-slate-500 font-bold">
+                                    {selectedAddon ? (
+                                        <>Módulo <span className="text-amber-500 uppercase">{selectedAddon.name}</span> — R$ {Number(selectedAddon.price).toFixed(2).replace('.', ',')}/mês</>
+                                    ) : (
+                                        <>Plano <span className="text-blue-600 capitalize">{selectedPlan}</span> — R$ {(dynamicPlans.find(p => p.slug === selectedPlan)?.price || 0).toFixed(2).replace('.', ',')}/mês</>
+                                    )}
+                                </DialogDescription>
+                            </DialogHeader>
+
+
+                            {!pixData && !boletoData && !pendingData && (
+                                <div className="py-4 space-y-4">
+                                    <Label className="text-xs text-slate-500 uppercase tracking-wider">Forma de Pagamento</Label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <button
+                                            onClick={() => setPaymentMethod('card')}
+                                            className={cn(
+                                                "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
+                                                paymentMethod === 'card'
+                                                    ? "border-amber-500 bg-amber-500/5 text-slate-100"
+                                                    : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
+                                            )}
+                                        >
+                                            <CreditCard className="w-5 h-5" />
+                                            <span className="text-[10px] font-black uppercase">Cartão</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setPaymentMethod('pix')}
+                                            className={cn(
+                                                "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
+                                                paymentMethod === 'pix'
+                                                    ? "border-emerald-500 bg-emerald-500/5 text-slate-100"
+                                                    : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
+                                            )}
+                                        >
+                                            <span className="text-lg font-black leading-none">PIX</span>
+                                            <span className="text-[10px] font-black uppercase">Inter</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setPaymentMethod('boleto-inter')}
+                                            className={cn(
+                                                "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
+                                                paymentMethod === 'boleto-inter'
+                                                    ? "border-blue-500 bg-blue-500/5 text-slate-100"
+                                                    : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
+                                            )}
+                                        >
+                                            <FileText className="w-5 h-5" />
+                                            <span className="text-[10px] font-black uppercase">Boleto</span>
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-2 pt-2">
+                                        <Label className="text-xs text-slate-500 uppercase tracking-wider">Possui um cupom?</Label>
+                                        <input
+                                            type="text"
+                                            placeholder="INSIRA SEU CUPOM"
+                                            value={couponCode}
+                                            onChange={(e) => {
+                                                setCouponCode(e.target.value.toUpperCase());
+                                                setError(null);
+                                            }}
+                                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:border-amber-500 outline-none transition-all"
+                                        />
+                                        {paymentMethod === 'boleto-inter' && !tenantHasDocument && (
+                                            <p className="text-[10px] font-bold text-red-500 uppercase tracking-tight mt-2 animate-pulse leading-tight">
+                                                Para gerar boleto, é necessário cadastrar o CPF ou CNPJ em Configurações &gt; Barbearia.
+                                            </p>
+                                        )}
+                                        {error && (
+                                            <p className="text-[10px] font-bold text-red-500 uppercase tracking-tight mt-1 animate-pulse">
+                                                {error}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {pendingData && (
+                                <div className="py-8 text-center space-y-4">
+                                    <div className="bg-amber-500/10 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto border border-amber-500/20">
+                                        <Activity className="animate-spin text-amber-500 w-8 h-8" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-slate-100">Gerando Cobrança...</h3>
+                                    <p className="text-slate-400 text-sm px-4">{pendingData.message || 'O banco está processando o documento. Isso pode levar alguns minutos devido à alta demanda.'}</p>
+                                    <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs text-slate-500 mt-4 mx-4">
+                                        Fique tranquilo, a cobrança já foi registrada. Assim que o banco liberar o PDF/QR Code, ele aparecerá aqui ou no seu e-mail.
+                                    </div>
+                                </div>
+                            )}
+
+                            {pixData && !pendingData && (
+                                <div className="py-4 flex flex-col items-center space-y-4">
+                                    <div className="text-center bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl w-full">
+                                        <p className="text-[10px] text-emerald-500 uppercase font-black tracking-widest">Valor do Pix</p>
+                                        <p className="text-2xl font-black text-slate-100">
+                                            R$ {(pixData.amount || Number((selectedAddon ? selectedAddon.price : dynamicPlans.find(p => p.slug === selectedPlan)?.price) || 0)).toFixed(2).replace('.', ',')}
+                                        </p>
+                                    </div>
+
+                                    <p className="text-center text-xs text-slate-400">
+                                        Escaneie o código abaixo para pagar via Pix. O acesso é liberado na hora!
+                                    </p>
+
+                                    <div className="bg-white p-3 rounded-xl border-4 border-emerald-500 shadow-xl">
+                                        <QRCodeCanvas
+                                            value={pixData.pixPayload}
+                                            size={160}
+                                            level="H"
+                                            includeMargin={true}
+                                        />
+                                    </div>
+
+                                    <div className="w-full space-y-2">
+                                        <Label className="text-[10px] text-slate-500 uppercase font-black">Copia e Cola</Label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                readOnly
+                                                value={pixData.pixPayload}
+                                                className="flex-1 bg-slate-950 border border-slate-800 rounded px-3 py-2 text-[10px] font-mono text-slate-400"
+                                            />
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="border-slate-700"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(pixData.pixPayload);
+                                                    alert('Copiado!');
+                                                }}
+                                            >
+                                                Copiar
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    {pixData.pdfUrl && (
+                                        <Button
+                                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-tight py-6 rounded-xl"
+                                            onClick={() => window.open(pixData.pdfUrl, '_blank')}
+                                        >
+                                            <FileCheck className="w-5 h-5 mr-2" />
+                                            Baixar Comprovante / PDF
+                                        </Button>
+                                    )}
+                                </div>
+                            )}
+
+                            {boletoData && !pendingData && (
+                                <div className="py-4 space-y-4">
+                                    <div className="bg-blue-600/10 border border-blue-500/20 p-4 rounded-2xl text-center space-y-2">
+                                        <div className="w-12 h-12 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                                            <FileText className="w-6 h-6 text-blue-500" />
+                                        </div>
+                                        <h3 className="font-black text-slate-100 uppercase tracking-tight text-lg">Boleto Registrado</h3>
+                                        <p className="text-xs text-slate-400">Pague agora pelo seu banco e libere seu acesso.</p>
+
+                                        <div className="pt-4 flex justify-around border-t border-blue-500/10">
+                                            <div className="text-center">
+                                                <p className="text-[10px] text-slate-500 uppercase font-bold">Valor</p>
+                                                <p className="text-sm font-black text-slate-100">R$ {(boletoData.amount || Number((selectedAddon ? selectedAddon.price : dynamicPlans.find(p => p.slug === selectedPlan)?.price) || 0)).toFixed(2).replace('.', ',')}</p>
+                                            </div>
+                                            <div className="text-center">
+                                                <p className="text-[10px] text-slate-500 uppercase font-bold">Vencimento</p>
+                                                <p className="text-sm font-black text-slate-100">{new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Código de Barras / Linha Digitável</Label>
+                                        <div className="flex gap-2">
+                                            <div className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-[11px] font-mono text-blue-400 break-all leading-relaxed">
+                                                {boletoData.linhaDigitavel}
+                                            </div>
+                                            <Button
+                                                size="icon"
+                                                variant="outline"
+                                                className="h-auto border-slate-800 bg-slate-950 hover:bg-slate-900 group"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(boletoData.linhaDigitavel);
+                                                    alert('Linha digitável copiada!');
+                                                }}
+                                            >
+                                                <Copy className="w-4 h-4 text-slate-500 group-hover:text-blue-500" />
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <Button
+                                            className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-tight shadow-lg shadow-blue-600/20"
+                                            onClick={() => window.open(boletoData.pdfUrl, '_blank')}
+                                        >
+                                            <ExternalLink className="w-4 h-4 mr-2" />
+                                            Imprimir / Ver PDF Completo
+                                        </Button>
+                                    </div>
+
+                                    <div className="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 space-y-2">
+                                        <p className="text-[10px] text-amber-500 text-center uppercase tracking-widest leading-relaxed font-bold">
+                                            ⚠️ ATENÇÃO: O banco pode levar até 20 minutos para registrar o boleto.
+                                            <br />
+                                            Se o PDF não abrir ou der erro, aguarde alguns minutos e tente novamente pelo Histórico de Faturas.
+                                        </p>
+                                        <p className="text-[10px] text-slate-500 text-center uppercase tracking-widest leading-relaxed font-medium pt-2 border-t border-slate-800/50">
+                                            A compensação bancária ocorre em até 2 dias úteis.<br />
+                                            Dica: Use o Pix para liberação instantânea.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <DialogFooter>
+                                {!pixData && !boletoData && !pendingData ? (
+                                    <>
+                                        <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800" onClick={() => { setOpenDialog(false); fetchInvoices(); }} disabled={saving}>Cancelar</Button>
+                                        <Button onClick={handleChangePlan} disabled={saving} className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
+                                            {saving ? 'Processando...' : 'Confirmar e Pagar'}
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Button onClick={() => { setOpenDialog(false); fetchInvoices(); }} className="w-full bg-slate-800 text-white hover:bg-slate-700">Fechar</Button>
+                                )}
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* --- SEÇÃO DE HISTÓRICO DE FATURAS --- */}
+                    <div className="mt-12 space-y-6">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-blue-500/10 p-2 rounded-lg">
+                                    <FileText className="w-5 h-5 text-blue-500" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-100">Meu Histórico de Faturas</h2>
+                                    <p className="text-xs text-slate-500">Acompanhe seus pagamentos e baixe boletos anteriores.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm">
+                            {loadingInvoices ? (
+                                <div className="py-12 text-center text-slate-500 animate-pulse uppercase text-[10px] font-black tracking-widest"> Carregando faturas... </div>
+                            ) : invoices.length === 0 ? (
+                                <div className="py-12 text-center text-slate-600 uppercase text-[10px] font-black tracking-widest"> Nenhuma fatura encontrada. </div>
                             ) : (
-                                <>Plano <span className="text-blue-600 capitalize">{selectedPlan}</span> — R$ {(dynamicPlans.find(p => p.slug === selectedPlan)?.price || 0).toFixed(2).replace('.', ',')}/mês</>
-                            )}
-                        </DialogDescription>
-                    </DialogHeader>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-slate-950/50 border-b border-slate-800">
+                                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Data</th>
+                                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Descrição</th>
+                                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Método</th>
+                                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Valor</th>
+                                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</th>
+                                                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-left">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-800">
+                                            {invoices.map((inv) => (
+                                                <tr key={inv.id} className="hover:bg-slate-800/30 transition-colors">
+                                                    <td className="px-6 py-4 text-xs text-slate-400">
+                                                        {(() => {
+                                                            const dateStr = inv.date;
+                                                            if (!dateStr) return '---';
+                                                            if (dateStr.length === 10) {
+                                                                const [y, m, d] = dateStr.split('-');
+                                                                return `${d}/${m}/${y}`;
+                                                            }
+                                                            return new Date(dateStr).toLocaleDateString('pt-BR');
+                                                        })()}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <p className="text-xs font-bold text-slate-200">{inv.description}</p>
+                                                        <p className="text-[10px] text-slate-500 font-mono">ID: {inv.metadata?.nosso_numero || inv.id.slice(0, 8)}</p>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            {inv.metadata?.method === 'pix_inter' ? (
+                                                                <span className="flex items-center gap-1 font-black text-[9px] text-emerald-500 bg-emerald-500/5 px-2 py-0.5 rounded border border-emerald-500/20 uppercase tracking-tighter">
+                                                                    <Zap className="w-2.5 h-2.5" /> Pix
+                                                                </span>
+                                                            ) : inv.metadata?.method === 'boleto_inter' ? (
+                                                                <span className="flex items-center gap-1 font-black text-[9px] text-blue-500 bg-blue-500/5 px-2 py-0.5 rounded border border-blue-500/20 uppercase tracking-tighter">
+                                                                    <FileText className="w-2.5 h-2.5" /> Boleto
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-[10px] text-slate-500 uppercase">Cartão</span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-xs font-black text-slate-200">
+                                                        R$ {inv.value.toFixed(2).replace('.', ',')}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {inv.is_paid ? (
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 uppercase">Pago</span>
+                                                        ) : inv.metadata?.status_inter === 'CANCELADO' || inv.metadata?.status_inter === 'EXPIRADO' ? (
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-rose-500/10 text-rose-500 border border-rose-500/20 uppercase">Cancelado</span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/10 text-amber-500 border border-amber-500/20 uppercase">Pendente</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-left whitespace-nowrap">
+                                                        <div className="flex items-center justify-start gap-3">
+                                                            {/* Só mostra botões de ação se NÃO estiver pago E NÃO estiver cancelado/expirado */}
+                                                            {!inv.is_paid &&
+                                                                (inv.metadata?.method === 'boleto_inter' || inv.metadata?.method === 'pix_inter') &&
+                                                                inv.metadata?.status_inter !== 'CANCELADO' &&
+                                                                inv.metadata?.status_inter !== 'EXPIRADO' && (
+                                                                    <>
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="ghost"
+                                                                            className="h-8 text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 text-[10px] font-black uppercase"
+                                                                            onClick={async () => {
+                                                                                if (!confirm('Verificar status do pagamento no banco agora?')) return;
+                                                                                try {
+                                                                                    // Tenta pelo seu_numero ou txid
+                                                                                    const seuNumero = inv.metadata.seu_numero;
+                                                                                    const txid = inv.metadata.txid;
 
+                                                                                    // Chama endpoint de Polling para atualizar status
+                                                                                    let url = `/api/barbershop/check-pending-payment?force=true`;
+                                                                                    if (seuNumero) url += `&seu_numero=${seuNumero}`;
+                                                                                    else if (txid) url += `&txid=${txid}`; // Fallback se o endpoint suportar txid direto no query
 
-                    {!pixData && !boletoData && !pendingData && (
-                        <div className="py-4 space-y-4">
-                            <Label className="text-xs text-slate-500 uppercase tracking-wider">Forma de Pagamento</Label>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <button
-                                    onClick={() => setPaymentMethod('card')}
-                                    className={cn(
-                                        "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
-                                        paymentMethod === 'card'
-                                            ? "border-amber-500 bg-amber-500/5 text-slate-100"
-                                            : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
-                                    )}
-                                >
-                                    <CreditCard className="w-5 h-5" />
-                                    <span className="text-[10px] font-black uppercase">Cartão</span>
-                                </button>
-                                <button
-                                    onClick={() => setPaymentMethod('pix')}
-                                    className={cn(
-                                        "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
-                                        paymentMethod === 'pix'
-                                            ? "border-emerald-500 bg-emerald-500/5 text-slate-100"
-                                            : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
-                                    )}
-                                >
-                                    <span className="text-lg font-black leading-none">PIX</span>
-                                    <span className="text-[10px] font-black uppercase">Inter</span>
-                                </button>
-                                <button
-                                    onClick={() => setPaymentMethod('boleto-inter')}
-                                    className={cn(
-                                        "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
-                                        paymentMethod === 'boleto-inter'
-                                            ? "border-blue-500 bg-blue-500/5 text-slate-100"
-                                            : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
-                                    )}
-                                >
-                                    <FileText className="w-5 h-5" />
-                                    <span className="text-[10px] font-black uppercase">Boleto</span>
-                                </button>
-                            </div>
+                                                                                    // Nota: o endpoint atual suporta seu_numero e busca pelo txid interno no metadada.
+                                                                                    // Se o seu_numero falhar, podemos ter que usar o debug endpoint.
 
-                            <div className="space-y-2 pt-2">
-                                <Label className="text-xs text-slate-500 uppercase tracking-wider">Possui um cupom?</Label>
-                                <input
-                                    type="text"
-                                    placeholder="INSIRA SEU CUPOM"
-                                    value={couponCode}
-                                    onChange={(e) => {
-                                        setCouponCode(e.target.value.toUpperCase());
-                                        setError(null);
-                                    }}
-                                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:border-amber-500 outline-none transition-all"
-                                />
-                                {paymentMethod === 'boleto-inter' && !tenantHasDocument && (
-                                    <p className="text-[10px] font-bold text-red-500 uppercase tracking-tight mt-2 animate-pulse leading-tight">
-                                        Para gerar boleto, é necessário cadastrar o CPF ou CNPJ em Configurações &gt; Barbearia.
-                                    </p>
-                                )}
-                                {error && (
-                                    <p className="text-[10px] font-bold text-red-500 uppercase tracking-tight mt-1 animate-pulse">
-                                        {error}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    )}
+                                                                                    // Vamos usar também o endpoint de DEBUG FORCE CHECK que é garantido
+                                                                                    if (txid) {
+                                                                                        const debugRes = await fetch(`/api/debug/force-check?txid=${txid}`);
+                                                                                        const debugData = await debugRes.json();
+                                                                                        if (debugData.updatedIsPaid || debugData.updated) {
+                                                                                            alert('Status Atualizado! 🚀');
+                                                                                            fetchInvoices();
+                                                                                            return;
+                                                                                        }
+                                                                                    }
 
-                    {pendingData && (
-                        <div className="py-8 text-center space-y-4">
-                            <div className="bg-amber-500/10 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto border border-amber-500/20">
-                                <Activity className="animate-spin text-amber-500 w-8 h-8" />
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-100">Gerando Cobrança...</h3>
-                            <p className="text-slate-400 text-sm px-4">{pendingData.message || 'O banco está processando o documento. Isso pode levar alguns minutos devido à alta demanda.'}</p>
-                            <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs text-slate-500 mt-4 mx-4">
-                                Fique tranquilo, a cobrança já foi registrada. Assim que o banco liberar o PDF/QR Code, ele aparecerá aqui ou no seu e-mail.
-                            </div>
-                        </div>
-                    )}
+                                                                                    // Fallback para polling normal
+                                                                                    if (seuNumero) {
+                                                                                        const res = await fetch(`/api/barbershop/check-pending-payment?seu_numero=${seuNumero}`);
+                                                                                        const data = await res.json();
+                                                                                        if (data.ready || data.statusUpdated) {
+                                                                                            // O pooling já atualiza o is_paid se detectar
+                                                                                            alert('Status Atualizado!');
+                                                                                            fetchInvoices();
+                                                                                        } else {
+                                                                                            alert('Ainda consta como pendente no banco.');
+                                                                                        }
+                                                                                    }
+                                                                                } catch (e: any) {
+                                                                                    alert('Erro ao verificar: ' + e.message);
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            <Activity className="w-3 h-3 mr-1" /> Check
+                                                                        </Button>
 
-                    {pixData && !pendingData && (
-                        <div className="py-4 flex flex-col items-center space-y-4">
-                            <div className="text-center bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl w-full">
-                                <p className="text-[10px] text-emerald-500 uppercase font-black tracking-widest">Valor do Pix</p>
-                                <p className="text-2xl font-black text-slate-100">
-                                    R$ {(pixData.amount || Number((selectedAddon ? selectedAddon.price : dynamicPlans.find(p => p.slug === selectedPlan)?.price) || 0)).toFixed(2).replace('.', ',')}
-                                </p>
-                            </div>
+                                                                        {inv.metadata?.method === 'pix_inter' ? (
+                                                                            <Button
+                                                                                size="sm"
+                                                                                variant="ghost"
+                                                                                className="h-8 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-black uppercase"
+                                                                                onClick={() => {
+                                                                                    // Reabrir Modal Pix
+                                                                                    setPixData({
+                                                                                        amount: inv.value,
+                                                                                        pixPayload: inv.metadata.pix_payload,
+                                                                                        expiresAt: inv.metadata.expires_at || new Date().toISOString(),
+                                                                                        pdfUrl: undefined // Pix pendente não tem PDF
+                                                                                    });
+                                                                                    setPendingData({
+                                                                                        pending: true,
+                                                                                        message: 'Aguardando pagamento...',
+                                                                                        seu_numero: inv.metadata.seu_numero
+                                                                                    }); // Ativa polling UI
+                                                                                    setOpenDialog(true);
+                                                                                }}
+                                                                            >
+                                                                                <Zap className="w-3 h-3 mr-1" /> Ver Pix
+                                                                            </Button>
+                                                                        ) : (
+                                                                            <Button
+                                                                                size="sm"
+                                                                                variant="ghost"
+                                                                                className="h-8 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 text-[10px] font-black uppercase"
+                                                                                onClick={() => {
+                                                                                    const codigoSolicitacao = inv.metadata.txid;
+                                                                                    const nossoNumero = inv.metadata.nosso_numero || '';
+                                                                                    const url = codigoSolicitacao
+                                                                                        ? `/api/checkout/inter-boleto/pdf?codigoSolicitacao=${codigoSolicitacao}&nossoNumero=${nossoNumero}`
+                                                                                        : `/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}`;
+                                                                                    window.open(url, '_blank')
+                                                                                }}
+                                                                            >
+                                                                                <FileText className="w-3 h-3 mr-1" /> PDF
+                                                                            </Button>
+                                                                        )}
+                                                                    </>
+                                                                )}
 
-                            <p className="text-center text-xs text-slate-400">
-                                Escaneie o código abaixo para pagar via Pix. O acesso é liberado na hora!
-                            </p>
-
-                            <div className="bg-white p-3 rounded-xl border-4 border-emerald-500 shadow-xl">
-                                <QRCodeCanvas
-                                    value={pixData.pixPayload}
-                                    size={160}
-                                    level="H"
-                                    includeMargin={true}
-                                />
-                            </div>
-
-                            <div className="w-full space-y-2">
-                                <Label className="text-[10px] text-slate-500 uppercase font-black">Copia e Cola</Label>
-                                <div className="flex gap-2">
-                                    <input
-                                        readOnly
-                                        value={pixData.pixPayload}
-                                        className="flex-1 bg-slate-950 border border-slate-800 rounded px-3 py-2 text-[10px] font-mono text-slate-400"
-                                    />
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="border-slate-700"
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(pixData.pixPayload);
-                                            alert('Copiado!');
-                                        }}
-                                    >
-                                        Copiar
-                                    </Button>
-                                </div>
-                            </div>
-
-                            {pixData.pdfUrl && (
-                                <Button
-                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-tight py-6 rounded-xl"
-                                    onClick={() => window.open(pixData.pdfUrl, '_blank')}
-                                >
-                                    <FileCheck className="w-5 h-5 mr-2" />
-                                    Baixar Comprovante / PDF
-                                </Button>
-                            )}
-                        </div>
-                    )}
-
-                    {boletoData && !pendingData && (
-                        <div className="py-4 space-y-4">
-                            <div className="bg-blue-600/10 border border-blue-500/20 p-4 rounded-2xl text-center space-y-2">
-                                <div className="w-12 h-12 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                                    <FileText className="w-6 h-6 text-blue-500" />
-                                </div>
-                                <h3 className="font-black text-slate-100 uppercase tracking-tight text-lg">Boleto Registrado</h3>
-                                <p className="text-xs text-slate-400">Pague agora pelo seu banco e libere seu acesso.</p>
-
-                                <div className="pt-4 flex justify-around border-t border-blue-500/10">
-                                    <div className="text-center">
-                                        <p className="text-[10px] text-slate-500 uppercase font-bold">Valor</p>
-                                        <p className="text-sm font-black text-slate-100">R$ {(boletoData.amount || Number((selectedAddon ? selectedAddon.price : dynamicPlans.find(p => p.slug === selectedPlan)?.price) || 0)).toFixed(2).replace('.', ',')}</p>
-                                    </div>
-                                    <div className="text-center">
-                                        <p className="text-[10px] text-slate-500 uppercase font-bold">Vencimento</p>
-                                        <p className="text-sm font-black text-slate-100">{new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Código de Barras / Linha Digitável</Label>
-                                <div className="flex gap-2">
-                                    <div className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-[11px] font-mono text-blue-400 break-all leading-relaxed">
-                                        {boletoData.linhaDigitavel}
-                                    </div>
-                                    <Button
-                                        size="icon"
-                                        variant="outline"
-                                        className="h-auto border-slate-800 bg-slate-950 hover:bg-slate-900 group"
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(boletoData.linhaDigitavel);
-                                            alert('Linha digitável copiada!');
-                                        }}
-                                    >
-                                        <Copy className="w-4 h-4 text-slate-500 group-hover:text-blue-500" />
-                                    </Button>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-3">
-                                <Button
-                                    className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-tight shadow-lg shadow-blue-600/20"
-                                    onClick={() => window.open(boletoData.pdfUrl, '_blank')}
-                                >
-                                    <ExternalLink className="w-4 h-4 mr-2" />
-                                    Imprimir / Ver PDF Completo
-                                </Button>
-                            </div>
-
-                            <div className="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 space-y-2">
-                                <p className="text-[10px] text-amber-500 text-center uppercase tracking-widest leading-relaxed font-bold">
-                                    ⚠️ ATENÇÃO: O banco pode levar até 20 minutos para registrar o boleto.
-                                    <br />
-                                    Se o PDF não abrir ou der erro, aguarde alguns minutos e tente novamente pelo Histórico de Faturas.
-                                </p>
-                                <p className="text-[10px] text-slate-500 text-center uppercase tracking-widest leading-relaxed font-medium pt-2 border-t border-slate-800/50">
-                                    A compensação bancária ocorre em até 2 dias úteis.<br />
-                                    Dica: Use o Pix para liberação instantânea.
-                                </p>
-                            </div>
-                        </div>
-                    )}
-
-                    <DialogFooter>
-                        {!pixData && !boletoData && !pendingData ? (
-                            <>
-                                <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800" onClick={() => { setOpenDialog(false); fetchInvoices(); }} disabled={saving}>Cancelar</Button>
-                                <Button onClick={handleChangePlan} disabled={saving} className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
-                                    {saving ? 'Processando...' : 'Confirmar e Pagar'}
-                                </Button>
-                            </>
-                        ) : (
-                            <Button onClick={() => { setOpenDialog(false); fetchInvoices(); }} className="w-full bg-slate-800 text-white hover:bg-slate-700">Fechar</Button>
-                        )}
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* --- SEÇÃO DE HISTÓRICO DE FATURAS --- */}
-            <div className="mt-12 space-y-6">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-blue-500/10 p-2 rounded-lg">
-                            <FileText className="w-5 h-5 text-blue-500" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-slate-100">Meu Histórico de Faturas</h2>
-                            <p className="text-xs text-slate-500">Acompanhe seus pagamentos e baixe boletos anteriores.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm">
-                    {loadingInvoices ? (
-                        <div className="py-12 text-center text-slate-500 animate-pulse uppercase text-[10px] font-black tracking-widest"> Carregando faturas... </div>
-                    ) : invoices.length === 0 ? (
-                        <div className="py-12 text-center text-slate-600 uppercase text-[10px] font-black tracking-widest"> Nenhuma fatura encontrada. </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-slate-950/50 border-b border-slate-800">
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Data</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Descrição</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Método</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Valor</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-left">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-800">
-                                    {invoices.map((inv) => (
-                                        <tr key={inv.id} className="hover:bg-slate-800/30 transition-colors">
-                                            <td className="px-6 py-4 text-xs text-slate-400">
-                                                {(() => {
-                                                    const dateStr = inv.date;
-                                                    if (!dateStr) return '---';
-                                                    if (dateStr.length === 10) {
-                                                        const [y, m, d] = dateStr.split('-');
-                                                        return `${d}/${m}/${y}`;
-                                                    }
-                                                    return new Date(dateStr).toLocaleDateString('pt-BR');
-                                                })()}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <p className="text-xs font-bold text-slate-200">{inv.description}</p>
-                                                <p className="text-[10px] text-slate-500 font-mono">ID: {inv.metadata?.nosso_numero || inv.id.slice(0, 8)}</p>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2">
-                                                    {inv.metadata?.method === 'pix_inter' ? (
-                                                        <span className="flex items-center gap-1 font-black text-[9px] text-emerald-500 bg-emerald-500/5 px-2 py-0.5 rounded border border-emerald-500/20 uppercase tracking-tighter">
-                                                            <Zap className="w-2.5 h-2.5" /> Pix
-                                                        </span>
-                                                    ) : inv.metadata?.method === 'boleto_inter' ? (
-                                                        <span className="flex items-center gap-1 font-black text-[9px] text-blue-500 bg-blue-500/5 px-2 py-0.5 rounded border border-blue-500/20 uppercase tracking-tighter">
-                                                            <FileText className="w-2.5 h-2.5" /> Boleto
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-[10px] text-slate-500 uppercase">Cartão</span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-xs font-black text-slate-200">
-                                                R$ {inv.value.toFixed(2).replace('.', ',')}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                {inv.is_paid ? (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 uppercase">Pago</span>
-                                                ) : inv.metadata?.status_inter === 'CANCELADO' || inv.metadata?.status_inter === 'EXPIRADO' ? (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-rose-500/10 text-rose-500 border border-rose-500/20 uppercase">Cancelado</span>
-                                                ) : (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/10 text-amber-500 border border-amber-500/20 uppercase">Pendente</span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 text-left whitespace-nowrap">
-                                                <div className="flex items-center justify-start gap-3">
-                                                    {/* Só mostra botões de ação se NÃO estiver pago E NÃO estiver cancelado/expirado */}
-                                                    {!inv.is_paid &&
-                                                        (inv.metadata?.method === 'boleto_inter' || inv.metadata?.method === 'pix_inter') &&
-                                                        inv.metadata?.status_inter !== 'CANCELADO' &&
-                                                        inv.metadata?.status_inter !== 'EXPIRADO' && (
-                                                            <>
+                                                            {/* --- AÇÃO: EMITIR NFS-E (SÓ PARA PAGOS SEM NOTA) --- */}
+                                                            {inv.is_paid && !inv.metadata?.nfe_id && (
                                                                 <Button
                                                                     size="sm"
                                                                     variant="ghost"
-                                                                    className="h-8 text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 text-[10px] font-black uppercase"
+                                                                    className="h-8 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 text-[10px] font-black uppercase"
                                                                     onClick={async () => {
-                                                                        if (!confirm('Verificar status do pagamento no banco agora?')) return;
+                                                                        if (!confirm('Deseja emitir a NFS-e Nacional para este pagamento agora?')) return;
                                                                         try {
-                                                                            // Tenta pelo seu_numero ou txid
-                                                                            const seuNumero = inv.metadata.seu_numero;
-                                                                            const txid = inv.metadata.txid;
+                                                                            const { data: { session } } = await supabaseClient.auth.getSession();
+                                                                            if (!session) return;
 
-                                                                            // Chama endpoint de Polling para atualizar status
-                                                                            let url = `/api/barbershop/check-pending-payment?force=true`;
-                                                                            if (seuNumero) url += `&seu_numero=${seuNumero}`;
-                                                                            else if (txid) url += `&txid=${txid}`; // Fallback se o endpoint suportar txid direto no query
+                                                                            const res = await fetch('/api/barbershop/invoices/emit-nfse', {
+                                                                                method: 'POST',
+                                                                                headers: {
+                                                                                    'Content-Type': 'application/json',
+                                                                                    'Authorization': `Bearer ${session.access_token}`
+                                                                                },
+                                                                                body: JSON.stringify({ financeId: inv.id }),
+                                                                            });
 
-                                                                            // Nota: o endpoint atual suporta seu_numero e busca pelo txid interno no metadada.
-                                                                            // Se o seu_numero falhar, podemos ter que usar o debug endpoint.
+                                                                            const data = await res.json();
+                                                                            if (!res.ok) throw new Error(data.error);
 
-                                                                            // Vamos usar também o endpoint de DEBUG FORCE CHECK que é garantido
-                                                                            if (txid) {
-                                                                                const debugRes = await fetch(`/api/debug/force-check?txid=${txid}`);
-                                                                                const debugData = await debugRes.json();
-                                                                                if (debugData.updatedIsPaid || debugData.updated) {
-                                                                                    alert('Status Atualizado! 🚀');
-                                                                                    fetchInvoices();
-                                                                                    return;
-                                                                                }
-                                                                            }
-
-                                                                            // Fallback para polling normal
-                                                                            if (seuNumero) {
-                                                                                const res = await fetch(`/api/barbershop/check-pending-payment?seu_numero=${seuNumero}`);
-                                                                                const data = await res.json();
-                                                                                if (data.ready || data.statusUpdated) {
-                                                                                    // O pooling já atualiza o is_paid se detectar
-                                                                                    alert('Status Atualizado!');
-                                                                                    fetchInvoices();
-                                                                                } else {
-                                                                                    alert('Ainda consta como pendente no banco.');
-                                                                                }
-                                                                            }
+                                                                            alert('NFS-e emitida com sucesso! A página será atualizada.');
+                                                                            fetchInvoices();
                                                                         } catch (e: any) {
-                                                                            alert('Erro ao verificar: ' + e.message);
+                                                                            alert('Erro ao emitir: ' + e.message);
+                                                                        }
+                                                                        console.log('Emitindo NFS-e...');
+                                                                    }}
+                                                                >
+                                                                    <FileCheck className="w-3 h-3 mr-1" /> Emitir NFS-e
+                                                                </Button>
+                                                            )}
+
+                                                            {/* --- AÇÃO: VER NOTA (SE JÁ EXISTIR) --- */}
+                                                            {inv.metadata?.nfe_id && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    className="h-8 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-black uppercase"
+                                                                    onClick={() => {
+                                                                        if (inv.metadata?.nfe_pdf_url) {
+                                                                            window.open(inv.metadata.nfe_pdf_url, '_blank');
+                                                                        } else {
+                                                                            alert('PDF da nota não disponível. ID: ' + inv.metadata.nfe_id);
                                                                         }
                                                                     }}
                                                                 >
-                                                                    <Activity className="w-3 h-3 mr-1" /> Check
+                                                                    <FileCheck className="w-3 h-3 mr-1" /> Ver NFS-e
                                                                 </Button>
+                                                            )}
 
-                                                                {inv.metadata?.method === 'pix_inter' ? (
-                                                                    <Button
-                                                                        size="sm"
-                                                                        variant="ghost"
-                                                                        className="h-8 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-black uppercase"
-                                                                        onClick={() => {
-                                                                            // Reabrir Modal Pix
-                                                                            setPixData({
-                                                                                amount: inv.value,
-                                                                                pixPayload: inv.metadata.pix_payload,
-                                                                                expiresAt: inv.metadata.expires_at || new Date().toISOString(),
-                                                                                pdfUrl: undefined // Pix pendente não tem PDF
-                                                                            });
-                                                                            setPendingData({
-                                                                                pending: true,
-                                                                                message: 'Aguardando pagamento...',
-                                                                                seu_numero: inv.metadata.seu_numero
-                                                                            }); // Ativa polling UI
-                                                                            setOpenDialog(true);
-                                                                        }}
-                                                                    >
-                                                                        <Zap className="w-3 h-3 mr-1" /> Ver Pix
-                                                                    </Button>
-                                                                ) : (
-                                                                    <Button
-                                                                        size="sm"
-                                                                        variant="ghost"
-                                                                        className="h-8 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 text-[10px] font-black uppercase"
-                                                                        onClick={() => {
-                                                                            const codigoSolicitacao = inv.metadata.txid;
-                                                                            const nossoNumero = inv.metadata.nosso_numero || '';
-                                                                            const url = codigoSolicitacao
-                                                                                ? `/api/checkout/inter-boleto/pdf?codigoSolicitacao=${codigoSolicitacao}&nossoNumero=${nossoNumero}`
-                                                                                : `/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}`;
-                                                                            window.open(url, '_blank')
-                                                                        }}
-                                                                    >
-                                                                        <FileText className="w-3 h-3 mr-1" /> PDF
-                                                                    </Button>
-                                                                )}
-                                                            </>
-                                                        )}
-
-                                                    {/* --- AÇÃO: EMITIR NFS-E (SÓ PARA PAGOS SEM NOTA) --- */}
-                                                    {inv.is_paid && !inv.metadata?.nfe_id && (
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            className="h-8 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 text-[10px] font-black uppercase"
-                                                            onClick={async () => {
-                                                                if (!confirm('Deseja emitir a NFS-e Nacional para este pagamento agora?')) return;
-                                                                try {
-                                                                    const { data: { session } } = await supabaseClient.auth.getSession();
-                                                                    if (!session) return;
-
-                                                                    const res = await fetch('/api/barbershop/invoices/emit-nfse', {
-                                                                        method: 'POST',
-                                                                        headers: {
-                                                                            'Content-Type': 'application/json',
-                                                                            'Authorization': `Bearer ${session.access_token}`
-                                                                        },
-                                                                        body: JSON.stringify({ financeId: inv.id }),
-                                                                    });
-
-                                                                    const data = await res.json();
-                                                                    if (!res.ok) throw new Error(data.error);
-
-                                                                    alert('NFS-e emitida com sucesso! A página será atualizada.');
-                                                                    fetchInvoices();
-                                                                } catch (e: any) {
-                                                                    alert('Erro ao emitir: ' + e.message);
-                                                                }
-                                                                console.log('Emitindo NFS-e...');
-                                                            }}
-                                                        >
-                                                            <FileCheck className="w-3 h-3 mr-1" /> Emitir NFS-e
-                                                        </Button>
-                                                    )}
-
-                                                    {/* --- AÇÃO: VER NOTA (SE JÁ EXISTIR) --- */}
-                                                    {inv.metadata?.nfe_id && (
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            className="h-8 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-black uppercase"
-                                                            onClick={() => {
-                                                                if (inv.metadata?.nfe_pdf_url) {
-                                                                    window.open(inv.metadata.nfe_pdf_url, '_blank');
-                                                                } else {
-                                                                    alert('PDF da nota não disponível. ID: ' + inv.metadata.nfe_id);
-                                                                }
-                                                            }}
-                                                        >
-                                                            <FileCheck className="w-3 h-3 mr-1" /> Ver NFS-e
-                                                        </Button>
-                                                    )}
-
-                                                    {/* Mostra NF apenas se estiver pago */}
-                                                    {inv.is_paid && (
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            disabled
-                                                            className="h-8 text-slate-600 border border-slate-800 text-[10px] font-black uppercase opacity-50 cursor-not-allowed group relative"
-                                                        >
-                                                            <Shield className="w-3 h-3 mr-1" /> NF
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                                            {/* Mostra NF apenas se estiver pago */}
+                                                            {inv.is_paid && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    disabled
+                                                                    className="h-8 text-slate-600 border border-slate-800 text-[10px] font-black uppercase opacity-50 cursor-not-allowed group relative"
+                                                                >
+                                                                    <Shield className="w-3 h-3 mr-1" /> NF
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
-            </div>
-        </div >
+                    </div>
+                </>
+            )}
+        </div>
     );
 }

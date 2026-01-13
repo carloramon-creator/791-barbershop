@@ -81,6 +81,10 @@ export async function GET(req: Request) {
                                         is_paid: true,
                                         metadata: { ...inv.metadata, status_inter: situacao }
                                     }).eq('id', inv.id);
+                                } else if (['CANCELADO', 'EXPIRADO', 'REJEITADA', 'BAIXADO'].includes(situacao)) {
+                                    // Se foi cancelado ou baixado no banco pelo Ramon, limpamos do sistema
+                                    console.log(`[AUTO-SYNC INTER] Removendo fatura ${txid} pois o status no banco é ${situacao}`);
+                                    await supabaseAdmin.from('finance').delete().eq('id', inv.id);
                                 }
                             } catch (e) {
                                 console.warn(`[AUTO-SYNC INTER] Erro em ${txid}`);
