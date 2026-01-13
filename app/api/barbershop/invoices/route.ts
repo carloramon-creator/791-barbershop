@@ -258,12 +258,13 @@ export async function GET(req: Request) {
         }
 
         // 3. Buscar faturas atualizadas
-        // Busca abrangente: identifies by metadata flag OR description keywords
+        // Busca TODAS as faturas do tenant que sejam do tipo 'expense' (SaaS payments)
+        // OU que tenham qualquer indicador de pagamento SaaS
         const { data: invoices, error } = await supabaseAdmin
             .from('finance')
             .select('*')
             .eq('tenant_id', tenant.id)
-            .or('metadata->>is_saas_payment.eq.true,description.ilike.%SaaS%,description.ilike.%Assinatura%,description.ilike.%Renovação%,metadata->>plan.neq.null,metadata->>addon.neq.null')
+            .or('type.eq.expense,metadata->>is_saas_payment.eq.true,description.ilike.%SaaS%,description.ilike.%Assinatura%,description.ilike.%Renovação%,metadata->>plan.neq.null,metadata->>addon.neq.null,metadata->>method.eq.pix_inter,metadata->>method.eq.boleto_inter,metadata->>method.eq.stripe_card')
             .order('date', { ascending: false })
             .order('created_at', { ascending: false });
 
