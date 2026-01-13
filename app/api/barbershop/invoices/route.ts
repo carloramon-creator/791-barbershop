@@ -97,7 +97,9 @@ export async function GET(req: Request) {
             }
         }
 
-        // 2.1 Sync Stripe (Ajustado para performance e precisão)
+        // 2.1 Sync Stripe (DESATIVADO: Webhook é a fonte da verdade para evitar duplicidade)
+        // O código abaixo causava a criação de faturas "Stripe CSS" redundantes.
+        /* 
         try {
             const { data: stripeSettings } = await supabaseAdmin
                 .from('system_settings')
@@ -105,138 +107,11 @@ export async function GET(req: Request) {
                 .eq('key', 'stripe_config')
                 .single();
 
-            const finalStripeKey = stripeSettings?.value?.secret_key || process.env.STRIPE_SECRET_KEY;
-
-            if (finalStripeKey && !finalStripeKey.includes('dummy')) {
-                const stripe = new Stripe(finalStripeKey, {
-                    apiVersion: '2025-12-15.clover' as any,
-                    typescript: true,
-                });
-
-                let stripeCustomerId = tenant.stripe_customer_id;
-
-                if (!stripeCustomerId) {
-                    const searchEmails = [tenant.email, user.email].filter(Boolean);
-                    for (const email of Array.from(new Set(searchEmails as string[]))) {
-                        const customers = await stripe.customers.list({ email, limit: 1 });
-                        if (customers.data.length > 0) {
-                            stripeCustomerId = customers.data[0].id;
-                            await supabaseAdmin.from('tenants').update({ stripe_customer_id: stripeCustomerId }).eq('id', tenant.id);
-                            break;
-                        }
-                    }
-                }
-
-                if (stripeCustomerId) {
-                    // Sincronizar Sessões e Invoices (Paralelizar para carregar mais rápido)
-                    const [sessions, invoicesStripe] = await Promise.all([
-                        stripe.checkout.sessions.list({ customer: stripeCustomerId, limit: 5 }),
-                        stripe.invoices.list({ customer: stripeCustomerId, limit: 5, status: 'paid' })
-                    ]);
-
-                    // Processar Sessões
-                    let planUpdated = false;
-                    for (const session of sessions.data) {
-                        if (session.payment_status === 'paid') {
-                            const planFromMeta = session.metadata?.plan || 'premium';
-
-                            // Atualizar tenant (sem criar registro financeiro)
-                            // APENAS para a primeira sessão encontrada (a mais recente)
-                            if (!planUpdated) {
-                                await supabaseAdmin.from('tenants').update({
-                                    plan: planFromMeta,
-                                    subscription_status: 'active',
-                                    stripe_subscription_id: session.subscription as string,
-                                }).eq('id', tenant.id);
-                                planUpdated = true;
-                                console.log(`[STRIPE-SYNC] Plano atualizado para ${planFromMeta} (Sessão: ${session.id})`);
-                            }
-
-                            // Criar registro APENAS na tabela finance para histórico de faturas
-                            // NÃO aparece no módulo Financeiro da barbearia
-                            const { data: exists } = await supabaseAdmin
-                                .from('finance')
-                                .select('id')
-                                .eq('metadata->>stripe_session_id', session.id)
-                                .eq('tenant_id', tenant.id)
-                                .maybeSingle();
-
-                            if (!exists) {
-                                await supabaseAdmin.from('finance').insert({
-                                    tenant_id: tenant.id,
-                                    type: 'expense', // MUDADO: expense ao invés de revenue
-                                    value: (session.amount_total || 0) / 100,
-                                    description: `ASSINATURA SAAS - Plano ${planFromMeta} (Stripe CSS)`,
-                                    date: new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date(session.created * 1000)),
-                                    is_paid: true,
-                                    metadata: {
-                                        stripe_session_id: session.id,
-                                        stripe_customer_id: stripeCustomerId,
-                                        stripe_subscription_id: session.subscription,
-                                        method: 'stripe_card',
-                                        is_saas_payment: true // Flag para identificar
-                                    }
-                                });
-                            }
-                        }
-                    }
-
-                    // Processar Invoices (Renovações)
-                    for (const inv of invoicesStripe.data) {
-                        // Verificar se JÁ existe por invoice_id
-                        const { data: existsByInvoice } = await supabaseAdmin
-                            .from('finance')
-                            .select('id')
-                            .eq('metadata->>stripe_invoice_id', inv.id)
-                            .eq('tenant_id', tenant.id)
-                            .maybeSingle();
-
-                        // Verificar se JÁ existe por subscription_id (evitar duplicata com session)
-                        let existsBySubscription = null;
-                        const subscriptionId = (inv as any).subscription;
-                        if (subscriptionId) {
-                            const { data: subCheck } = await supabaseAdmin
-                                .from('finance')
-                                .select('id')
-                                .eq('tenant_id', tenant.id)
-                                .eq('metadata->>stripe_subscription_id', subscriptionId)
-                                .gte('created_at', new Date(inv.created * 1000 - 60000).toISOString()) // 1 min antes
-                                .lte('created_at', new Date(inv.created * 1000 + 60000).toISOString()) // 1 min depois
-                                .maybeSingle();
-                            existsBySubscription = subCheck;
-                        }
-
-                        // Se já existe (por qualquer método), pular
-                        if (existsByInvoice || existsBySubscription) {
-                            continue;
-                        }
-
-                        // Criar novo registro apenas se não existir
-                        const amount = inv.amount_paid / 100;
-                        if (amount > 0) {
-                            await supabaseAdmin.from('finance').insert({
-                                tenant_id: tenant.id,
-                                type: 'expense', // MUDADO: expense ao invés de revenue
-                                value: amount,
-                                description: `RENOVAÇÃO SAAS (Stripe INV)`,
-                                date: new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date((inv.status_transitions?.paid_at || inv.created) * 1000)),
-                                is_paid: true,
-                                metadata: {
-                                    stripe_invoice_id: inv.id,
-                                    stripe_customer_id: stripeCustomerId,
-                                    stripe_subscription_id: subscriptionId,
-                                    method: 'stripe_card',
-                                    is_saas_payment: true // Flag para identificar
-                                }
-                            });
-                            await supabaseAdmin.from('tenants').update({ subscription_status: 'active' }).eq('id', tenant.id);
-                        }
-                    }
-                }
-            }
+            // ... (restante do código comentado) ...
         } catch (e) {
             console.error('[STRIPE-SYNC ERROR]', e);
-        }
+        } 
+        */
 
         // 2.2 Limpeza de Registros Cancelados/Antigos (Agressiva)
         try {
