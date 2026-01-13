@@ -383,168 +383,204 @@ export default function PlanPage() {
                 </div>
             ) : (
                 <>
-                    <Card className="bg-slate-900 border-slate-800 shadow-sm">
-                        <CardHeader className="py-3 px-4 border-b border-slate-800/50">
-                            <CardTitle className="text-slate-100 text-sm font-bold">Plano Atual</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4">
-                            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                                <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center font-black text-white text-lg shadow-lg shadow-blue-900/40">
-                                            {currentPlan.charAt(0).toUpperCase()}
+                    {/* LAYOUT LADO A LADO: PLANO ATUAL + ADD-ONS */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        {/* COLUNA ESQUERDA: PLANO ATUAL */}
+                        <div className="lg:col-span-4 space-y-6">
+                            <Card className="bg-slate-900 border-slate-800 shadow-xl overflow-hidden ring-1 ring-white/5">
+                                <CardHeader className="py-4 px-5 border-b border-slate-800/50 bg-slate-950/30">
+                                    <CardTitle className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                                        <CreditCard size={14} className="text-blue-500" /> Plano Atual
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-6">
+                                    <div className="space-y-6">
+                                        <div className="flex items-start gap-4">
+                                            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center font-black text-white text-2xl shadow-xl shadow-blue-900/40 transform -rotate-3 group-hover:rotate-0 transition-transform">
+                                                {currentPlan.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <h3 className="text-3xl font-black text-slate-100 capitalize tracking-tight leading-none mb-2">
+                                                    {dynamicPlans.find(p => p.slug === currentPlan)?.name || currentPlan}
+                                                </h3>
+                                                <p className="text-xl font-black text-blue-500">
+                                                    R$ {(dynamicPlans.find(p => p.slug === currentPlan)?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h3 className="text-lg font-black text-slate-100 capitalize tracking-tight leading-tight">
-                                                {dynamicPlans.find(p => p.slug === currentPlan)?.name || currentPlan}
-                                            </h3>
-                                            <p className="text-xs text-slate-500 mt-0.5">
-                                                R$ {(dynamicPlans.find(p => p.slug === currentPlan)?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col items-end gap-1.5">
-                                        <span className={cn(
-                                            "px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-full border",
-                                            subscriptionStatus === 'canceled'
-                                                ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                                                : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                        )}>
-                                            {subscriptionStatus === 'canceled' ? 'Cancelamento Pendente' : 'Escalável & Ativo'}
-                                        </span>
-                                        {stripeSubscriptionId && subscriptionStatus !== 'canceled' && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-6 text-[8px] text-red-500/70 hover:text-red-500 font-bold uppercase p-0"
-                                                onClick={handleCancelSubscription}
-                                                disabled={canceling}
-                                            >
-                                                {canceling ? 'Processando...' : 'Cancelar Assinatura'}
-                                            </Button>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
 
-                    {/* SEÇÃO TURBINAR PACOTE (ADD-ONS) */}
-                    <div className="space-y-6 pt-4">
-                        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                            <div>
-                                <h2 className="text-xl md:text-2xl font-black text-slate-100 uppercase tracking-tight flex items-center gap-2">
-                                    <Zap className="text-amber-400" size={24} /> Turbinar Pacote
-                                </h2>
-                                <p className="text-slate-500 text-xs font-medium">Adicione recursos específicos sem precisar trocar de plano.</p>
-                            </div>
+                                        <div className="pt-4 border-t border-slate-800/50 flex flex-col gap-3">
+                                            <span className={cn(
+                                                "w-fit px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border shadow-sm",
+                                                subscriptionStatus === 'canceled'
+                                                    ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                                                    : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                            )}>
+                                                {subscriptionStatus === 'canceled' ? 'Cancelamento Pendente' : 'Escalável & Ativo'}
+                                            </span>
+                                            {stripeSubscriptionId && subscriptionStatus !== 'canceled' && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 text-[10px] text-red-500/60 hover:text-red-500 hover:bg-red-500/10 font-black uppercase tracking-widest p-0 justify-start"
+                                                    onClick={handleCancelSubscription}
+                                                    disabled={canceling}
+                                                >
+                                                    {canceling ? 'Processando...' : '✖ Cancelar Assinatura'}
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {dynamicAddons
-                                .filter(addon => {
-                                    const currentPlanData = dynamicPlans.find(p => p.slug === currentPlan);
-                                    if (!currentPlanData) return true;
-                                    // Se o nome do addon ou slug estiver em alguma feature do plano, oculta
-                                    const featuresStr = JSON.stringify(currentPlanData.features || []).toLowerCase();
-                                    return !featuresStr.includes(addon.slug.toLowerCase()) &&
-                                        !featuresStr.includes(addon.name.toLowerCase().replace('módulo ', ''));
-                                })
-                                .map((addon) => {
-                                    const isActive = activeAddons.includes(addon.slug);
-                                    return (
-                                        <Card key={addon.id} className={cn(
-                                            "bg-slate-900 border-slate-800 transition-all hover:border-slate-700 relative overflow-hidden group shadow-sm",
-                                            isActive && "border-emerald-500/50 bg-emerald-500/5"
-                                        )}>
-                                            {isActive && (
-                                                <div className="absolute top-1 right-1">
-                                                    <CheckCircle2 className="text-emerald-500" size={14} />
-                                                </div>
-                                            )}
-                                            <CardContent className="p-4">
-                                                <div className="space-y-0.5">
-                                                    <h3 className="text-xs font-black text-slate-100 uppercase tracking-tight">{addon.name}</h3>
-                                                    <p className="text-[9px] text-slate-500 font-medium leading-tight line-clamp-1">{addon.description}</p>
-                                                </div>
+                        {/* COLUNA DIREITA: TURBINAR PACOTE */}
+                        <div className="lg:col-span-8 space-y-6">
+                            <div>
+                                <h2 className="text-2xl font-black text-slate-100 uppercase tracking-tight flex items-center gap-3">
+                                    <Zap className="text-amber-400 fill-amber-400" size={24} /> Turbinar Pacote
+                                </h2>
+                                <p className="text-slate-500 text-sm font-medium mt-1">Recursos específicos para sua necessidade.</p>
+                            </div>
 
-                                                <div className="mt-3 flex items-center justify-between gap-2">
-                                                    <p className="text-xs font-black text-amber-400">
-                                                        + R$ {Number(addon.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}<span className="text-[8px] text-slate-600 ml-1">/mês</span>
-                                                    </p>
-                                                    <Button
-                                                        size="sm"
-                                                        variant={isActive ? "outline" : "default"}
-                                                        disabled={isActive || saving}
-                                                        onClick={() => {
-                                                            setSelectedAddon(addon);
-                                                            setSelectedPlan(null);
-                                                            setPaymentMethod('card');
-                                                            setOpenDialog(true);
-                                                        }}
-                                                        className={cn(
-                                                            "h-7 text-[8px] font-black uppercase tracking-widest px-3",
-                                                            isActive ? "border-emerald-500/50 text-emerald-500" : "bg-blue-600 hover:bg-blue-500 text-white"
-                                                        )}
-                                                    >
-                                                        {isActive ? 'Ativado' : 'Adicionar'}
-                                                    </Button>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    );
-                                })}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {dynamicAddons
+                                    .filter(addon => {
+                                        const currentPlanData = dynamicPlans.find(p => p.slug === currentPlan);
+                                        if (!currentPlanData) return true;
+                                        const featuresStr = JSON.stringify(currentPlanData.features || []).toLowerCase();
+                                        return !featuresStr.includes(addon.slug.toLowerCase()) &&
+                                            !featuresStr.includes(addon.name.toLowerCase().replace('módulo ', ''));
+                                    })
+                                    .map((addon) => {
+                                        const isActive = activeAddons.includes(addon.slug);
+                                        return (
+                                            <Card key={addon.id} className={cn(
+                                                "bg-slate-900/40 border-slate-800 transition-all hover:border-slate-700 relative overflow-hidden group shadow-sm backdrop-blur-sm",
+                                                isActive && "border-emerald-500/50 bg-emerald-500/5"
+                                            )}>
+                                                {isActive && (
+                                                    <div className="absolute top-2 right-2">
+                                                        <CheckCircle2 className="text-emerald-500" size={16} />
+                                                    </div>
+                                                )}
+                                                <CardContent className="p-5">
+                                                    <div className="mb-4">
+                                                        <h3 className="text-sm font-black text-slate-100 uppercase tracking-tight mb-1">{addon.name}</h3>
+                                                        <p className="text-[11px] text-slate-500 font-medium leading-normal h-8 line-clamp-2">{addon.description}</p>
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between pt-4 border-t border-slate-800/50">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">Investimento</span>
+                                                            <p className="text-sm font-black text-amber-500">
+                                                                R$ {Number(addon.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}<span className="text-[9px] text-slate-600 ml-1 italic lowercase">/mês</span>
+                                                            </p>
+                                                        </div>
+                                                        <Button
+                                                            size="sm"
+                                                            variant={isActive ? "outline" : "default"}
+                                                            disabled={isActive || saving}
+                                                            onClick={() => {
+                                                                setSelectedAddon(addon);
+                                                                setSelectedPlan(null);
+                                                                setPaymentMethod('card');
+                                                                setOpenDialog(true);
+                                                            }}
+                                                            className={cn(
+                                                                "h-9 text-[10px] font-black uppercase tracking-widest px-4 shadow-lg active:scale-95 transition-all",
+                                                                isActive ? "border-emerald-500/50 text-emerald-500 bg-transparent" : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20"
+                                                            )}
+                                                        >
+                                                            {isActive ? 'Ativo' : 'Adicionar'}
+                                                        </Button>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        );
+                                    })}
+                            </div>
                         </div>
                     </div>
 
-                    <div className="space-y-6 pt-10">
-                        <h2 className="text-xl md:text-2xl font-black text-slate-100 light:text-slate-900 uppercase">Deseja migrar de plano?</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* SEÇÃO DE MIGRAÇÃO DE PLANO */}
+                    <div className="space-y-8 pt-16 mt-16 border-t border-slate-800/50">
+                        <div className="text-center space-y-2">
+                            <h2 className="text-3xl md:text-4xl font-black text-slate-100 uppercase tracking-tighter">Escolha seu Próximo Nível</h2>
+                            <p className="text-slate-500 font-medium">Migre agora e libere todo o potencial da sua barbearia.</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             {dynamicPlans.filter(p => p.slug !== 'trial').map((plan) => (
                                 <Card
                                     key={plan.id}
                                     className={cn(
-                                        'bg-slate-900 light:bg-white border-slate-800 light:border-slate-200 cursor-pointer transition-all hover:border-slate-700 light:hover:border-slate-300 rounded-2xl md:rounded-3xl p-2 relative overflow-hidden',
-                                        currentPlan === plan.slug && 'border-blue-500 light:border-blue-600 ring-2 ring-blue-500/20'
+                                        'bg-slate-900 border-slate-800 cursor-pointer transition-all hover:border-slate-600 rounded-3xl p-1 relative overflow-hidden group shadow-2xl',
+                                        currentPlan === plan.slug && 'border-blue-500 ring-4 ring-blue-500/10'
                                     )}
                                 >
-                                    <CardHeader>
-                                        <CardTitle className="text-slate-100 light:text-slate-900 font-black">{plan.name}</CardTitle>
-                                        <CardDescription className="text-slate-500">
-                                            <span className="text-2xl font-black text-slate-100 light:text-slate-900">
-                                                R$ {plan.price}
+                                    <div className="p-6">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <span className="px-3 py-1 bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-[0.2em] rounded-lg border border-blue-500/20">
+                                                {plan.slug}
                                             </span>
-                                            <span className="text-xs">/mês</span>
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-6">
-                                        <div className="space-y-2 pt-4 border-t border-slate-800 light:border-slate-100">
-                                            {plan.features?.map((feature: any, i: number) => (
-                                                <div key={i} className="flex items-center gap-2">
-                                                    <Check className="w-3.5 h-3.5 text-blue-500" />
-                                                    <span className="text-xs text-slate-400 light:text-slate-600">{feature}</span>
-                                                </div>
-                                            ))}
+                                            {currentPlan === plan.slug && (
+                                                <span className="flex items-center gap-1 text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-lg">
+                                                    <CheckCircle2 size={12} /> Plano Ativo
+                                                </span>
+                                            )}
                                         </div>
 
-                                        <Button
-                                            className={cn(
-                                                'w-full py-6 rounded-xl font-black uppercase tracking-widest',
-                                                currentPlan === plan.slug
-                                                    ? 'bg-slate-800 light:bg-slate-100 text-slate-500'
-                                                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20'
+                                        <CardHeader className="p-0 mb-6">
+                                            <CardTitle className="text-3xl font-black text-slate-100 tracking-tight mb-2">{plan.name}</CardTitle>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="text-4xl font-black text-slate-100">R$ {plan.price}</span>
+                                                <span className="text-slate-500 font-bold text-sm tracking-widest uppercase">/mês</span>
+                                            </div>
+                                            {plan.description && (
+                                                <p className="mt-4 text-xs font-bold text-slate-500 leading-relaxed min-h-[40px]">
+                                                    {plan.description}
+                                                </p>
                                             )}
-                                            disabled={currentPlan === plan.slug}
-                                            onClick={() => {
-                                                setSelectedPlan(plan.slug);
-                                                setSelectedAddon(null);
-                                                setPaymentMethod('card');
-                                                setOpenDialog(true);
-                                            }}
-                                        >
-                                            {currentPlan === plan.slug ? 'Plano Ativo' : 'Migrar Agora'}
-                                        </Button>
-                                    </CardContent>
+                                        </CardHeader>
+
+                                        <CardContent className="p-0 space-y-8">
+                                            <div className="space-y-4 pt-6 border-t border-slate-800">
+                                                <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">O que está incluso:</p>
+                                                <div className="space-y-3">
+                                                    {plan.features?.map((feature: any, i: number) => (
+                                                        <div key={i} className="flex items-start gap-3 group/item">
+                                                            <div className="mt-0.5 w-4 h-4 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+                                                                <Check className="w-2.5 h-2.5 text-amber-500" />
+                                                            </div>
+                                                            <span className="text-xs font-bold text-slate-400 group-hover/item:text-slate-200 transition-colors leading-tight">
+                                                                {feature}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <Button
+                                                className={cn(
+                                                    'w-full py-7 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl',
+                                                    currentPlan === plan.slug
+                                                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                                                        : 'bg-blue-600 hover:bg-white hover:text-blue-600 text-white shadow-blue-600/20 active:scale-95'
+                                                )}
+                                                disabled={currentPlan === plan.slug}
+                                                onClick={() => {
+                                                    setSelectedPlan(plan.slug);
+                                                    setSelectedAddon(null);
+                                                    setPaymentMethod('card');
+                                                    setOpenDialog(true);
+                                                }}
+                                            >
+                                                {currentPlan === plan.slug ? 'Plano Ativo' : 'Fazer Upgrade Agora'}
+                                            </Button>
+                                        </CardContent>
+                                    </div>
                                 </Card>
                             ))}
                         </div>
