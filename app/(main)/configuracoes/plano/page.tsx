@@ -204,7 +204,7 @@ export default function PlanPage() {
     }, [pendingData]);
 
     async function handleChangePlan() {
-        if (!selectedPlan) return;
+        if (!selectedPlan && !selectedAddon) return;
 
         try {
             setSaving(true);
