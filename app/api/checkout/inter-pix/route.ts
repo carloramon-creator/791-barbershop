@@ -229,13 +229,14 @@ export async function POST(req: Request) {
         const { error: insertError } = await supabaseAdmin
             .from('finance')
             .insert({
-                tenant_id: tenant.id, // CORRIGIDO: estava null antes!
-                type: 'revenue',
+                tenant_id: tenant.id,
+                type: 'expense',
                 value: amount,
                 description: `SaaS - ${itemName}`,
                 date: currentDate,
                 is_paid: false,
                 metadata: {
+                    is_saas_payment: true,
                     txid: codigoSolicitacao || 'N/A',
                     seu_numero: seuNumero,
                     method: 'pix_inter',

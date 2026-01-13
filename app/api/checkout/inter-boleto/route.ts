@@ -209,12 +209,13 @@ export async function POST(req: Request) {
             .from('finance')
             .insert({
                 tenant_id: tenant.id,
-                type: 'revenue',
+                type: 'expense',
                 value: amount,
                 description: `SaaS - ${itemName}`,
                 date: currentDate,
                 is_paid: false,
                 metadata: {
+                    is_saas_payment: true,
                     nosso_numero: nossoNumero || 'PENDING',
                     txid: codigoSolicitacao || 'N/A',
                     seu_numero: seuNumero,

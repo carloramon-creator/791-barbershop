@@ -25,9 +25,11 @@ export async function GET(req: Request) {
                 type, 
                 description,
                 finance_categories (name),
-                is_paid
+                is_paid,
+                metadata
             `)
             .eq('tenant_id', tenant.id)
+            .not('metadata->is_saas_payment', 'eq', true)
             .gte('date', start)
             .lte('date', end);
 

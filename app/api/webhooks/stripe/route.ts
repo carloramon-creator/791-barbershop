@@ -197,12 +197,13 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
         .from('finance')
         .insert({
             tenant_id: tenant.id, // Associar ao tenant
-            type: 'revenue',
+            type: 'expense',
             value: amount,
             description: description,
             date: new Date().toISOString().split('T')[0],
             is_paid: true,
             metadata: {
+                is_saas_payment: true,
                 stripe_invoice_id: invoice.id,
                 stripe_subscription_id: subscriptionId,
                 stripe_customer_id: customerId,

@@ -833,7 +833,7 @@ export default function AppointmentsPage() {
                         <div className="grid gap-4">
                             {/* ATENDIMENTOS ATIVOS / AGENDADOS */}
                             {appointments.filter(a => a.status !== 'completed').map(appt => {
-                                const showStartBtn = isOwner || (currentUser?.id === appt.barber_user_id);
+                                const showStartBtn = (isOwner || (currentUser?.id === appt.barber_user_id)) && isToday(new Date(appt.start_time));
 
                                 return (
                                     <div key={appt.id} className="group relative flex flex-col md:flex-row items-center gap-6 p-5 bg-slate-900/80 rounded-2xl border border-slate-800 hover:border-blue-500/50 hover:bg-slate-800/80 transition-all shadow-lg">
