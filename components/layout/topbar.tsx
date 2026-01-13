@@ -43,10 +43,10 @@ export function Topbar() {
                                         }
                                     }
                                     return (
-                                        <div className="flex items-center gap-2 text-amber-500">
-                                            <Clock size={14} />
+                                        <div className="flex items-center gap-2 bg-amber-500 text-slate-950 px-4 py-1.5 rounded-full font-bold shadow-lg shadow-amber-500/20 animate-in fade-in zoom-in duration-300">
+                                            <Clock size={16} className="text-slate-900" />
                                             <span>
-                                                Período de teste: <span className="text-amber-400 font-bold">{daysLeft} dias</span>
+                                                PERÍODO DE TESTE: {daysLeft} DIAS RESTANTES
                                             </span>
                                         </div>
                                     );
