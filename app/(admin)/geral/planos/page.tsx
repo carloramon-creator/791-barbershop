@@ -48,9 +48,9 @@ export default function PlansPage() {
         loadData();
     }, []);
 
-    const handleUpdatePlan = async () => {
+    const handleUpdatePlan = async (planToUpdate = editingPlan) => {
         try {
-            await Api.updateSystemPlan(editingPlan);
+            await Api.updateSystemPlan(planToUpdate);
             setEditingPlan(null);
             loadData();
         } catch (e: any) {
@@ -58,9 +58,9 @@ export default function PlansPage() {
         }
     };
 
-    const handleUpdateAddon = async () => {
+    const handleUpdateAddon = async (addonToUpdate = editingAddon) => {
         try {
-            await Api.updateSystemAddon(editingAddon);
+            await Api.updateSystemAddon(addonToUpdate);
             setEditingAddon(null);
             loadData();
         } catch (e: any) {
@@ -147,8 +147,56 @@ export default function PlansPage() {
                                                 className="bg-slate-950 border-slate-800 text-slate-300 h-11"
                                             />
                                         </div>
+                                        <div className="space-y-4 pt-4 border-t border-slate-800">
+                                            <Label className="text-[10px] text-slate-500 uppercase font-bold">Funcionalidades (Até 5)</Label>
+                                            {[0, 1, 2, 3, 4].map((idx) => (
+                                                <Input
+                                                    key={idx}
+                                                    placeholder={`Funcionalidade ${idx + 1}...`}
+                                                    value={editingPlan.features?.[idx] || ''}
+                                                    onChange={(e) => {
+                                                        const newFeatures = [...(editingPlan.features || [])];
+                                                        newFeatures[idx] = e.target.value;
+                                                        setEditingPlan({ ...editingPlan, features: newFeatures });
+                                                    }}
+                                                    className="bg-slate-950 border-slate-800 text-slate-300 h-10 text-xs"
+                                                />
+                                            ))}
+                                            <div className="pt-2">
+                                                <p className="text-[9px] text-slate-600 font-bold uppercase mb-2">Sugestões de Emojis:</p>
+                                                <div className="flex gap-2">
+                                                    {plan.slug === 'basic' && ['✂️', '💈', '🧔', '📅', '✅'].map(e => <span key={e} className="cursor-pointer hover:scale-125 transition-transform" onClick={() => {
+                                                        const nf = [...(editingPlan.features || [])];
+                                                        const emptyIdx = nf.findIndex(f => !f);
+                                                        if (emptyIdx !== -1) {
+                                                            nf[emptyIdx] = `${e} Nova Função`;
+                                                            setEditingPlan({ ...editingPlan, features: nf });
+                                                        }
+                                                    }}>{e}</span>)}
+                                                    {plan.slug === 'complete' && ['🚀', '✨', '📊', '💼', '⭐'].map(e => <span key={e} className="cursor-pointer hover:scale-125 transition-transform" onClick={() => {
+                                                        const nf = [...(editingPlan.features || [])];
+                                                        const emptyIdx = nf.findIndex(f => !f);
+                                                        if (emptyIdx !== -1) {
+                                                            nf[emptyIdx] = `${e} Nova Função`;
+                                                            setEditingPlan({ ...editingPlan, features: nf });
+                                                        }
+                                                    }}>{e}</span>)}
+                                                    {plan.slug === 'premium' && ['💎', '👑', '🌟', '📈', '🔥'].map(e => <span key={e} className="cursor-pointer hover:scale-125 transition-transform" onClick={() => {
+                                                        const nf = [...(editingPlan.features || [])];
+                                                        const emptyIdx = nf.findIndex(f => !f);
+                                                        if (emptyIdx !== -1) {
+                                                            nf[emptyIdx] = `${e} Nova Função`;
+                                                            setEditingPlan({ ...editingPlan, features: nf });
+                                                        }
+                                                    }}>{e}</span>)}
+                                                </div>
+                                            </div>
+                                        </div>
                                         <Button
-                                            onClick={handleUpdatePlan}
+                                            onClick={() => {
+                                                const cleanedFeatures = (editingPlan.features || []).filter((f: string) => f && f.trim() !== '');
+                                                handleUpdatePlan({ ...editingPlan, features: cleanedFeatures });
+                                            }}
                                             className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-xs h-11"
                                         >
                                             <Save size={16} className="mr-2" /> Salvar Alterações
