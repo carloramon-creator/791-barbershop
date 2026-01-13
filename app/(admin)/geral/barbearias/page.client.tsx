@@ -17,7 +17,8 @@ import {
     ExternalLink,
     TrendingUp,
     Pencil,
-    Trash2
+    Trash2,
+    Calendar
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -187,6 +188,12 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                     <div>
                                         <h3 className="text-lg font-black text-slate-100 group-hover:text-blue-500 transition-colors">{tenant.name}</h3>
                                         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{tenant.city}, {tenant.state}</p>
+                                        {tenant.created_at && (
+                                            <div className="flex items-center gap-1 text-[10px] text-slate-600 font-medium mt-1" title="Data de Cadastro">
+                                                <Calendar size={10} />
+                                                {new Date(tenant.created_at).toLocaleDateString('pt-BR')}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
