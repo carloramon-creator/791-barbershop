@@ -63,6 +63,37 @@ export async function POST(req: Request) {
         // 4. Adicionar Add-on como Subscription Item no Stripe
         let stripeSubscriptionItemId: string | null = null;
 
+        if (!addon.stripe_price_id) {
+            console.log(`[ADDON ACTIVATE] ${addonSlug} sem stripe_price_id. Criando autimaticamente no Stripe...`);
+            try {
+                // Criar Produto (se não existir, mas vamos simplificar criando Price solto ou com Product novo)
+                // Melhor criar um produto para o Addon
+                const product = await stripe.products.create({
+                    name: `791 Barber Add-on: ${addon.name}`,
+                });
+
+                const price = await stripe.prices.create({
+                    product: product.id,
+                    unit_amount: Math.round(addon.price * 100),
+                    currency: 'brl',
+                    recurring: { interval: 'month' },
+                });
+
+                // Salvar no banco para futuras compras
+                await supabaseAdmin
+                    .from('system_addons')
+                    .update({ stripe_price_id: price.id })
+                    .eq('id', addon.id);
+
+                addon.stripe_price_id = price.id;
+                console.log(`[ADDON ACTIVATE] stripe_price_id criado e salvo: ${price.id}`);
+
+            } catch (err: any) {
+                console.error('[ADDON AUTO-CREATE ERROR]', err);
+                // Fallback para manual se falhar a criação
+            }
+        }
+
         if (addon.stripe_price_id) {
             try {
                 const subscriptionItem = await stripe.subscriptionItems.create({
@@ -80,7 +111,7 @@ export async function POST(req: Request) {
                 }, { status: 500 }));
             }
         } else {
-            console.warn(`[ADDON ACTIVATE] ${addonSlug} sem stripe_price_id. Cobrança manual necessária.`);
+            console.warn(`[ADDON ACTIVATE] Falha ao obter stripe_price_id mesmo após tentativa de criação.`);
         }
 
         // 5. Criar registro em tenant_addons
