@@ -1062,17 +1062,6 @@ export default function PlanPage() {
                                                                 </Button>
                                                             )}
 
-                                                            {/* Mostra NF apenas se estiver pago */}
-                                                            {inv.is_paid && (
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="ghost"
-                                                                    disabled
-                                                                    className="h-8 text-slate-600 border border-slate-800 text-[10px] font-black uppercase opacity-50 cursor-not-allowed group relative"
-                                                                >
-                                                                    <Shield className="w-3 h-3 mr-1" /> NF
-                                                                </Button>
-                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>
