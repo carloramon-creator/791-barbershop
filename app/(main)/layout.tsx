@@ -52,8 +52,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <div className="flex-1 flex flex-col overflow-hidden">
                 <Topbar />
                 <ConfigAlertBar />
-                <main className="flex-1 overflow-y-auto p-4 md:p-6 light:bg-white text-slate-50 light:text-slate-900 custom-scrollbar transition-colors">
-                    {children}
+                <main className="flex-1 overflow-y-auto p-2 md:p-4 light:bg-white text-slate-50 light:text-slate-900 custom-scrollbar transition-colors">
+                    <div className="w-full max-w-none">
+                        {children}
+                    </div>
                     <footer className="mt-8 py-4 text-center text-xs text-slate-600 light:text-slate-400">
                         Licensed by <span className="text-slate-500 font-semibold">791 Barber</span>
                     </footer>
