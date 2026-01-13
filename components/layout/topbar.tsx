@@ -30,17 +30,37 @@ export function Topbar() {
                     {/* Indicador de Plano */}
                     {tenant && (
                         <div className="hidden lg:flex items-center px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-medium">
-                            {tenant.plan === 'trial' || tenant.subscription_status === 'trialing' ? (
-                                (() => {
-                                    let daysLeft = 0;
-                                    if (tenant.subscription_current_period_end) {
-                                        const end = new Date(tenant.subscription_current_period_end);
-                                        const now = new Date();
-                                        // Se a data é futura, calcula a diferença. Se passada, é 0.
-                                        if (end > now) {
-                                            daysLeft = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-                                        }
+                            {(() => {
+                                const isStripeTrial = tenant.plan === 'trial' || tenant.subscription_status === 'trialing';
+
+                                // Detecção de Trial por Data de Cadastro (< 7 dias e não ativo)
+                                let isTimeTrial = false;
+                                let daysLeft = 0;
+
+                                if (tenant.created_at) {
+                                    const created = new Date(tenant.created_at);
+                                    const now = new Date();
+                                    const diffTime = Math.abs(now.getTime() - created.getTime());
+                                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                                    if (diffDays <= 7 && tenant.subscription_status !== 'active') {
+                                        isTimeTrial = true;
+                                        daysLeft = 8 - diffDays; // 8 para incluir o dia atual
                                     }
+                                }
+
+                                const isTrial = isStripeTrial || isTimeTrial;
+
+                                // Recalcula daysLeft se for Stripe Trial (tem data fim definida)
+                                if (isStripeTrial && tenant.subscription_current_period_end) {
+                                    const end = new Date(tenant.subscription_current_period_end);
+                                    const now = new Date();
+                                    if (end > now) {
+                                        daysLeft = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                                    }
+                                }
+
+                                if (isTrial) {
                                     return (
                                         <Link href="/configuracoes/plano">
                                             <div className="flex items-center gap-2 bg-amber-500 text-slate-950 px-4 py-1.5 rounded-full font-bold shadow-lg shadow-amber-500/20 animate-in fade-in zoom-in duration-300 hover:scale-105 transition-transform cursor-pointer hover:bg-amber-400">
@@ -51,15 +71,17 @@ export function Topbar() {
                                             </div>
                                         </Link>
                                     );
-                                })()
-                            ) : (
-                                <div className="flex items-center gap-2 text-blue-400">
-                                    <CreditCard size={14} />
-                                    <span>
-                                        Plano {tenant.plan === 'basic' ? 'Básico' : tenant.plan === 'complete' ? 'Completo' : tenant.plan === 'premium' ? 'Premium' : tenant.plan}
-                                    </span>
-                                </div>
-                            )}
+                                } else {
+                                    return (
+                                        <div className="flex items-center gap-2 text-blue-400">
+                                            <CreditCard size={14} />
+                                            <span>
+                                                Plano {tenant.plan === 'basic' ? 'Básico' : tenant.plan === 'complete' ? 'Completo' : tenant.plan === 'premium' ? 'Premium' : tenant.plan}
+                                            </span>
+                                        </div>
+                                    );
+                                }
+                            })()}
                         </div>
                     )}
                     <div className="md:hidden text-lg font-black text-blue-600">791</div>
