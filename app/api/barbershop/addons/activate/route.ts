@@ -60,28 +60,58 @@ export async function POST(req: Request) {
             apiVersion: '2025-12-15.clover' as any,
         });
 
-        // Ramon pediu "Soma para a próxima fatura"
-        // No Stripe Checkout ou Subscription Update, isso é feito adicionando um subscription_item.
-        // Como não temos PriceID fixo no banco ainda (usamos Slug), precisaríamos criar um preço dinâmico ou buscar.
-        // Por enquanto, vamos registrar no BD e o Webhook/Sistema de Cobrança assume,
-        // mas o ideal é que o Stripe saiba disso.
+        // 4. Adicionar Add-on como Subscription Item no Stripe
+        let stripeSubscriptionItemId: string | null = null;
 
-        // Vamos criar um registro em tenant_addons imediatamente
+        if (addon.stripe_price_id) {
+            try {
+                const subscriptionItem = await stripe.subscriptionItems.create({
+                    subscription: tenant.stripe_subscription_id,
+                    price: addon.stripe_price_id,
+                    quantity: 1,
+                    proration_behavior: 'create_prorations',
+                });
+                stripeSubscriptionItemId = subscriptionItem.id;
+                console.log(`[ADDON ACTIVATE] Stripe item criado: ${subscriptionItem.id}`);
+            } catch (stripeError: any) {
+                console.error('[STRIPE ERROR]', stripeError);
+                return addCorsHeaders(req, NextResponse.json({
+                    error: `Erro ao adicionar no Stripe: ${stripeError.message}`
+                }, { status: 500 }));
+            }
+        } else {
+            console.warn(`[ADDON ACTIVATE] ${addonSlug} sem stripe_price_id. Cobrança manual necessária.`);
+        }
+
+        // 5. Criar registro em tenant_addons
         const { error: activateError } = await supabaseAdmin
             .from('tenant_addons')
             .insert({
                 tenant_id: tenant.id,
                 addon_id: addon.id,
-                status: 'active'
+                status: 'active',
+                price_at_purchase: addon.price,
+                stripe_subscription_item_id: stripeSubscriptionItemId
             });
 
-        if (activateError) throw activateError;
+        if (activateError) {
+            if (stripeSubscriptionItemId) {
+                try {
+                    await stripe.subscriptionItems.del(stripeSubscriptionItemId);
+                } catch (e) {
+                    console.error('[ROLLBACK ERROR]', e);
+                }
+            }
+            throw activateError;
+        }
 
-        console.log(`[ADDON ACTIVATE] ${addonSlug} ativado instantaneamente para ${tenant.name}`);
+        console.log(`[ADDON ACTIVATE] ${addonSlug} ativado para ${tenant.name}`);
 
         return addCorsHeaders(req, NextResponse.json({
             success: true,
-            message: 'Add-on ativado com sucesso! O valor será incluído na sua próxima fatura.'
+            message: addon.stripe_price_id
+                ? 'Add-on ativado! Valor será cobrado proporcionalmente na próxima fatura.'
+                : 'Add-on ativado! Cobrança manual necessária.'
         }));
 
     } catch (error: any) {
