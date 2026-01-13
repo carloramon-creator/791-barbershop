@@ -148,6 +148,20 @@ export async function POST(req: Request) {
         }
 
         // 4. Criar Checkout Session Dinâmica
+        const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || '';
+
+        const discounts: any[] = [];
+        if (stripeCouponId) {
+            discounts.push({ coupon: stripeCouponId });
+        }
+        if (coupon) {
+            // Se o usuário enviou um cupom manual, tentamos aplicar como cupom ou promotion_code
+            // O Stripe permite aplicar cupons via ID. Se for um código promocional (ex: TESTE10), 
+            // no modo subscription/session o ideal é usar promotion_code se configurado, 
+            // mas aqui vamos passar como coupon ID se o Ramon criou como Coupon no Stripe.
+            discounts.push({ coupon: coupon });
+        }
+
         const session = await stripeClient.checkout.sessions.create({
             customer: customerId,
             payment_method_types: ['card'],
@@ -167,7 +181,7 @@ export async function POST(req: Request) {
                 },
             ],
             mode: 'subscription',
-            discounts: stripeCouponId ? [{ coupon: stripeCouponId }] : [],
+            discounts: discounts.length > 0 ? discounts : undefined,
             success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${origin}/checkout/cancel`,
             metadata: {
