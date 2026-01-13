@@ -283,7 +283,12 @@ export default function PlanPage() {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${session.access_token}`
                     },
-                    body: JSON.stringify({ plan: selectedPlan, coupon: couponCode, tempId }),
+                    body: JSON.stringify({
+                        plan: selectedPlan,
+                        addon: selectedAddon?.slug,
+                        coupon: couponCode,
+                        tempId
+                    }),
                 });
 
                 const data = await res.json();
@@ -315,7 +320,12 @@ export default function PlanPage() {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${session.access_token}`
                     },
-                    body: JSON.stringify({ plan: selectedPlan, coupon: couponCode, tempId }),
+                    body: JSON.stringify({
+                        plan: selectedPlan,
+                        addon: selectedAddon?.slug,
+                        coupon: couponCode,
+                        tempId
+                    }),
                 });
 
                 const data = await res.json();
