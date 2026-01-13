@@ -155,14 +155,26 @@ export async function POST(req: Request) {
             discounts.push({ coupon: stripeCouponId });
         }
         if (coupon) {
-            // Se o usuário enviou um cupom manual, tentamos aplicar como cupom ou promotion_code
-            // O Stripe permite aplicar cupons via ID. Se for um código promocional (ex: TESTE10), 
-            // no modo subscription/session o ideal é usar promotion_code se configurado, 
-            // mas aqui vamos passar como coupon ID se o Ramon criou como Coupon no Stripe.
-            discounts.push({ coupon: coupon });
+            // Tentar encontrar como Promotion Code (código amigável do usuário, ex: 'NATAL10')
+            const promoCodes = await stripeClient.promotionCodes.list({
+                code: coupon,
+                active: true,
+                limit: 1,
+            });
+
+            if (promoCodes.data.length > 0) {
+                // É um Promotion Code válido
+                discounts.push({ promotion_code: promoCodes.data[0].id });
+            } else {
+                // Tenta assumir que é um Coupon ID direto (menos comum para usuários finais, mas possível)
+                // Ou deixa falhar no create session para retornar erro
+                discounts.push({ coupon: coupon });
+            }
+        } else {
+            // Se não enviou cupom, habilita o campo na tela do Stripe (será setado no sessionConfig)
         }
 
-        const session = await stripeClient.checkout.sessions.create({
+        const sessionConfig: Stripe.Checkout.SessionCreateParams = {
             customer: customerId,
             payment_method_types: ['card'],
             billing_address_collection: 'auto',
@@ -181,7 +193,6 @@ export async function POST(req: Request) {
                 },
             ],
             mode: 'subscription',
-            discounts: discounts.length > 0 ? discounts : undefined,
             success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${origin}/checkout/cancel`,
             metadata: {
@@ -195,7 +206,15 @@ export async function POST(req: Request) {
                     [isAddon ? 'addon' : 'plan']: itemSlug,
                 }
             }
-        });
+        };
+
+        if (discounts.length > 0) {
+            sessionConfig.discounts = discounts as any;
+        } else {
+            sessionConfig.allow_promotion_codes = true;
+        }
+
+        const session = await stripeClient.checkout.sessions.create(sessionConfig);
 
         console.log(`[STRIPE CHECKOUT] Session Criada para ${tenant.name}:`, session.id);
 
