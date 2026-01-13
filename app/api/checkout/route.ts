@@ -155,20 +155,32 @@ export async function POST(req: Request) {
             discounts.push({ coupon: stripeCouponId });
         }
         if (coupon) {
-            // Tentar encontrar como Promotion Code (código amigável do usuário, ex: 'NATAL10')
-            const promoCodes = await stripeClient.promotionCodes.list({
-                code: coupon,
-                active: true,
-                limit: 1,
-            });
+            try {
+                // Tentar encontrar como Promotion Code (código amigável do usuário, ex: 'NATAL10')
+                const promoCodes = await stripeClient.promotionCodes.list({
+                    code: coupon,
+                    active: true,
+                    limit: 1,
+                });
 
-            if (promoCodes.data.length > 0) {
-                // É um Promotion Code válido
-                discounts.push({ promotion_code: promoCodes.data[0].id });
-            } else {
-                // Tenta assumir que é um Coupon ID direto (menos comum para usuários finais, mas possível)
-                // Ou deixa falhar no create session para retornar erro
-                discounts.push({ coupon: coupon });
+                if (promoCodes.data.length > 0) {
+                    // É um Promotion Code válido
+                    discounts.push({ promotion_code: promoCodes.data[0].id });
+                } else {
+                    // Tenta validar se é um Coupon ID direto válido
+                    try {
+                        const directCoupon = await stripeClient.coupons.retrieve(coupon);
+                        if (directCoupon && directCoupon.valid) {
+                            discounts.push({ coupon: directCoupon.id });
+                        }
+                    } catch (e) {
+                        // Não é promoção nem cupom válido => Ignora (Soft Fail)
+                        console.warn(`Cupom inválido fornecido: ${coupon}`);
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao validar cupom:', error);
+                // Segue sem cupom para não travar o checkout
             }
         } else {
             // Se não enviou cupom, habilita o campo na tela do Stripe (será setado no sessionConfig)
