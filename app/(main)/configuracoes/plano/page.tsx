@@ -15,10 +15,17 @@ import {
     Zap,
     FileCheck,
     CheckCircle2,
-    Package
+    Package,
+    Tag,
+    Download,
+    AlertCircle,
+    Info,
+    TrendingUp,
+    Search
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Api } from '@/lib/api';
 import { Label } from '@/components/ui/label';
@@ -33,9 +40,15 @@ import {
     DialogDescription,
     DialogFooter,
 } from '@/components/ui/dialog';
-import { AlertCircle } from 'lucide-react';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { QRCodeCanvas } from 'qrcode.react';
-
 import { supabaseClient } from '@/lib/supabase-client';
 
 // Use NEXT_PUBLIC_BACKEND_URL if set, else fallback.
@@ -56,7 +69,7 @@ export default function PlanPage() {
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
     const [selectedAddon, setSelectedAddon] = useState<any>(null);
     const [saving, setSaving] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix' | 'boleto-inter' | 'boleto-result'>('card');
+    const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix' | 'boleto' | 'boleto-inter' | 'boleto-result'>('card');
     const [couponCode, setCouponCode] = useState('');
     const [pixData, setPixData] = useState<{ pixPayload: string; amount: number; expiresAt: string; pdfUrl?: string } | null>(null);
     const [boletoData, setBoletoData] = useState<{ nossoNumero: string; codigoBarras: string; linhaDigitavel: string; pdfUrl: string; amount?: number } | null>(null);
@@ -204,7 +217,7 @@ export default function PlanPage() {
     }, [pendingData]);
 
     async function handleChangePlan() {
-        if (!selectedPlan) return;
+        if (!selectedPlan && !selectedAddon) return;
 
         try {
             setSaving(true);
@@ -366,7 +379,7 @@ export default function PlanPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-12 max-w-none px-4 md:px-12 pb-20">
             {isExpired && (
                 <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex items-center gap-3 text-red-400">
                     <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -383,50 +396,52 @@ export default function PlanPage() {
                 </div>
             ) : (
                 <>
-                    {/* LAYOUT LADO A LADO: PLANO ATUAL + ADD-ONS */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                        {/* COLUNA ESQUERDA: PLANO ATUAL */}
-                        <div className="lg:col-span-4 space-y-6">
-                            <Card className="bg-slate-900 border-slate-800 shadow-xl overflow-hidden ring-1 ring-white/5">
-                                <CardHeader className="py-4 px-5 border-b border-slate-800/50 bg-slate-950/30">
-                                    <CardTitle className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                                        <CreditCard size={14} className="text-blue-500" /> Plano Atual
+                    {/* LAYOUT LADO A LADO: PLANO ATUAL + ADD-ONS (ESTILO EMPILHADO) */}
+                    <div className="flex flex-col lg:flex-row gap-8 items-start w-full">
+                        {/* COLUNA ESQUERDA: PLANO ATUAL (MAIOR) */}
+                        <div className="flex-1 lg:flex-[2] w-full">
+                            <Card className="bg-slate-900 border-slate-800 shadow-2xl overflow-hidden ring-1 ring-white/5 w-full flex flex-col min-h-[450px]">
+                                <CardHeader className="py-4 px-6 border-b border-slate-800/50 bg-slate-950/30">
+                                    <CardTitle className="text-slate-400 text-[11px] font-black uppercase tracking-widest flex items-center gap-2">
+                                        <CreditCard size={16} className="text-blue-500" /> Seu Plano Ativo
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-6">
-                                    <div className="space-y-6">
-                                        <div className="flex items-start gap-4">
-                                            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center font-black text-white text-2xl shadow-xl shadow-blue-900/40 transform -rotate-3 group-hover:rotate-0 transition-transform">
+                                <CardContent className="p-8 flex-1 flex flex-col justify-center">
+                                    <div className="space-y-8">
+                                        <div className="flex items-center gap-6">
+                                            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-700 rounded-3xl flex items-center justify-center font-black text-white text-4xl shadow-2xl shadow-blue-900/40 transform -rotate-2">
                                                 {currentPlan.charAt(0).toUpperCase()}
                                             </div>
                                             <div>
-                                                <h3 className="text-3xl font-black text-slate-100 capitalize tracking-tight leading-none mb-2">
+                                                <h3 className="text-4xl font-black text-slate-100 capitalize tracking-tighter leading-none mb-3">
                                                     {dynamicPlans.find(p => p.slug === currentPlan)?.name || currentPlan}
                                                 </h3>
-                                                <p className="text-xl font-black text-blue-500">
-                                                    R$ {(dynamicPlans.find(p => p.slug === currentPlan)?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
+                                                <p className="text-2xl font-black text-blue-500">
+                                                    R$ {(dynamicPlans.find(p => p.slug === currentPlan)?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}<span className="text-xs text-slate-600 ml-1">/mês</span>
                                                 </p>
                                             </div>
                                         </div>
 
-                                        <div className="pt-4 border-t border-slate-800/50 flex flex-col gap-3">
-                                            <span className={cn(
-                                                "w-fit px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border shadow-sm",
-                                                subscriptionStatus === 'canceled'
-                                                    ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                                                    : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                            )}>
-                                                {subscriptionStatus === 'canceled' ? 'Cancelamento Pendente' : 'Escalável & Ativo'}
-                                            </span>
+                                        <div className="pt-6 border-t border-slate-800/50 flex flex-col gap-4">
+                                            <div className="flex items-center justify-between">
+                                                <span className={cn(
+                                                    "px-4 py-1.5 text-[11px] font-black uppercase tracking-widest rounded-xl border shadow-sm",
+                                                    subscriptionStatus === 'canceled'
+                                                        ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                                                        : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                                )}>
+                                                    {subscriptionStatus === 'canceled' ? 'Cancelamento Pendente' : 'Escalável & Ativo'}
+                                                </span>
+                                            </div>
                                             {stripeSubscriptionId && subscriptionStatus !== 'canceled' && (
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    className="h-8 text-[10px] text-red-500/60 hover:text-red-500 hover:bg-red-500/10 font-black uppercase tracking-widest p-0 justify-start"
+                                                    className="h-8 text-[11px] text-red-500/50 hover:text-red-500 hover:bg-red-500/10 font-black uppercase tracking-widest p-0 justify-start w-fit group"
                                                     onClick={handleCancelSubscription}
                                                     disabled={canceling}
                                                 >
-                                                    {canceling ? 'Processando...' : '✖ Cancelar Assinatura'}
+                                                    <span className="mr-2 group-hover:scale-125 transition-transform inline-block">✖</span> {canceling ? 'Processando...' : 'Cancelar Assinatura'}
                                                 </Button>
                                             )}
                                         </div>
@@ -435,16 +450,16 @@ export default function PlanPage() {
                             </Card>
                         </div>
 
-                        {/* COLUNA DIREITA: TURBINAR PACOTE */}
-                        <div className="lg:col-span-8 space-y-6">
-                            <div>
-                                <h2 className="text-2xl font-black text-slate-100 uppercase tracking-tight flex items-center gap-3">
-                                    <Zap className="text-amber-400 fill-amber-400" size={24} /> Turbinar Pacote
+                        {/* COLUNA DIREITA: TURBINAR PACOTE (LISTA VERTICAL) */}
+                        <div className="flex-1 lg:flex-[1] w-full space-y-4">
+                            <div className="flex items-center justify-between px-1">
+                                <h2 className="text-xl font-black text-slate-100 uppercase tracking-tight flex items-center gap-3">
+                                    <Zap className="text-amber-400 fill-amber-400" size={20} /> Turbinar Pacote
                                 </h2>
-                                <p className="text-slate-500 text-sm font-medium mt-1">Recursos específicos para sua necessidade.</p>
+                                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Extras disponíveis</p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="flex flex-col gap-3">
                                 {dynamicAddons
                                     .filter(addon => {
                                         const currentPlanData = dynamicPlans.find(p => p.slug === currentPlan);
@@ -465,36 +480,37 @@ export default function PlanPage() {
                                                         <CheckCircle2 className="text-emerald-500" size={16} />
                                                     </div>
                                                 )}
-                                                <CardContent className="p-5">
-                                                    <div className="mb-4">
-                                                        <h3 className="text-sm font-black text-slate-100 uppercase tracking-tight mb-1">{addon.name}</h3>
-                                                        <p className="text-[11px] text-slate-500 font-medium leading-normal h-8 line-clamp-2">{addon.description}</p>
-                                                    </div>
-
-                                                    <div className="flex items-center justify-between pt-4 border-t border-slate-800/50">
-                                                        <div className="flex flex-col">
-                                                            <span className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">Investimento</span>
-                                                            <p className="text-sm font-black text-amber-500">
-                                                                R$ {Number(addon.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}<span className="text-[9px] text-slate-600 ml-1 italic lowercase">/mês</span>
-                                                            </p>
+                                                <CardContent className="p-4">
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <div className="flex-1 min-w-0">
+                                                            <h3 className="text-sm font-black text-slate-100 uppercase tracking-tight mb-0.5">{addon.name}</h3>
+                                                            <p className="text-[10px] text-slate-500 font-medium leading-tight truncate">{addon.description}</p>
                                                         </div>
-                                                        <Button
-                                                            size="sm"
-                                                            variant={isActive ? "outline" : "default"}
-                                                            disabled={isActive || saving}
-                                                            onClick={() => {
-                                                                setSelectedAddon(addon);
-                                                                setSelectedPlan(null);
-                                                                setPaymentMethod('card');
-                                                                setOpenDialog(true);
-                                                            }}
-                                                            className={cn(
-                                                                "h-9 text-[10px] font-black uppercase tracking-widest px-4 shadow-lg active:scale-95 transition-all",
-                                                                isActive ? "border-emerald-500/50 text-emerald-500 bg-transparent" : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20"
-                                                            )}
-                                                        >
-                                                            {isActive ? 'Ativo' : 'Adicionar'}
-                                                        </Button>
+                                                        <div className="flex items-center gap-6 shrink-0">
+                                                            <div className="text-right">
+                                                                <span className="text-[8px] text-slate-600 font-bold uppercase block tracking-tighter">Investimento</span>
+                                                                <p className="text-sm font-black text-amber-500">
+                                                                    R$ {Number(addon.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}<span className="text-[8px] text-slate-600 ml-0.5 italic lowercase">/mês</span>
+                                                                </p>
+                                                            </div>
+                                                            <Button
+                                                                size="sm"
+                                                                variant={isActive ? "outline" : "default"}
+                                                                disabled={isActive || saving}
+                                                                onClick={() => {
+                                                                    setSelectedAddon(addon);
+                                                                    setSelectedPlan(null);
+                                                                    setPaymentMethod('card');
+                                                                    setOpenDialog(true);
+                                                                }}
+                                                                className={cn(
+                                                                    "h-8 text-[10px] font-black uppercase tracking-widest px-4 shadow-lg active:scale-95 transition-all min-w-[100px]",
+                                                                    isActive ? "border-emerald-500/50 text-emerald-500 bg-transparent" : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20"
+                                                                )}
+                                                            >
+                                                                {isActive ? 'Ativado' : 'Adicionar'}
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                 </CardContent>
                                             </Card>
@@ -504,57 +520,68 @@ export default function PlanPage() {
                         </div>
                     </div>
 
-                    {/* SEÇÃO DE MIGRAÇÃO DE PLANO */}
-                    <div className="space-y-8 pt-16 mt-16 border-t border-slate-800/50">
-                        <div className="text-center space-y-2">
-                            <h2 className="text-3xl md:text-4xl font-black text-slate-100 uppercase tracking-tighter">Escolha seu Próximo Nível</h2>
-                            <p className="text-slate-500 font-medium">Migre agora e libere todo o potencial da sua barbearia.</p>
+                    {/* SEÇÃO DE MIGRAÇÃO DE PLANO (APROXIMADA) */}
+                    <div className="space-y-6 pt-8 mt-8 border-t border-slate-800/40">
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-2">
+                            <div className="text-left">
+                                <h2 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic">Deseja migrar de plano?</h2>
+                                <p className="text-slate-500 text-xs font-medium">Libere todo o potencial da sua barbearia com planos superiores.</p>
+                            </div>
+                            <div className="hidden md:block w-px h-10 bg-slate-800 mx-4" />
+                            <p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.2em] max-w-xs text-center md:text-right">
+                                Upgrades imediatos para cartão de crédito. Boletos/Pix levam até 30min para liberar.
+                            </p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {dynamicPlans.filter(p => p.slug !== 'trial').map((plan) => (
                                 <Card
                                     key={plan.id}
                                     className={cn(
-                                        'bg-slate-900 border-slate-800 cursor-pointer transition-all hover:border-slate-600 rounded-3xl p-1 relative overflow-hidden group shadow-2xl',
-                                        currentPlan === plan.slug && 'border-blue-500 ring-4 ring-blue-500/10'
+                                        'bg-slate-900 border-slate-800 cursor-pointer transition-all hover:border-slate-600 rounded-3xl p-0.5 relative overflow-hidden group shadow-xl',
+                                        currentPlan === plan.slug && 'border-blue-500 ring-2 ring-blue-500/10'
                                     )}
                                 >
-                                    <div className="p-6">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <span className="px-3 py-1 bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-[0.2em] rounded-lg border border-blue-500/20">
+                                    <div className="p-5">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <span className="px-2 py-0.5 bg-blue-500/10 text-blue-500 text-[9px] font-black uppercase tracking-[0.2em] rounded border border-blue-500/20">
                                                 {plan.slug}
                                             </span>
                                             {currentPlan === plan.slug && (
-                                                <span className="flex items-center gap-1 text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-lg">
+                                                <span className="flex items-center gap-1 text-[9px] font-black text-emerald-500 uppercase tracking-widest">
                                                     <CheckCircle2 size={12} /> Plano Ativo
                                                 </span>
                                             )}
                                         </div>
 
-                                        <CardHeader className="p-0 mb-6">
-                                            <CardTitle className="text-3xl font-black text-slate-100 tracking-tight mb-2">{plan.name}</CardTitle>
+                                        <div className="space-y-2">
+                                            {plan.features?.map((f: string, i: number) => (
+                                                <div key={i} className="flex items-center gap-2 text-[11px] text-amber-500 font-black uppercase tracking-tight">
+                                                    <CheckCircle2 size={12} className="text-amber-500/50" /> {f}
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <CardHeader className="p-0 mb-4">
+                                            <CardTitle className="text-2xl font-black text-slate-100 tracking-tight leading-none mb-2">{plan.name}</CardTitle>
                                             <div className="flex items-baseline gap-1">
-                                                <span className="text-4xl font-black text-slate-100">R$ {plan.price}</span>
-                                                <span className="text-slate-500 font-bold text-sm tracking-widest uppercase">/mês</span>
+                                                <span className="text-3xl font-black text-slate-100">R$ {plan.price}</span>
+                                                <span className="text-slate-500 font-bold text-[10px] tracking-widest uppercase">/mês</span>
                                             </div>
                                             {plan.description && (
-                                                <p className="mt-4 text-xs font-bold text-slate-500 leading-relaxed min-h-[40px]">
+                                                <p className="mt-3 text-[10px] font-bold text-slate-500 leading-tight">
                                                     {plan.description}
                                                 </p>
                                             )}
                                         </CardHeader>
 
-                                        <CardContent className="p-0 space-y-8">
-                                            <div className="space-y-4 pt-6 border-t border-slate-800">
-                                                <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">O que está incluso:</p>
-                                                <div className="space-y-3">
+                                        <CardContent className="p-0 space-y-6">
+                                            <div className="space-y-3 pt-4 border-t border-slate-800">
+                                                <div className="space-y-2">
                                                     {plan.features?.map((feature: any, i: number) => (
-                                                        <div key={i} className="flex items-start gap-3 group/item">
-                                                            <div className="mt-0.5 w-4 h-4 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
-                                                                <Check className="w-2.5 h-2.5 text-amber-500" />
-                                                            </div>
-                                                            <span className="text-xs font-bold text-slate-400 group-hover/item:text-slate-200 transition-colors leading-tight">
+                                                        <div key={i} className="flex items-center gap-2 group/item">
+                                                            <Check className="w-3 h-3 text-amber-500 shrink-0" />
+                                                            <span className="text-[10px] font-bold text-slate-400 group-hover/item:text-slate-200 transition-colors">
                                                                 {feature}
                                                             </span>
                                                         </div>
@@ -564,10 +591,10 @@ export default function PlanPage() {
 
                                             <Button
                                                 className={cn(
-                                                    'w-full py-7 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl',
+                                                    'w-full py-5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-lg',
                                                     currentPlan === plan.slug
                                                         ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                                                        : 'bg-blue-600 hover:bg-white hover:text-blue-600 text-white shadow-blue-600/20 active:scale-95'
+                                                        : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/20 active:scale-95'
                                                 )}
                                                 disabled={currentPlan === plan.slug}
                                                 onClick={() => {
@@ -577,12 +604,661 @@ export default function PlanPage() {
                                                     setOpenDialog(true);
                                                 }}
                                             >
-                                                {currentPlan === plan.slug ? 'Plano Ativo' : 'Fazer Upgrade Agora'}
+                                                {currentPlan === plan.slug ? 'Plano Ativo' : 'MIGRAR AGORA'}
                                             </Button>
                                         </CardContent>
                                     </div>
                                 </Card>
                             ))}
+                        </div>
+                    </div>
+
+                    <Dialog open={openDialog} onOpenChange={(open) => {
+                        setOpenDialog(open);
+                        if (!open) {
+                            setPixData(null);
+                            setBoletoData(null);
+                            setPendingData(null);
+                            setError(null);
+                        }
+                    }}>
+                        <DialogContent
+                            className="border-slate-800 light:border-slate-200 bg-slate-900 light:bg-white text-slate-100 light:text-slate-900 max-w-md rounded-2xl md:rounded-3xl"
+                            onPointerDownOutside={() => fetchInvoices()}
+                            onEscapeKeyDown={() => fetchInvoices()}
+                        >
+                            <DialogHeader>
+                                <DialogTitle className="font-black text-xl md:text-2xl tracking-tighter uppercase">Confirmar Contratação</DialogTitle>
+                                <DialogDescription className="text-slate-400 light:text-slate-500 font-bold">
+                                    {selectedAddon ? (
+                                        <>Módulo <span className="text-amber-500 uppercase">{selectedAddon.name}</span> — R$ {Number(selectedAddon.price).toFixed(2).replace('.', ',')}/mês</>
+                                    ) : (
+                                        <>Plano <span className="text-blue-600 capitalize">{selectedPlan}</span> — R$ {(dynamicPlans.find(p => p.slug === selectedPlan)?.price || 0).toFixed(2).replace('.', ',')}/mês</>
+                                    )}
+                                </DialogDescription>
+                            </DialogHeader>
+
+
+                            {!pixData && !boletoData && !pendingData && (
+                                <div className="py-4 space-y-4">
+                                    <Label className="text-xs text-slate-500 uppercase tracking-wider">Forma de Pagamento</Label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <button
+                                            onClick={() => setPaymentMethod('card')}
+                                            className={cn(
+                                                "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
+                                                paymentMethod === 'card'
+                                                    ? "border-amber-500 bg-amber-500/5 text-slate-100"
+                                                    : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
+                                            )}
+                                        >
+                                            <CreditCard className="w-5 h-5" />
+                                            <span className="text-[10px] font-black uppercase">Cartão</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setPaymentMethod('pix')}
+                                            className={cn(
+                                                "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
+                                                paymentMethod === 'pix'
+                                                    ? "border-amber-500 bg-amber-500/5 text-slate-100"
+                                                    : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
+                                            )}
+                                        >
+                                            <Zap className="w-5 h-5" />
+                                            <span className="text-[10px] font-black uppercase">Inter Pix</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setPaymentMethod('boleto')}
+                                            className={cn(
+                                                "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
+                                                paymentMethod === 'boleto'
+                                                    ? "border-amber-500 bg-amber-500/5 text-slate-100"
+                                                    : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
+                                            )}
+                                        >
+                                            <FileText className="w-5 h-5" />
+                                            <span className="text-[10px] font-black uppercase">Boleto</span>
+                                        </button>
+                                    </div>
+
+                                    {paymentMethod === 'card' && (
+                                        <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                                            <p className="text-[10px] text-blue-400 font-bold uppercase leading-tight">
+                                                ⚡ Ativação Instantânea via Cartão de Crédito.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {paymentMethod === 'pix' && (
+                                        <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                                            <p className="text-[10px] text-emerald-400 font-bold uppercase leading-tight">
+                                                ✅ Liberação imediata após a confirmação do Pix.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-2 pt-2">
+                                        <Label className="text-xs text-slate-500 uppercase tracking-wider">Cupom de Desconto</Label>
+                                        <div className="flex gap-2">
+                                            <div className="relative flex-1">
+                                                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+                                                <Input
+                                                    placeholder="CÓDIGO"
+                                                    value={couponCode}
+                                                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                                    className="pl-9 h-11 bg-slate-950 border-slate-800 text-sm font-bold uppercase tracking-widest focus:border-amber-500 transition-colors"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {error && (
+                                <div className="p-4 bg-red-500/15 border border-red-500/30 rounded-xl flex items-center gap-3 animate-pulse shadow-lg shadow-red-900/10">
+                                    <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
+                                    <div className="flex-1">
+                                        <p className="text-[11px] text-red-500 font-black uppercase tracking-tight leading-none mb-1">Erro no Processamento</p>
+                                        <p className="text-[10px] text-red-500/90 font-bold uppercase leading-tight">{error}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {pixData && (
+                                <div className="py-4 space-y-6 flex flex-col items-center">
+                                    <div className="bg-white p-4 rounded-3xl shadow-2xl shadow-emerald-900/40 transform transition-all hover:scale-105">
+                                        <QRCodeCanvas value={pixData.pixPayload || ''} size={220} />
+                                    </div>
+
+                                    <div className="w-full space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                readOnly
+                                                value={pixData.pixPayload}
+                                                className="bg-slate-950 border-slate-800 text-[10px] font-mono"
+                                            />
+                                            <Button
+                                                size="icon"
+                                                variant="outline"
+                                                className="shrink-0 border-slate-800 hover:bg-slate-800"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(pixData.pixPayload || '');
+                                                    alert('Pix Copiado!');
+                                                }}
+                                            >
+                                                <Copy className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                        <p className="text-[10px] text-slate-500 text-center uppercase font-black tracking-widest animate-pulse">
+                                            Aguardando pagamento... Não feche esta tela.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {boletoData && (
+                                <div className="py-6 space-y-6">
+                                    <div className="text-center space-y-2">
+                                        <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <FileText className="w-8 h-8 text-blue-500" />
+                                        </div>
+                                        <h3 className="font-black text-lg uppercase">Boleto Gerado</h3>
+                                        <p className="text-xs text-slate-400">Pague agora para liberar seu acesso.</p>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                readOnly
+                                                value={boletoData.codigoBarras}
+                                                className="bg-slate-950 border-slate-800 text-[10px] font-mono"
+                                            />
+                                            <Button
+                                                size="icon"
+                                                variant="outline"
+                                                className="shrink-0 border-slate-800 hover:bg-slate-800"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(boletoData.codigoBarras || '');
+                                                    alert('Código de barras copiado!');
+                                                }}
+                                            >
+                                                <Copy className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                        <Button
+                                            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-[10px] h-12"
+                                            onClick={() => window.open(`/api/checkout/inter-boleto/pdf?nossoNumero=${boletoData.nossoNumero}`, '_blank')}
+                                        >
+                                            <Download className="w-4 h-4 mr-2" />
+                                            Imprimir / Ver PDF Completo
+                                        </Button>
+                                    </div>
+
+                                    <div className="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 space-y-2">
+                                        <p className="text-[10px] text-amber-500 text-center uppercase tracking-widest leading-relaxed font-bold">
+                                            ⚠️ ATENÇÃO: O banco pode levar até 20 minutos para registrar o boleto.
+                                            <br />
+                                            Se o PDF não abrir ou der erro, aguarde alguns minutos e tente novamente pelo Histórico de Faturas.
+                                        </p>
+                                        <p className="text-[10px] text-slate-500 text-center uppercase tracking-widest leading-relaxed font-medium pt-2 border-t border-slate-800/50">
+                                            A compensação bancária ocorre em até 2 dias úteis.<br />
+                                            Dica: Use o Pix para liberação instantânea.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <DialogFooter>
+                                {!pixData && !boletoData && !pendingData ? (
+                                    <>
+                                        <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800" onClick={() => { setOpenDialog(false); fetchInvoices(); }} disabled={saving}>Cancelar</Button>
+                                        <Button onClick={handleChangePlan} disabled={saving} className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
+                                            {saving ? 'Processando...' : 'Confirmar e Pagar'}
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Button onClick={() => { setOpenDialog(false); fetchInvoices(); }} className="w-full bg-slate-800 text-white hover:bg-slate-700">Fechar</Button>
+                                )}
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* --- SEÇÃO DE HISTÓRICO DE FATURAS (MAIS COMPACTA E LARGA) --- */}
+                    <div className="mt-8 space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-800/40 pb-2">
+                            <div className="flex items-center gap-2">
+                                <div className="bg-blue-500/10 p-1.5 rounded-lg">
+                                    <FileText className="w-4 h-4 text-blue-500" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-slate-100 italic">Meu Histórico de Faturas</h2>
+                                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Financeiro SaaS</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm">
+                            {loadingInvoices ? (
+                                <div className="py-12 text-center text-slate-500 animate-pulse uppercase text-[10px] font-black tracking-widest"> Carregando faturas... </div>
+                            ) : invoices.length === 0 ? (
+                                <Card className="bg-slate-900 border-slate-800 shadow-xl overflow-hidden">
+                                    <CardHeader className="py-4 px-6 border-b border-slate-800/50 flex flex-row items-center justify-between">
+                                        <div>
+                                            <CardTitle className="text-slate-100 text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                                                <Search size={16} className="text-blue-500" /> Histórico de Faturas
+                                            </CardTitle>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="p-0">
+                                        <div className="overflow-x-auto">
+                                            <Table>
+                                                <TableHeader className="bg-slate-950/50">
+                                                    <TableRow className="border-slate-800 hover:bg-transparent h-10">
+                                                        <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-6">ID / Referência</TableHead>
+                                                        <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Vencimento</TableHead>
+                                                        <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Valor</TableHead>
+                                                        <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Status</TableHead>
+                                                        <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-right px-6">Ações</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {invoices.filter(inv => inv.status !== 'CANCELADA').map((inv) => (
+                                                        <TableRow key={inv.id} className="border-slate-800/50 hover:bg-slate-800/30 transition-colors h-11">
+                                                            <TableCell className="px-6">
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-[11px] font-black text-slate-300 uppercase leading-none">
+                                                                        {inv.title || 'Assinatura'}
+                                                                    </span>
+                                                                    <span className="text-[9px] text-slate-600 font-mono mt-1">
+                                                                        #{inv.id.substring(0, 8)}
+                                                                    </span>
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell className="text-[11px] font-bold text-slate-400">
+                                                                {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '-'}
+                                                            </TableCell>
+                                                            <TableCell className="font-black text-slate-200 text-xs">
+                                                                R$ {inv.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                            </TableCell>
+                                                            <td className="px-6 py-4">
+                                                                <div className="flex items-center gap-2">
+                                                                    {inv.metadata?.method === 'pix_inter' ? (
+                                                                        <span className="flex items-center gap-1 font-black text-[9px] text-emerald-500 bg-emerald-500/5 px-2 py-0.5 rounded border border-emerald-500/20 uppercase tracking-tighter">
+                                                                            <Zap className="w-2.5 h-2.5" /> Pix
+                                                                        </span>
+                                                                    ) : inv.metadata?.method === 'boleto_inter' ? (
+                                                                        <span className="flex items-center gap-1 font-black text-[9px] text-blue-500 bg-blue-500/5 px-2 py-0.5 rounded border border-blue-500/20 uppercase tracking-tighter">
+                                                                            <FileText className="w-2.5 h-2.5" /> Boleto
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="text-[10px] text-slate-500 uppercase">Cartão</span>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                {inv.is_paid ? (
+                                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 uppercase">Pago</span>
+                                                                ) : inv.metadata?.status_inter === 'CANCELADO' || inv.metadata?.status_inter === 'EXPIRADO' ? (
+                                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-rose-500/10 text-rose-500 border border-rose-500/20 uppercase">Cancelado</span>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/10 text-amber-500 border border-amber-500/20 uppercase">Pendente</span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-6 py-4 text-left whitespace-nowrap">
+                                                                <div className="flex items-center justify-start gap-3">
+                                                                    {/* Só mostra botões de ação se NÃO estiver pago E NÃO estiver cancelado/expirado */}
+                                                                    {!inv.is_paid &&
+                                                                        (inv.metadata?.method === 'boleto_inter' || inv.metadata?.method === 'pix_inter') &&
+                                                                        inv.metadata?.status_inter !== 'CANCELADO' &&
+                                                                        inv.metadata?.status_inter !== 'EXPIRADO' && (
+                                                                            <>
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    variant="ghost"
+                                                                                    className="h-8 text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 text-[10px] font-black uppercase"
+                                                                                    onClick={async () => {
+                                                                                        if (!confirm('Verificar status do pagamento no banco agora?')) return;
+                                                                                        try {
+                                                                                            // Tenta pelo seu_numero ou txid
+                                                                                            const seuNumero = inv.metadata.seu_numero;
+                                                                                            const txid = inv.metadata.txid;
+
+                                                                                            // Chama endpoint de Polling para atualizar status
+                                                                                            let url = `/api/barbershop/check-pending-payment?force=true`;
+                                                                                            if (seuNumero) url += `&seu_numero=${seuNumero}`;
+                                                                                            else if (txid) url += `&txid=${txid}`; // Fallback se o endpoint suportar txid direto no query
+
+                                                                                            // Nota: o endpoint atual suporta seu_numero e busca pelo txid interno no metadada.
+                                                                                            // Se o seu_numero falhar, podemos ter que usar o debug endpoint.
+
+                                                                                            // Vamos usar também o endpoint de DEBUG FORCE CHECK que é garantido
+                                                                                            if (txid) {
+                                                                                                const debugRes = await fetch(`/api/debug/force-check?txid=${txid}`);
+                                                                                                const debugData = await debugRes.json();
+                                                                                                if (debugData.updatedIsPaid || debugData.updated) {
+                                                                                                    alert('Status Atualizado! 🚀');
+                                                                                                    fetchInvoices();
+                                                                                                    return;
+                                                                                                }
+                                                                                            }
+
+                                                                                            // Fallback para polling normal
+                                                                                            if (seuNumero) {
+                                                                                                const res = await fetch(`/api/barbershop/check-pending-payment?seu_numero=${seuNumero}`);
+                                                                                                const data = await res.json();
+                                                                                                if (data.ready || data.statusUpdated) {
+                                                                                                    // O pooling já atualiza o is_paid se detectar
+                                                                                                    alert('Status Atualizado!');
+                                                                                                    fetchInvoices();
+                                                                                                } else {
+                                                                                                    alert('Ainda consta como pendente no banco.');
+                                                                                                }
+                                                                                            }
+                                                                                        } catch (e: any) {
+                                                                                            alert('Erro ao verificar: ' + e.message);
+                                                                                        }
+                                                                                    }}
+                                                                                >
+                                                                                    <Activity className="w-3 h-3 mr-1" /> Check
+                                                                                </Button>
+
+                                                                                {inv.metadata?.method === 'pix_inter' ? (
+                                                                                    <Button
+                                                                                        size="sm"
+                                                                                        variant="ghost"
+                                                                                        className="h-8 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-black uppercase"
+                                                                                        onClick={() => {
+                                                                                            // Reabrir Modal Pix
+                                                                                            setPixData({
+                                                                                                amount: inv.value,
+                                                                                                pixPayload: inv.metadata.pix_payload,
+                                                                                                expiresAt: inv.metadata.expires_at || new Date().toISOString(),
+                                                                                                pdfUrl: undefined // Pix pendente não tem PDF
+                                                                                            });
+                                                                                            setPendingData({
+                                                                                                pending: true,
+                                                                                                message: 'Aguardando pagamento...',
+                                                                                                seu_numero: inv.metadata.seu_numero
+                                                                                            }); // Ativa polling UI
+                                                                                            setOpenDialog(true);
+                                                                                        }}
+                                                                                    >
+                                                                                        <Zap className="w-3 h-3 mr-1" /> Ver Pix
+                                                                                    </Button>
+                                                                                ) : (
+                                                                                    <Button
+                                                                                        size="sm"
+                                                                                        variant="ghost"
+                                                                                        className="h-8 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 text-[10px] font-black uppercase"
+                                                                                        onClick={() => {
+                                                                                            const codigoSolicitacao = inv.metadata.txid;
+                                                                                            const nossoNumero = inv.metadata.nosso_numero || '';
+                                                                                            const url = codigoSolicitacao
+                                                                                                ? `/api/checkout/inter-boleto/pdf?codigoSolicitacao=${codigoSolicitacao}&nossoNumero=${nossoNumero}`
+                                                                                                : `/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}`;
+                                                                                            window.open(url, '_blank')
+                                                                                        }}
+                                                                                    >
+                                                                                        <FileText className="w-3 h-3 mr-1" /> PDF
+                                                                                    </Button>
+                                                                                )}
+                                                                            </>
+                                                                        )}
+
+                                                                    {/* --- AÇÃO: EMITIR NFS-E (SÓ PARA PAGOS SEM NOTA) --- */}
+                                                                    {inv.is_paid && !inv.metadata?.nfe_id && (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="ghost"
+                                                                            className="h-8 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 text-[10px] font-black uppercase"
+                                                                            onClick={async () => {
+                                                                                if (!confirm('Deseja emitir a NFS-e Nacional para este pagamento agora?')) return;
+                                                                                try {
+                                                                                    const { data: { session } } = await supabaseClient.auth.getSession();
+                                                                                    if (!session) return;
+
+                                                                                    const res = await fetch('/api/barbershop/invoices/emit-nfse', {
+                                                                                        method: 'POST',
+                                                                                        headers: {
+                                                                                            'Content-Type': 'application/json',
+                                                                                            'Authorization': `Bearer ${session.access_token}`
+                                                                                        },
+                                                                                        body: JSON.stringify({ financeId: inv.id }),
+                                                                                    });
+
+                                                                                    const data = await res.json();
+                                                                                    if (!res.ok) throw new Error(data.error);
+
+                                                                                    alert('NFS-e emitida com sucesso! A página será atualizada.');
+                                                                                    fetchInvoices();
+                                                                                } catch (e: any) {
+                                                                                    alert('Erro ao emitir: ' + e.message);
+                                                                                }
+                                                                                console.log('Emitindo NFS-e...');
+                                                                            }}
+                                                                        >
+                                                                            <FileCheck className="w-3 h-3 mr-1" /> Emitir NFS-e
+                                                                        </Button>
+                                                                    )}
+
+                                                                    {/* --- AÇÃO: VER NOTA (SE JÁ EXISTIR) --- */}
+                                                                    {inv.metadata?.nfe_id && (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="ghost"
+                                                                            className="h-8 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-black uppercase"
+                                                                            onClick={() => {
+                                                                                if (inv.metadata?.nfe_pdf_url) {
+                                                                                    window.open(inv.metadata.nfe_pdf_url, '_blank');
+                                                                                } else {
+                                                                                    alert('PDF da nota não disponível. ID: ' + inv.metadata.nfe_id);
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            <FileCheck className="w-3 h-3 mr-1" /> Ver NFS-e
+                                                                        </Button>
+                                                                    )}
+
+                                                                </div>
+                                                            </td>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-slate-950/30 border-b border-slate-800/50">
+                                                <th className="px-4 py-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Data</th>
+                                                <th className="px-4 py-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Descrição</th>
+                                                <th className="px-4 py-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Método</th>
+                                                <th className="px-4 py-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Valor</th>
+                                                <th className="px-4 py-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Status</th>
+                                                <th className="px-4 py-3 text-[9px] font-black text-slate-500 uppercase tracking-widest text-left">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-800/50">
+                                            {invoices
+                                                .filter(inv => !['CANCELADO', 'EXPIRADO', 'REJEITADA'].includes(inv.metadata?.status_inter || ''))
+                                                .map((inv) => (
+                                                    <tr key={inv.id} className="hover:bg-slate-800/20 transition-colors">
+                                                        <td className="px-4 py-2 text-[10px] text-slate-400 whitespace-nowrap">
+                                                            {(() => {
+                                                                const dateStr = inv.date;
+                                                                if (!dateStr) return '---';
+                                                                if (dateStr.length === 10) {
+                                                                    const [y, m, d] = dateStr.split('-');
+                                                                    return `${d}/${m}/${y}`;
+                                                                }
+                                                                return new Date(dateStr).toLocaleDateString('pt-BR');
+                                                            })()}
+                                                        </td>
+                                                        <td className="px-4 py-2">
+                                                            <p className="text-[10px] font-bold text-slate-300 truncate max-w-[200px]">{inv.description}</p>
+                                                            <p className="text-[8px] text-slate-600 font-mono">ID: {inv.metadata?.nosso_numero || inv.id.slice(0, 8)}</p>
+                                                        </td>
+                                                        <td className="px-4 py-2">
+                                                            <div className="flex items-center gap-1">
+                                                                {inv.metadata?.method === 'pix_inter' ? (
+                                                                    <span className="flex items-center gap-1 font-black text-[8px] text-emerald-500 uppercase tracking-tighter">
+                                                                        <Zap className="w-2 h-2" /> Pix
+                                                                    </span>
+                                                                ) : inv.metadata?.method === 'boleto_inter' ? (
+                                                                    <span className="flex items-center gap-1 font-black text-[8px] text-blue-500 uppercase tracking-tighter">
+                                                                        <FileText className="w-2 h-2" /> Boleto
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-[8px] text-slate-500 font-bold uppercase">Cartão</span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-2 text-[11px] font-black text-slate-200 whitespace-nowrap">
+                                                            R$ {inv.value.toFixed(2).replace('.', ',')}
+                                                        </td>
+                                                        <td className="px-4 py-2 whitespace-nowrap">
+                                                            {inv.is_paid ? (
+                                                                <span className="inline-flex items-center px-1.5 py-0 rounded text-[8px] font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 uppercase tracking-widest">Pago</span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center px-1.5 py-0 rounded text-[8px] font-black bg-amber-500/10 text-amber-500 border border-amber-500/20 uppercase tracking-widest">Pendente</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-2 text-left whitespace-nowrap">
+                                                            <div className="flex items-center justify-start gap-2">
+                                                                {!inv.is_paid &&
+                                                                    (inv.metadata?.method === 'boleto_inter' || inv.metadata?.method === 'pix_inter') && (
+                                                                        <>
+                                                                            <Button
+                                                                                size="sm"
+                                                                                variant="ghost"
+                                                                                className="h-6 text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 text-[9px] font-black uppercase tracking-widest px-2"
+                                                                                onClick={async () => {
+                                                                                    if (!confirm('Verificar status do pagamento no banco agora?')) return;
+                                                                                    try {
+                                                                                        const txid = inv.metadata.txid;
+                                                                                        if (txid) {
+                                                                                            const debugRes = await fetch(`/api/debug/force-check?txid=${txid}`);
+                                                                                            const debugData = await debugRes.json();
+                                                                                            if (debugData.updatedIsPaid || debugData.updated) {
+                                                                                                alert('Status Atualizado! 🚀');
+                                                                                                fetchInvoices();
+                                                                                                return;
+                                                                                            }
+                                                                                        }
+                                                                                        const seuNumero = inv.metadata.seu_numero;
+                                                                                        if (seuNumero) {
+                                                                                            const res = await fetch(`/api/barbershop/check-pending-payment?seu_numero=${seuNumero}`);
+                                                                                            const data = await res.json();
+                                                                                            if (data.ready || data.statusUpdated) {
+                                                                                                alert('Status Atualizado!');
+                                                                                                fetchInvoices();
+                                                                                            } else {
+                                                                                                alert('Ainda consta como pendente no banco.');
+                                                                                            }
+                                                                                        }
+                                                                                    } catch (e: any) {
+                                                                                        alert('Erro ao verificar: ' + e.message);
+                                                                                    }
+                                                                                }}
+                                                                            >
+                                                                                <Activity className="w-2.5 h-2.5 mr-1" /> Check
+                                                                            </Button>
+
+                                                                            {inv.metadata?.method === 'pix_inter' ? (
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    variant="ghost"
+                                                                                    className="h-6 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 text-[9px] font-black uppercase tracking-widest px-2"
+                                                                                    onClick={() => {
+                                                                                        setPixData({
+                                                                                            amount: inv.value,
+                                                                                            pixPayload: inv.metadata.pix_payload,
+                                                                                            expiresAt: inv.metadata.expires_at || new Date().toISOString(),
+                                                                                            pdfUrl: undefined
+                                                                                        });
+                                                                                        setPendingData({
+                                                                                            pending: true,
+                                                                                            message: 'Aguardando pagamento...',
+                                                                                            seu_numero: inv.metadata.seu_numero
+                                                                                        });
+                                                                                        setOpenDialog(true);
+                                                                                    }}
+                                                                                >
+                                                                                    <Zap className="w-2.5 h-2.5 mr-1" /> Ver Pix
+                                                                                </Button>
+                                                                            ) : (
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    variant="ghost"
+                                                                                    className="h-6 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 text-[9px] font-black uppercase tracking-widest px-2"
+                                                                                    onClick={() => {
+                                                                                        const codigoSolicitacao = inv.metadata.txid;
+                                                                                        const nossoNumero = inv.metadata.nosso_numero || '';
+                                                                                        const url = codigoSolicitacao
+                                                                                            ? `/api/checkout/inter-boleto/pdf?codigoSolicitacao=${codigoSolicitacao}&nossoNumero=${nossoNumero}`
+                                                                                            : `/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}`;
+                                                                                        window.open(url, '_blank')
+                                                                                    }}
+                                                                                >
+                                                                                    <FileText className="w-2.5 h-2.5 mr-1" /> PDF
+                                                                                </Button>
+                                                                            )}
+                                                                        </>
+                                                                    )}
+
+                                                                {inv.is_paid && !inv.metadata?.nfe_id && (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        className="h-6 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 text-[9px] font-black uppercase tracking-widest px-2"
+                                                                        onClick={async () => {
+                                                                            if (!confirm('Deseja emitir a NFS-e Nacional para este pagamento agora?')) return;
+                                                                            try {
+                                                                                const { data: { session } } = await supabaseClient.auth.getSession();
+                                                                                if (!session) return;
+                                                                                const res = await fetch('/api/barbershop/invoices/emit-nfse', {
+                                                                                    method: 'POST',
+                                                                                    headers: {
+                                                                                        'Content-Type': 'application/json',
+                                                                                        'Authorization': `Bearer ${session.access_token}`
+                                                                                    },
+                                                                                    body: JSON.stringify({ financeId: inv.id }),
+                                                                                });
+                                                                                const data = await res.json();
+                                                                                if (!res.ok) throw new Error(data.error);
+                                                                                alert('NFS-e emitida com sucesso!');
+                                                                                fetchInvoices();
+                                                                            } catch (e: any) { alert('Erro ao emitir: ' + e.message); }
+                                                                        }}
+                                                                    >
+                                                                        <FileCheck className="w-2.5 h-2.5 mr-1" /> Emitir NFS-e
+                                                                    </Button>
+                                                                )}
+
+                                                                {inv.metadata?.nfe_id && (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        className="h-6 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 text-[9px] font-black uppercase tracking-widest px-2"
+                                                                        onClick={() => {
+                                                                            if (inv.metadata?.nfe_pdf_url) window.open(inv.metadata.nfe_pdf_url, '_blank');
+                                                                            else alert('PDF ainda não disponível.');
+                                                                        }}
+                                                                    >
+                                                                        <CheckCircle2 className="w-2.5 h-2.5 mr-1" /> Ver NFS-e
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
                     </div>
                     {/* O loading agora fecha mais abaixo, englobando tudo */}

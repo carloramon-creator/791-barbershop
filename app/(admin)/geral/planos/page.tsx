@@ -130,14 +130,25 @@ export default function PlansPage() {
                             <CardContent className="p-6 space-y-4">
                                 {editingPlan?.id === plan.id ? (
                                     <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label className="text-[10px] text-slate-500 uppercase font-bold">Valor Mensal</Label>
-                                            <Input
-                                                type="number"
-                                                value={editingPlan.price}
-                                                onChange={(e) => setEditingPlan({ ...editingPlan, price: Number(e.target.value) })}
-                                                className="bg-slate-950 border-slate-800 text-blue-400 font-mono h-11"
-                                            />
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] text-slate-500 uppercase font-bold">Valor Mensal</Label>
+                                                <Input
+                                                    type="number"
+                                                    value={editingPlan.price}
+                                                    onChange={(e) => setEditingPlan({ ...editingPlan, price: Number(e.target.value) })}
+                                                    className="bg-slate-950 border-slate-800 text-blue-400 font-mono h-11"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] text-slate-500 uppercase font-bold">Limite de Staff (0=Ilimitado)</Label>
+                                                <Input
+                                                    type="number"
+                                                    value={editingPlan.staff_limit || 0}
+                                                    onChange={(e) => setEditingPlan({ ...editingPlan, staff_limit: parseInt(e.target.value) || 0 })}
+                                                    className="bg-slate-950 border-slate-800 text-emerald-400 font-mono h-11"
+                                                />
+                                            </div>
                                         </div>
                                         <div className="space-y-2">
                                             <Label className="text-[10px] text-slate-500 uppercase font-bold">Resumo / Descrição</Label>
@@ -146,6 +157,41 @@ export default function PlansPage() {
                                                 onChange={(e) => setEditingPlan({ ...editingPlan, description: e.target.value })}
                                                 className="bg-slate-950 border-slate-800 text-slate-300 h-11"
                                             />
+                                        </div>
+
+                                        <div className="space-y-4 pt-4 border-t border-slate-800">
+                                            <Label className="text-[10px] text-slate-500 uppercase font-bold">Permissões de Menu (Sidebar)</Label>
+                                            <div className="grid grid-cols-2 gap-2 p-4 bg-slate-950 rounded-xl border border-slate-800">
+                                                {[
+                                                    { key: 'dashboard', label: 'Dashboard' },
+                                                    { key: 'queue', label: 'Fila' },
+                                                    { key: 'appointments', label: 'Agendamentos' },
+                                                    { key: 'clients', label: 'Clientes' },
+                                                    { key: 'professionals', label: 'Profissionais' },
+                                                    { key: 'services', label: 'Serviços' },
+                                                    { key: 'products', label: 'Produtos' },
+                                                    { key: 'inventory', label: 'Estoque' },
+                                                    { key: 'finance', label: 'Financeiro' },
+                                                ].map((item) => (
+                                                    <label key={item.key} className="flex items-center gap-2 cursor-pointer group">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={(editingPlan.menu_permissions || []).includes(item.key)}
+                                                            onChange={(e) => {
+                                                                const current = editingPlan.menu_permissions || [];
+                                                                const next = e.target.checked
+                                                                    ? [...current, item.key]
+                                                                    : current.filter((k: string) => k !== item.key);
+                                                                setEditingPlan({ ...editingPlan, menu_permissions: next });
+                                                            }}
+                                                            className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-950"
+                                                        />
+                                                        <span className="text-[10px] font-bold text-slate-400 group-hover:text-slate-200 uppercase tracking-tighter">
+                                                            {item.label}
+                                                        </span>
+                                                    </label>
+                                                ))}
+                                            </div>
                                         </div>
                                         <div className="space-y-4 pt-4 border-t border-slate-800">
                                             <Label className="text-[10px] text-slate-500 uppercase font-bold">Funcionalidades (Até 5)</Label>
@@ -226,7 +272,32 @@ export default function PlansPage() {
                     <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
                         <Zap size={20} className="text-amber-400" /> Módulos & Add-ons Opcionais
                     </h2>
-                    <Button variant="outline" className="bg-slate-900 border-slate-800 text-[10px] uppercase font-black tracking-widest h-8" disabled>
+                    <Button
+                        variant="outline"
+                        className="bg-slate-900 border-slate-800 text-[10px] uppercase font-black tracking-widest h-8"
+                        onClick={() => {
+                            const name = prompt('Nome do Novo Add-on:');
+                            const slug = prompt('Slug do Novo Add-on (ex: financeiro):');
+                            const price = prompt('Preço Mensal (apenas números):');
+                            const description = prompt('Descrição breve:');
+
+                            if (name && slug && price) {
+                                (async () => {
+                                    try {
+                                        await Api.createSystemAddon({
+                                            name,
+                                            slug: slug.toLowerCase(),
+                                            price: parseFloat(price),
+                                            description: description || ''
+                                        });
+                                        loadData();
+                                    } catch (e: any) {
+                                        alert('Erro ao criar: ' + e.message);
+                                    }
+                                })();
+                            }
+                        }}
+                    >
                         <Plus size={14} className="mr-1" /> Novo Add-on
                     </Button>
                 </div>

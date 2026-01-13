@@ -184,6 +184,11 @@ export const Api = {
     createSystemAddon: (payload: Record<string, unknown>) => apiFetch('/api/system/addons', { method: 'POST', body: JSON.stringify(payload) }),
     updateSystemAddon: (payload: Record<string, unknown>) => apiFetch('/api/system/addons', { method: 'PATCH', body: JSON.stringify(payload) }),
 
+    getSystemCoupons: () => apiFetch('/api/system/coupons'),
+    createSystemCoupon: (payload: Record<string, unknown>) => apiFetch('/api/system/coupons', { method: 'POST', body: JSON.stringify(payload) }),
+    updateSystemCoupon: (payload: Record<string, unknown>) => apiFetch('/api/system/coupons', { method: 'PATCH', body: JSON.stringify(payload) }),
+    deleteSystemCoupon: (id: string) => apiFetch(`/api/system/coupons?id=${id}`, { method: 'DELETE' }),
+
     // Public/Client Actions
     getPublicQueueStatus: (tenantId?: string) => apiFetch(`/api/public/queue?tenant_id=${tenantId || ''}`),
     enterPublicQueue: (payload: Record<string, any>) => apiFetch('/api/public/queue/enter', { method: 'POST', body: JSON.stringify(payload) }),

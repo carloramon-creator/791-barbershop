@@ -107,7 +107,10 @@ export async function getCurrentUserAndTenant() {
         if (tenantIdToUse) {
             const { data: tenant } = await supabaseAdmin
                 .from('tenants')
-                .select('*')
+                .select(`
+                    *,
+                    system_plan:system_plans!inner(menu_permissions, staff_limit)
+                `)
                 .eq('id', tenantIdToUse)
                 .single();
 

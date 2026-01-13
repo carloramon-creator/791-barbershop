@@ -45,6 +45,10 @@ export interface Tenant {
         [key: string]: any;
     };
     active_addons?: string[];
+    system_plan?: {
+        menu_permissions: string[];
+        staff_limit: number;
+    };
     created_at: string;
 }
 

@@ -26,6 +26,9 @@ export default function CouponsPage() {
     const [coupons, setCoupons] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
 
     // New coupon state
     const [code, setCode] = useState('');
@@ -37,12 +40,7 @@ export default function CouponsPage() {
     const loadCoupons = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabaseClient
-                .from('system_coupons')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
+            const data = await Api.getSystemCoupons();
             setCoupons(data || []);
         } catch (e) {
             console.error(e);
@@ -58,48 +56,62 @@ export default function CouponsPage() {
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const { error } = await supabaseClient
-                .from('system_coupons')
-                .insert({
-                    code: code.toUpperCase(),
-                    discount_percent: discountPercent ? parseFloat(discountPercent) : null,
-                    trial_days: parseInt(trialDays),
-                    max_uses: maxUses ? parseInt(maxUses) : null,
-                    expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
-                });
+            setSaving(true);
+            setError(null);
+            setSuccess(null);
 
-            if (error) throw error;
+            await Api.createSystemCoupon({
+                code: code.toUpperCase(),
+                discount_percent: discountPercent ? parseFloat(discountPercent) : null,
+                trial_days: parseInt(trialDays),
+                max_uses: maxUses ? parseInt(maxUses) : null,
+                expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+            });
 
-            setIsAdding(false);
-            setCode('');
-            setDiscountPercent('');
-            setTrialDays('0');
-            setMaxUses('');
-            setExpiresAt('');
+            setSuccess('Cupom criado com sucesso! Sincronizado com Stripe.');
+
+            // Limpa após 3 segundos
+            setTimeout(() => {
+                setIsAdding(false);
+                setSuccess(null);
+                setCode('');
+                setDiscountPercent('');
+                setTrialDays('0');
+                setMaxUses('');
+                setExpiresAt('');
+            }, 2000);
+
             loadCoupons();
-            alert('Cupom criado com sucesso!');
         } catch (e: any) {
-            alert('Erro ao criar cupom: ' + e.message);
+            setError(e.message || 'Erro ao criar cupom');
+        } finally {
+            setSaving(false);
         }
     };
 
     const toggleStatus = async (id: string, current: boolean) => {
-        const { error } = await supabaseClient
-            .from('system_coupons')
-            .update({ is_active: !current })
-            .eq('id', id);
-
-        if (!error) loadCoupons();
+        try {
+            await Api.updateSystemCoupon({ id, is_active: !current });
+            loadCoupons();
+        } catch (e: any) {
+            alert('Erro ao atualizar status: ' + e.message);
+        }
     };
 
     const deleteCoupon = async (id: string) => {
-        if (!confirm('Excluir este cupom permanentemente?')) return;
-        const { error } = await supabaseClient
-            .from('system_coupons')
-            .delete()
-            .eq('id', id);
-
-        if (!error) loadCoupons();
+        if (!confirm('Excluir este cupom permanentemente? Todas as barbearias perderão este benefício no Stripe.')) return;
+        try {
+            setLoading(true);
+            await Api.deleteSystemCoupon(id);
+            setSuccess('Cupom removido com sucesso!');
+            setTimeout(() => setSuccess(null), 3000);
+            loadCoupons();
+        } catch (e: any) {
+            setError('Erro ao excluir: ' + e.message);
+            setTimeout(() => setError(null), 5000);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -144,9 +156,25 @@ export default function CouponsPage() {
                                 <Label className="text-slate-400 text-xs uppercase font-bold">Data de Expiração</Label>
                                 <Input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} className="bg-slate-950 border-slate-800 h-11" />
                             </div>
+                            {error && (
+                                <div className="md:col-span-5 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 text-red-500 animate-pulse">
+                                    <AlertCircle size={20} />
+                                    <p className="text-sm font-black uppercase">{error}</p>
+                                </div>
+                            )}
+
+                            {success && (
+                                <div className="md:col-span-5 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-3 text-emerald-500">
+                                    <CheckCircle2 size={20} />
+                                    <p className="text-sm font-black uppercase">{success}</p>
+                                </div>
+                            )}
+
                             <div className="md:col-span-5 flex justify-end gap-3 mt-4">
-                                <Button type="button" variant="outline" onClick={() => setIsAdding(false)} className="border-slate-800 text-slate-400">Cancelar</Button>
-                                <Button type="submit" className="bg-blue-600 text-white min-w-[150px]">Salvar Cupom</Button>
+                                <Button type="button" variant="outline" onClick={() => { setIsAdding(false); setError(null); }} className="border-slate-800 text-slate-400" disabled={saving}>Cancelar</Button>
+                                <Button type="submit" className="bg-blue-600 text-white min-w-[150px]" disabled={saving}>
+                                    {saving ? <Loader2 className="animate-spin h-4 w-4" /> : 'Salvar Cupom'}
+                                </Button>
                             </div>
                         </form>
                     </CardContent>

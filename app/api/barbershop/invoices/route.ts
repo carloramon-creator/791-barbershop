@@ -238,6 +238,25 @@ export async function GET(req: Request) {
             console.error('[STRIPE-SYNC ERROR]', e);
         }
 
+        // 2.2 Limpeza de Registros Cancelados/Antigos (Agressiva)
+        try {
+            // Remove registros que já estão marcados como cancelados/expirados
+            await supabaseAdmin.from('finance')
+                .delete()
+                .eq('tenant_id', tenant.id)
+                .or('metadata->>status_inter.eq.CANCELADO,metadata->>status_inter.eq.EXPIRADO,metadata->>status_inter.eq.REJEITADA,metadata->>status_inter.eq.BAIXADO,metadata->>status.eq.CANCELADO,metadata->>status.eq.EXPIRADO,metadata->>txid.eq.PENDING,description.ilike.%PENDING%');
+
+            // Limpeza de segurança extra: registros não pagos criados há mais de 10 dias que não sejam renovações recorrentes
+            const tenDaysAgo = new Date(Date.now() - 10 * 24 * 3600 * 1000).toISOString();
+            await supabaseAdmin.from('finance')
+                .delete()
+                .eq('tenant_id', tenant.id)
+                .eq('is_paid', false)
+                .lt('created_at', tenDaysAgo);
+        } catch (e) {
+            console.error('[CLEANUP ERROR]', e);
+        }
+
         // 3. Buscar faturas atualizadas
         // Busca abrangente: identifies by metadata flag OR description keywords
         const { data: invoices, error } = await supabaseAdmin

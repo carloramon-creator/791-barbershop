@@ -45,7 +45,7 @@ import { supabaseClient } from '@/lib/supabase-client';
 
 export default function UsersPage() {
   const pathname = usePathname();
-  const { } = useAuth();
+  const { tenant } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
@@ -155,6 +155,16 @@ export default function UsersPage() {
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validar limite de usuários do plano (apenas para novos convites)
+    if (!editingUserId) {
+      const staffLimit = tenant?.system_plan?.staff_limit || 0;
+      if (staffLimit > 0 && users.length >= staffLimit) {
+        alert(`Você atingiu o limite de ${staffLimit} usuários do seu plano. Faça um upgrade para adicionar mais.`);
+        return;
+      }
+    }
+
     setInviteLoading(true);
     setGeneratedLink('');
     try {
@@ -383,9 +393,22 @@ export default function UsersPage() {
           >
             <Shield className="w-4 h-4 mr-2" /> {showAuditMode ? 'Modo Auditoria Ativo' : 'Modo Auditoria'}
           </Button>
-          <Dialog open={isInviteOpen} onOpenChange={(val) => { setIsInviteOpen(val); if (!val) resetForm(); }}>
+          <Dialog open={isInviteOpen} onOpenChange={(val) => {
+            if (val && !editingUserId) {
+              const staffLimit = tenant?.system_plan?.staff_limit || 0;
+              if (staffLimit > 0 && users.length >= staffLimit) {
+                alert(`Limite atingido (${staffLimit} usuários). Faça um upgrade para adicionar mais.`);
+                return;
+              }
+            }
+            setIsInviteOpen(val);
+            if (!val) resetForm();
+          }}>
             <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                disabled={loading || ((tenant?.system_plan?.staff_limit || 0) > 0 && users.length >= (tenant?.system_plan?.staff_limit || 0))}
+              >
                 <Plus className="w-4 h-4" />
                 Adicionar Usuário
               </Button>

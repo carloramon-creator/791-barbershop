@@ -48,16 +48,16 @@ export function Sidebar() {
 
 
     const menuItems = [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['owner', 'staff'], feature: 'queue' },
-        { name: `Fila (${texts.professional})`, href: '/barbeiro', icon: UserCheck, roles: ['owner', 'barber', 'staff'], feature: 'queue', module: 'queue' },
-        { name: 'Agendamentos', href: '/agendamentos', icon: Calendar, roles: ['owner', 'barber', 'staff'], feature: 'queue', module: 'appointments' },
-        { name: texts.clients, href: '/clientes', icon: Users, roles: ['owner', 'barber', 'staff'], feature: 'queue' },
-        { name: texts.professionals, href: '/barbeiros', icon: Users, roles: ['owner', 'staff'], feature: 'queue' },
-        { name: texts.services, href: '/servicos', icon: Scissors, roles: ['owner', 'staff'], feature: 'queue' },
-        { name: 'Produtos', href: '/produtos', icon: ShoppingBag, roles: ['owner', 'staff'], feature: 'queue' },
-        { name: 'Estoque', href: '/estoque', icon: ShoppingBag, roles: ['owner', 'staff'], feature: 'inventory' },
-        { name: 'Financeiro', href: '/financeiro', icon: BarChart3, roles: ['owner'], feature: 'finance' },
-        { name: 'Configurações', href: '/configuracoes/barbearia', icon: Settings, roles: ['owner'], feature: 'queue' },
+        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['owner', 'staff'], permission: 'dashboard' },
+        { name: `Fila (${texts.professional})`, href: '/barbeiro', icon: UserCheck, roles: ['owner', 'barber', 'staff'], permission: 'queue', module: 'queue' },
+        { name: 'Agendamentos', href: '/agendamentos', icon: Calendar, roles: ['owner', 'barber', 'staff'], permission: 'appointments', module: 'appointments' },
+        { name: texts.clients, href: '/clientes', icon: Users, roles: ['owner', 'barber', 'staff'], permission: 'clients' },
+        { name: texts.professionals, href: '/barbeiros', icon: Users, roles: ['owner', 'staff'], permission: 'professionals' },
+        { name: texts.services, href: '/servicos', icon: Scissors, roles: ['owner', 'staff'], permission: 'services' },
+        { name: 'Produtos', href: '/produtos', icon: ShoppingBag, roles: ['owner', 'staff'], permission: 'products' },
+        { name: 'Estoque', href: '/estoque', icon: ShoppingBag, roles: ['owner', 'staff'], permission: 'inventory', feature: 'inventory' },
+        { name: 'Financeiro', href: '/financeiro', icon: BarChart3, roles: ['owner'], permission: 'finance', feature: 'finance' },
+        { name: 'Configurações', href: '/configuracoes/barbearia', icon: Settings, roles: ['owner'] },
         { name: 'Super Admin', href: '/geral', icon: ShieldCheck, roles: ['owner'], isSystemOnly: true },
     ];
 
@@ -69,19 +69,25 @@ export function Sidebar() {
         const roleAllowed = !item.roles || (role && item.roles.includes(role));
         if (!roleAllowed) return false;
 
-        // Filtrar por módulo ativo (se definido no item)
+        // Filtrar por módulo ativo (Configurações Gerais do Tenant)
         if ((item as any).module === 'queue' && !tenant?.module_queue_enabled) return false;
         if ((item as any).module === 'appointments' && !tenant?.module_appointments_enabled) return false;
 
-        const plan = (tenant?.plan || 'basic').toLowerCase();
+        // PERMISSÕES DINÂMICAS DO PLANO + ADDONS
+        const planPermissions = (tenant as any)?.system_plan?.menu_permissions || [
+            'dashboard', 'queue', 'appointments', 'clients', 'professionals', 'services', 'products', 'inventory', 'finance'
+        ];
         const activeAddons = tenant?.active_addons || [];
 
-        if (item.feature === 'finance') {
-            return plan === 'premium' || plan === 'complete' || activeAddons.includes('finance_module') || planConfig.features.includes('finance') || planConfig.features.includes('all');
-        }
+        const itemPermission = (item as any).permission;
+        if (itemPermission) {
+            // Se o plano permite OU se tem um addon que habilita
+            const allowedByPlan = planPermissions.includes(itemPermission);
+            const allowedByAddon =
+                (itemPermission === 'finance' && activeAddons.includes('finance_module')) ||
+                (itemPermission === 'inventory' && activeAddons.includes('inventory'));
 
-        if (item.feature === 'inventory') {
-            return plan === 'premium' || activeAddons.includes('inventory') || planConfig.features.includes('all');
+            if (!allowedByPlan && !allowedByAddon) return false;
         }
 
         return true;
