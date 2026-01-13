@@ -152,8 +152,15 @@ export default function PlanPage() {
                     body: JSON.stringify({ plan: selectedPlan, addon: selectedAddon?.slug, coupon: couponCode }),
                 });
                 const data = await res.json();
+                if (!res.ok) {
+                    // Tratamento específico para erro de cupom
+                    if (data.error && data.error.includes('coupon')) {
+                        throw new Error(`Cupom inválido: ${couponCode}. Verifique o código e tente novamente.`);
+                    }
+                    throw new Error(data.error || 'Erro ao processar pagamento');
+                }
                 if (data.url) window.location.href = data.url;
-                else throw new Error(data.error);
+                else throw new Error('URL de pagamento não recebida');
             } else if (paymentMethod === 'pix') {
                 const tempId = Date.now().toString().slice(-15);
                 setPendingData({ message: 'Iniciando Pix...', pending: true, seu_numero: tempId });
@@ -509,12 +516,20 @@ export default function PlanPage() {
                         <div className="flex flex-col items-center space-y-6">
                             {pixData ? (
                                 <>
+                                    <div className="text-center space-y-2 mb-4">
+                                        <p className="text-xs text-slate-500 uppercase font-black tracking-widest">Valor a Pagar</p>
+                                        <p className="text-3xl font-black text-emerald-500">R$ {pixData.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                    </div>
                                     <div className="bg-white p-3 rounded-2xl border-4 border-white"><QRCodeCanvas value={pixData.pixPayload} size={180} /></div>
                                     <Button variant="outline" className="w-full h-11 border-slate-800 text-[10px] font-black uppercase" onClick={() => { navigator.clipboard.writeText(pixData.pixPayload); alert('Pix Copiado!'); }}>Copiar Pix</Button>
                                     <p className="text-[9px] text-emerald-500 font-black animate-pulse">Aguardando Confirmação...</p>
                                 </>
                             ) : boletoData ? (
                                 <>
+                                    <div className="text-center space-y-2 mb-4">
+                                        <p className="text-xs text-slate-500 uppercase font-black tracking-widest">Valor do Boleto</p>
+                                        <p className="text-3xl font-black text-blue-500">R$ {boletoData.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                    </div>
                                     <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center"><FileText className="text-blue-500" size={32} /></div>
                                     <Button className="w-full h-11 bg-blue-600 font-black text-[10px] uppercase" onClick={() => window.open(`/api/checkout/inter-boleto/pdf?nossoNumero=${boletoData.nossoNumero}`, '_blank')}>Abrir Boleto (PDF)</Button>
                                 </>
