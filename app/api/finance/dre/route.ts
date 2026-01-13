@@ -18,7 +18,7 @@ export async function GET(req: Request) {
 
         // 1. Buscar receitas manuais e despesas (finance table)
         // Precisamos de categoria para despesas
-        const { data: financeData, error: finError } = await supabaseAdmin
+        const { data: rawFinanceData, error: finError } = await supabaseAdmin
             .from('finance')
             .select(`
                 value, 
@@ -29,7 +29,6 @@ export async function GET(req: Request) {
                 metadata
             `)
             .eq('tenant_id', tenant.id)
-            .not('metadata->is_saas_payment', 'eq', true)
             .gte('date', start)
             .lte('date', end);
 
@@ -43,6 +42,9 @@ export async function GET(req: Request) {
 
         if (finError) throw finError;
         if (salesError) throw salesError;
+
+        // Filtrar registros do SaaS (assinaturas/renovações) para não poluir o DRE do cliente
+        const financeData = (rawFinanceData as any[] || []).filter(f => f.metadata?.is_saas_payment !== true);
 
         // Processamento
         // Receitas
