@@ -156,29 +156,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         }
     }
 
-    // Registrar faturamento no financeiro global (SaaS)
-    // APENAS SE o valor for maior que zero (para evitar duplicidade com invoice.payment_succeeded em pagamentos futuros)
-    const amount = session.amount_total ? session.amount_total / 100 : 0;
-    if (amount > 0) {
-        // Verifica se já não foi registrado pelo invoice.payment_succeeded (corrida de eventos)
-        // Mas como checkout.session.completed geralmente chega antes ou é o gatilho principal para primeira compra, mantemos.
-        // O ideal é usar payment_intent ou invoice ID para deduplicar.
-        await supabaseAdmin
-            .from('finance')
-            .insert({
-                tenant_id: tenantId, // Associar ao tenant para aparecer no histórico dele
-                type: 'revenue',
-                value: amount,
-                description: `Assinatura SaaS - ${isAddon ? 'Add-on' : 'Plano'} ${addonSlug || planSlug} (Stripe - Checkout)`,
-                date: new Date().toISOString().split('T')[0],
-                is_paid: true,
-                metadata: {
-                    stripe_session_id: session.id,
-                    stripe_customer_id: session.customer,
-                    method: 'stripe_card'
-                }
-            });
-    }
+    // 3. Registrar faturamento no financeiro global (SaaS)
+    // REMOVIDO: Delegamos toda a responsabilidade financeira para o evento 'invoice.payment_succeeded'
+    // para evitar duplicidade em upgrades e renovações. O checkout lida apenas com provisionamento.
+    console.log('[STRIPE] Checkout processado. Aguardando webhook de invoice para registro financeiro.');
 }
 
 // Função para tratar pagamentos recorrentes (renovações e fim de trial)
@@ -203,14 +184,14 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
         return;
     }
 
-    // Registrar receita
-    // Nota: Pode haver duplicidade com checkout.session.completed na primeira compra se não tratarmos.
-    // Mas geralmente invoice.payment_succeeded ocorre para renovações.
-    // Se for a primeira compra, o billing_reason é 'subscription_create'.
-    if (invoice.billing_reason === 'subscription_create') {
-        console.log('[STRIPE] Fatura de criação de assinatura - evitando duplicidade com checkout');
-        return;
-    }
+    // Identificar tipo de cobrança
+    const isCreation = invoice.billing_reason === 'subscription_create';
+    const isUpdate = invoice.billing_reason === 'subscription_update';
+    const description = isCreation
+        ? `Assinatura SaaS - Plano ${tenant.plan} (Stripe)`
+        : isUpdate
+            ? `Upgrade/Alteração SaaS - Plano ${tenant.plan} (Stripe)`
+            : `Renovação SaaS - Plano ${tenant.plan} (Stripe)`;
 
     await supabaseAdmin
         .from('finance')
@@ -218,14 +199,15 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
             tenant_id: tenant.id, // Associar ao tenant
             type: 'revenue',
             value: amount,
-            description: `Renovação SaaS - Plano ${tenant.plan} (Stripe)`,
+            description: description,
             date: new Date().toISOString().split('T')[0],
             is_paid: true,
             metadata: {
                 stripe_invoice_id: invoice.id,
                 stripe_subscription_id: subscriptionId,
                 stripe_customer_id: customerId,
-                method: 'stripe_card'
+                method: 'stripe_card',
+                billing_reason: invoice.billing_reason
             }
         });
 
