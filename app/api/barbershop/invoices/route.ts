@@ -258,13 +258,13 @@ export async function GET(req: Request) {
         }
 
         // 3. Buscar faturas atualizadas
-        // Busca TODAS as faturas do tenant que sejam do tipo 'expense' (SaaS payments)
-        // OU que tenham qualquer indicador de pagamento SaaS
+        // Busca APENAS pagamentos SaaS (assinaturas/add-ons), NÃO transações da barbearia
+        // Critério: type='expense' (pagamentos SaaS) OU tem metadata específica de SaaS
         const { data: invoices, error } = await supabaseAdmin
             .from('finance')
             .select('*')
             .eq('tenant_id', tenant.id)
-            .or('type.eq.expense,metadata->>is_saas_payment.eq.true,description.ilike.%SaaS%,description.ilike.%Assinatura%,description.ilike.%Renovação%,metadata->>plan.neq.null,metadata->>addon.neq.null,metadata->>method.eq.pix_inter,metadata->>method.eq.boleto_inter,metadata->>method.eq.stripe_card')
+            .eq('type', 'expense') // APENAS despesas (pagamentos SaaS), não receitas da barbearia
             .order('date', { ascending: false })
             .order('created_at', { ascending: false });
 
