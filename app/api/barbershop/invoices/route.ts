@@ -167,7 +167,7 @@ export async function GET(req: Request) {
                                     type: 'expense', // MUDADO: expense ao invés de revenue
                                     value: (session.amount_total || 0) / 100,
                                     description: `ASSINATURA SAAS - Plano ${planFromMeta} (Stripe CSS)`,
-                                    date: new Date(session.created * 1000).toISOString().split('T')[0],
+                                    date: new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date(session.created * 1000)),
                                     is_paid: true,
                                     metadata: {
                                         stripe_session_id: session.id,
@@ -219,7 +219,7 @@ export async function GET(req: Request) {
                                 type: 'expense', // MUDADO: expense ao invés de revenue
                                 value: amount,
                                 description: `RENOVAÇÃO SAAS (Stripe INV)`,
-                                date: new Date((inv.status_transitions?.paid_at || inv.created) * 1000).toISOString().split('T')[0],
+                                date: new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date((inv.status_transitions?.paid_at || inv.created) * 1000)),
                                 is_paid: true,
                                 metadata: {
                                     stripe_invoice_id: inv.id,

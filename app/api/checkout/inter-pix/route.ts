@@ -87,7 +87,7 @@ export async function POST(req: Request) {
         }
 
         amount = Math.max(0, amount - discount);
-        const currentDate = new Date().toISOString().split('T')[0];
+        const currentDate = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
         const dueDate = new Date();
         dueDate.setHours(dueDate.getHours() + 24); // Pix expira em 24h
         const dueDateStr = dueDate.toISOString().split('T')[0];
