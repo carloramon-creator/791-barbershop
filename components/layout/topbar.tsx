@@ -1,5 +1,4 @@
-'use client';
-
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth-provider';
 import { User, Sun, Moon, Menu, AlertTriangle, Clock, CreditCard } from 'lucide-react';
 import { useTheme } from '@/lib/theme-provider';
@@ -43,12 +42,14 @@ export function Topbar() {
                                         }
                                     }
                                     return (
-                                        <div className="flex items-center gap-2 bg-amber-500 text-slate-950 px-4 py-1.5 rounded-full font-bold shadow-lg shadow-amber-500/20 animate-in fade-in zoom-in duration-300">
-                                            <Clock size={16} className="text-slate-900" />
-                                            <span>
-                                                PERÍODO DE TESTE: {daysLeft} DIAS RESTANTES
-                                            </span>
-                                        </div>
+                                        <Link href="/configuracoes/plano">
+                                            <div className="flex items-center gap-2 bg-amber-500 text-slate-950 px-4 py-1.5 rounded-full font-bold shadow-lg shadow-amber-500/20 animate-in fade-in zoom-in duration-300 hover:scale-105 transition-transform cursor-pointer hover:bg-amber-400">
+                                                <Clock size={16} className="text-slate-900" />
+                                                <span>
+                                                    Seu teste acaba em {daysLeft} dias! Assine agora
+                                                </span>
+                                            </div>
+                                        </Link>
                                     );
                                 })()
                             ) : (
