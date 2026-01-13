@@ -152,8 +152,15 @@ export default function PlanPage() {
                     body: JSON.stringify({ plan: selectedPlan, addon: selectedAddon?.slug, coupon: couponCode }),
                 });
                 const data = await res.json();
+                if (!res.ok) {
+                    // Tratamento específico para erro de cupom
+                    if (data.error && data.error.includes('coupon')) {
+                        throw new Error(`Cupom inválido: ${couponCode}. Verifique o código e tente novamente.`);
+                    }
+                    throw new Error(data.error || 'Erro ao processar pagamento');
+                }
                 if (data.url) window.location.href = data.url;
-                else throw new Error(data.error);
+                else throw new Error('URL de pagamento não recebida');
             } else if (paymentMethod === 'pix') {
                 const tempId = Date.now().toString().slice(-15);
                 setPendingData({ message: 'Iniciando Pix...', pending: true, seu_numero: tempId });
@@ -324,139 +331,137 @@ export default function PlanPage() {
                                     <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Nenhuma fatura encontrada</p>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto">
-                                    <Table>
-                                        <TableHeader className="bg-slate-950/40">
-                                            <TableRow className="border-slate-800">
-                                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-6">Data</TableHead>
-                                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Descrição</TableHead>
-                                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Forma</TableHead>
-                                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Valor</TableHead>
-                                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500">Status</TableHead>
-                                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-right px-6">Ações</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {invoices.filter(inv => !['CANCELADO', 'EXPIRADO'].includes(inv.metadata?.status_inter || '')).map((inv) => (
-                                                <TableRow key={inv.id} className="border-slate-800/50 hover:bg-slate-800/30 h-14">
-                                                    <TableCell className="px-6">
-                                                        <p className="text-[11px] font-black text-slate-100">{inv.date ? new Date(inv.date).toLocaleDateString('pt-BR') : '---'}</p>
-                                                        <p className="text-[9px] text-slate-600 font-mono">#{inv.id.substring(0, 8)}</p>
-                                                    </TableCell>
-                                                    <TableCell className="text-xs font-black text-slate-300 uppercase">{inv.description || inv.title}</TableCell>
-                                                    <TableCell>
-                                                        {inv.metadata?.method === 'pix_inter' ? (
-                                                            <span className="flex items-center gap-1 font-black text-[9px] text-emerald-500 uppercase"><Zap size={10} /> Pix</span>
-                                                        ) : inv.metadata?.method === 'boleto_inter' ? (
-                                                            <span className="flex items-center gap-1 font-black text-[9px] text-blue-500 uppercase"><FileText size={10} /> Boleto</span>
-                                                        ) : (
-                                                            <span className="flex items-center gap-1 font-black text-[9px] text-slate-500 uppercase"><CreditCard size={10} /> Cartão</span>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="text-xs font-black text-slate-300">R$ {inv.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
-                                                    <TableCell>
-                                                        <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border", inv.is_paid ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-amber-500/10 text-amber-500 border-amber-500/20")}>
-                                                            {inv.is_paid ? 'Pago' : 'Pendente'}
-                                                        </span>
-                                                    </TableCell>
-                                                    <TableCell className="px-6 text-right">
-                                                        <div className="flex items-center justify-end gap-2">
-                                                            {!inv.is_paid && (inv.metadata?.method === 'boleto_inter' || inv.metadata?.method === 'pix_inter') && (
-                                                                <>
-                                                                    <Button
-                                                                        size="sm"
-                                                                        variant="outline"
-                                                                        className="h-7 text-[9px] font-black uppercase border-slate-700 hover:bg-slate-800"
-                                                                        onClick={async () => {
-                                                                            const txid = inv.metadata?.txid;
-                                                                            if (!txid) return alert('TXID não encontrado');
-                                                                            try {
-                                                                                const res = await fetch(`/api/debug/force-check?txid=${txid}`);
-                                                                                const data = await res.json();
-                                                                                if (data.updatedIsPaid) {
-                                                                                    alert('Pagamento Confirmado! 🚀');
-                                                                                    window.location.reload();
-                                                                                } else {
-                                                                                    alert('Aguardando compensação...');
-                                                                                }
-                                                                            } catch (e) { alert('Erro ao checar'); }
-                                                                        }}
-                                                                    >
-                                                                        <Activity size={12} /> Check
-                                                                    </Button>
-                                                                    {inv.metadata.method === 'pix_inter' ? (
-                                                                        <Button
-                                                                            size="sm"
-                                                                            className="h-7 text-[9px] font-black uppercase bg-emerald-600 hover:bg-emerald-500 text-white"
-                                                                            onClick={() => {
-                                                                                setPixData({
-                                                                                    amount: inv.value,
-                                                                                    pixPayload: inv.metadata.pix_payload,
-                                                                                    expiresAt: inv.metadata.expires_at || new Date().toISOString()
-                                                                                });
-                                                                                setOpenDialog(true);
-                                                                            }}
-                                                                        >
-                                                                            Ver Pix
-                                                                        </Button>
-                                                                    ) : (
-                                                                        <Button
-                                                                            size="sm"
-                                                                            className="h-7 text-[9px] font-black uppercase bg-blue-600 hover:bg-blue-500 text-white"
-                                                                            onClick={() => window.open(`/api/checkout/inter-boleto/pdf?nossoNumero=${inv.metadata.nosso_numero}`, '_blank')}
-                                                                        >
-                                                                            Ver Boleto
-                                                                        </Button>
-                                                                    )}
-                                                                </>
-                                                            )}
-                                                            {inv.is_paid && !inv.metadata?.nfe_id && (
+                                <Table>
+                                    <TableHeader className="bg-slate-950/40">
+                                        <TableRow className="border-slate-800">
+                                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-4 w-[120px]">Data</TableHead>
+                                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 w-auto">Descrição</TableHead>
+                                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 w-[100px]">Forma</TableHead>
+                                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 w-[120px]">Valor</TableHead>
+                                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 w-[100px]">Status</TableHead>
+                                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-right px-4 w-[280px]">Ações</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {invoices.filter(inv => !['CANCELADO', 'EXPIRADO'].includes(inv.metadata?.status_inter || '')).map((inv) => (
+                                            <TableRow key={inv.id} className="border-slate-800/50 hover:bg-slate-800/30">
+                                                <TableCell className="px-4">
+                                                    <p className="text-[11px] font-black text-slate-100 whitespace-nowrap">{inv.date ? new Date(inv.date).toLocaleDateString('pt-BR') : '---'}</p>
+                                                    <p className="text-[9px] text-slate-600 font-mono">#{inv.id.substring(0, 8)}</p>
+                                                </TableCell>
+                                                <TableCell className="text-xs font-black text-slate-300 uppercase">{inv.description || inv.title}</TableCell>
+                                                <TableCell>
+                                                    {inv.metadata?.method === 'pix_inter' ? (
+                                                        <span className="flex items-center gap-1 font-black text-[9px] text-emerald-500 uppercase whitespace-nowrap"><Zap size={10} /> Pix</span>
+                                                    ) : inv.metadata?.method === 'boleto_inter' ? (
+                                                        <span className="flex items-center gap-1 font-black text-[9px] text-blue-500 uppercase whitespace-nowrap"><FileText size={10} /> Boleto</span>
+                                                    ) : (
+                                                        <span className="flex items-center gap-1 font-black text-[9px] text-slate-500 uppercase whitespace-nowrap"><CreditCard size={10} /> Cartão</span>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="text-xs font-black text-slate-300 whitespace-nowrap">R$ {inv.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
+                                                <TableCell>
+                                                    <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border whitespace-nowrap", inv.is_paid ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-amber-500/10 text-amber-500 border-amber-500/20")}>
+                                                        {inv.is_paid ? 'Pago' : 'Pendente'}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell className="px-4 text-right">
+                                                    <div className="flex items-center justify-end gap-2 flex-wrap">
+                                                        {!inv.is_paid && (inv.metadata?.method === 'boleto_inter' || inv.metadata?.method === 'pix_inter') && (
+                                                            <>
                                                                 <Button
                                                                     size="sm"
-                                                                    variant="ghost"
-                                                                    className="h-7 text-blue-500 hover:bg-blue-500/10 text-[9px] font-black uppercase"
+                                                                    variant="outline"
+                                                                    className="h-7 text-[9px] font-black uppercase border-slate-700 hover:bg-slate-800 whitespace-nowrap"
                                                                     onClick={async () => {
-                                                                        if (!confirm('Emitir NFS-e para este pagamento?')) return;
+                                                                        const txid = inv.metadata?.txid;
+                                                                        if (!txid) return alert('TXID não encontrado');
                                                                         try {
-                                                                            const { data: { session } } = await supabaseClient.auth.getSession();
-                                                                            if (!session) return;
-                                                                            const res = await fetch('/api/barbershop/invoices/emit-nfse', {
-                                                                                method: 'POST',
-                                                                                headers: {
-                                                                                    'Content-Type': 'application/json',
-                                                                                    'Authorization': `Bearer ${session.access_token}`
-                                                                                },
-                                                                                body: JSON.stringify({ financeId: inv.id }),
-                                                                            });
+                                                                            const res = await fetch(`/api/debug/force-check?txid=${txid}`);
                                                                             const data = await res.json();
-                                                                            if (!res.ok) throw new Error(data.error);
-                                                                            alert('NFS-e emitida!');
-                                                                            fetchInvoices();
-                                                                        } catch (e: any) {
-                                                                            alert('Erro: ' + e.message);
-                                                                        }
+                                                                            if (data.updatedIsPaid) {
+                                                                                alert('Pagamento Confirmado! 🚀');
+                                                                                window.location.reload();
+                                                                            } else {
+                                                                                alert('Aguardando compensação...');
+                                                                            }
+                                                                        } catch (e) { alert('Erro ao checar'); }
                                                                     }}
                                                                 >
-                                                                    <FileCheck className="w-3 h-3 mr-1" /> Emitir NFS-e
+                                                                    <Activity size={12} /> Check
                                                                 </Button>
-                                                            )}
-                                                            {inv.metadata?.nfe_pdf_url && (
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="ghost"
-                                                                    className="h-7 text-emerald-500 hover:bg-emerald-500/10 text-[9px] font-black uppercase"
-                                                                    onClick={() => window.open(inv.metadata.nfe_pdf_url, '_blank')}
-                                                                >
-                                                                    <FileCheck className="w-3 h-3 mr-1" /> Ver NFS-e
-                                                                </Button>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
+                                                                {inv.metadata.method === 'pix_inter' ? (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        className="h-7 text-[9px] font-black uppercase bg-emerald-600 hover:bg-emerald-500 text-white whitespace-nowrap"
+                                                                        onClick={() => {
+                                                                            setPixData({
+                                                                                amount: inv.value,
+                                                                                pixPayload: inv.metadata.pix_payload,
+                                                                                expiresAt: inv.metadata.expires_at || new Date().toISOString()
+                                                                            });
+                                                                            setOpenDialog(true);
+                                                                        }}
+                                                                    >
+                                                                        Ver Pix
+                                                                    </Button>
+                                                                ) : (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        className="h-7 text-[9px] font-black uppercase bg-blue-600 hover:bg-blue-500 text-white whitespace-nowrap"
+                                                                        onClick={() => window.open(`/api/checkout/inter-boleto/pdf?nossoNumero=${inv.metadata.nosso_numero}`, '_blank')}
+                                                                    >
+                                                                        Ver Boleto
+                                                                    </Button>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                        {inv.is_paid && !inv.metadata?.nfe_id && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                className="h-7 text-blue-500 hover:bg-blue-500/10 text-[9px] font-black uppercase whitespace-nowrap"
+                                                                onClick={async () => {
+                                                                    if (!confirm('Emitir NFS-e para este pagamento?')) return;
+                                                                    try {
+                                                                        const { data: { session } } = await supabaseClient.auth.getSession();
+                                                                        if (!session) return;
+                                                                        const res = await fetch('/api/barbershop/invoices/emit-nfse', {
+                                                                            method: 'POST',
+                                                                            headers: {
+                                                                                'Content-Type': 'application/json',
+                                                                                'Authorization': `Bearer ${session.access_token}`
+                                                                            },
+                                                                            body: JSON.stringify({ financeId: inv.id }),
+                                                                        });
+                                                                        const data = await res.json();
+                                                                        if (!res.ok) throw new Error(data.error);
+                                                                        alert('NFS-e emitida!');
+                                                                        fetchInvoices();
+                                                                    } catch (e: any) {
+                                                                        alert('Erro: ' + e.message);
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <FileCheck className="w-3 h-3 mr-1" /> Emitir NFS-e
+                                                            </Button>
+                                                        )}
+                                                        {inv.metadata?.nfe_pdf_url && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                className="h-7 text-emerald-500 hover:bg-emerald-500/10 text-[9px] font-black uppercase whitespace-nowrap"
+                                                                onClick={() => window.open(inv.metadata.nfe_pdf_url, '_blank')}
+                                                            >
+                                                                <FileCheck className="w-3 h-3 mr-1" /> Ver NFS-e
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
                             )}
                         </div>
                     </div>
@@ -511,12 +516,20 @@ export default function PlanPage() {
                         <div className="flex flex-col items-center space-y-6">
                             {pixData ? (
                                 <>
+                                    <div className="text-center space-y-2 mb-4">
+                                        <p className="text-xs text-slate-500 uppercase font-black tracking-widest">Valor a Pagar</p>
+                                        <p className="text-3xl font-black text-emerald-500">R$ {pixData.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                    </div>
                                     <div className="bg-white p-3 rounded-2xl border-4 border-white"><QRCodeCanvas value={pixData.pixPayload} size={180} /></div>
                                     <Button variant="outline" className="w-full h-11 border-slate-800 text-[10px] font-black uppercase" onClick={() => { navigator.clipboard.writeText(pixData.pixPayload); alert('Pix Copiado!'); }}>Copiar Pix</Button>
                                     <p className="text-[9px] text-emerald-500 font-black animate-pulse">Aguardando Confirmação...</p>
                                 </>
                             ) : boletoData ? (
                                 <>
+                                    <div className="text-center space-y-2 mb-4">
+                                        <p className="text-xs text-slate-500 uppercase font-black tracking-widest">Valor do Boleto</p>
+                                        <p className="text-3xl font-black text-blue-500">R$ {boletoData.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                    </div>
                                     <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center"><FileText className="text-blue-500" size={32} /></div>
                                     <Button className="w-full h-11 bg-blue-600 font-black text-[10px] uppercase" onClick={() => window.open(`/api/checkout/inter-boleto/pdf?nossoNumero=${boletoData.nossoNumero}`, '_blank')}>Abrir Boleto (PDF)</Button>
                                 </>
