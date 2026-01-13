@@ -447,11 +447,30 @@ export default function PlanPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {dynamicAddons
                                     .filter(addon => {
+                                        // Premium: TUDO INCLUSO (não mostrar turbinar)
+                                        if (currentPlan === 'premium' || currentPlan === 'complete') {
+                                            // Se for Complete, temos que ver se o usuário quer esconder ou mostrar?
+                                            // Ele disse "no plano completo... deveria aparecer os módulos".
+                                            // Então 'complete' NÃO DEVE ter return false direto se não tiver tudo.
+                                            // Vou manter false apenas para 'premium' conforme a queixa da foto 5.
+                                        }
+                                        if (currentPlan === 'premium') return false;
+
                                         const currentPlanData = dynamicPlans.find(p => p.slug === currentPlan);
                                         if (!currentPlanData) return true;
-                                        const featuresStr = JSON.stringify(currentPlanData.features || []).toLowerCase();
-                                        return !featuresStr.includes(addon.slug.toLowerCase()) &&
-                                            !featuresStr.includes(addon.name.toLowerCase().replace('módulo ', ''));
+
+                                        const addonName = addon.name.toLowerCase().replace('módulo ', '').trim();
+
+                                        const features = (currentPlanData.features || []).map((f: any) => String(f).toLowerCase());
+
+                                        const hasFeature = features.some((f: string) => {
+                                            // Ignorar features negativas (ex: "Sem Estoque")
+                                            if (f.includes('sem ') || f.includes('não ') || f.includes('no ')) return false;
+
+                                            return f.includes(addonName) || f.includes(addon.slug);
+                                        });
+
+                                        return !hasFeature;
                                     })
                                     .map((addon) => {
                                         const isActive = activeAddons.includes(addon.slug);
