@@ -12,7 +12,8 @@ import {
     AlertCircle,
     Info,
     TrendingUp,
-    Zap
+    Zap,
+    Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,11 @@ export default function PlansPage() {
     const [plans, setPlans] = useState<any[]>([]);
     const [addons, setAddons] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [isAddingAddon, setIsAddingAddon] = useState(false);
+    const [newAddon, setNewAddon] = useState({ name: '', slug: '', price: '', description: '' });
+
     const [editingPlan, setEditingPlan] = useState<any>(null);
     const [editingAddon, setEditingAddon] = useState<any>(null);
 
@@ -37,8 +43,9 @@ export default function PlansPage() {
             ]);
             setPlans(plansData);
             setAddons(addonsData);
-        } catch (e) {
+        } catch (e: any) {
             console.error('Error loading plans/addons:', e);
+            setStatusMsg({ type: 'error', text: 'Falha ao carregar dados: ' + e.message });
         } finally {
             setLoading(false);
         }
@@ -50,21 +57,54 @@ export default function PlansPage() {
 
     const handleUpdatePlan = async (planToUpdate = editingPlan) => {
         try {
+            setSaving(true);
             await Api.updateSystemPlan(planToUpdate);
             setEditingPlan(null);
+            setStatusMsg({ type: 'success', text: 'Plano atualizado!' });
+            setTimeout(() => setStatusMsg(null), 3000);
             loadData();
         } catch (e: any) {
-            alert('Erro ao atualizar plano: ' + e.message);
+            setStatusMsg({ type: 'error', text: e.message });
+        } finally {
+            setSaving(false);
         }
     };
 
     const handleUpdateAddon = async (addonToUpdate = editingAddon) => {
         try {
+            setSaving(true);
             await Api.updateSystemAddon(addonToUpdate);
             setEditingAddon(null);
+            setStatusMsg({ type: 'success', text: 'Add-on atualizado!' });
+            setTimeout(() => setStatusMsg(null), 3000);
             loadData();
         } catch (e: any) {
-            alert('Erro ao atualizar add-on: ' + e.message);
+            setStatusMsg({ type: 'error', text: e.message });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleCreateAddon = async () => {
+        if (!newAddon.name || !newAddon.slug || !newAddon.price) {
+            setStatusMsg({ type: 'error', text: 'Preencha todos os campos obrigatórios' });
+            return;
+        }
+        try {
+            setSaving(true);
+            await Api.createSystemAddon({
+                ...newAddon,
+                price: parseFloat(newAddon.price)
+            });
+            setIsAddingAddon(false);
+            setNewAddon({ name: '', slug: '', price: '', description: '' });
+            setStatusMsg({ type: 'success', text: 'Módulo criado com sucesso!' });
+            setTimeout(() => setStatusMsg(null), 3000);
+            loadData();
+        } catch (e: any) {
+            setStatusMsg({ type: 'error', text: e.message });
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -91,6 +131,16 @@ export default function PlansPage() {
                 </h1>
                 <p className="text-slate-500 font-medium mt-2">Controle os preços, descrições e recursos disponíveis na plataforma.</p>
             </div>
+
+            {statusMsg && (
+                <div className={cn(
+                    "p-4 rounded-xl border flex items-center gap-3 animate-in fade-in sticky top-4 z-50",
+                    statusMsg.type === 'success' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-red-500/10 border-red-500/20 text-red-400"
+                )}>
+                    {statusMsg.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+                    <p className="text-xs font-bold uppercase tracking-widest">{statusMsg.text}</p>
+                </div>
+            )}
 
             {/* Plans Section */}
             <section className="space-y-6">
@@ -208,44 +258,17 @@ export default function PlansPage() {
                                                     className="bg-slate-950 border-slate-800 text-slate-300 h-10 text-xs"
                                                 />
                                             ))}
-                                            <div className="pt-2">
-                                                <p className="text-[9px] text-slate-600 font-bold uppercase mb-2">Sugestões de Emojis:</p>
-                                                <div className="flex gap-2">
-                                                    {plan.slug === 'basic' && ['✂️', '💈', '🧔', '📅', '✅'].map(e => <span key={e} className="cursor-pointer hover:scale-125 transition-transform" onClick={() => {
-                                                        const nf = [...(editingPlan.features || [])];
-                                                        const emptyIdx = nf.findIndex(f => !f);
-                                                        if (emptyIdx !== -1) {
-                                                            nf[emptyIdx] = `${e} Nova Função`;
-                                                            setEditingPlan({ ...editingPlan, features: nf });
-                                                        }
-                                                    }}>{e}</span>)}
-                                                    {plan.slug === 'complete' && ['🚀', '✨', '📊', '💼', '⭐'].map(e => <span key={e} className="cursor-pointer hover:scale-125 transition-transform" onClick={() => {
-                                                        const nf = [...(editingPlan.features || [])];
-                                                        const emptyIdx = nf.findIndex(f => !f);
-                                                        if (emptyIdx !== -1) {
-                                                            nf[emptyIdx] = `${e} Nova Função`;
-                                                            setEditingPlan({ ...editingPlan, features: nf });
-                                                        }
-                                                    }}>{e}</span>)}
-                                                    {plan.slug === 'premium' && ['💎', '👑', '🌟', '📈', '🔥'].map(e => <span key={e} className="cursor-pointer hover:scale-125 transition-transform" onClick={() => {
-                                                        const nf = [...(editingPlan.features || [])];
-                                                        const emptyIdx = nf.findIndex(f => !f);
-                                                        if (emptyIdx !== -1) {
-                                                            nf[emptyIdx] = `${e} Nova Função`;
-                                                            setEditingPlan({ ...editingPlan, features: nf });
-                                                        }
-                                                    }}>{e}</span>)}
-                                                </div>
-                                            </div>
                                         </div>
                                         <Button
                                             onClick={() => {
                                                 const cleanedFeatures = (editingPlan.features || []).filter((f: string) => f && f.trim() !== '');
                                                 handleUpdatePlan({ ...editingPlan, features: cleanedFeatures });
                                             }}
+                                            disabled={saving}
                                             className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-xs h-11"
                                         >
-                                            <Save size={16} className="mr-2" /> Salvar Alterações
+                                            {saving ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Save size={16} className="mr-2" />}
+                                            Salvar Alterações
                                         </Button>
                                     </div>
                                 ) : (
@@ -274,33 +297,47 @@ export default function PlansPage() {
                     </h2>
                     <Button
                         variant="outline"
-                        className="bg-slate-900 border-slate-800 text-[10px] uppercase font-black tracking-widest h-8"
-                        onClick={() => {
-                            const name = prompt('Nome do Novo Add-on:');
-                            const slug = prompt('Slug do Novo Add-on (ex: financeiro):');
-                            const price = prompt('Preço Mensal (apenas números):');
-                            const description = prompt('Descrição breve:');
-
-                            if (name && slug && price) {
-                                (async () => {
-                                    try {
-                                        await Api.createSystemAddon({
-                                            name,
-                                            slug: slug.toLowerCase(),
-                                            price: parseFloat(price),
-                                            description: description || ''
-                                        });
-                                        loadData();
-                                    } catch (e: any) {
-                                        alert('Erro ao criar: ' + e.message);
-                                    }
-                                })();
-                            }
-                        }}
+                        className={cn(
+                            "text-[10px] uppercase font-black tracking-widest h-8",
+                            isAddingAddon ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-slate-900 border-slate-800"
+                        )}
+                        onClick={() => setIsAddingAddon(!isAddingAddon)}
                     >
-                        <Plus size={14} className="mr-1" /> Novo Add-on
+                        {isAddingAddon ? <X size={14} className="mr-1" /> : <Plus size={14} className="mr-1" />}
+                        {isAddingAddon ? 'Cancelar' : 'Novo Add-on'}
                     </Button>
                 </div>
+
+                {isAddingAddon && (
+                    <Card className="bg-slate-950 border-amber-500/30 border-2 animate-in slide-in-from-top-4">
+                        <CardHeader className="pb-4">
+                            <CardTitle className="text-sm uppercase tracking-widest font-black text-amber-500">Configurar Novo Add-on</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div className="space-y-1">
+                                    <Label className="text-[10px] uppercase font-bold text-slate-500">Nome</Label>
+                                    <Input value={newAddon.name} onChange={e => setNewAddon({ ...newAddon, name: e.target.value })} className="bg-slate-900 h-10 text-white" placeholder="Ex: Módulo TV" />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[10px] uppercase font-bold text-slate-500">Slug</Label>
+                                    <Input value={newAddon.slug} onChange={e => setNewAddon({ ...newAddon, slug: e.target.value.toLowerCase() })} className="bg-slate-900 h-10 text-white" placeholder="ex: modulo_tv" />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[10px] uppercase font-bold text-slate-500">Preço Mensal</Label>
+                                    <Input type="number" value={newAddon.price} onChange={e => setNewAddon({ ...newAddon, price: e.target.value })} className="bg-slate-900 h-10 text-white" placeholder="20.00" />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[10px] uppercase font-bold text-slate-500">Descrição</Label>
+                                    <Input value={newAddon.description} onChange={e => setNewAddon({ ...newAddon, description: e.target.value })} className="bg-slate-900 h-10 text-white" placeholder="Recurso extra..." />
+                                </div>
+                            </div>
+                            <Button onClick={handleCreateAddon} disabled={saving} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black uppercase tracking-widest text-xs h-10 w-full">
+                                {saving ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Plus size={16} className="mr-2" />} Criar e Ativar Módulo
+                            </Button>
+                        </CardContent>
+                    </Card>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {addons.map((addon) => (
@@ -339,10 +376,12 @@ export default function PlansPage() {
                                             />
                                         </div>
                                         <Button
-                                            onClick={handleUpdateAddon}
+                                            onClick={() => handleUpdateAddon()}
+                                            disabled={saving}
                                             className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black uppercase tracking-widest text-xs h-11"
                                         >
-                                            <Save size={16} className="mr-2" /> Salvar Add-on
+                                            {saving ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Save size={16} className="mr-2" />}
+                                            Salvar Add-on
                                         </Button>
                                     </div>
                                 ) : (

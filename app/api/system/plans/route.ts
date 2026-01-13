@@ -64,8 +64,12 @@ export async function PATCH(req: Request) {
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error('[API PLANS PATCH ERROR]', error);
+            throw error;
+        }
 
+        console.log('[API PLANS PATCH SUCCESS]', data.id);
         return addCorsHeaders(req, NextResponse.json(data));
     } catch (error: any) {
         return addCorsHeaders(req, NextResponse.json({ error: error.message }, { status: 500 }));

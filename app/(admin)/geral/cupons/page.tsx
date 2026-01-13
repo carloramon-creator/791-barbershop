@@ -92,9 +92,12 @@ export default function CouponsPage() {
     const toggleStatus = async (id: string, current: boolean) => {
         try {
             await Api.updateSystemCoupon({ id, is_active: !current });
+            setSuccess('Status atualizado com sucesso!');
+            setTimeout(() => setSuccess(null), 3000);
             loadCoupons();
         } catch (e: any) {
-            alert('Erro ao atualizar status: ' + e.message);
+            setError('Erro ao atualizar status: ' + e.message);
+            setTimeout(() => setError(null), 5000);
         }
     };
 

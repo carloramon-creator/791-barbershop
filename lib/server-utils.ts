@@ -98,6 +98,12 @@ export async function getCurrentUserAndTenant() {
             tenantIdToUse = impersonateCookie.value;
         }
 
+        if (!tenantIdToUse && isSystemAdmin) {
+            console.log('[AUTH] Admin without tenant_id, attempting fallback...');
+            const { data: fallback } = await supabaseAdmin.from('tenants').select('id').limit(1).maybeSingle();
+            tenantIdToUse = fallback?.id;
+        }
+
         if (!tenantIdToUse && !isSystemAdmin) {
             throw new Error('Sua conta não possui uma barbearia vinculada.');
         }
@@ -105,16 +111,24 @@ export async function getCurrentUserAndTenant() {
         // 5. Carregar Dados da Barbearia
         let tenantData = null;
         if (tenantIdToUse) {
+            // Primeiro busca o tenant básico (sempre funciona)
             const { data: tenant } = await supabaseAdmin
                 .from('tenants')
-                .select(`
-                    *,
-                    system_plan:system_plans!inner(menu_permissions, staff_limit)
-                `)
+                .select('*')
                 .eq('id', tenantIdToUse)
                 .single();
 
             if (tenant) {
+                // Tenta buscar o plano do sistema separadamente
+                let systemPlan = null;
+                if (tenant.plan) {
+                    const { data: sPlan } = await supabaseAdmin
+                        .from('system_plans')
+                        .select('menu_permissions, staff_limit')
+                        .eq('slug', tenant.plan)
+                        .maybeSingle();
+                    systemPlan = sPlan;
+                }
                 // Carregar Add-ons Ativos
                 const { data: addons } = await supabaseAdmin
                     .from('tenant_addons')
@@ -124,6 +138,7 @@ export async function getCurrentUserAndTenant() {
 
                 tenantData = {
                     ...tenant,
+                    system_plan: systemPlan || { menu_permissions: [], staff_limit: 0 },
                     active_addons: addons?.map((a: any) => a.system_addons?.slug).filter(Boolean) || []
                 };
             }
