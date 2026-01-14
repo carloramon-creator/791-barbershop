@@ -113,7 +113,7 @@ const getTutorialContent = (texts: any, tenant: any) => [
             },
             {
                 title: 'Comissões e Serviços',
-                content: 'Para Barbeiros, defina a porcentagem ou valor fixo de comissão e selecione quais serviços este profissional está habilitado a realizar.',
+                content: 'Para Barbeiros, defina a porcentagem ou valor fixo de comissão. Esta configuração é fundamental para que o sistema gere automaticamente seus relatórios de fechamento com base nesses percentuais.',
                 imageIndex: 2
             },
             {
