@@ -52,7 +52,10 @@ export default function EstoquePage() {
     });
 
     const { tenant } = useAuth();
-    const isPremium = tenant?.plan === 'premium' || tenant?.plan === 'complete';
+
+    const planPermissions = (tenant as any)?.system_plan?.menu_permissions || [];
+    const activeAddons = tenant?.active_addons || [];
+    const hasInventoryAccess = planPermissions.includes('inventory') || activeAddons.includes('inventory');
 
     const fetchData = async () => {
         try {
@@ -154,7 +157,7 @@ export default function EstoquePage() {
         return moveDate.getMonth() === now.getMonth() && moveDate.getFullYear() === now.getFullYear();
     });
 
-    if (!isPremium) {
+    if (!hasInventoryAccess) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
                 <div className="p-4 bg-blue-500/10 rounded-full">

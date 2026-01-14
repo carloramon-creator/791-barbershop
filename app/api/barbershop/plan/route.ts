@@ -45,6 +45,46 @@ export async function GET(req: Request) {
             return addCorsHeaders(req, NextResponse.json({ error: `Barbearia não encontrada` }, { status: 404 }));
         }
 
+        // 2.5 Verificar Assinatura no Stripe se existir (Auto-Heal)
+        let stripeSubscriptionId = tenant.stripe_subscription_id;
+        let subscriptionStatus = tenant.subscription_status;
+
+        if (stripeSubscriptionId) {
+            try {
+                const { data: settingsData } = await supabaseAdmin
+                    .from('system_settings')
+                    .select('value')
+                    .eq('key', 'stripe_config')
+                    .single();
+
+                const stripeKey = settingsData?.value?.secret_key;
+                if (stripeKey && !stripeKey.includes('dummy')) {
+                    const Stripe = (await import('stripe')).default;
+                    const stripe = new Stripe(stripeKey, { apiVersion: '2025-12-15.clover' as any });
+
+                    const sub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+
+                    if (sub.status === 'canceled' || sub.status === 'incomplete_expired') {
+                        throw new Error('Subscription stale');
+                    }
+
+                    // Sincroniza status se houver divergência
+                    if (sub.status !== subscriptionStatus) {
+                        subscriptionStatus = sub.status;
+                        await supabaseAdmin.from('tenants').update({ subscription_status: sub.status }).eq('id', tenant.id);
+                    }
+                }
+            } catch (err: any) {
+                console.warn(`[PLAN API] Assinatura ${stripeSubscriptionId} inválida ou erro no Stripe. Limpando local...`);
+                stripeSubscriptionId = null;
+                subscriptionStatus = 'canceled';
+                await supabaseAdmin.from('tenants').update({
+                    stripe_subscription_id: null,
+                    subscription_status: 'canceled'
+                }).eq('id', tenant.id);
+            }
+        }
+
         // 3. Buscar Add-ons Ativos
         const { data: addons } = await supabaseAdmin
             .from('tenant_addons')
@@ -56,8 +96,8 @@ export async function GET(req: Request) {
 
         const response = NextResponse.json({
             currentPlan: tenant.plan || 'basic',
-            stripeSubscriptionId: tenant.stripe_subscription_id,
-            subscriptionStatus: tenant.subscription_status,
+            stripeSubscriptionId: stripeSubscriptionId,
+            subscriptionStatus: subscriptionStatus,
             activeAddons: activeAddons
         });
         return addCorsHeaders(req, response);
