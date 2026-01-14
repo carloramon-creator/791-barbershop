@@ -295,15 +295,68 @@ const getTutorialContent = (texts: any, tenant: any) => [
     },
     {
         id: 'fila',
-        title: '5 - Fila de Espera',
+        title: '5 - Sala de Atendimento (Fila)',
         icon: UserCheck,
-        images: ['/tutorials/queue.png'],
-        description: 'Gerencie clientes que chegam sem horário marcado com agilidade.',
-        steps: [
-            { title: 'Fluxo', content: 'Adicione o cliente, selecione o profissional e o serviço desejado.', imageIndex: 0 },
-            { title: 'Controle', content: 'O sistema calcula o tempo estimado de espera automaticamente.', imageIndex: 0 }
+        images: [
+            '/tutorials/fila-1.png',
+            '/tutorials/fila-2.png',
+            '/tutorials/fila-3.png',
+            '/tutorials/fila-4.png',
+            '/tutorials/fila-5.png',
+            '/tutorials/fila-6.png',
+            '/tutorials/fila-7.png',
+            '/tutorials/fila-8.png',
+            '/tutorials/fila-9.png'
         ],
-        tip: 'Mantenha um tablet na recepção com a fila aberta para dar transparência aos clientes.'
+        description: 'Gerencie o fluxo de clientes que chegam para atendimento imediato, controle a sala de espera e realize vendas rápidas.',
+        steps: [
+            {
+                title: 'Visão Geral da Sala',
+                content: 'Acompanhe em tempo real quem está na lista de espera e quem já está em atendimento nas bancadas.',
+                imageIndex: 0
+            },
+            {
+                title: 'Fila Vazia',
+                content: 'Quando não há clientes aguardando, o sistema exibe um estado limpo. Prepare-se para o próximo atendimento!',
+                imageIndex: 1
+            },
+            {
+                title: 'Controle de Chamada',
+                content: 'Use o botão "Chamar Próximo" para mover o cliente do topo da lista diretamente para o seu atendimento.',
+                imageIndex: 0
+            },
+            {
+                title: 'Atendimento em Curso',
+                content: 'Uma vez iniciado, você verá o cronômetro de tempo decorrido e a foto do cliente sendo atendido.',
+                imageIndex: 4
+            },
+            {
+                title: 'Registrando a Venda',
+                content: 'Ao finalizar, selecione todos os serviços realizados e adicione produtos consumidos (como bebidas) para compor o valor total.',
+                imageIndex: 3
+            },
+            {
+                title: 'O que foi feito?',
+                content: 'Confira a lista de itens selecionados e o valor total antes de prosseguir para o pagamento.',
+                imageIndex: 5
+            },
+            {
+                title: 'Formas de Pagamento',
+                content: 'Escolha entre PIX, Dinheiro ou Cartão. O sistema já calcula o valor total automaticamente.',
+                imageIndex: 6
+            },
+            {
+                title: 'Pagamento PIX Dinâmico',
+                content: 'Se escolher PIX, o sistema gera na hora o QR Code com o valor exato da venda para o cliente escanear.',
+                imageIndex: 7
+            },
+            {
+                title: 'Finalização',
+                content: 'Após confirmar o recebimento, o atendimento é concluído e o profissional fica livre para o próximo da fila.',
+                imageIndex: 8
+            }
+        ],
+        tip: 'Usar o "Atendimento Direto" permite registrar vendas rápidas para clientes que não passaram pela lista de espera.'
     },
     {
         id: 'agendamento',
@@ -424,8 +477,8 @@ export default function TutoriaisPage() {
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-50 selection:bg-blue-500/30">
-            <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 lg:py-12">
-                <div className="space-y-8 animate-in fade-in duration-500 pb-24 relative">
+            <div className="max-w-[1600px] mx-auto px-4 md:px-10 py-8 lg:py-12">
+                <div className="space-y-10 animate-in fade-in duration-500 pb-24 relative">
 
                     {/* Image Modal (Lightbox) */}
                     {selectedImage && (
