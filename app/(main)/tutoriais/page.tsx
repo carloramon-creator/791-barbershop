@@ -27,12 +27,14 @@ const TUTORIALS = [
         image: '/tutorials/dashboard.png',
         description: 'Sua visão 360º do negócio. Acompanhe faturamento, volume de atendimentos e crescimento em tempo real.',
         steps: [
-            'Visualize o faturamento total do dia, semana ou mês.',
-            'Acompanhe o ROI e a performance de campanhas (se ativo).',
-            'Identifique os horários de pico e dias mais lucrativos.',
-            'Use os filtros rápidos para comparar períodos passados.'
+            'Acesse o Dashboard logo após o login para ver o resumo executivo do seu negócio.',
+            'Visualize o faturamento total do dia, semana ou mês com gráficos interativos de evolução.',
+            'Acompanhe métricas-chave: ticket médio, taxa de ocupação, serviços mais vendidos e produtos em destaque.',
+            'Identifique os horários de pico e dias mais lucrativos para otimizar a escala da equipe.',
+            'Use os filtros de período para comparar performance atual vs. mês anterior ou mesmo período do ano passado.',
+            'Monitore o ROI de campanhas de marketing se você tiver o módulo de Analytics ativo.'
         ],
-        tip: 'Mantenha o Dashboard aberto em um tablet ou tela secundária para monitorar o ritmo da loja sem sair da recepção.'
+        tip: 'Mantenha o Dashboard aberto em um tablet ou tela secundária na recepção. Assim você monitora o ritmo da loja em tempo real sem interromper o atendimento.'
     },
     {
         id: 'queue',
@@ -41,12 +43,15 @@ const TUTORIALS = [
         image: '/tutorials/queue.png',
         description: 'Gestão ágil para clientes sem agendamento. Controle o fluxo de entrada e saída com um clique.',
         steps: [
-            'Adicione clientes à fila clicando em "Novo Atendimento".',
-            'Os clientes aparecem em ordem de chegada para cada profissional.',
-            'O tempo de espera é calculado automaticamente pelo sistema.',
-            'Clique no botão "Iniciar" para começar o serviço e "Finalizar" para liberar o profissional.'
+            'Acesse "Fila de Espera" no menu lateral para visualizar todos os profissionais e suas filas.',
+            'Adicione clientes à fila clicando em "Novo Atendimento" e selecionando o profissional desejado.',
+            'Os clientes aparecem em ordem de chegada. O tempo de espera é calculado automaticamente.',
+            'Clique em "Iniciar" quando o profissional estiver pronto para começar o atendimento.',
+            'Durante o atendimento, selecione os serviços realizados e produtos vendidos.',
+            'Clique em "Finalizar" para registrar a venda, liberar o profissional e calcular a comissão automaticamente.',
+            'Arraste e solte para reordenar clientes ou transferir para outro profissional se necessário.'
         ],
-        tip: 'Você pode reordenar clientes na fila ou trocar o profissional se houver desistência ou mudança de última hora.'
+        tip: 'Use a fila para walk-ins e o calendário para agendamentos. Essa combinação garante que você aproveite 100% da capacidade da equipe sem conflitos.'
     },
     {
         id: 'appointments',
@@ -55,12 +60,15 @@ const TUTORIALS = [
         image: '/tutorials/appointments.png',
         description: 'Organize sua agenda com precisão. Evite conflitos de horário e garanta pontualidade.',
         steps: [
-            'Visualize a agenda por Dia, Semana ou Individual por profissional.',
-            'Arraste e solte para mover agendamentos de horário ou de barbeiro.',
-            'Bloqueie horários específicos para folgas ou manutenção da loja.',
-            'O sistema notifica o cliente automaticamente na confirmação do horário.'
+            'Acesse "Agendamentos" para visualizar a agenda completa em formato de calendário.',
+            'Alterne entre as visões: Dia (detalhada), Semana (panorâmica) ou Individual (por profissional).',
+            'Crie novos agendamentos clicando em um horário vazio e preenchendo cliente, serviço e profissional.',
+            'Arraste e solte agendamentos para mover de horário ou transferir para outro profissional.',
+            'Bloqueie horários específicos para folgas, almoço, treinamentos ou manutenção da loja.',
+            'O sistema envia notificação automática ao cliente na confirmação (se WhatsApp Add-on estiver ativo).',
+            'Use a visão "Lista" para ter um resumo rápido de todos os serviços do dia com status de confirmação.'
         ],
-        tip: 'Utilize a visão "Lista" para ter um resumo rápido de todos os serviços agendados para o dia de hoje.'
+        tip: 'Configure intervalos entre atendimentos nas configurações de cada serviço. Isso evita atrasos em cascata e melhora a experiência do cliente.'
     },
     {
         id: 'staff',
@@ -69,40 +77,48 @@ const TUTORIALS = [
         image: '/tutorials/staff.png',
         description: 'Configure seus profissionais, defina comissões personalizadas e controle horários de trabalho.',
         steps: [
-            'Cadastre e-mail e foto para que o cliente identifique o profissional.',
-            'Defina a porcentagem de comissão por serviço ou produto de forma individual.',
-            'Configure os dias e horários em que cada membro da equipe está disponível.',
-            'O acesso "Colaborador" permite que o barbeiro veja apenas sua própria agenda e faturamento.'
+            'Acesse "Equipe" no menu e clique em "Adicionar Profissional" para cadastrar novos membros.',
+            'Preencha nome, e-mail, telefone e adicione uma foto profissional de alta qualidade.',
+            'Defina a porcentagem de comissão individual por serviço e por produto vendido.',
+            'Configure os dias da semana e horários em que cada profissional está disponível para atendimento.',
+            'Defina permissões de acesso: "Colaborador" vê apenas sua agenda, "Gerente" vê tudo, "Admin" tem controle total.',
+            'Envie o convite de acesso para que o profissional baixe o app e gerencie sua própria agenda.',
+            'Acompanhe o desempenho individual: total de atendimentos, faturamento gerado e comissões acumuladas.'
         ],
-        tip: 'Sempre peça para os profissionais baixarem o App e manterem sua foto atualizada, isso aumenta a confiança do cliente final.'
+        tip: 'Incentive os profissionais a manterem fotos atualizadas e perfis completos. Clientes preferem agendar com profissionais que transmitem confiança visual.'
     },
     {
         id: 'finance',
         title: 'Controle Financeiro',
         icon: BarChart3,
         image: '/tutorials/finance.png',
-        description: 'Gestão profissional para donos de negócio. Fluxo de caixa, DRE e controle de despesas.',
+        description: 'Gestão profissional completa. Acompanhe receitas, despesas, DRE e lucro líquido em tempo real.',
         steps: [
-            'Registre despesas fixas e variáveis para calcular seu lucro real.',
-            'Consulte o DRE automático para ver se a empresa está operando com lucro.',
-            'Separe o faturamento de serviços do faturamento de produtos.',
-            'Gere relatórios de fechamento para conferir o caixa no fim do dia.'
+            'Acesse "Financeiro" no menu lateral para visualizar o resumo de receitas e despesas do período.',
+            'Registre despesas fixas (aluguel, luz, água) e variáveis (produtos, manutenção) clicando em "Nova Despesa".',
+            'Consulte o DRE (Demonstrativo de Resultado) para ver receita bruta, custos operacionais e lucro líquido.',
+            'Acompanhe suas faturas do SaaS em "Configurações > Plano" para garantir que o sistema esteja sempre ativo.',
+            'Exporte relatórios mensais em PDF para enviar ao contador ou para análise gerencial.',
+            'Separe o faturamento de serviços do faturamento de produtos para identificar sua principal fonte de receita.'
         ],
-        tip: 'Acompanhe as faturas do sistema na aba de Planos para garantir que seu SaaS esteja sempre em dia e com todos os recursos liberados.'
+        tip: 'Configure alertas de despesas recorrentes para nunca esquecer de registrar contas fixas. Um DRE preciso é fundamental para decisões estratégicas.'
     },
     {
         id: 'whatsapp',
         title: 'WhatsApp Automático',
         icon: MessageSquare,
         image: '/tutorials/whatsapp.png',
-        description: 'O segredo para reduzir faltas em até 80%. Lembretes inteligentes enviados direto para o cliente.',
+        description: 'Reduza faltas em até 80% com lembretes inteligentes. Comunicação automatizada que aumenta a taxa de comparecimento.',
         steps: [
-            'Confirmação imediata assim que o agendamento é realizado.',
-            'Lembrete automático 24 horas e 1 hora antes do serviço.',
-            'Notificação de "Próximo da Fila" para quem está aguardando.',
-            'Acompanhamento pós-venda para incentivar o retorno do cliente.'
+            'Ative o Add-on de WhatsApp em "Configurações > Planos & Add-ons" para liberar as automações.',
+            'Configure os templates de mensagem personalizados com o nome do cliente, profissional, data e horário.',
+            'Confirmação automática é enviada imediatamente após o cliente agendar pelo app ou site.',
+            'Lembrete 24h antes do horário marcado para que o cliente confirme ou remarque com antecedência.',
+            'Lembrete 1 hora antes do serviço para garantir pontualidade e reduzir no-shows.',
+            'Notificação "Próximo da Fila" avisa clientes em espera quando estão perto de serem atendidos.',
+            'Mensagem de agradecimento pós-atendimento incentiva avaliações e fidelização.'
         ],
-        tip: 'Este recurso é um Add-on. Se você ainda não tem, pode ativar em Configurações > Planos & Add-ons para automatizar sua comunicação.'
+        tip: 'Personalize as mensagens com o nome da sua barbearia e um tom de voz que reflita a identidade do seu negócio. Clientes valorizam comunicação profissional.'
     }
 ];
 
@@ -222,41 +238,71 @@ export default function TutoriaisPage() {
                         </div>
                     </Card>
 
-                    {/* Quick Start Guide */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <Card className="bg-slate-900/30 border-slate-800/50 p-6 rounded-[2rem] hover:bg-slate-900/50 transition-colors group cursor-default">
-                            <CardHeader className="p-0 mb-4">
-                                <CardTitle className="text-sm font-black text-slate-100 flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-green-500 shadow-lg shadow-green-500/20" />
-                                    Adição de Profissionais
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-0 text-xs text-slate-400 font-medium leading-relaxed">
-                                Cadastre sua equipe completa para que seu salão apareça disponível para agendamentos online.
-                            </CardContent>
-                        </Card>
-                        <Card className="bg-slate-900/30 border-slate-800/50 p-6 rounded-[2rem] hover:bg-slate-900/50 transition-colors group cursor-default">
-                            <CardHeader className="p-0 mb-4">
-                                <CardTitle className="text-sm font-black text-slate-100 flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-blue-500 shadow-lg shadow-blue-500/20" />
-                                    Categorias & Serviços
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-0 text-xs text-slate-400 font-medium leading-relaxed">
-                                Organize seus serviços em categorias (ex: Cabelo, Barba, Unhas) para facilitar a escolha do cliente.
-                            </CardContent>
-                        </Card>
-                        <Card className="bg-slate-900/30 border-slate-800/50 p-6 rounded-[2rem] hover:bg-slate-900/50 transition-colors group cursor-default">
-                            <CardHeader className="p-0 mb-4">
-                                <CardTitle className="text-sm font-black text-slate-100 flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-purple-500 shadow-lg shadow-purple-500/20" />
-                                    Configuração de Horários
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-0 text-xs text-slate-400 font-medium leading-relaxed">
-                                Defina seu horário de funcionamento global e os horários alternativos de cada colaborador.
-                            </CardContent>
-                        </Card>
+                    {/* Getting Started Guide */}
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3">
+                            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Primeiros Passos</h3>
+                            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <Card className="bg-slate-900/30 border-slate-800/50 p-5 rounded-[1.5rem] hover:bg-slate-900/50 hover:border-blue-500/30 transition-all group cursor-default">
+                                <div className="flex items-start gap-4">
+                                    <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-green-500/20">
+                                        1
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h4 className="text-sm font-black text-slate-100">Configure sua Equipe</h4>
+                                        <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                                            Adicione profissionais, fotos e horários de trabalho. Sem equipe cadastrada, o sistema não aceita agendamentos.
+                                        </p>
+                                    </div>
+                                </div>
+                            </Card>
+
+                            <Card className="bg-slate-900/30 border-slate-800/50 p-5 rounded-[1.5rem] hover:bg-slate-900/50 hover:border-blue-500/30 transition-all group cursor-default">
+                                <div className="flex items-start gap-4">
+                                    <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-blue-500/20">
+                                        2
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h4 className="text-sm font-black text-slate-100">Crie Serviços & Categorias</h4>
+                                        <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                                            Organize serviços em categorias (Cabelo, Barba, Estética). Defina preços e duração de cada um.
+                                        </p>
+                                    </div>
+                                </div>
+                            </Card>
+
+                            <Card className="bg-slate-900/30 border-slate-800/50 p-5 rounded-[1.5rem] hover:bg-slate-900/50 hover:border-purple-500/30 transition-all group cursor-default">
+                                <div className="flex items-start gap-4">
+                                    <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-purple-500/20">
+                                        3
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h4 className="text-sm font-black text-slate-100">Defina Horários de Funcionamento</h4>
+                                        <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                                            Configure dias e horários globais. Ajuste exceções individuais por profissional se necessário.
+                                        </p>
+                                    </div>
+                                </div>
+                            </Card>
+
+                            <Card className="bg-slate-900/30 border-slate-800/50 p-5 rounded-[1.5rem] hover:bg-slate-900/50 hover:border-orange-500/30 transition-all group cursor-default">
+                                <div className="flex items-start gap-4">
+                                    <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-orange-500/20">
+                                        4
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h4 className="text-sm font-black text-slate-100">Comece a Atender!</h4>
+                                        <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                                            Use a Fila para walk-ins e o Calendário para agendamentos. Seu sistema está pronto para operar!
+                                        </p>
+                                    </div>
+                                </div>
+                            </Card>
+                        </div>
                     </div>
                 </div>
             </div>
