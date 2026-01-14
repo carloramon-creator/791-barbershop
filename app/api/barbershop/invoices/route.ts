@@ -34,14 +34,14 @@ export async function GET(req: Request) {
         // 2. Sync Inter (Otimizado com Throttling e Paralelismo)
         if (config && cert && key) {
             try {
-                // Throttle: Só sincroniza se não houve sincronização recente nos últimos 10 minutos
+                // Throttle: Só sincroniza se houveram novos registros criados nos últimos 10 minutos
                 const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
                 const { data: recentSync } = await supabaseAdmin
                     .from('finance')
                     .select('id')
                     .eq('tenant_id', tenant.id)
                     .ilike('description', '%SaaS%')
-                    .gte('updated_at', tenMinutesAgo)
+                    .gte('created_at', tenMinutesAgo)
                     .limit(1);
 
                 if (!recentSync || recentSync.length === 0) {
@@ -99,9 +99,6 @@ export async function GET(req: Request) {
                                 } else if (['CANCELADO', 'EXPIRADO', 'REJEITADA', 'BAIXADO'].includes(situacao)) {
                                     console.log(`[AUTO-SYNC INTER] Removendo fatura ${txid} pois o status no banco é ${situacao}`);
                                     await supabaseAdmin.from('finance').delete().eq('id', inv.id);
-                                } else {
-                                    // Touch o registro para evitar sync repetitivo via throttle (updated_at muda)
-                                    await supabaseAdmin.from('finance').update({ updated_at: new Date().toISOString() }).eq('id', inv.id);
                                 }
                             } catch (e) {
                                 console.warn(`[AUTO-SYNC INTER] Erro em ${txid}`);
