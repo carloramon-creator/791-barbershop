@@ -4,6 +4,8 @@
  * Inicialmente emulando o comportamento para testes com o SaaS.
  */
 
+import nfseService from './nfse/nfse-service';
+
 import { supabaseAdmin } from './supabase-server';
 
 export interface InvoiceData {
@@ -30,10 +32,8 @@ class InvoiceProvider {
 
     // Configurações do SaaS 791Barber (Prestador de Serviço)
     private readonly providerConfig = {
-        name: '791 SOLUCOES TECNOLOGICAS LTDA',
         cnpj: '61.887.941/0001-83',
-        im: 'ISENTO',
-        municipioCode: '4205407' // Florianópolis
+        inscricaoMunicipal: 'ISENTO',
     };
 
     private constructor() { }
@@ -49,7 +49,7 @@ class InvoiceProvider {
      * Emite uma nota fiscal de faturamento do SaaS para uma barbearia.
      */
     public async emitSaaSInvoice(invoice: InvoiceData): Promise<InvoiceResponse> {
-        console.log(`[INVOICE-PROVIDER] Iniciando emissão real para: ${invoice.customerName}`);
+        console.log(`[INVOICE-PROVIDER] Iniciando emissão MONOLÍTICA para: ${invoice.customerName}`);
 
         try {
             // 0. Buscar configurações no DB
@@ -60,35 +60,22 @@ class InvoiceProvider {
                 .single();
 
             const config = settings?.value || {};
-            const apiUrl = config.apiUrl || process.env.NFSE_API_URL || 'http://localhost:3333';
-            const apiKey = process.env.NFSE_API_KEY || '791-secret-key';
-            const privateKey = config.pfxBase64 || "PLACEHOLDER_PRIVATE_KEY";
-            const passphrase = config.passphrase || "password";
+            const pfxBase64 = config.pfxBase64;
+            const passphrase = config.passphrase;
 
-            if (apiUrl.includes('localhost') && process.env.NODE_ENV === 'production') {
-                throw new Error('A URL da API de NFS-e não está configurada no painel SuperAdmin.');
+            if (!pfxBase64 || !passphrase) {
+                throw new Error('Certificado digital ou senha não configurados no painel SuperAdmin.');
             }
 
-            // 1. Autenticar
-            const authRes = await fetch(`${apiUrl}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ apiKey })
-            }).catch(err => {
-                throw new Error(`Não foi possível conectar à API de NFS-e (${apiUrl}). Verifique se a URL está correta.`);
-            });
-
-            const authData = await authRes.json();
-            if (!authRes.ok) throw new Error(authData.error || 'Falha na autenticação com o provedor de NFS-e');
-
-            const token = authData.token;
-
-            // 2. Preparar dados para DPS
+            // 1. Preparar dados para DPS
             const dpsData = {
                 numero: invoice.id.slice(-8),
                 serie: "1",
                 dataEmissao: new Date().toISOString(),
-                prestador: this.providerConfig,
+                prestador: {
+                    cnpj: this.providerConfig.cnpj,
+                    inscricaoMunicipal: this.providerConfig.inscricaoMunicipal
+                },
                 tomador: {
                     cnpj: invoice.customerDocument.length > 11 ? invoice.customerDocument : undefined,
                     cpf: invoice.customerDocument.length <= 11 ? invoice.customerDocument : undefined,
@@ -101,29 +88,14 @@ class InvoiceProvider {
                 }
             };
 
-            // 3. Emitir Nota
-            const emitRes = await fetch(`${apiUrl}/nfse/emit`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    dpsData,
-                    privateKey: privateKey, // Carregado do banco (.pfx base64)
-                    publicCert: "", // O PFX já contém o certificado
-                    passphrase: passphrase // Senha do certificado
-                })
-            });
-
-            const emitData = await emitRes.json();
-            if (!emitRes.ok) throw new Error(emitData.error || 'Erro ao emitir NFS-e');
+            // 2. Chamar o serviço interno diretamente
+            const result = await nfseService.emitNfse(dpsData, pfxBase64, passphrase);
 
             return {
                 success: true,
-                invoiceId: emitData.sefazResult?.id || dpsData.numero,
+                invoiceId: result?.id || dpsData.numero,
                 status: 'authorized',
-                pdfUrl: `${apiUrl}/nfse/pdf`, // A rota de PDF agora recebe o POST com dpsData
+                pdfUrl: `/api/nfse/pdf`, // Rota interna
                 message: 'Nota Fiscal autorizada com sucesso pelo Padrão Nacional.'
             };
         } catch (error: any) {
