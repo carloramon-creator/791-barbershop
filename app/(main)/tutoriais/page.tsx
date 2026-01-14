@@ -9,11 +9,13 @@ import {
     BarChart3,
     MessageSquare,
     ChevronRight,
+    ChevronDown,
     CheckCircle2,
     Lightbulb,
     Zap,
     Search,
     SearchX,
+    Maximize2,
     X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -214,8 +216,14 @@ export default function TutoriaisPage() {
     const [activeTab, setActiveTab] = useState(tutorials[0].id);
     const [searchQuery, setSearchQuery] = useState('');
     const [showResults, setShowResults] = useState(false);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [isConfigExpanded, setIsConfigExpanded] = useState(true);
 
     const activeTutorial = tutorials.find(t => t.id === activeTab) || tutorials[0];
+
+    // Groups logic for the sidebar
+    const configItems = tutorials.filter(t => t.id.startsWith('config-'));
+    const mainItems = tutorials.filter(t => !t.id.startsWith('config-'));
 
     // Search Logic
     const searchResults = searchQuery.length > 2
@@ -263,7 +271,29 @@ export default function TutoriaisPage() {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 pb-12 overflow-x-hidden">
+        <div className="space-y-6 animate-in fade-in duration-500 pb-12 overflow-x-hidden relative">
+
+            {/* Image Modal (Lightbox) */}
+            {selectedImage && (
+                <div
+                    className="fixed inset-0 z-[100] bg-slate-950/95 flex items-center justify-center p-4 md:p-12 animate-in fade-in duration-300"
+                    onClick={() => setSelectedImage(null)}
+                >
+                    <button className="absolute top-8 right-8 p-3 rounded-full bg-slate-900 border border-slate-800 text-slate-100 hover:bg-slate-800 transition-all">
+                        <X className="w-6 h-6" />
+                    </button>
+                    <div className="relative w-full h-full" onClick={(e) => e.stopPropagation()}>
+                        <Image
+                            src={selectedImage}
+                            alt="Visualização ampliada"
+                            fill
+                            className="object-contain"
+                            priority
+                        />
+                    </div>
+                </div>
+            )}
+
             {/* COMPACT Header Section */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="flex flex-col gap-1">
@@ -329,14 +359,53 @@ export default function TutoriaisPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* Navigation Sidebar */}
+
+                {/* Tree Navigation Sidebar */}
                 <div className="lg:col-span-3 space-y-1.5 lg:sticky lg:top-6">
-                    {tutorials.map((tutorial) => (
+
+                    {/* Configurações Group (Tree) */}
+                    <div className="space-y-1 mb-3">
+                        <button
+                            onClick={() => setIsConfigExpanded(!isConfigExpanded)}
+                            className={cn(
+                                "w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-black transition-all bg-slate-950/60 border border-slate-800/50 text-slate-100 uppercase tracking-tighter",
+                                isConfigExpanded ? "border-blue-500/30 bg-blue-600/5" : "hover:border-slate-600"
+                            )}
+                        >
+                            <div className="flex items-center gap-3">
+                                <LayoutDashboard className="w-4 h-4 text-blue-500" />
+                                1 - CONFIGURAÇÕES
+                            </div>
+                            {isConfigExpanded ? <ChevronDown className="w-4 h-4 text-blue-500" /> : <ChevronRight className="w-4 h-4 text-slate-600" />}
+                        </button>
+
+                        {isConfigExpanded && (
+                            <div className="pl-4 space-y-1 border-l-2 border-slate-800/30 ml-6 mt-1 animate-in slide-in-from-left-2 duration-300">
+                                {configItems.map((tutorial) => (
+                                    <button
+                                        key={tutorial.id}
+                                        onClick={() => handleTabChange(tutorial.id)}
+                                        className={cn(
+                                            "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[11px] font-black transition-all text-left uppercase tracking-tighter",
+                                            activeTab === tutorial.id
+                                                ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                                                : "text-slate-500 hover:text-slate-300 hover:bg-slate-900/40"
+                                        )}
+                                    >
+                                        <span className="truncate">{tutorial.title.split(' - ')[1]}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Main Items */}
+                    {mainItems.map((tutorial) => (
                         <button
                             key={tutorial.id}
                             onClick={() => handleTabChange(tutorial.id)}
                             className={cn(
-                                "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black transition-all duration-300 text-left",
+                                "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black transition-all text-left uppercase tracking-tighter",
                                 activeTab === tutorial.id
                                     ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20 translate-x-1"
                                     : "bg-slate-950/40 border border-slate-800/30 text-slate-500 hover:text-slate-100 hover:border-slate-700 hover:translate-x-1"
@@ -377,16 +446,23 @@ export default function TutoriaisPage() {
                                 </p>
                             </div>
 
-                            {/* Image Reference Gallery */}
+                            {/* Image Gallery With Lightbox Trigger */}
                             <div className="flex flex-wrap gap-2 shrink-0 md:max-w-[320px]">
                                 {activeTutorial.images.map((img, i) => (
-                                    <div key={i} className="relative w-20 h-20 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 hover:border-blue-500/50 transition-colors group cursor-zoom-in">
+                                    <div
+                                        key={i}
+                                        onClick={() => setSelectedImage(img)}
+                                        className="relative w-20 h-20 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 hover:border-blue-500/50 transition-all group cursor-zoom-in"
+                                    >
                                         <Image
                                             src={img}
                                             alt={`Referência ${i + 1}`}
                                             fill
                                             className="object-contain p-1 opacity-70 group-hover:opacity-100 transition-opacity"
                                         />
+                                        <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                                            <Maximize2 className="w-4 h-4 text-white" />
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -411,9 +487,13 @@ export default function TutoriaisPage() {
                                     <h4 className="text-sm font-black text-slate-100 uppercase tracking-tight mb-1.5 flex items-center gap-2">
                                         {step.title}
                                         {step.imageIndex !== undefined && (
-                                            <span className="text-[10px] text-slate-600 font-bold border border-slate-800 px-1.5 rounded uppercase">
-                                                Imagem {step.imageIndex + 1}
-                                            </span>
+                                            <button
+                                                onClick={() => setSelectedImage(activeTutorial.images[step.imageIndex])}
+                                                className="text-[10px] text-slate-500 font-bold border border-slate-800 px-1.5 rounded uppercase hover:border-blue-500 hover:text-blue-500 transition-all flex items-center gap-1"
+                                            >
+                                                VER IMAGEM {step.imageIndex + 1}
+                                                <Maximize2 className="w-2.5 h-2.5" />
+                                            </button>
                                         )}
                                     </h4>
                                     <p className="text-[13px] text-slate-400 font-medium leading-relaxed group-hover:text-slate-300">
