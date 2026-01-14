@@ -58,7 +58,7 @@ export function Sidebar() {
         { name: 'Produtos', href: '/produtos', icon: ShoppingBag, roles: ['owner', 'staff'], permission: 'products' },
         { name: 'Estoque', href: '/estoque', icon: ShoppingBag, roles: ['owner', 'staff'], permission: 'inventory', feature: 'inventory' },
         { name: 'Financeiro', href: '/financeiro', icon: BarChart3, roles: ['owner'], permission: 'finance', feature: 'finance' },
-        { name: 'Manual do Sistema', href: '/tutoriais', icon: HelpCircle, roles: ['owner', 'staff'] },
+        { name: 'Manual do Sistema', href: '/tutoriais', icon: HelpCircle, roles: ['owner', 'staff'], newTab: true },
         { name: 'Configurações', href: '/configuracoes/barbearia', icon: Settings, roles: ['owner'] },
         { name: 'Super Admin', href: '/geral', icon: ShieldCheck, roles: ['owner'], isSystemOnly: true },
     ];
@@ -148,6 +148,7 @@ export function Sidebar() {
                         <Link
                             key={item.href}
                             href={item.href}
+                            target={item.newTab ? "_blank" : undefined}
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold transition-all relative group",
                                 pathname === item.href

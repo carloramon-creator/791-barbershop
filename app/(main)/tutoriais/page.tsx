@@ -158,13 +158,31 @@ const getTutorialContent = (texts: any, tenant: any) => [
         id: 'config-planos',
         title: '1.4 - Configurações: Planos',
         icon: BarChart3,
-        images: ['/tutorials/config-planos.png'],
-        description: 'Gerencie sua assinatura, veja faturas e adicione novos recursos (Add-ons).',
+        images: ['/tutorials/config-planos-1.png', '/tutorials/config-planos-2.png'],
+        description: 'Gerencie sua assinatura, escolha o plano ideal para seu crescimento e acompanhe seu histórico de faturas.',
         steps: [
-            { title: 'Status', content: 'Veja o status da sua assinatura atual e histórico de faturas.', imageIndex: 0 },
-            { title: 'Upgrade', content: 'Use o botão "Turbinar Pacote" para adicionar módulos extras como Estoque ou WhatsApp Automático.', imageIndex: 0 }
+            {
+                title: 'Planos Disponíveis',
+                content: 'Oferecemos 3 níveis gratuitos: Básico (até 3 usuários), Completo (Gestão Financeira e Relatórios) e Premium (Estoque e Suporte Prioritário).',
+                imageIndex: 0
+            },
+            {
+                title: 'Add-ons (Turbinar Pacote)',
+                content: 'Você pode adicionar recursos extras individualmente (como WhatsApp ou Agendamentos Ilimitados) sem precisar mudar de plano.',
+                imageIndex: 0
+            },
+            {
+                title: 'Histórico de Faturas',
+                content: 'Acesse "Meu Histórico de Faturas" para baixar boletos, ver comprovantes de cartão e emitir suas Notas Fiscais (NFS-e).',
+                imageIndex: 1
+            },
+            {
+                title: 'Upgrade Simples',
+                content: 'Clique em "Fazer Upgrade Agora" em qualquer plano. O sistema calcula o valor proporcional e libera os recursos na hora.',
+                imageIndex: 0
+            }
         ],
-        tip: 'Ative o "WhatsApp Automático" para reduzir faltas em até 80%.'
+        tip: 'O Plano Premium é o preferido das barbearias que buscam automação total e controle rígido de estoque.'
     },
     {
         id: 'produtos',
