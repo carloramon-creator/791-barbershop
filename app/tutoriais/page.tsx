@@ -253,32 +253,45 @@ const getTutorialContent = (texts: any, tenant: any) => [
         images: [
             '/tutorials/profissionais-1.png',
             '/tutorials/profissionais-2.png',
-            '/tutorials/profissionais-3.png'
+            '/tutorials/profissionais-3.png',
+            '/tutorials/profissionais-4.png',
+            '/tutorials/profissionais-5.png',
+            '/tutorials/profissionais-6.png'
         ],
-        description: `Gerencie sua equipe, configure o perfil público dos ${texts.professionals} e realize o fechamento de caixa individual.`,
+        description: `Gerencie sua equipe, configure o perfil público dos ${texts.professionals} e realize o fechamento de caixa individual com relatórios detalhados.`,
         steps: [
             {
                 title: 'Equipe e Visibilidade',
-                content: `Visualize todos os ${texts.professionals} cadastrados e o status em tempo real (Online/Offline).`,
+                content: `Visualize todos os ${texts.professionals} cadastrados e o status em tempo real (Online/Offline) no painel central.`,
                 imageIndex: 0
             },
             {
                 title: 'Perfil Público (App do Cliente)',
-                content: `Clique em editar para definir o Nome de Exibição, foto profissional e quais serviços cada ${texts.professional} está habilitado a fazer no app.`,
+                content: `No botão de edição, defina o Nome de Exibição, foto de perfil e quais serviços cada ${texts.professional} está habilitado a realizar no app de agendamento.`,
                 imageIndex: 1
             },
             {
-                title: 'Fechamento de Caixa',
-                content: 'Ao final do dia ou período, use o botão "Fechar Caixa" para conferir o faturamento bruto e a comissão exata a ser paga.',
+                title: 'Iniciando Fechamento',
+                content: 'Use o botão "Fechar Caixa" para abrir o resumo rápido do dia, conferindo faturamento bruto e comissões calculadas.',
                 imageIndex: 2
             },
             {
-                title: 'Bônus e Ajustes',
-                content: 'No momento do fechamento, você pode adicionar bônus (como gratificações) ou ajustes manuais antes de confirmar o pagamento.',
-                imageIndex: 2
+                title: 'Relatório de Movimentação',
+                content: 'Filtre por profissional e período para gerar relatórios específicos de produção antes de efetuar o fechamento final.',
+                imageIndex: 3
+            },
+            {
+                title: 'Documento de Conferência',
+                content: 'Gere a via impressa ou PDF do fechamento de caixa para auditoria, contendo o resumo final de entradas e saída de comissão.',
+                imageIndex: 4
+            },
+            {
+                title: 'Relatório Geral de Produção',
+                content: 'Tenha uma visão macro de toda a equipe, com subtotais de vendas, comissões individuais e valores líquidos a pagar para cada profissional.',
+                imageIndex: 5
             }
         ],
-        tip: 'Mantenha os perfis ativos e com boas fotos para transmitir confiança aos clientes que agendam online.'
+        tip: 'Realizar o fechamento diário evita erros de contabilidade e garante que seus profissionais recebam exatamente o que produziram.'
     },
     {
         id: 'fila',
