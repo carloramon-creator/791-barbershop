@@ -19,181 +19,188 @@ import Image from 'next/image';
 import { useAuth } from '@/lib/auth-provider';
 import { getBusinessTexts } from '@/lib/business-dictionary';
 
-const TUTORIALS = [
+const getTutorialContent = (texts: any, tenant: any) => [
     {
         id: 'config-geral',
         title: '1.1 - Configurações: Geral',
         icon: LayoutDashboard,
-        image: '/tutorials/config-geral.png',
-        description: 'Configure as informações básicas da sua barbearia, como nome, endereço, contatos e redes sociais.',
-        steps: [
-            'Acesse o menu Configurações > Geral.',
-            'Preencha o nome da sua barbearia e escolha uma imagem de logo atraente.',
-            'Defina o tipo de negócio (Barbearia ou Salão de Beleza) para ajustar os textos do sistema.',
-            'Insira o endereço completo para que seus clientes possam te encontrar no mapa.',
-            'Atualize seus links de redes sociais e WhatsApp para facilitar o contato.',
-            'Não esqueça de clicar em "Salvar Alterações" no final da página.'
+        images: [
+            '/tutorials/config-geral-1.png',
+            '/tutorials/config-geral-2.png',
+            '/tutorials/config-geral-3.png',
+            '/tutorials/config-geral-4.png'
         ],
-        tip: 'Mantenha seu endereço e contatos sempre atualizados. Isso é fundamental para que novos clientes cheguem até você sem dificuldades.'
+        description: `Aqui você define a identidade da sua ${texts.businessName}. É o primeiro passo para o sucesso da sua operação.`,
+        steps: [
+            {
+                title: 'Logo e Branding',
+                content: 'Faça o upload do seu logotipo (Recomendado: 500x500px). Esta imagem será o ícone que seus clientes verão no App do Cliente para identificar sua marca.'
+            },
+            {
+                title: 'Dados Básicos e Identificação',
+                content: 'Preencha o Nome e E-mail comercial. O campo CNPJ é importante para formalização, mas você pode marcar "Não tenho CNPJ" se for autônomo.'
+            },
+            {
+                title: 'O que é o SLUG?',
+                content: 'O SLUG é o identificador único da sua página (ex: 791barber.com/nome-da-loja). Ele é o link que você enviará para seus clientes agendarem. Escolha um nome curto e fácil de lembrar!'
+            },
+            {
+                title: 'Tipo de Negócio',
+                content: `Selecione se você é uma Barbearia ou Salão de Beleza. Isso ajusta automaticamente todos os termos do sistema (ex: ${texts.professional} ou Barbeiro).`
+            },
+            {
+                title: 'Divulgação e QR Code',
+                content: 'Aproveite o QR Code gerado automaticamente. Clique em "Imprimir QR Code" para colocar na sua recepção ou vitrine, facilitando o agendamento rápido pelos clientes.'
+            },
+            {
+                title: 'Horário de Funcionamento',
+                content: 'Defina os dias de abertura, horários de início e fim. Você também pode configurar o Intervalo de Almoço, a Tolerância de Atraso e o tempo de antecedência do Lembrete de WhatsApp.'
+            },
+            {
+                title: 'Endereço Simplificado',
+                content: 'Basta digitar o CEP e o sistema preencherá a rua e o bairro. Você só precisa adicionar o número e o complemento (ex: Sala 2).'
+            },
+            {
+                title: 'Dados Bancários e PIX',
+                content: 'Configure sua chave PIX. Isso é fundamental para que o sistema gere QR Codes de pagamento automáticos no momento da venda, agilizando seu caixa.'
+            },
+            {
+                title: 'Módulos do Sistema',
+                content: 'Ative ou desative os módulos de "Fila" e "Agendamento" conforme a necessidade do seu modelo de negócio.'
+            }
+        ],
+        tip: 'Um perfil completo com logo e endereço correto transmite muito mais profissionalismo e aumenta a confiança do cliente no primeiro agendamento.'
     },
     {
         id: 'config-usuarios',
         title: '1.2 - Configurações: Usuários',
         icon: Users,
-        image: '/tutorials/config-usuarios.png',
+        images: ['/tutorials/config-usuarios.png'],
         description: 'Gerencie quem tem acesso ao painel administrativo e quais são seus níveis de acesso.',
         steps: [
-            'Navegue até Configurações > Usuários.',
-            'Veja a lista de todos os administradores atuais do sistema.',
-            'Adicione novos usuários preenchendo o e-mail e definindo o perfil de acesso.',
-            'Remova ou edite usuários antigos para manter a segurança do seu negócio.',
-            'Lembre-se: Usuários Admin têm controle total, enquanto outros perfis podem ter restrições.'
+            { title: 'Acesso', content: 'Navegue até Configurações > Usuários para ver quem administra o sistema.' },
+            { title: 'Adição', content: 'Adicione novos usuários preenchendo o e-mail e definindo o perfil de acesso.' },
+            { title: 'Gestão', content: 'Remova ou edite usuários antigos para manter a segurança do seu negócio.' }
         ],
-        tip: 'Evite compartilhar a mesma senha de administrador. Crie uma conta individual para cada pessoa que precise gerenciar o sistema.'
+        tip: 'Evite compartilhar a mesma senha de administrador. Crie uma conta individual para cada pessoa.'
     },
     {
         id: 'config-permissoes',
         title: '1.3 - Configurações: Permissões',
         icon: UserCheck,
-        image: '/tutorials/config-permissoes.png',
-        description: 'Defina exatamente o que cada cargo (Barbeiro, Gerente, etc.) pode ver ou fazer no sistema.',
+        images: ['/tutorials/config-permissoes.png'],
+        description: `Defina exatamente o que cada cargo (${texts.professional}, Gerente, etc.) pode ver ou fazer no sistema.`,
         steps: [
-            'Acesse Configurações > Permissões.',
-            'Selecione o cargo que deseja configurar no menu lateral.',
-            'Marque ou desmarque as permissões específicas (vender, excluir agendamento, ver financeiro, etc.).',
-            'As alterações são aplicadas instantaneamente para todos os usuários daquele cargo.',
-            'Garanta que cada profissional tenha acesso apenas ao que é necessário para o trabalho dele.'
+            { title: 'Configuração', content: 'Selecione o cargo e marque ou desmarque as permissões específicas.' },
+            { title: 'Aplicação', content: 'As alterações são aplicadas instantaneamente para todos os usuários daquele cargo.' }
         ],
-        tip: 'Limite o acesso ao módulo "Financeiro" apenas para gerentes ou donos para manter a privacidade dos dados da sua empresa.'
+        tip: 'Limite o acesso ao módulo "Financeiro" apenas para gerentes ou donos.'
     },
     {
         id: 'config-planos',
         title: '1.4 - Configurações: Planos',
         icon: BarChart3,
-        image: '/tutorials/config-planos.png',
-        description: 'Gerencie sua assinatura do 791 Barber, veja faturas e adicione novos recursos (Add-ons).',
+        images: ['/tutorials/config-planos.png'],
+        description: 'Gerencie sua assinatura, veja faturas e adicione novos recursos (Add-ons).',
         steps: [
-            'Vá em Configurações > Plano para ver o status da sua assinatura atual.',
-            'Acompanhe o histórico de faturas e baixe os recibos/notas fiscais (NFS-e).',
-            'Descubra o botão "Turbinar Pacote" para adicionar módulos extras como Estoque ou WhatsApp Automático.',
-            'Verifique data de vencimento e métodos de pagamento cadastrados.',
-            'Faça o upgrade do seu plano clicando em "Mudar Plano" para liberar mais recursos.'
+            { title: 'Status', content: 'Veja o status da sua assinatura atual e histórico de faturas.' },
+            { title: 'Upgrade', content: 'Use o botão "Turbinar Pacote" para adicionar módulos extras como Estoque ou WhatsApp Automático.' }
         ],
-        tip: 'Ative o "WhatsApp Automático" para reduzir faltas em até 80% através de lembretes inteligentes enviados direto para o cliente.'
+        tip: 'Ative o "WhatsApp Automático" para reduzir faltas em até 80%.'
     },
     {
         id: 'produtos',
         title: '2 - Gestão de Produtos',
         icon: Lightbulb,
-        image: '/tutorials/produtos.png',
+        images: ['/tutorials/produtos.png'],
         description: 'Controle seu catálogo de produtos para venda rápida na recepção.',
         steps: [
-            'Acesse o menu "Produtos" para ver todos os itens cadastrados.',
-            'Clique em "Novo Produto" para adicionar itens como Pomadas, Shampoos ou Bebidas.',
-            'Defina o preço de venda e o preço de custo para calcular seu lucro.',
-            'Organize por categorias para facilitar a busca na hora da venda.',
-            'Mantenha as fotos dos produtos atualizadas para facilitar a identificação da equipe.'
+            { title: 'Cadastro', content: 'Clique em "Novo Produto" para adicionar itens como Pomadas ou Shampoos.' },
+            { title: 'Lucratividade', content: 'Defina o preço de venda e o preço de custo para calcular seu lucro.' }
         ],
-        tip: 'Produtos por impulso na bancada aumentam o faturamento médio em até 25%. Registre tudo no sistema para não perder o controle.'
+        tip: 'Produtos por impulso na bancada aumentam o faturamento médio em até 25%.'
     },
     {
         id: 'servicos',
         title: '3 - Gestão de Serviços',
         icon: Zap,
-        image: '/tutorials/servicos.png',
+        images: ['/tutorials/servicos.png'],
         description: 'Configure seu cardápio de serviços com preços e duração personalizados.',
         steps: [
-            'Vá em "Serviços" para gerenciar o que sua barbearia oferece.',
-            'Crie categorias como "Cabelo", "Barba" ou "Combos".',
-            'Defina a duração exata de cada serviço para que sua agenda seja calculada com precisão.',
-            'Coloque descrições claras para que o cliente saiba exatamente o que está agendando.',
-            'Ative ou desative serviços sazonalmente conforme a demanda.'
+            { title: 'Organização', content: 'Crie categorias como "Cabelo", "Barba" ou "Combos".' },
+            { title: 'Precisão', content: 'Defina a duração exata de cada serviço para que sua agenda seja calculada corretamente.' }
         ],
-        tip: 'Crie serviços do tipo "Combo" com um pequeno desconto. Isso incentiva o cliente a fazer mais procedimentos em uma única visita.'
+        tip: 'Crie serviços do tipo "Combo" com um pequeno desconto para incentivar o aumento do ticket médio.'
     },
     {
         id: 'profissionais',
-        title: '4 - Profissionais (Equipe)',
+        title: `4 - ${texts.professionals}`,
         icon: Users,
-        image: '/tutorials/staff.png',
-        description: 'Cadastre seus barbeiros e profissionais, configure comissões e horários.',
+        images: ['/tutorials/staff.png'],
+        description: `Cadastre seus ${texts.professionals}, configure comissões e horários.`,
         steps: [
-            'Acesse "Equipe" para cadastrar novos profissionais.',
-            'Defina a comissão individual de cada um para serviços e produtos.',
-            'Configure os horários de trabalho e dias de folga de cada profissional.',
-            'Vincule quais serviços cada profissional está apto a realizar.',
-            'Envie o link de acesso para que eles vejam suas próprias agendas pelo celular.'
+            { title: 'Equipe', content: `Defina a comissão individual de cada ${texts.professional} para serviços e produtos.` },
+            { title: 'Agenda', content: `Configure os horários de trabalho e dias de folga de cada um.` }
         ],
-        tip: 'Uma foto profissional e amigável de cada colaborador no sistema aumenta a taxa de agendamento online, transmitindo mais confiança.'
+        tip: 'Uma foto profissional e amigável no perfil aumenta a taxa de agendamento online.'
     },
     {
         id: 'fila',
         title: '5 - Fila de Espera',
         icon: UserCheck,
-        image: '/tutorials/queue.png',
+        images: ['/tutorials/queue.png'],
         description: 'Gerencie clientes que chegam sem horário marcado com agilidade.',
         steps: [
-            'Abra a tela de "Fila de Espera" para gerenciar o fluxo do dia.',
-            'Adicione o cliente, selecione o profissional e o serviço desejado.',
-            'O sistema calcula o tempo estimado de espera automaticamente.',
-            'Mova ou reordene os clientes na fila conforme a necessidade do momento.',
-            'Inicie o atendimento com um clique para contar o tempo real de serviço.'
+            { title: 'Fluxo', content: 'Adicione o cliente, selecione o profissional e o serviço desejado.' },
+            { title: 'Controle', content: 'O sistema calcula o tempo estimado de espera automaticamente.' }
         ],
-        tip: 'Mantenha um tablet na recepção com a fila aberta. Isso dá transparência e organização extra para quem está esperando.'
+        tip: 'Mantenha um tablet na recepção com a fila aberta para dar transparência aos clientes.'
     },
     {
         id: 'agendamento',
         title: '6 - Calendário & Agendamento',
         icon: Calendar,
-        image: '/tutorials/appointments.png',
-        description: 'Sua agenda completa. Marque horários, arraste e solte atendimentos e evite furos.',
+        images: ['/tutorials/appointments.png'],
+        description: 'Sua agenda completa. Marque horários e evite furos.',
         steps: [
-            'Acesse "Agendamentos" para ver a visão geral da semana ou do dia.',
-            'Clique em qualquer espaço vazio para criar um novo agendamento rápido.',
-            'Arraste um compromisso para outro horário ou profissional se precisar realocar.',
-            'Bloqueie horários para almoço ou compromissos pessoais clicando no ícone de "Bloqueio".',
-            'Acompanhe o status (confirmado, em espera, finalizado) por cores intuitivas.'
+            { title: 'Agilidade', content: 'Clique em qualquer espaço vazio para criar um novo agendamento rápido.' },
+            { title: 'Flexibilidade', content: 'Arraste um compromisso para outro horário ou profissional se precisar realocar.' }
         ],
-        tip: 'Sempre que possível, agende a próxima visita do cliente logo após o pagamento. Isso garante a retenção e previsibilidade de caixa.'
+        tip: 'Sempre que possível, agende a próxima visita do cliente logo após o pagamento.'
     },
     {
         id: 'financeiro',
         title: '7 - Controle Financeiro',
         icon: BarChart3,
-        image: '/tutorials/finance.png',
+        images: ['/tutorials/finance.png'],
         description: 'Acompanhe seu fluxo de caixa, comissões e lucro líquido.',
         steps: [
-            'Vá em "Financeiro" para ver o resumo de entradas e saídas.',
-            'Registre despesas como aluguel, luz e compras de suprimentos.',
-            'Consulte o fechamento de cada profissional para pagar as comissões corretamente.',
-            'Visualize gráficos de faturamento por período para entender o crescimento do negócio.',
-            'Use o filtro por método de pagamento para conciliar suas máquinas de cartão.'
+            { title: 'Gestão', content: 'Registre despesas como aluguel, luz e compras de suprimentos diariamente.' },
+            { title: 'Comissões', content: 'Consulte o fechamento de cada profissional para pagar as comissões corretamente.' }
         ],
-        tip: 'Lançar as despesas diariamente evita surpresas no fim do mês. Um financeiro organizado é o segredo para expandir sua barbearia.'
+        tip: 'Um financeiro organizado é o segredo para expandir seu negócio.'
     },
     {
         id: 'estoque',
         title: '8 - Controle de Estoque',
         icon: Lightbulb,
-        image: '/tutorials/finance.png',
-        description: 'Nunca fique sem produtos. Controle entradas, saídas e alertas de estoque baixo.',
+        images: ['/tutorials/finance.png'],
+        description: 'Nunca fique sem produtos. Controle entradas, saídas e alertas.',
         steps: [
-            'Acesse o módulo de "Estoque" (disponível como Add-on).',
-            'Dê entrada em novas mercadorias informando a quantidade e valor pago ao fornecedor.',
-            'O sistema abate automaticamente os itens quando uma venda de produto é finalizada.',
-            'Receba alertas quando um item atingir a "Quantidade Mínima" de segurança.',
-            'Realize inventários periódicos para ajustar quebras ou perdas.'
+            { title: 'Entradas', content: 'Dê entrada em mercadorias informando a quantidade e valor pago.' },
+            { title: 'Alertas', content: 'Receba avisos quando um item atingir a quantidade mínima de segurança.' }
         ],
-        tip: 'Produtos parados em estoque são dinheiro parado. Use os relatórios para identificar o que não vende e fazer promoções.'
+        tip: 'Produtos parados em estoque são dinheiro parado.'
     }
 ];
 
 export default function TutoriaisPage() {
     const { tenant } = useAuth();
     const texts = getBusinessTexts(tenant?.business_type);
-    const [activeTab, setActiveTab] = useState(TUTORIALS[0].id);
+    const tutorials = getTutorialContent(texts, tenant);
+    const [activeTab, setActiveTab] = useState(tutorials[0].id);
 
-    const activeTutorial = TUTORIALS.find(t => t.id === activeTab) || TUTORIALS[0];
+    const activeTutorial = tutorials.find(t => t.id === activeTab) || tutorials[0];
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 pb-12">
@@ -215,20 +222,20 @@ export default function TutoriaisPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Navigation Sidebar */}
                 <div className="lg:col-span-3 space-y-2">
-                    {TUTORIALS.map((tutorial) => (
+                    {tutorials.map((tutorial) => (
                         <button
                             key={tutorial.id}
                             onClick={() => setActiveTab(tutorial.id)}
                             className={cn(
-                                "w-full flex items-center gap-3 px-4 py-4 rounded-2xl text-sm font-black transition-all transition-all duration-300",
+                                "w-full flex items-center gap-3 px-4 py-4 rounded-2xl text-sm font-black transition-all transition-all duration-300 text-left",
                                 activeTab === tutorial.id
                                     ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20 translate-x-2"
                                     : "bg-slate-900/40 border border-slate-800/50 text-slate-400 hover:text-slate-100 hover:border-slate-700 hover:translate-x-1"
                             )}
                         >
-                            <tutorial.icon className={cn("w-5 h-5", activeTab === tutorial.id ? "text-white" : "text-blue-500")} />
-                            {tutorial.title}
-                            {activeTab === tutorial.id && <ChevronRight className="ml-auto w-4 h-4 opacity-50" />}
+                            <tutorial.icon className={cn("w-5 h-5 shrink-0", activeTab === tutorial.id ? "text-white" : "text-blue-500")} />
+                            <span className="truncate">{tutorial.title}</span>
+                            {activeTab === tutorial.id && <ChevronRight className="ml-auto w-4 h-4 opacity-50 shrink-0" />}
                         </button>
                     ))}
 
@@ -246,57 +253,67 @@ export default function TutoriaisPage() {
                 {/* Content Area */}
                 <div className="lg:col-span-9 space-y-6">
                     <Card className="bg-slate-900/60 border-slate-800 overflow-hidden backdrop-blur-md rounded-[2.5rem] shadow-2xl">
-                        <div className="grid grid-cols-1 xl:grid-cols-2">
+                        <div className="flex flex-col xl:flex-row">
                             {/* Illustration Side */}
-                            <div className="relative h-[300px] xl:h-auto overflow-hidden bg-slate-950/40">
-                                <Image
-                                    src={activeTutorial.image}
-                                    alt={activeTutorial.title}
-                                    fill
-                                    className="object-cover opacity-90 transition-transform duration-700 hover:scale-105"
-                                    priority
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent hidden xl:block border-r border-slate-800/50" />
+                            <div className="w-full xl:w-1/2 bg-slate-950/40 border-r border-slate-800/50 overflow-y-auto max-h-[600px] xl:max-h-full">
+                                <div className="p-4 space-y-4">
+                                    {activeTutorial.images.map((img, idx) => (
+                                        <div key={idx} className="relative w-full aspect-video rounded-2xl overflow-hidden border border-slate-800 shadow-lg">
+                                            <Image
+                                                src={img}
+                                                alt={`${activeTutorial.title} - Imagem ${idx + 1}`}
+                                                fill
+                                                className="object-cover opacity-90 hover:scale-105 transition-transform duration-500"
+                                                priority={idx === 0}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
 
                             {/* Info Side */}
-                            <div className="p-8 xl:p-12 space-y-8 bg-slate-900/40">
+                            <div className="w-full xl:w-1/2 p-8 xl:p-12 space-y-8 bg-slate-900/40">
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-3">
                                         <div className="p-3 bg-blue-600/20 rounded-2xl text-blue-500">
                                             <activeTutorial.icon className="w-6 h-6" />
                                         </div>
-                                        <h2 className="text-3xl font-black text-slate-100 uppercase italic tracking-tighter">
+                                        <h2 className="text-2xl font-black text-slate-100 uppercase italic tracking-tighter">
                                             {activeTutorial.title}
                                         </h2>
                                     </div>
-                                    <p className="text-slate-300 font-bold leading-relaxed">
+                                    <p className="text-slate-300 font-bold leading-relaxed text-sm">
                                         {activeTutorial.description}
                                     </p>
                                 </div>
 
                                 <div className="space-y-6">
-                                    <h3 className="text-xs font-black text-blue-400 uppercase tracking-widest flex items-center gap-2">
+                                    <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] flex items-center gap-2">
                                         <Zap className="w-4 h-4 fill-current" />
-                                        Como utilizar (Passo a Passo)
+                                        Guia Detalhado Passo a Passo
                                     </h3>
-                                    <ul className="space-y-4">
+                                    <div className="space-y-6">
                                         {activeTutorial.steps.map((step, idx) => (
-                                            <li key={idx} className="flex gap-4 group">
+                                            <div key={idx} className="flex gap-4 group">
                                                 <div className="mt-1 flex-shrink-0 w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-black text-blue-400 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-500 transition-colors">
                                                     {idx + 1}
                                                 </div>
-                                                <p className="text-sm font-medium text-slate-400 leading-snug group-hover:text-slate-200 transition-colors">
-                                                    {step}
-                                                </p>
-                                            </li>
+                                                <div className="space-y-1">
+                                                    <h4 className="text-sm font-black text-slate-100 group-hover:text-blue-400 transition-colors uppercase italic">
+                                                        {step.title}
+                                                    </h4>
+                                                    <p className="text-xs font-medium text-slate-400 leading-relaxed group-hover:text-slate-200 transition-colors">
+                                                        {step.content}
+                                                    </p>
+                                                </div>
+                                            </div>
                                         ))}
-                                    </ul>
+                                    </div>
                                 </div>
 
                                 <div className="p-6 rounded-2xl bg-slate-950/40 border border-slate-800/50 border-l-4 border-l-blue-600">
                                     <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Segredo de Especialista</div>
-                                    <p className="text-sm text-slate-300 font-bold italic">
+                                    <p className="text-xs text-slate-300 font-bold italic">
                                         {activeTutorial.tip}
                                     </p>
                                 </div>
@@ -308,66 +325,31 @@ export default function TutoriaisPage() {
                     <div className="space-y-6">
                         <div className="flex items-center gap-3">
                             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
-                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Primeiros Passos</h3>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Onde começar primeiro?</h3>
                             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <Card className="bg-slate-900/30 border-slate-800/50 p-5 rounded-[1.5rem] hover:bg-slate-900/50 hover:border-blue-500/30 transition-all group cursor-default">
-                                <div className="flex items-start gap-4">
-                                    <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-green-500/20">
-                                        1
+                            {[
+                                { step: 1, title: 'Configurações', desc: 'Preencha seus dados de logo, slug e endereço.' },
+                                { step: 2, title: texts.professionals, desc: `Cadastre quem trabalha com fotos e horários.` },
+                                { step: 3, title: 'Serviços', desc: 'Defina seu cardápio com preços e duração.' },
+                                { step: 4, title: 'Módulos', desc: 'Ative a Fila ou Agenda e comece a lucrar.' }
+                            ].map((item, i) => (
+                                <Card key={i} className="bg-slate-900/30 border-slate-800/50 p-5 rounded-[1.5rem] hover:bg-slate-900/50 hover:border-blue-500/30 transition-all group cursor-default">
+                                    <div className="flex items-start gap-4">
+                                        <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
+                                            {item.step}
+                                        </div>
+                                        <div className="space-y-1">
+                                            <h4 className="text-sm font-black text-slate-100 group-hover:text-blue-400 transition-colors italic">{item.title}</h4>
+                                            <p className="text-[10px] text-slate-400 font-medium leading-relaxed group-hover:text-slate-300">
+                                                {item.desc}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <h4 className="text-sm font-black text-slate-100">Configure sua Equipe</h4>
-                                        <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                                            Adicione profissionais, fotos e horários de trabalho. Sem equipe cadastrada, o sistema não aceita agendamentos.
-                                        </p>
-                                    </div>
-                                </div>
-                            </Card>
-
-                            <Card className="bg-slate-900/30 border-slate-800/50 p-5 rounded-[1.5rem] hover:bg-slate-900/50 hover:border-blue-500/30 transition-all group cursor-default">
-                                <div className="flex items-start gap-4">
-                                    <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-blue-500/20">
-                                        2
-                                    </div>
-                                    <div className="space-y-2">
-                                        <h4 className="text-sm font-black text-slate-100">Crie Serviços & Categorias</h4>
-                                        <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                                            Organize serviços em categorias (Cabelo, Barba, Estética). Defina preços e duração de cada um.
-                                        </p>
-                                    </div>
-                                </div>
-                            </Card>
-
-                            <Card className="bg-slate-900/30 border-slate-800/50 p-5 rounded-[1.5rem] hover:bg-slate-900/50 hover:border-purple-500/30 transition-all group cursor-default">
-                                <div className="flex items-start gap-4">
-                                    <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-purple-500/20">
-                                        3
-                                    </div>
-                                    <div className="space-y-2">
-                                        <h4 className="text-sm font-black text-slate-100">Defina Horários de Funcionamento</h4>
-                                        <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                                            Configure dias e horários globais. Ajuste exceções individuais por profissional se necessário.
-                                        </p>
-                                    </div>
-                                </div>
-                            </Card>
-
-                            <Card className="bg-slate-900/30 border-slate-800/50 p-5 rounded-[1.5rem] hover:bg-slate-900/50 hover:border-orange-500/30 transition-all group cursor-default">
-                                <div className="flex items-start gap-4">
-                                    <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-orange-500/20">
-                                        4
-                                    </div>
-                                    <div className="space-y-2">
-                                        <h4 className="text-sm font-black text-slate-100">Comece a Atender!</h4>
-                                        <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                                            Use a Fila para walk-ins e o Calendário para agendamentos. Seu sistema está pronto para operar!
-                                        </p>
-                                    </div>
-                                </div>
-                            </Card>
+                                </Card>
+                            ))}
                         </div>
                     </div>
                 </div>
