@@ -11,7 +11,10 @@ import {
     ChevronRight,
     CheckCircle2,
     Lightbulb,
-    Zap
+    Zap,
+    Search,
+    SearchX,
+    X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
@@ -207,16 +210,63 @@ export default function TutoriaisPage() {
     const { tenant } = useAuth();
     const texts = getBusinessTexts(tenant?.business_type);
     const tutorials = getTutorialContent(texts, tenant);
+
     const [activeTab, setActiveTab] = useState(tutorials[0].id);
     const [currentStep, setCurrentStep] = useState(0);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showResults, setShowResults] = useState(false);
 
     const activeTutorial = tutorials.find(t => t.id === activeTab) || tutorials[0];
     const activeStep = activeTutorial.steps[currentStep] || activeTutorial.steps[0];
     const totalSteps = activeTutorial.steps.length;
 
+    // Search Logic
+    const searchResults = searchQuery.length > 2
+        ? tutorials.flatMap(tutorial => {
+            const matches: any[] = [];
+
+            // Match tutorial title/desc
+            if (tutorial.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                tutorial.description.toLowerCase().includes(searchQuery.toLowerCase())) {
+                matches.push({
+                    type: 'tutorial',
+                    id: tutorial.id,
+                    title: tutorial.title,
+                    subtitle: tutorial.description,
+                    stepIndex: 0
+                });
+            }
+
+            // Match steps
+            tutorial.steps.forEach((step, index) => {
+                if (step.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    step.content.toLowerCase().includes(searchQuery.toLowerCase())) {
+                    matches.push({
+                        type: 'step',
+                        id: tutorial.id,
+                        title: step.title,
+                        subtitle: tutorial.title,
+                        stepIndex: index
+                    });
+                }
+            });
+
+            return matches;
+        }).slice(0, 6)
+        : [];
+
     const handleTabChange = (newId: string) => {
         setActiveTab(newId);
         setCurrentStep(0);
+        setSearchQuery('');
+        setShowResults(false);
+    };
+
+    const handleSelectResult = (result: any) => {
+        setActiveTab(result.id);
+        setCurrentStep(result.stepIndex);
+        setSearchQuery('');
+        setShowResults(false);
     };
 
     const nextStep = () => {
@@ -230,18 +280,78 @@ export default function TutoriaisPage() {
     return (
         <div className="space-y-8 animate-in fade-in duration-500 pb-12">
             {/* Header Section */}
-            <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-blue-500 font-black uppercase tracking-widest text-[10px]">
-                    <CheckCircle2 className="w-4 h-4" />
-                    Guia Visual Interativo
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-blue-500 font-black uppercase tracking-widest text-[10px]">
+                        <CheckCircle2 className="w-4 h-4" />
+                        Guia Visual Interativo
+                    </div>
+                    <h1 className="text-4xl font-black text-slate-100 tracking-tight">
+                        MANUAL DO <span className="text-blue-600">SISTEMA</span>
+                    </h1>
+                    <p className="text-slate-400 font-medium max-w-2xl leading-relaxed">
+                        Bem-vindo ao centro de ajuda da 791 {tenant?.business_type === 'beauty_salon' ? 'Beauty' : 'Barber'}.
+                        Siga o passo a passo interativo para dominar cada recurso da plataforma.
+                    </p>
                 </div>
-                <h1 className="text-4xl font-black text-slate-100 tracking-tight">
-                    MANUAL DO <span className="text-blue-600">SISTEMA</span>
-                </h1>
-                <p className="text-slate-400 font-medium max-w-2xl leading-relaxed">
-                    Bem-vindo ao centro de ajuda da 791 {tenant?.business_type === 'beauty_salon' ? 'Beauty' : 'Barber'}.
-                    Siga o passo a passo interativo para dominar cada recurso da plataforma.
-                </p>
+
+                {/* Search Bar */}
+                <div className="relative w-full lg:w-96 group">
+                    <div className="relative flex items-center">
+                        <Search className="absolute left-4 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                        <input
+                            type="text"
+                            placeholder="O que você deseja saber hoje? (ex: Pix, Slug...)"
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setShowResults(true);
+                            }}
+                            onFocus={() => setShowResults(true)}
+                            className="w-full bg-slate-900/60 border border-slate-800 rounded-2xl py-3 pl-12 pr-4 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-4 p-1 rounded-full hover:bg-slate-800 transition-colors"
+                            >
+                                <X className="w-3 h-3 text-slate-400" />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Search Results Overlay */}
+                    {showResults && searchQuery.length > 2 && (
+                        <Card className="absolute top-full mt-2 w-full bg-slate-900 border-slate-800 shadow-2xl z-50 overflow-hidden divide-y divide-slate-800/50 animate-in slide-in-from-top-2 duration-200">
+                            {searchResults.length > 0 ? (
+                                searchResults.map((result, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => handleSelectResult(result)}
+                                        className="w-full text-left p-4 hover:bg-blue-600/10 transition-colors flex items-center gap-4 group"
+                                    >
+                                        <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center shrink-0 group-hover:bg-blue-600 transition-colors">
+                                            {result.type === 'tutorial' ? <LayoutDashboard className="w-4 h-4 text-blue-400 group-hover:text-white" /> : <Zap className="w-4 h-4 text-orange-400 group-hover:text-white" />}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-black text-slate-200 truncate group-hover:text-blue-400 transition-colors">
+                                                {result.title}
+                                            </p>
+                                            <p className="text-[10px] text-slate-500 truncate group-hover:text-slate-400 transition-colors">
+                                                {result.subtitle}
+                                            </p>
+                                        </div>
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="p-8 text-center text-slate-500/50">
+                                    <SearchX className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                                    <p className="text-xs font-bold uppercase tracking-widest">Nenhum resultado encontrado</p>
+                                </div>
+                            )}
+                        </Card>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
