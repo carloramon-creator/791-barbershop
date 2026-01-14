@@ -81,18 +81,19 @@ export default function PlanPage() {
         const init = async () => {
             setLoading(true);
             try {
-                // 1. Carregar planos e add-ons do sistema
-                const [plans, addons] = await Promise.all([
-                    Api.getSystemPlans(),
-                    Api.getSystemAddons()
+                // Chama tudo em paralelo (Planos do sistema, Invoices/Sync e Status atual)
+                await Promise.all([
+                    (async () => {
+                        const [plans, addons] = await Promise.all([
+                            Api.getSystemPlans(),
+                            Api.getSystemAddons()
+                        ]);
+                        setDynamicPlans(plans || []);
+                        setDynamicAddons(addons || []);
+                    })(),
+                    fetchInvoices(),
+                    fetchCurrentPlan(false)
                 ]);
-                setDynamicPlans(plans || []);
-                setDynamicAddons(addons || []);
-
-                // 2. Primeiro sincroniza tudo (Inter e Stripe)
-                await fetchInvoices();
-                // 3. Agora busca o status atualizado do plano
-                await fetchCurrentPlan(false); // Pass false to not reset loading
             } catch (e) {
                 console.error('Erro na inicialização:', e);
             } finally {
@@ -109,25 +110,28 @@ export default function PlanPage() {
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) throw new Error('Usuário não autenticado');
 
-            const res = await fetch(`${API_URL}/api/barbershop/plan`, {
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`
-                }
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error);
-            setCurrentPlan(data.currentPlan || 'trial');
-            setStripeSubscriptionId(data.stripeSubscriptionId);
-            setSubscriptionStatus(data.subscriptionStatus);
-            setActiveAddons(data.activeAddons || []);
+            // Busca plano e detalhes do tenant em paralelo
+            const [planRes, tenantRes] = await Promise.all([
+                fetch(`${API_URL}/api/barbershop/plan`, {
+                    headers: { 'Authorization': `Bearer ${session.access_token}` }
+                }),
+                fetch(`${API_URL}/api/barbershop`, {
+                    headers: { 'Authorization': `Bearer ${session.access_token}` }
+                })
+            ]);
 
-            // Also check if tenant has CNPJ/CPF
-            const tenantRes = await fetch(`${API_URL}/api/barbershop`, {
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`
-                }
-            });
-            const tenantData = await tenantRes.json();
+            const [planData, tenantData] = await Promise.all([
+                planRes.json(),
+                tenantRes.json()
+            ]);
+
+            if (!planRes.ok) throw new Error(planData.error);
+
+            setCurrentPlan(planData.currentPlan || 'trial');
+            setStripeSubscriptionId(planData.stripeSubscriptionId);
+            setSubscriptionStatus(planData.subscriptionStatus);
+            setActiveAddons(planData.activeAddons || []);
+
             const doc = tenantData.cnpj || tenantData.cpf_cnpj || '';
             setTenantHasDocument(doc.replace(/\D/g, '').length >= 11);
         } catch (err: unknown) {

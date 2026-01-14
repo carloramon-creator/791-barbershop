@@ -31,32 +31,46 @@ export async function GET(req: Request) {
         const cert = config?.crt?.replace(/\\n/g, '\n');
         const key = config?.key?.replace(/\\n/g, '\n');
 
-        // 2. Sync Inter (Rápido, apenas se houver configuração)
+        // 2. Sync Inter (Otimizado com Throttling e Paralelismo)
         if (config && cert && key) {
             try {
-                const inter = new InterAPIV3({
-                    clientId: config.client_id,
-                    clientSecret: config.client_secret,
-                    cert,
-                    key,
-                    accountNumber: config.account_number || config.accountNumber
-                });
-
-                const threeDaysAgo = new Date();
-                threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-
-                const { data: pendingRecent } = await supabaseAdmin
+                // Throttle: Só sincroniza se não houve sincronização recente nos últimos 10 minutos
+                const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+                const { data: recentSync } = await supabaseAdmin
                     .from('finance')
-                    .select('*')
+                    .select('id')
                     .eq('tenant_id', tenant.id)
-                    .eq('is_paid', false)
                     .ilike('description', '%SaaS%')
-                    .gte('created_at', threeDaysAgo.toISOString());
+                    .gte('updated_at', tenMinutesAgo)
+                    .limit(1);
 
-                if (pendingRecent && pendingRecent.length > 0) {
-                    for (const inv of pendingRecent) {
-                        const txid = inv.metadata?.txid;
-                        if (txid) {
+                if (!recentSync || recentSync.length === 0) {
+                    const inter = new InterAPIV3({
+                        clientId: config.client_id,
+                        clientSecret: config.client_secret,
+                        cert,
+                        key,
+                        accountNumber: config.account_number || config.accountNumber
+                    });
+
+                    const threeDaysAgo = new Date();
+                    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+                    const { data: pendingRecent } = await supabaseAdmin
+                        .from('finance')
+                        .select('*')
+                        .eq('tenant_id', tenant.id)
+                        .eq('is_paid', false)
+                        .ilike('description', '%SaaS%')
+                        .gte('created_at', threeDaysAgo.toISOString());
+
+                    if (pendingRecent && pendingRecent.length > 0) {
+                        console.log(`[AUTO-SYNC INTER] Sincronizando ${pendingRecent.length} faturas pendentes em paralelo...`);
+
+                        await Promise.all(pendingRecent.map(async (inv) => {
+                            const txid = inv.metadata?.txid;
+                            if (!txid) return;
+
                             try {
                                 const details = await inter.getBillingBySolicitacao(txid);
                                 const finalDetails = details.cobranca ? { ...details.cobranca, boleto: details.boleto, pix: details.pix } : details;
@@ -71,26 +85,31 @@ export async function GET(req: Request) {
                                     const periodEnd = new Date();
                                     periodEnd.setDate(periodEnd.getDate() + 31);
 
-                                    await supabaseAdmin.from('tenants').update({
-                                        plan,
-                                        subscription_status: 'active',
-                                        subscription_current_period_end: periodEnd.toISOString()
-                                    }).eq('id', tenant.id);
-
-                                    await supabaseAdmin.from('finance').update({
-                                        is_paid: true,
-                                        metadata: { ...inv.metadata, status_inter: situacao }
-                                    }).eq('id', inv.id);
+                                    await Promise.all([
+                                        supabaseAdmin.from('tenants').update({
+                                            plan,
+                                            subscription_status: 'active',
+                                            subscription_current_period_end: periodEnd.toISOString()
+                                        }).eq('id', tenant.id),
+                                        supabaseAdmin.from('finance').update({
+                                            is_paid: true,
+                                            metadata: { ...inv.metadata, status_inter: situacao }
+                                        }).eq('id', inv.id)
+                                    ]);
                                 } else if (['CANCELADO', 'EXPIRADO', 'REJEITADA', 'BAIXADO'].includes(situacao)) {
-                                    // Se foi cancelado ou baixado no banco pelo Ramon, limpamos do sistema
                                     console.log(`[AUTO-SYNC INTER] Removendo fatura ${txid} pois o status no banco é ${situacao}`);
                                     await supabaseAdmin.from('finance').delete().eq('id', inv.id);
+                                } else {
+                                    // Touch o registro para evitar sync repetitivo via throttle (updated_at muda)
+                                    await supabaseAdmin.from('finance').update({ updated_at: new Date().toISOString() }).eq('id', inv.id);
                                 }
                             } catch (e) {
                                 console.warn(`[AUTO-SYNC INTER] Erro em ${txid}`);
                             }
-                        }
+                        }));
                     }
+                } else {
+                    console.log(`[INVOICES] Sync Inter ignorado (throttled) - Sincronização recente detectada.`);
                 }
             } catch (e) {
                 console.error('[INTER-SYNC ERROR]', e);
