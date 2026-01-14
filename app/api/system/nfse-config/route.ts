@@ -28,7 +28,6 @@ export async function GET(req: Request) {
 
         const config = settings?.value || {
             environment: 'homologacao',
-            apiUrl: 'http://localhost:3333',
             certificateUploaded: false,
             lastUpdated: null
         };
@@ -57,7 +56,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { environment, apiUrl, pfxBase64, passphrase } = body;
+        const { environment, pfxBase64, passphrase } = body;
 
         // Busca configuração existente
         const { data: existing } = await supabaseAdmin
@@ -69,7 +68,6 @@ export async function POST(req: Request) {
         const newValue = {
             ...(existing?.value || {}),
             environment: environment || existing?.value?.environment || 'homologacao',
-            apiUrl: apiUrl || existing?.value?.apiUrl || 'http://localhost:3333',
             lastUpdated: new Date().toISOString()
         };
 
