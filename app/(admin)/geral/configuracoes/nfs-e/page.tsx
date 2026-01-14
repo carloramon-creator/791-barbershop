@@ -14,6 +14,7 @@ export default function NfseConfigPage() {
     const [saving, setSaving] = useState(false);
     const [config, setConfig] = useState({
         environment: 'homologacao',
+        apiUrl: '',
         certificateUploaded: false,
         lastUpdated: null
     });
@@ -58,6 +59,7 @@ export default function NfseConfigPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     environment: config.environment,
+                    apiUrl: config.apiUrl,
                     ...files
                 })
             });
@@ -116,6 +118,15 @@ export default function NfseConfigPage() {
                                     <SelectItem value="producao">Produção (Real)</SelectItem>
                                 </SelectContent>
                             </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>URL da API de Emissão</Label>
+                            <Input
+                                placeholder="http://api.exemplo.com"
+                                value={config.apiUrl || ''}
+                                onChange={(e) => setConfig(prev => ({ ...prev, apiUrl: e.target.value }))}
+                                className="bg-slate-800 border-slate-700"
+                            />
                         </div>
                         {config.environment === 'homologacao' && (
                             <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex gap-3 text-xs text-blue-400 leading-relaxed">

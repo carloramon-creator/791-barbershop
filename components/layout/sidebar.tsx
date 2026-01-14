@@ -76,10 +76,10 @@ export function Sidebar() {
         if ((item as any).module === 'appointments' && !tenant?.module_appointments_enabled) return false;
 
         // PERMISSÕES DINÂMICAS DO PLANO + ADDONS
-        // Fallback para todas as permissões se o objeto do plano ou as permissões estiverem ausentes
-        const planPermissions = (tenant as any)?.system_plan?.menu_permissions?.length > 0
-            ? (tenant as any).system_plan.menu_permissions
-            : ['dashboard', 'queue', 'appointments', 'clients', 'professionals', 'services', 'products', 'inventory', 'finance'];
+        // Se o plano não tiver permissões explícitas, usamos um conjunto básico minimalista para segurança
+        const planPermissions = (tenant as any)?.system_plan?.menu_permissions || [
+            'dashboard', 'queue', 'appointments', 'clients', 'services'
+        ];
 
         const activeAddons = tenant?.active_addons || [];
 

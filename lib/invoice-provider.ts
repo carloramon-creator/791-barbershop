@@ -4,6 +4,8 @@
  * Inicialmente emulando o comportamento para testes com o SaaS.
  */
 
+import { supabaseAdmin } from './supabase-server';
+
 export interface InvoiceData {
     id: string;
     tenantId: string;
@@ -29,9 +31,9 @@ class InvoiceProvider {
     // Configurações do SaaS 791Barber (Prestador de Serviço)
     private readonly providerConfig = {
         name: '791 SOLUCOES TECNOLOGICAS LTDA',
-        cnpj: 'XX.XXX.XXX/0001-XX',
-        im: 'XXXXXXX',
-        municipioCode: '4205407' // Ex: Florianópolis
+        cnpj: '61.887.941/0001-83',
+        im: 'ISENTO',
+        municipioCode: '4205407' // Florianópolis
     };
 
     private constructor() { }
@@ -50,17 +52,34 @@ class InvoiceProvider {
         console.log(`[INVOICE-PROVIDER] Iniciando emissão real para: ${invoice.customerName}`);
 
         try {
-            const apiUrl = process.env.NFSE_API_URL || 'http://localhost:3333';
+            // 0. Buscar configurações no DB
+            const { data: settings } = await supabaseAdmin
+                .from('system_settings')
+                .select('value')
+                .eq('key', 'nfse_config')
+                .single();
+
+            const config = settings?.value || {};
+            const apiUrl = config.apiUrl || process.env.NFSE_API_URL || 'http://localhost:3333';
             const apiKey = process.env.NFSE_API_KEY || '791-secret-key';
+            const privateKey = config.pfxBase64 || "PLACEHOLDER_PRIVATE_KEY";
+            const passphrase = config.passphrase || "password";
+
+            if (apiUrl.includes('localhost') && process.env.NODE_ENV === 'production') {
+                throw new Error('A URL da API de NFS-e não está configurada no painel SuperAdmin.');
+            }
 
             // 1. Autenticar
             const authRes = await fetch(`${apiUrl}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ apiKey })
+            }).catch(err => {
+                throw new Error(`Não foi possível conectar à API de NFS-e (${apiUrl}). Verifique se a URL está correta.`);
             });
+
             const authData = await authRes.json();
-            if (!authRes.ok) throw new Error('Falha na autenticação com o provedor de NFS-e');
+            if (!authRes.ok) throw new Error(authData.error || 'Falha na autenticação com o provedor de NFS-e');
 
             const token = authData.token;
 
@@ -91,9 +110,9 @@ class InvoiceProvider {
                 },
                 body: JSON.stringify({
                     dpsData,
-                    privateKey: "PLACEHOLDER_PRIVATE_KEY", // Em prod, viria de cofre de senhas
-                    publicCert: "PLACEHOLDER_CERT",
-                    passphrase: "password"
+                    privateKey: privateKey, // Carregado do banco (.pfx base64)
+                    publicCert: "", // O PFX já contém o certificado
+                    passphrase: passphrase // Senha do certificado
                 })
             });
 

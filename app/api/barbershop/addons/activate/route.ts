@@ -80,16 +80,14 @@ export async function POST(req: Request) {
             }, { status: 400 }));
         }
 
-        // 4. Adicionar Add-on como Subscription Item no Stripe
-        let stripeSubscriptionItemId: string | null = null;
-
+        // 4. Garantir que o Add-on tenha um Price no Stripe (Auto-Create se necessário)
         if (!addon.stripe_price_id) {
-            console.log(`[ADDON ACTIVATE] ${addonSlug} sem stripe_price_id. Criando autimaticamente no Stripe...`);
+            console.log(`[ADDON ACTIVATE] ${addonSlug} sem stripe_price_id. Criando automaticamente no Stripe...`);
             try {
-                // Criar Produto (se não existir, mas vamos simplificar criando Price solto ou com Product novo)
-                // Melhor criar um produto para o Addon
+                // Criar Produto para o Addon
                 const product = await stripe.products.create({
                     name: `791 Barber Add-on: ${addon.name}`,
+                    metadata: { addon_slug: addonSlug }
                 });
 
                 const price = await stripe.prices.create({
@@ -107,34 +105,33 @@ export async function POST(req: Request) {
 
                 addon.stripe_price_id = price.id;
                 console.log(`[ADDON ACTIVATE] stripe_price_id criado e salvo: ${price.id}`);
-
             } catch (err: any) {
                 console.error('[ADDON AUTO-CREATE ERROR]', err);
-                // Fallback para manual se falhar a criação
-            }
-        }
-
-        if (addon.stripe_price_id) {
-            try {
-                const subscriptionItem = await stripe.subscriptionItems.create({
-                    subscription: tenant.stripe_subscription_id,
-                    price: addon.stripe_price_id,
-                    quantity: 1,
-                    proration_behavior: 'create_prorations',
-                });
-                stripeSubscriptionItemId = subscriptionItem.id;
-                console.log(`[ADDON ACTIVATE] Stripe item criado: ${subscriptionItem.id}`);
-            } catch (stripeError: any) {
-                console.error('[STRIPE ERROR]', stripeError);
                 return addCorsHeaders(req, NextResponse.json({
-                    error: `Erro ao adicionar no Stripe: ${stripeError.message}`
+                    error: `Não foi possível configurar o preço deste add-on no Stripe: ${err.message}. Tente novamente ou contate o suporte.`
                 }, { status: 500 }));
             }
-        } else {
-            console.warn(`[ADDON ACTIVATE] Falha ao obter stripe_price_id mesmo após tentativa de criação.`);
         }
 
-        // 5. Criar registro em tenant_addons
+        // 5. Adicionar Add-on como Subscription Item no Stripe
+        let stripeSubscriptionItemId: string | null = null;
+        try {
+            const subscriptionItem = await stripe.subscriptionItems.create({
+                subscription: tenant.stripe_subscription_id,
+                price: addon.stripe_price_id,
+                quantity: 1,
+                proration_behavior: 'create_prorations',
+            });
+            stripeSubscriptionItemId = subscriptionItem.id;
+            console.log(`[ADDON ACTIVATE] Stripe item criado: ${subscriptionItem.id}`);
+        } catch (stripeError: any) {
+            console.error('[STRIPE ERROR]', stripeError);
+            return addCorsHeaders(req, NextResponse.json({
+                error: `Erro ao adicionar no Stripe: ${stripeError.message}`
+            }, { status: 500 }));
+        }
+
+        // 6. Criar registro em tenant_addons
         const { error: activateError } = await supabaseAdmin
             .from('tenant_addons')
             .insert({
