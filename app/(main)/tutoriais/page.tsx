@@ -89,14 +89,40 @@ const getTutorialContent = (texts: any, tenant: any) => [
         id: 'config-usuarios',
         title: '1.2 - Configurações: Usuários',
         icon: Users,
-        images: ['/tutorials/config-usuarios.png'],
-        description: 'Gerencie quem tem acesso ao painel administrativo e quais são seus níveis de acesso.',
-        steps: [
-            { title: 'Acesso', content: 'Navegue até Configurações > Usuários para ver quem administra o sistema.', imageIndex: 0 },
-            { title: 'Adição', content: 'Adicione novos usuários preenchendo o e-mail e definindo o perfil de acesso.', imageIndex: 0 },
-            { title: 'Gestão', content: 'Remova ou edite usuários antigos para manter a segurança do seu negócio.', imageIndex: 0 }
+        images: [
+            '/tutorials/config-usuarios-1.png',
+            '/tutorials/config-usuarios-2.png',
+            '/tutorials/config-usuarios-3.png'
         ],
-        tip: 'Evite compartilhar a mesma senha de administrador. Crie uma conta individual para cada pessoa.'
+        description: 'Gerencie sua equipe, defina comissões e controle quem pode acessar o sistema.',
+        steps: [
+            {
+                title: 'Listagem de Usuários',
+                content: 'Visualize todos os colaboradores cadastrados, seus e-mails e cargos atuais. Use o "Modo Auditoria" para ver detalhes de login.',
+                imageIndex: 0
+            },
+            {
+                title: 'Adicionar Colaborador',
+                content: 'Clique em "+ Adicionar Usuário". Preencha dados básicos, apelido e telefone. Uma foto profissional ajuda na identificação rápida.',
+                imageIndex: 1
+            },
+            {
+                title: 'Perfil e Cargos',
+                content: 'Defina se o usuário é Proprietário, Barbeiro ou Funcionário. Você pode selecionar múltiplos cargos se necessário.',
+                imageIndex: 1
+            },
+            {
+                title: 'Comissões e Serviços',
+                content: 'Para Barbeiros, defina a porcentagem ou valor fixo de comissão e selecione quais serviços este profissional está habilitado a realizar.',
+                imageIndex: 2
+            },
+            {
+                title: 'Identificação Fiscal',
+                content: 'O campo CNPJ MEI é obrigatório para profissionais que precisam emitir Notas Fiscais (NFS-e) pelo sistema.',
+                imageIndex: 2
+            }
+        ],
+        tip: 'Mantenha os e-mails sempre atualizados para que os colaboradores recebam o link de ativação e consigam acessar suas agendas individuais.'
     },
     {
         id: 'config-permissoes',
@@ -276,13 +302,13 @@ export default function TutoriaisPage() {
             {/* Image Modal (Lightbox) */}
             {selectedImage && (
                 <div
-                    className="fixed inset-0 z-[100] bg-slate-950/95 flex items-center justify-center p-4 md:p-12 animate-in fade-in duration-300"
+                    className="fixed inset-0 z-[100] bg-slate-950/95 flex items-center justify-center p-4 md:p-12 animate-in fade-in duration-300 cursor-pointer"
                     onClick={() => setSelectedImage(null)}
                 >
-                    <button className="absolute top-8 right-8 p-3 rounded-full bg-slate-900 border border-slate-800 text-slate-100 hover:bg-slate-800 transition-all">
+                    <button className="absolute top-8 right-8 p-3 rounded-full bg-slate-900 border border-slate-800 text-slate-100 hover:bg-slate-800 transition-all z-[110]">
                         <X className="w-6 h-6" />
                     </button>
-                    <div className="relative w-full h-full" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative w-full h-full">
                         <Image
                             src={selectedImage}
                             alt="Visualização ampliada"
@@ -392,7 +418,7 @@ export default function TutoriaisPage() {
                                                 : "text-slate-500 hover:text-slate-300 hover:bg-slate-900/40"
                                         )}
                                     >
-                                        <span className="truncate">{tutorial.title.split(' - ')[1]}</span>
+                                        <span className="truncate">{tutorial.title.split(': ')[1] || tutorial.title}</span>
                                     </button>
                                 ))}
                             </div>
