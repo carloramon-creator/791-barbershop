@@ -98,8 +98,26 @@ export async function POST(req: Request) {
             }
         }
 
-        // 2. Customer Stripe (Se não for Inter)
+        // 2. Customer Stripe (Auto-Heal if missing in Stripe but exists in DB)
         let customerId = tenant.stripe_customer_id;
+
+        if (customerId) {
+            try {
+                const existingCustomer = await stripeClient.customers.retrieve(customerId);
+                if ((existingCustomer as any).deleted) {
+                    customerId = null;
+                }
+            } catch (err: any) {
+                // Se o erro for 404 (Not Found), limpamos o ID para criar um novo
+                if (err.status === 404 || err.code === 'resource_missing') {
+                    console.warn(`[CHECKOUT] Customer ${customerId} não existe no Stripe. Limpando localmente...`);
+                    customerId = null;
+                } else {
+                    throw err; // Outros erros (conexão, etc) devem quebrar o fluxo
+                }
+            }
+        }
+
         if (!customerId) {
             const customer = await stripeClient.customers.create({
                 email: user.email,

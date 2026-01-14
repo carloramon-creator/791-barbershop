@@ -1073,9 +1073,38 @@ export default function PlanPage() {
                                                                     size="sm"
                                                                     variant="ghost"
                                                                     className="h-8 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-black uppercase"
-                                                                    onClick={() => {
+                                                                    onClick={async () => {
                                                                         if (inv.metadata?.nfe_pdf_url) {
-                                                                            window.open(inv.metadata.nfe_pdf_url, '_blank');
+                                                                            try {
+                                                                                // Se a URL for do nosso provedor, precisamos mandar os dados da note para gerar
+                                                                                if (inv.metadata.nfe_pdf_url.includes('/nfse/pdf')) {
+                                                                                    const { data: { session } } = await supabaseClient.auth.getSession();
+                                                                                    const res = await fetch(inv.metadata.nfe_pdf_url, {
+                                                                                        method: 'POST',
+                                                                                        headers: {
+                                                                                            'Content-Type': 'application/json',
+                                                                                            'Authorization': `Bearer ${session?.access_token}`
+                                                                                        },
+                                                                                        body: JSON.stringify({
+                                                                                            dpsData: {
+                                                                                                numero: inv.metadata.nfe_id || inv.id.slice(-8),
+                                                                                                dataEmissao: inv.metadata.nfe_emission_date || inv.date,
+                                                                                                prestador: { cnpj: 'XX.XXX.XXX/0001-XX', inscricaoMunicipal: 'XXXXXXX' },
+                                                                                                tomador: { razaoSocial: inv.description, cnpj: 'XX.XXX.XXX/0001-XX' }, // Simplificado
+                                                                                                servico: { valorServicos: inv.value, discriminacao: inv.description, codigoItemListaServico: '0101' }
+                                                                                            }
+                                                                                        })
+                                                                                    });
+                                                                                    const blob = await res.blob();
+                                                                                    const url = window.URL.createObjectURL(blob);
+                                                                                    window.open(url, '_blank');
+                                                                                } else {
+                                                                                    window.open(inv.metadata.nfe_pdf_url, '_blank');
+                                                                                }
+                                                                            } catch (e) {
+                                                                                console.error('Erro ao abrir PDF:', e);
+                                                                                alert('Erro ao gerar PDF da nota.');
+                                                                            }
                                                                         } else {
                                                                             alert('PDF da nota não disponível. ID: ' + inv.metadata.nfe_id);
                                                                         }

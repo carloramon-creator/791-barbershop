@@ -47,27 +47,74 @@ class InvoiceProvider {
      * Emite uma nota fiscal de faturamento do SaaS para uma barbearia.
      */
     public async emitSaaSInvoice(invoice: InvoiceData): Promise<InvoiceResponse> {
-        console.log(`[INVOICE-PROVIDER] Iniciando emissão para: ${invoice.customerName}`);
+        console.log(`[INVOICE-PROVIDER] Iniciando emissão real para: ${invoice.customerName}`);
 
-        // TODO: Implementar a lógica real de assinatura XAdES aqui
-        // 1. Gerar XML da DPS (Declaração de Prestação de Serviço)
-        // 2. Assinar com Certificado Digital A1
-        // 3. Enviar para API do Serpro (Ambiente Nacional)
+        try {
+            const apiUrl = process.env.NFSE_API_URL || 'http://localhost:3333';
+            const apiKey = process.env.NFSE_API_KEY || '791-secret-key';
 
-        // Simulação de delay de processamento fiscal
-        await new Promise(resolve => setTimeout(resolve, 2000));
+            // 1. Autenticar
+            const authRes = await fetch(`${apiUrl}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ apiKey })
+            });
+            const authData = await authRes.json();
+            if (!authRes.ok) throw new Error('Falha na autenticação com o provedor de NFS-e');
 
-        // Mock de sucesso
-        const mockInvoiceId = `2026${Math.floor(Math.random() * 900000 + 100000)}`;
+            const token = authData.token;
 
-        return {
-            success: true,
-            invoiceId: mockInvoiceId,
-            status: 'authorized',
-            pdfUrl: `https://nfe.791barber.com/pdf/${mockInvoiceId}.pdf`,
-            xmlUrl: `https://nfe.791barber.com/xml/${mockInvoiceId}.xml`,
-            message: 'Nota Fiscal autorizada com sucesso pelo Padrão Nacional.'
-        };
+            // 2. Preparar dados para DPS
+            const dpsData = {
+                numero: invoice.id.slice(-8),
+                serie: "1",
+                dataEmissao: new Date().toISOString(),
+                prestador: this.providerConfig,
+                tomador: {
+                    cnpj: invoice.customerDocument.length > 11 ? invoice.customerDocument : undefined,
+                    cpf: invoice.customerDocument.length <= 11 ? invoice.customerDocument : undefined,
+                    razaoSocial: invoice.customerName
+                },
+                servico: {
+                    codigoItemListaServico: "0101",
+                    valorServicos: invoice.value,
+                    discriminacao: invoice.serviceDescription
+                }
+            };
+
+            // 3. Emitir Nota
+            const emitRes = await fetch(`${apiUrl}/nfse/emit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    dpsData,
+                    privateKey: "PLACEHOLDER_PRIVATE_KEY", // Em prod, viria de cofre de senhas
+                    publicCert: "PLACEHOLDER_CERT",
+                    passphrase: "password"
+                })
+            });
+
+            const emitData = await emitRes.json();
+            if (!emitRes.ok) throw new Error(emitData.error || 'Erro ao emitir NFS-e');
+
+            return {
+                success: true,
+                invoiceId: emitData.sefazResult?.id || dpsData.numero,
+                status: 'authorized',
+                pdfUrl: `${apiUrl}/nfse/pdf`, // A rota de PDF agora recebe o POST com dpsData
+                message: 'Nota Fiscal autorizada com sucesso pelo Padrão Nacional.'
+            };
+        } catch (error: any) {
+            console.error('[INVOICE-PROVIDER ERROR]', error);
+            return {
+                success: false,
+                status: 'rejected',
+                message: error.message
+            };
+        }
     }
 
     /**
