@@ -128,13 +128,31 @@ const getTutorialContent = (texts: any, tenant: any) => [
         id: 'config-permissoes',
         title: '1.3 - Configurações: Permissões',
         icon: UserCheck,
-        images: ['/tutorials/config-permissoes.png'],
-        description: `Defina exatamente o que cada cargo (${texts.professional}, Gerente, etc.) pode ver ou fazer no sistema.`,
+        images: ['/tutorials/config-permissoes-1.png'],
+        description: `Personalize exatamente o que cada nível de acesso pode visualizar ou gerenciar no seu negócio.`,
         steps: [
-            { title: 'Configuração', content: 'Selecione o cargo e marque ou desmarque as permissões específicas.', imageIndex: 0 },
-            { title: 'Aplicação', content: 'As alterações são aplicadas instantaneamente para todos os usuários daquele cargo.', imageIndex: 0 }
+            {
+                title: 'Níveis de Acesso',
+                content: `O sistema divide os acessos em: Proprietário (acesso total), Funcionário (Staff de recepção) e ${texts.professional}.`,
+                imageIndex: 0
+            },
+            {
+                title: 'Personalização por Cargo',
+                content: 'Marque ou desmarque as caixas para conceder permissões em módulos sensíveis como o "Financeiro" ou "Configurações da Barbearia".',
+                imageIndex: 0
+            },
+            {
+                title: 'Gestão de Fila',
+                content: `Você pode definir se um ${texts.professional} pode ver apenas a própria fila ou a fila de todos os colegas da equipe.`,
+                imageIndex: 0
+            },
+            {
+                title: 'Aplicando Mudanças',
+                content: 'Sempre que alterar uma regra, clique em "Salvar Alterações". As novas permissões entram em vigor no próximo acesso do colaborador.',
+                imageIndex: 0
+            }
         ],
-        tip: 'Limite o acesso ao módulo "Financeiro" apenas para gerentes ou donos.'
+        tip: 'Por segurança, recomendamos que apenas Proprietários e Gerentes de confiança tenham acesso aos módulos "Financeiro" e "Alterar Plano".'
     },
     {
         id: 'config-planos',
