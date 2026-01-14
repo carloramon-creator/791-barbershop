@@ -38,47 +38,65 @@ const getTutorialContent = (texts: any, tenant: any) => [
             {
                 title: 'Logo e Branding',
                 content: 'Faça o upload do seu logotipo (Recomendado: 500x500px). Esta imagem será o ícone que seus clientes verão no App do Cliente para identificar sua marca.',
-                imageIndex: 0
+                imageIndex: 0,
+                zoom: 2.2,
+                focus: { x: 15, y: 35 }
             },
             {
                 title: 'Dados Básicos e Identificação',
                 content: 'Preencha o Nome e E-mail comercial. O campo CNPJ é importante para formalização, mas você pode marcar "Não tenho CNPJ" se for autônomo.',
-                imageIndex: 0
+                imageIndex: 0,
+                zoom: 1.8,
+                focus: { x: 0, y: 15 }
             },
             {
                 title: 'O que é o SLUG?',
                 content: 'O SLUG é o identificador único da sua página (ex: 791barber.com/nome-da-loja). Ele é o link que você enviará para seus clientes agendarem. Escolha um nome curto e fácil de lembrar!',
-                imageIndex: 0
+                imageIndex: 0,
+                zoom: 2,
+                focus: { x: 0, y: -10 }
             },
             {
                 title: 'Tipo de Negócio',
                 content: `Selecione se você é uma Barbearia ou Salão de Beleza. Isso ajusta automaticamente todos os termos do sistema (ex: ${texts.professional} ou Barbeiro).`,
-                imageIndex: 1
+                imageIndex: 1,
+                zoom: 1.8,
+                focus: { x: 0, y: 10 }
             },
             {
                 title: 'Divulgação e QR Code',
                 content: 'Aproveite o QR Code gerado automaticamente. Clique em "Imprimir QR Code" para colocar na sua recepção ou vitrine, facilitando o agendamento rápido pelos clientes.',
-                imageIndex: 2
+                imageIndex: 2,
+                zoom: 2.2,
+                focus: { x: 30, y: 35 }
             },
             {
                 title: 'Horário de Funcionamento',
                 content: 'Defina os dias de abertura, horários de início e fim. Você também pode configurar o Intervalo de Almoço, a Tolerância de Atraso e o tempo de antecedência do Lembrete de WhatsApp.',
-                imageIndex: 2
+                imageIndex: 2,
+                zoom: 1.6,
+                focus: { x: 0, y: -20 }
             },
             {
                 title: 'Endereço Simplificado',
                 content: 'Basta digitar o CEP e o sistema preencherá a rua e o bairro. Você só precisa adicionar o número e o complemento (ex: Sala 2).',
-                imageIndex: 3
+                imageIndex: 3,
+                zoom: 1.8,
+                focus: { x: 0, y: 25 }
             },
             {
                 title: 'Dados Bancários e PIX',
                 content: 'Configure sua chave PIX. Isso é fundamental para que o sistema gere QR Codes de pagamento automáticos no momento da venda, agilizando seu caixa.',
-                imageIndex: 3
+                imageIndex: 3,
+                zoom: 2,
+                focus: { x: 0, y: -10 }
             },
             {
                 title: 'Módulos do Sistema',
                 content: 'Ative ou desative os módulos de "Fila" e "Agendamento" conforme a necessidade do seu modelo de negócio.',
-                imageIndex: 3
+                imageIndex: 3,
+                zoom: 2.2,
+                focus: { x: 0, y: -30 }
             }
         ],
         tip: 'Um perfil completo com logo e endereço correto transmite muito mais profissionalismo e aumenta a confiança do cliente no primeiro agendamento.'
@@ -90,9 +108,9 @@ const getTutorialContent = (texts: any, tenant: any) => [
         images: ['/tutorials/config-usuarios.png'],
         description: 'Gerencie quem tem acesso ao painel administrativo e quais são seus níveis de acesso.',
         steps: [
-            { title: 'Acesso', content: 'Navegue até Configurações > Usuários para ver quem administra o sistema.', imageIndex: 0 },
-            { title: 'Adição', content: 'Adicione novos usuários preenchendo o e-mail e definindo o perfil de acesso.', imageIndex: 0 },
-            { title: 'Gestão', content: 'Remova ou edite usuários antigos para manter a segurança do seu negócio.', imageIndex: 0 }
+            { title: 'Acesso', content: 'Navegue até Configurações > Usuários para ver quem administra o sistema.', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } },
+            { title: 'Adição', content: 'Adicione novos usuários preenchendo o e-mail e definindo o perfil de acesso.', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } },
+            { title: 'Gestão', content: 'Remova ou edite usuários antigos para manter a segurança do seu negócio.', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } }
         ],
         tip: 'Evite compartilhar a mesma senha de administrador. Crie uma conta individual para cada pessoa.'
     },
@@ -103,8 +121,8 @@ const getTutorialContent = (texts: any, tenant: any) => [
         images: ['/tutorials/config-permissoes.png'],
         description: `Defina exatamente o que cada cargo (${texts.professional}, Gerente, etc.) pode ver ou fazer no sistema.`,
         steps: [
-            { title: 'Configuração', content: 'Selecione o cargo e marque ou desmarque as permissões específicas.', imageIndex: 0 },
-            { title: 'Aplicação', content: 'As alterações são aplicadas instantaneamente para todos os usuários daquele cargo.', imageIndex: 0 }
+            { title: 'Configuração', content: 'Selecione o cargo e marque ou desmarque as permissões específicas.', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } },
+            { title: 'Aplicação', content: 'As alterações são aplicadas instantaneamente para todos os usuários daquele cargo.', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } }
         ],
         tip: 'Limite o acesso ao módulo "Financeiro" apenas para gerentes ou donos.'
     },
@@ -115,8 +133,8 @@ const getTutorialContent = (texts: any, tenant: any) => [
         images: ['/tutorials/config-planos.png'],
         description: 'Gerencie sua assinatura, veja faturas e adicione novos recursos (Add-ons).',
         steps: [
-            { title: 'Status', content: 'Veja o status da sua assinatura atual e histórico de faturas.', imageIndex: 0 },
-            { title: 'Upgrade', content: 'Use o botão "Turbinar Pacote" para adicionar módulos extras como Estoque ou WhatsApp Automático.', imageIndex: 0 }
+            { title: 'Status', content: 'Veja o status da sua assinatura atual e histórico de faturas.', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } },
+            { title: 'Upgrade', content: 'Use o botão "Turbinar Pacote" para adicionar módulos extras como Estoque ou WhatsApp Automático.', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } }
         ],
         tip: 'Ative o "WhatsApp Automático" para reduzir faltas em até 80%.'
     },
@@ -127,8 +145,8 @@ const getTutorialContent = (texts: any, tenant: any) => [
         images: ['/tutorials/produtos.png'],
         description: 'Controle seu catálogo de produtos para venda rápida na recepção.',
         steps: [
-            { title: 'Cadastro', content: 'Clique em "Novo Produto" para adicionar itens como Pomadas ou Shampoos.', imageIndex: 0 },
-            { title: 'Lucratividade', content: 'Defina o preço de venda e o preço de custo para calcular seu lucro.', imageIndex: 0 }
+            { title: 'Cadastro', content: 'Clique em "Novo Produto" para adicionar itens como Pomadas ou Shampoos.', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } },
+            { title: 'Lucratividade', content: 'Defina o preço de venda e o preço de custo para calcular seu lucro.', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } }
         ],
         tip: 'Produtos por impulso na bancada aumentam o faturamento médio em até 25%.'
     },
@@ -139,8 +157,8 @@ const getTutorialContent = (texts: any, tenant: any) => [
         images: ['/tutorials/servicos.png'],
         description: 'Configure seu cardápio de serviços com preços e duração personalizados.',
         steps: [
-            { title: 'Organização', content: 'Crie categorias como "Cabelo", "Barba" ou "Combos".', imageIndex: 0 },
-            { title: 'Precisão', content: 'Defina a duração exata de cada serviço para que sua agenda seja calculada corretamente.', imageIndex: 0 }
+            { title: 'Organização', content: 'Crie categorias como "Cabelo", "Barba" ou "Combos".', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } },
+            { title: 'Precisão', content: 'Defina a duração exata de cada serviço para que sua agenda seja calculada corretamente.', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } }
         ],
         tip: 'Crie serviços do tipo "Combo" com um pequeno desconto para incentivar o aumento do ticket médio.'
     },
@@ -151,8 +169,8 @@ const getTutorialContent = (texts: any, tenant: any) => [
         images: ['/tutorials/staff.png'],
         description: `Cadastre seus ${texts.professionals}, configure comissões e horários.`,
         steps: [
-            { title: 'Equipe', content: `Defina a comissão individual de cada ${texts.professional} para serviços e produtos.`, imageIndex: 0 },
-            { title: 'Agenda', content: `Configure os horários de trabalho e dias de folga de cada um.`, imageIndex: 0 }
+            { title: 'Equipe', content: `Defina a comissão individual de cada ${texts.professional} para serviços e produtos.`, imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } },
+            { title: 'Agenda', content: `Configure os horários de trabalho e dias de folga de cada um.`, imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } }
         ],
         tip: 'Uma foto profissional e amigável no perfil aumenta a taxa de agendamento online.'
     },
@@ -163,8 +181,8 @@ const getTutorialContent = (texts: any, tenant: any) => [
         images: ['/tutorials/queue.png'],
         description: 'Gerencie clientes que chegam sem horário marcado com agilidade.',
         steps: [
-            { title: 'Fluxo', content: 'Adicione o cliente, selecione o profissional e o serviço desejado.', imageIndex: 0 },
-            { title: 'Controle', content: 'O sistema calcula o tempo estimado de espera automaticamente.', imageIndex: 0 }
+            { title: 'Fluxo', content: 'Adicione o cliente, selecione o profissional e o serviço desejado.', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } },
+            { title: 'Controle', content: 'O sistema calcula o tempo estimado de espera automaticamente.', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } }
         ],
         tip: 'Mantenha um tablet na recepção com a fila aberta para dar transparência aos clientes.'
     },
@@ -175,8 +193,8 @@ const getTutorialContent = (texts: any, tenant: any) => [
         images: ['/tutorials/appointments.png'],
         description: 'Sua agenda completa. Marque horários e evite furos.',
         steps: [
-            { title: 'Agilidade', content: 'Clique em qualquer espaço vazio para criar um novo agendamento rápido.', imageIndex: 0 },
-            { title: 'Flexibilidade', content: 'Arraste um compromisso para outro horário ou profissional se precisar realocar.', imageIndex: 0 }
+            { title: 'Agilidade', content: 'Clique em qualquer espaço vazio para criar um novo agendamento rápido.', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } },
+            { title: 'Flexibilidade', content: 'Arraste um compromisso para outro horário ou profissional se precisar realocar.', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } }
         ],
         tip: 'Sempre que possível, agende a próxima visita do cliente logo após o pagamento.'
     },
@@ -187,8 +205,8 @@ const getTutorialContent = (texts: any, tenant: any) => [
         images: ['/tutorials/finance.png'],
         description: 'Acompanhe seu fluxo de caixa, comissões e lucro líquido.',
         steps: [
-            { title: 'Gestão', content: 'Registre despesas como aluguel, luz e compras de suprimentos diariamente.', imageIndex: 0 },
-            { title: 'Comissões', content: 'Consulte o fechamento de cada profissional para pagar as comissões corretamente.', imageIndex: 0 }
+            { title: 'Gestão', content: 'Registre despesas como aluguel, luz e compras de suprimentos diariamente.', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } },
+            { title: 'Comissões', content: 'Consulte o fechamento de cada profissional para pagar as comissões corretamente.', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } }
         ],
         tip: 'Um financeiro organizado é o segredo para expandir seu negócio.'
     },
@@ -199,8 +217,8 @@ const getTutorialContent = (texts: any, tenant: any) => [
         images: ['/tutorials/finance.png'],
         description: 'Nunca fique sem produtos. Controle entradas, saídas e alertas.',
         steps: [
-            { title: 'Entradas', content: 'Dê entrada em mercadorias informando a quantidade e valor pago.', imageIndex: 0 },
-            { title: 'Alertas', content: 'Receba avisos quando um item atingir a quantidade mínima de segurança.', imageIndex: 0 }
+            { title: 'Entradas', content: 'Dê entrada em mercadorias informando a quantidade e valor pago.', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } },
+            { title: 'Alertas', content: 'Receba avisos quando um item atingir a quantidade mínima de segurança.', imageIndex: 0, zoom: 1.2, focus: { x: 0, y: 0 } }
         ],
         tip: 'Produtos parados em estoque são dinheiro parado.'
     }
@@ -391,13 +409,21 @@ export default function TutoriaisPage() {
 
                         {/* Image Viewer (Top) */}
                         <div className="relative w-full aspect-[16/9] lg:aspect-[21/9] bg-slate-950/60 overflow-hidden group">
-                            <Image
-                                src={activeTutorial.images[activeStep.imageIndex || 0]}
-                                alt={`${activeTutorial.title} - Passo ${currentStep + 1}`}
-                                fill
-                                className="object-contain p-4 transition-all duration-700"
-                                priority
-                            />
+                            <div
+                                className="relative w-full h-full transition-transform duration-1000 ease-in-out"
+                                style={{
+                                    transform: `scale(${activeStep.zoom || 1}) translate(${activeStep.focus?.x || 0}%, ${activeStep.focus?.y || 0}%)`,
+                                    transformOrigin: 'center'
+                                }}
+                            >
+                                <Image
+                                    src={activeTutorial.images[activeStep.imageIndex || 0]}
+                                    alt={`${activeTutorial.title} - Passo ${currentStep + 1}`}
+                                    fill
+                                    className="transition-all duration-700"
+                                    priority
+                                />
+                            </div>
 
                             {/* Overlay Navigation */}
                             <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent">
