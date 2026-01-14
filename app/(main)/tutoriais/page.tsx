@@ -16,6 +16,7 @@ import {
     Search,
     SearchX,
     Maximize2,
+    ShoppingBag,
     X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -187,12 +188,30 @@ const getTutorialContent = (texts: any, tenant: any) => [
     {
         id: 'produtos',
         title: '2 - Gestão de Produtos',
-        icon: Lightbulb,
-        images: ['/tutorials/produtos.png'],
-        description: 'Controle seu catálogo de produtos para venda rápida na recepção.',
+        icon: ShoppingBag,
+        images: ['/tutorials/produtos-1.png', '/tutorials/produtos-2.png'],
+        description: 'Controle seu catálogo de produtos, organize por categorias e venda com agilidade na recepção.',
         steps: [
-            { title: 'Cadastro', content: 'Clique em "Novo Produto" para adicionar itens como Pomadas ou Shampoos.', imageIndex: 0 },
-            { title: 'Lucratividade', content: 'Defina o preço de venda e o preço de custo para calcular seu lucro.', imageIndex: 0 }
+            {
+                title: 'Mix de Produtos',
+                content: 'Visualize todos os seus itens (como Pomadas, Cervejas ou Shampoos) organizados por categorias customizáveis.',
+                imageIndex: 0
+            },
+            {
+                title: 'Cadastro Ágil',
+                content: 'Clique em "+ Novo Produto". Informe o nome, preço de venda e selecione a categoria correspondente.',
+                imageIndex: 1
+            },
+            {
+                title: 'Organização em Categorias',
+                content: 'Crie categorias como "Bebidas" ou "Cosméticos" para facilitar a localização dos itens no momento da venda.',
+                imageIndex: 0
+            },
+            {
+                title: 'Ações e Edição',
+                content: 'Você pode editar preços ou remover produtos obsoletos a qualquer momento usando os ícones de ação à direita de cada item.',
+                imageIndex: 0
+            }
         ],
         tip: 'Produtos por impulso na bancada aumentam o faturamento médio em até 25%.'
     },
