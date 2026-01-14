@@ -43,6 +43,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { name: 'Planos & Extras', href: '/geral/planos', icon: Package },
         { name: 'Cupons', href: '/geral/cupons', icon: Ticket },
         { name: 'Configurações API', href: '/geral/configuracoes', icon: Settings },
+        { name: 'Configuração Fiscal', href: '/geral/configuracoes/nfs-e', icon: ShieldCheck },
         { name: 'Administradores', href: '/geral/usuarios', icon: ShieldCheck },
     ];
 
