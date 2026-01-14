@@ -11,7 +11,7 @@ export async function POST(req: Request) {
 
         const pdfBuffer = await pdfService.generateDanfseBuffer(dpsData);
 
-        return new NextResponse(pdfBuffer, {
+        return new NextResponse(pdfBuffer as any, {
             status: 200,
             headers: {
                 'Content-Type': 'application/pdf',
