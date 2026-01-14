@@ -21,104 +21,170 @@ import { getBusinessTexts } from '@/lib/business-dictionary';
 
 const TUTORIALS = [
     {
-        id: 'dashboard',
-        title: 'Dashboard & Métricas',
+        id: 'config-geral',
+        title: '1.1 - Configurações: Geral',
         icon: LayoutDashboard,
-        image: '/tutorials/dashboard.png',
-        description: 'Sua visão 360º do negócio. Acompanhe faturamento, volume de atendimentos e crescimento em tempo real.',
+        image: '/tutorials/config-geral.png',
+        description: 'Configure as informações básicas da sua barbearia, como nome, endereço, contatos e redes sociais.',
         steps: [
-            'Acesse o Dashboard logo após o login para ver o resumo executivo do seu negócio.',
-            'Visualize o faturamento total do dia, semana ou mês com gráficos interativos de evolução.',
-            'Acompanhe métricas-chave: ticket médio, taxa de ocupação, serviços mais vendidos e produtos em destaque.',
-            'Identifique os horários de pico e dias mais lucrativos para otimizar a escala da equipe.',
-            'Use os filtros de período para comparar performance atual vs. mês anterior ou mesmo período do ano passado.',
-            'Monitore o ROI de campanhas de marketing se você tiver o módulo de Analytics ativo.'
+            'Acesse o menu Configurações > Geral.',
+            'Preencha o nome da sua barbearia e escolha uma imagem de logo atraente.',
+            'Defina o tipo de negócio (Barbearia ou Salão de Beleza) para ajustar os textos do sistema.',
+            'Insira o endereço completo para que seus clientes possam te encontrar no mapa.',
+            'Atualize seus links de redes sociais e WhatsApp para facilitar o contato.',
+            'Não esqueça de clicar em "Salvar Alterações" no final da página.'
         ],
-        tip: 'Mantenha o Dashboard aberto em um tablet ou tela secundária na recepção. Assim você monitora o ritmo da loja em tempo real sem interromper o atendimento.'
+        tip: 'Mantenha seu endereço e contatos sempre atualizados. Isso é fundamental para que novos clientes cheguem até você sem dificuldades.'
     },
     {
-        id: 'queue',
-        title: 'Fila de Espera',
+        id: 'config-usuarios',
+        title: '1.2 - Configurações: Usuários',
+        icon: Users,
+        image: '/tutorials/config-usuarios.png',
+        description: 'Gerencie quem tem acesso ao painel administrativo e quais são seus níveis de acesso.',
+        steps: [
+            'Navegue até Configurações > Usuários.',
+            'Veja a lista de todos os administradores atuais do sistema.',
+            'Adicione novos usuários preenchendo o e-mail e definindo o perfil de acesso.',
+            'Remova ou edite usuários antigos para manter a segurança do seu negócio.',
+            'Lembre-se: Usuários Admin têm controle total, enquanto outros perfis podem ter restrições.'
+        ],
+        tip: 'Evite compartilhar a mesma senha de administrador. Crie uma conta individual para cada pessoa que precise gerenciar o sistema.'
+    },
+    {
+        id: 'config-permissoes',
+        title: '1.3 - Configurações: Permissões',
         icon: UserCheck,
-        image: '/tutorials/queue.png',
-        description: 'Gestão ágil para clientes sem agendamento. Controle o fluxo de entrada e saída com um clique.',
+        image: '/tutorials/config-permissoes.png',
+        description: 'Defina exatamente o que cada cargo (Barbeiro, Gerente, etc.) pode ver ou fazer no sistema.',
         steps: [
-            'Acesse "Fila de Espera" no menu lateral para visualizar todos os profissionais e suas filas.',
-            'Adicione clientes à fila clicando em "Novo Atendimento" e selecionando o profissional desejado.',
-            'Os clientes aparecem em ordem de chegada. O tempo de espera é calculado automaticamente.',
-            'Clique em "Iniciar" quando o profissional estiver pronto para começar o atendimento.',
-            'Durante o atendimento, selecione os serviços realizados e produtos vendidos.',
-            'Clique em "Finalizar" para registrar a venda, liberar o profissional e calcular a comissão automaticamente.',
-            'Arraste e solte para reordenar clientes ou transferir para outro profissional se necessário.'
+            'Acesse Configurações > Permissões.',
+            'Selecione o cargo que deseja configurar no menu lateral.',
+            'Marque ou desmarque as permissões específicas (vender, excluir agendamento, ver financeiro, etc.).',
+            'As alterações são aplicadas instantaneamente para todos os usuários daquele cargo.',
+            'Garanta que cada profissional tenha acesso apenas ao que é necessário para o trabalho dele.'
         ],
-        tip: 'Use a fila para walk-ins e o calendário para agendamentos. Essa combinação garante que você aproveite 100% da capacidade da equipe sem conflitos.'
+        tip: 'Limite o acesso ao módulo "Financeiro" apenas para gerentes ou donos para manter a privacidade dos dados da sua empresa.'
     },
     {
-        id: 'appointments',
-        title: 'Calendário de Agendamentos',
-        icon: Calendar,
-        image: '/tutorials/appointments.png',
-        description: 'Organize sua agenda com precisão. Evite conflitos de horário e garanta pontualidade.',
+        id: 'config-planos',
+        title: '1.4 - Configurações: Planos',
+        icon: BarChart3,
+        image: '/tutorials/config-planos.png',
+        description: 'Gerencie sua assinatura do 791 Barber, veja faturas e adicione novos recursos (Add-ons).',
         steps: [
-            'Acesse "Agendamentos" para visualizar a agenda completa em formato de calendário.',
-            'Alterne entre as visões: Dia (detalhada), Semana (panorâmica) ou Individual (por profissional).',
-            'Crie novos agendamentos clicando em um horário vazio e preenchendo cliente, serviço e profissional.',
-            'Arraste e solte agendamentos para mover de horário ou transferir para outro profissional.',
-            'Bloqueie horários específicos para folgas, almoço, treinamentos ou manutenção da loja.',
-            'O sistema envia notificação automática ao cliente na confirmação (se WhatsApp Add-on estiver ativo).',
-            'Use a visão "Lista" para ter um resumo rápido de todos os serviços do dia com status de confirmação.'
+            'Vá em Configurações > Plano para ver o status da sua assinatura atual.',
+            'Acompanhe o histórico de faturas e baixe os recibos/notas fiscais (NFS-e).',
+            'Descubra o botão "Turbinar Pacote" para adicionar módulos extras como Estoque ou WhatsApp Automático.',
+            'Verifique data de vencimento e métodos de pagamento cadastrados.',
+            'Faça o upgrade do seu plano clicando em "Mudar Plano" para liberar mais recursos.'
         ],
-        tip: 'Configure intervalos entre atendimentos nas configurações de cada serviço. Isso evita atrasos em cascata e melhora a experiência do cliente.'
+        tip: 'Ative o "WhatsApp Automático" para reduzir faltas em até 80% através de lembretes inteligentes enviados direto para o cliente.'
     },
     {
-        id: 'staff',
-        title: 'Gestão da Equipe',
+        id: 'produtos',
+        title: '2 - Gestão de Produtos',
+        icon: Lightbulb,
+        image: '/tutorials/produtos.png',
+        description: 'Controle seu catálogo de produtos para venda rápida na recepção.',
+        steps: [
+            'Acesse o menu "Produtos" para ver todos os itens cadastrados.',
+            'Clique em "Novo Produto" para adicionar itens como Pomadas, Shampoos ou Bebidas.',
+            'Defina o preço de venda e o preço de custo para calcular seu lucro.',
+            'Organize por categorias para facilitar a busca na hora da venda.',
+            'Mantenha as fotos dos produtos atualizadas para facilitar a identificação da equipe.'
+        ],
+        tip: 'Produtos por impulso na bancada aumentam o faturamento médio em até 25%. Registre tudo no sistema para não perder o controle.'
+    },
+    {
+        id: 'servicos',
+        title: '3 - Gestão de Serviços',
+        icon: Zap,
+        image: '/tutorials/servicos.png',
+        description: 'Configure seu cardápio de serviços com preços e duração personalizados.',
+        steps: [
+            'Vá em "Serviços" para gerenciar o que sua barbearia oferece.',
+            'Crie categorias como "Cabelo", "Barba" ou "Combos".',
+            'Defina a duração exata de cada serviço para que sua agenda seja calculada com precisão.',
+            'Coloque descrições claras para que o cliente saiba exatamente o que está agendando.',
+            'Ative ou desative serviços sazonalmente conforme a demanda.'
+        ],
+        tip: 'Crie serviços do tipo "Combo" com um pequeno desconto. Isso incentiva o cliente a fazer mais procedimentos em uma única visita.'
+    },
+    {
+        id: 'profissionais',
+        title: '4 - Profissionais (Equipe)',
         icon: Users,
         image: '/tutorials/staff.png',
-        description: 'Configure seus profissionais, defina comissões personalizadas e controle horários de trabalho.',
+        description: 'Cadastre seus barbeiros e profissionais, configure comissões e horários.',
         steps: [
-            'Acesse "Equipe" no menu e clique em "Adicionar Profissional" para cadastrar novos membros.',
-            'Preencha nome, e-mail, telefone e adicione uma foto profissional de alta qualidade.',
-            'Defina a porcentagem de comissão individual por serviço e por produto vendido.',
-            'Configure os dias da semana e horários em que cada profissional está disponível para atendimento.',
-            'Defina permissões de acesso: "Colaborador" vê apenas sua agenda, "Gerente" vê tudo, "Admin" tem controle total.',
-            'Envie o convite de acesso para que o profissional baixe o app e gerencie sua própria agenda.',
-            'Acompanhe o desempenho individual: total de atendimentos, faturamento gerado e comissões acumuladas.'
+            'Acesse "Equipe" para cadastrar novos profissionais.',
+            'Defina a comissão individual de cada um para serviços e produtos.',
+            'Configure os horários de trabalho e dias de folga de cada profissional.',
+            'Vincule quais serviços cada profissional está apto a realizar.',
+            'Envie o link de acesso para que eles vejam suas próprias agendas pelo celular.'
         ],
-        tip: 'Incentive os profissionais a manterem fotos atualizadas e perfis completos. Clientes preferem agendar com profissionais que transmitem confiança visual.'
+        tip: 'Uma foto profissional e amigável de cada colaborador no sistema aumenta a taxa de agendamento online, transmitindo mais confiança.'
     },
     {
-        id: 'finance',
-        title: 'Controle Financeiro',
+        id: 'fila',
+        title: '5 - Fila de Espera',
+        icon: UserCheck,
+        image: '/tutorials/queue.png',
+        description: 'Gerencie clientes que chegam sem horário marcado com agilidade.',
+        steps: [
+            'Abra a tela de "Fila de Espera" para gerenciar o fluxo do dia.',
+            'Adicione o cliente, selecione o profissional e o serviço desejado.',
+            'O sistema calcula o tempo estimado de espera automaticamente.',
+            'Mova ou reordene os clientes na fila conforme a necessidade do momento.',
+            'Inicie o atendimento com um clique para contar o tempo real de serviço.'
+        ],
+        tip: 'Mantenha um tablet na recepção com a fila aberta. Isso dá transparência e organização extra para quem está esperando.'
+    },
+    {
+        id: 'agendamento',
+        title: '6 - Calendário & Agendamento',
+        icon: Calendar,
+        image: '/tutorials/appointments.png',
+        description: 'Sua agenda completa. Marque horários, arraste e solte atendimentos e evite furos.',
+        steps: [
+            'Acesse "Agendamentos" para ver a visão geral da semana ou do dia.',
+            'Clique em qualquer espaço vazio para criar um novo agendamento rápido.',
+            'Arraste um compromisso para outro horário ou profissional se precisar realocar.',
+            'Bloqueie horários para almoço ou compromissos pessoais clicando no ícone de "Bloqueio".',
+            'Acompanhe o status (confirmado, em espera, finalizado) por cores intuitivas.'
+        ],
+        tip: 'Sempre que possível, agende a próxima visita do cliente logo após o pagamento. Isso garante a retenção e previsibilidade de caixa.'
+    },
+    {
+        id: 'financeiro',
+        title: '7 - Controle Financeiro',
         icon: BarChart3,
         image: '/tutorials/finance.png',
-        description: 'Gestão profissional completa. Acompanhe receitas, despesas, DRE e lucro líquido em tempo real.',
+        description: 'Acompanhe seu fluxo de caixa, comissões e lucro líquido.',
         steps: [
-            'Acesse "Financeiro" no menu lateral para visualizar o resumo de receitas e despesas do período.',
-            'Registre despesas fixas (aluguel, luz, água) e variáveis (produtos, manutenção) clicando em "Nova Despesa".',
-            'Consulte o DRE (Demonstrativo de Resultado) para ver receita bruta, custos operacionais e lucro líquido.',
-            'Acompanhe suas faturas do SaaS em "Configurações > Plano" para garantir que o sistema esteja sempre ativo.',
-            'Exporte relatórios mensais em PDF para enviar ao contador ou para análise gerencial.',
-            'Separe o faturamento de serviços do faturamento de produtos para identificar sua principal fonte de receita.'
+            'Vá em "Financeiro" para ver o resumo de entradas e saídas.',
+            'Registre despesas como aluguel, luz e compras de suprimentos.',
+            'Consulte o fechamento de cada profissional para pagar as comissões corretamente.',
+            'Visualize gráficos de faturamento por período para entender o crescimento do negócio.',
+            'Use o filtro por método de pagamento para conciliar suas máquinas de cartão.'
         ],
-        tip: 'Configure alertas de despesas recorrentes para nunca esquecer de registrar contas fixas. Um DRE preciso é fundamental para decisões estratégicas.'
+        tip: 'Lançar as despesas diariamente evita surpresas no fim do mês. Um financeiro organizado é o segredo para expandir sua barbearia.'
     },
     {
-        id: 'whatsapp',
-        title: 'WhatsApp Automático',
-        icon: MessageSquare,
-        image: '/tutorials/whatsapp.png',
-        description: 'Reduza faltas em até 80% com lembretes inteligentes. Comunicação automatizada que aumenta a taxa de comparecimento.',
+        id: 'estoque',
+        title: '8 - Controle de Estoque',
+        icon: Lightbulb,
+        image: '/tutorials/finance.png',
+        description: 'Nunca fique sem produtos. Controle entradas, saídas e alertas de estoque baixo.',
         steps: [
-            'Ative o Add-on de WhatsApp em "Configurações > Planos & Add-ons" para liberar as automações.',
-            'Configure os templates de mensagem personalizados com o nome do cliente, profissional, data e horário.',
-            'Confirmação automática é enviada imediatamente após o cliente agendar pelo app ou site.',
-            'Lembrete 24h antes do horário marcado para que o cliente confirme ou remarque com antecedência.',
-            'Lembrete 1 hora antes do serviço para garantir pontualidade e reduzir no-shows.',
-            'Notificação "Próximo da Fila" avisa clientes em espera quando estão perto de serem atendidos.',
-            'Mensagem de agradecimento pós-atendimento incentiva avaliações e fidelização.'
+            'Acesse o módulo de "Estoque" (disponível como Add-on).',
+            'Dê entrada em novas mercadorias informando a quantidade e valor pago ao fornecedor.',
+            'O sistema abate automaticamente os itens quando uma venda de produto é finalizada.',
+            'Receba alertas quando um item atingir a "Quantidade Mínima" de segurança.',
+            'Realize inventários periódicos para ajustar quebras ou perdas.'
         ],
-        tip: 'Personalize as mensagens com o nome da sua barbearia e um tom de voz que reflita a identidade do seu negócio. Clientes valorizam comunicação profissional.'
+        tip: 'Produtos parados em estoque são dinheiro parado. Use os relatórios para identificar o que não vende e fazer promoções.'
     }
 ];
 
