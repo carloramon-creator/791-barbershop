@@ -37,14 +37,7 @@ export async function POST(req: Request) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Você já possui este Add-on ativo' }, { status: 400 }));
         }
 
-        // 2. Verificar se o Tenant tem assinatura Stripe ativa
-        if (!tenant.stripe_subscription_id) {
-            return addCorsHeaders(req, NextResponse.json({
-                error: 'Para ativação imediata, é necessário possuir uma assinatura ativa via cartão. Caso contrário, utilize o checkout.'
-            }, { status: 400 }));
-        }
-
-        // 3. Atualizar no Stripe (Soma para a próxima fatura)
+        // 3. Obter Configuração Stripe (Dinâmico do Banco)
         const { data: settingsData } = await supabaseAdmin
             .from('system_settings')
             .select('value')
@@ -53,12 +46,39 @@ export async function POST(req: Request) {
 
         const stripeKey = settingsData?.value?.secret_key;
         if (!stripeKey) {
-            return addCorsHeaders(req, NextResponse.json({ error: 'Stripe não configurado' }, { status: 500 }));
+            return addCorsHeaders(req, NextResponse.json({ error: 'Stripe não configurado pelo administrador' }, { status: 500 }));
         }
 
         const stripe = new Stripe(stripeKey, {
             apiVersion: '2025-12-15.clover' as any,
         });
+
+        // 2. Verificar se o Tenant tem assinatura Stripe ativa (Auto-Heal if stale)
+        let activeSubscriptionId = tenant.stripe_subscription_id;
+
+        if (activeSubscriptionId) {
+            try {
+                const sub = await stripe.subscriptions.retrieve(activeSubscriptionId);
+                if (sub.status === 'canceled' || sub.status === 'incomplete_expired') {
+                    activeSubscriptionId = null;
+                }
+            } catch (err: any) {
+                if (err.status === 404 || err.code === 'resource_missing') {
+                    console.warn(`[ADDON] Subscription ${activeSubscriptionId} não existe no Stripe. Limpando...`);
+                    activeSubscriptionId = null;
+                    // Limpa no banco para não tentar de novo
+                    await supabaseAdmin.from('tenants').update({ stripe_subscription_id: null }).eq('id', tenant.id);
+                } else {
+                    throw err;
+                }
+            }
+        }
+
+        if (!activeSubscriptionId) {
+            return addCorsHeaders(req, NextResponse.json({
+                error: 'Para ativação imediata, é necessário possuir uma assinatura ativa via cartão. Caso sua assinatura tenha sido cancelada ou não exista, utilize os botões de Upgrade no painel de Planos.'
+            }, { status: 400 }));
+        }
 
         // 4. Adicionar Add-on como Subscription Item no Stripe
         let stripeSubscriptionItemId: string | null = null;

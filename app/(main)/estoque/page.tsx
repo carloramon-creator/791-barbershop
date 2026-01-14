@@ -52,7 +52,7 @@ export default function EstoquePage() {
     });
 
     const { tenant } = useAuth();
-    const isPremium = tenant?.plan === 'premium';
+    const isPremium = tenant?.plan === 'premium' || tenant?.plan === 'complete';
 
     const fetchData = async () => {
         try {
