@@ -16,7 +16,8 @@ import {
     Menu,
     X,
     Calendar,
-    Sparkles
+    Sparkles,
+    HelpCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -57,6 +58,7 @@ export function Sidebar() {
         { name: 'Produtos', href: '/produtos', icon: ShoppingBag, roles: ['owner', 'staff'], permission: 'products' },
         { name: 'Estoque', href: '/estoque', icon: ShoppingBag, roles: ['owner', 'staff'], permission: 'inventory', feature: 'inventory' },
         { name: 'Financeiro', href: '/financeiro', icon: BarChart3, roles: ['owner'], permission: 'finance', feature: 'finance' },
+        { name: 'Manual do Sistema', href: '/tutoriais', icon: HelpCircle, roles: ['owner', 'staff'] },
         { name: 'Configurações', href: '/configuracoes/barbearia', icon: Settings, roles: ['owner'] },
         { name: 'Super Admin', href: '/geral', icon: ShieldCheck, roles: ['owner'], isSystemOnly: true },
     ];
