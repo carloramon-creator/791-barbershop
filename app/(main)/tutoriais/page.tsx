@@ -219,13 +219,31 @@ const getTutorialContent = (texts: any, tenant: any) => [
         id: 'servicos',
         title: '3 - Gestão de Serviços',
         icon: Zap,
-        images: ['/tutorials/servicos.png'],
-        description: 'Configure seu cardápio de serviços com preços e duração personalizados.',
+        images: ['/tutorials/servicos-1.png', '/tutorials/servicos-2.png'],
+        description: 'Configure seu cardápio de serviços com preços, duração e vincule os produtos necessários.',
         steps: [
-            { title: 'Organização', content: 'Crie categorias como "Cabelo", "Barba" ou "Combos".', imageIndex: 0 },
-            { title: 'Precisão', content: 'Defina a duração exata de cada serviço para que sua agenda seja calculada corretamente.', imageIndex: 0 }
+            {
+                title: 'Catálogo de Serviços',
+                content: 'Visualize sua lista completa de serviços, tempos de execução e preços configurados.',
+                imageIndex: 0
+            },
+            {
+                title: 'Importância da Ordem',
+                content: 'Cadastre seus PRODUTOS antes dos serviços. No sistema, você vincula quais itens (como tintas ou pomadas) são usados em cada atendimento.',
+                imageIndex: 1
+            },
+            {
+                title: 'Cadastro de Novo Serviço',
+                content: 'Clique em "Novo Serviço". Defina o nome, valor de venda e a duração exata para que sua agenda seja calculada corretamente.',
+                imageIndex: 1
+            },
+            {
+                title: 'Consumo de Insumos',
+                content: 'Selecione os produtos que serão "baixados" do estoque sempre que esse serviço for realizado. Isso gera um controle preciso de custos.',
+                imageIndex: 1
+            }
         ],
-        tip: 'Crie serviços do tipo "Combo" com um pequeno desconto para incentivar o aumento do ticket médio.'
+        tip: 'Vincular produtos aos serviços ajuda a calcular a lucratividade real de cada procedimento, descontando o custo dos insumos.'
     },
     {
         id: 'profissionais',
