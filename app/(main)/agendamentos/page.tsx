@@ -34,7 +34,7 @@ import { MaskedInput } from '@/components/ui/masked-input';
 import { CloseSaleDialog } from '@/components/sales/close-sale-dialog';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, startOfDay, addDays, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import {
     Dialog,
     DialogContent,
