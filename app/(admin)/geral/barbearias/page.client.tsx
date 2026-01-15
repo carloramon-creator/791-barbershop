@@ -278,6 +278,20 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                 </span>
                                             )}
                                         </div>
+                                        <div className="pt-1">
+                                            <p className="text-[9px] font-black text-slate-600 uppercase tracking-tighter leading-none mb-0.5">Tipo de Negócio</p>
+                                            <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase">
+                                                {tenant.business_type === 'beauty_salon' ? (
+                                                    <>
+                                                        <Sparkles size={10} className="text-pink-500" /> Salão de Beleza
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Scissors size={10} className="text-amber-500" /> Barbearia
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
