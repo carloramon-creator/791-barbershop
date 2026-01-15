@@ -7,11 +7,15 @@ if (!admin.apps.length) {
         // vamos carregar dele se a variável de ambiente não estiver definida.
 
         let serviceAccount: any;
-
-        try {
-            serviceAccount = require('../firebase-service-account.json');
-        } catch (e) {
-            console.warn('Arquivo firebase-service-account.json não encontrado. Tentando variáveis de ambiente...');
+        // Tenta usar variáveis de ambiente primeiro
+        if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+            serviceAccount = {
+                projectId: process.env.FIREBASE_PROJECT_ID,
+                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+            };
+        } else {
+            console.warn('Firebase credentials not found in environment variables.');
         }
 
         if (serviceAccount) {
