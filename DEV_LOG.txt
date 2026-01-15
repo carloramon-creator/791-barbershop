@@ -1,0 +1,13 @@
+LOG DE DESENVOLVIMENTO - 14/01/2026
+
+- TOOLTIP FIX: Adicionado Portal no radix-ui tooltip content para evitar clipping.
+- SUPERADMIN:
+  - Adicionado botão de toggle para `settings.diagnostic_enabled`.
+  - Importado `AlertTriangle` de lucide-react.
+- CONFIGURAÇÕES:
+  - Adicionada condicional no Card de Diagnóstico: `tenant?.settings?.diagnostic_enabled`.
+  - Adicionado `tenant` ao destructuring do `useAuth`.
+- CLIENT APP:
+  - Atualizado `components/queue/queue-status-card.tsx` com novo título "CHEGOU SUA VEZ!".
+  - Adicionado listener em `app/fila/[ticketId]/page.tsx` para detectar mudança de status e disparar `alert()`.
+- PUSH: Git push realizado após as alterações.

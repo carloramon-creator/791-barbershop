@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 import { HelpTooltip } from '@/components/ui/help-tooltip';
 
 export default function BarbershopSettingsPage() {
-    const { refresh } = useAuth();
+    const { refresh, tenant } = useAuth();
     const pathname = usePathname();
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -1014,85 +1014,87 @@ export default function BarbershopSettingsPage() {
                 </CardContent>
             </Card>
 
-            {/* Repair Section */}
-            <Card className="bg-amber-900/10 border-amber-500/30 border">
-                <CardHeader>
-                    <CardTitle className="text-amber-500 flex items-center gap-2">
-                        <AlertTriangle size={20} /> Diagnóstico de Sistema
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-slate-400 mb-4">
-                        Se você notar dados faltando no painel ou erros estranhos, execute o reparo automático.
-                    </p>
-                    <div className="flex gap-3">
-                        <Button
-                            variant="outline"
-                            className="border-blue-500/50 text-blue-500 hover:bg-blue-500 hover:text-white"
-                            onClick={async () => {
-                                try {
-                                    const backendUrl = '';
-                                    const { data: { session } } = await supabaseClient.auth.getSession();
-                                    const token = session?.access_token;
+            {/* Repair Section - Only visible if diagnostic is enabled via Support */}
+            {tenant?.settings?.diagnostic_enabled && (
+                <Card className="bg-amber-900/10 border-amber-500/30 border">
+                    <CardHeader>
+                        <CardTitle className="text-amber-500 flex items-center gap-2">
+                            <AlertTriangle size={20} /> Diagnóstico de Sistema
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-slate-400 mb-4">
+                            Se você notar dados faltando no painel ou erros estranhos, execute o reparo automático.
+                        </p>
+                        <div className="flex gap-3">
+                            <Button
+                                variant="outline"
+                                className="border-blue-500/50 text-blue-500 hover:bg-blue-500 hover:text-white"
+                                onClick={async () => {
+                                    try {
+                                        const backendUrl = '';
+                                        const { data: { session } } = await supabaseClient.auth.getSession();
+                                        const token = session?.access_token;
 
-                                    const res = await fetch(`${backendUrl}/api/debug/finance`, {
-                                        method: 'GET',
-                                        headers: {
-                                            'Authorization': `Bearer ${token}`,
-                                            'Content-Type': 'application/json'
+                                        const res = await fetch(`${backendUrl}/api/debug/finance`, {
+                                            method: 'GET',
+                                            headers: {
+                                                'Authorization': `Bearer ${token}`,
+                                                'Content-Type': 'application/json'
+                                            }
+                                        });
+
+                                        if (!res.ok) {
+                                            const errorData = await res.json().catch(() => ({ error: 'Erro desconhecido' }));
+                                            throw new Error(errorData.error || res.statusText);
                                         }
-                                    });
 
-                                    if (!res.ok) {
-                                        const errorData = await res.json().catch(() => ({ error: 'Erro desconhecido' }));
-                                        throw new Error(errorData.error || res.statusText);
+                                        const data = await res.json();
+                                        alert('Diagnóstico:\n\n' + JSON.stringify(data, null, 2));
+                                    } catch (e: any) {
+                                        alert('Erro no diagnóstico: ' + e.message);
                                     }
+                                }}
+                            >
+                                Ver Diagnóstico
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="border-amber-500/50 text-amber-500 hover:bg-amber-500 hover:text-white"
+                                onClick={async () => {
+                                    if (!confirm('Executar reparo do sistema? Isso pode levar alguns segundos.')) return;
+                                    try {
+                                        const backendUrl = '';
+                                        const { data: { session } } = await supabaseClient.auth.getSession();
+                                        const token = session?.access_token;
 
-                                    const data = await res.json();
-                                    alert('Diagnóstico:\n\n' + JSON.stringify(data, null, 2));
-                                } catch (e: any) {
-                                    alert('Erro no diagnóstico: ' + e.message);
-                                }
-                            }}
-                        >
-                            Ver Diagnóstico
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="border-amber-500/50 text-amber-500 hover:bg-amber-500 hover:text-white"
-                            onClick={async () => {
-                                if (!confirm('Executar reparo do sistema? Isso pode levar alguns segundos.')) return;
-                                try {
-                                    const backendUrl = '';
-                                    const { data: { session } } = await supabaseClient.auth.getSession();
-                                    const token = session?.access_token;
+                                        const res = await fetch(`${backendUrl}/api/system/repair`, {
+                                            method: 'POST',
+                                            headers: {
+                                                'Authorization': `Bearer ${token}`,
+                                                'Content-Type': 'application/json'
+                                            }
+                                        });
 
-                                    const res = await fetch(`${backendUrl}/api/system/repair`, {
-                                        method: 'POST',
-                                        headers: {
-                                            'Authorization': `Bearer ${token}`,
-                                            'Content-Type': 'application/json'
+                                        if (!res.ok) {
+                                            const errorData = await res.json().catch(() => ({ error: 'Erro desconhecido' }));
+                                            throw new Error(errorData.error || res.statusText);
                                         }
-                                    });
 
-                                    if (!res.ok) {
-                                        const errorData = await res.json().catch(() => ({ error: 'Erro desconhecido' }));
-                                        throw new Error(errorData.error || res.statusText);
+                                        const data = await res.json();
+                                        alert('Reparo concluído!\n\nDetalhes:\n' + JSON.stringify(data, null, 2));
+                                        window.location.reload();
+                                    } catch (e: any) {
+                                        alert('Erro ao reparar: ' + e.message);
                                     }
-
-                                    const data = await res.json();
-                                    alert('Reparo concluído!\n\nDetalhes:\n' + JSON.stringify(data, null, 2));
-                                    window.location.reload();
-                                } catch (e: any) {
-                                    alert('Erro ao reparar: ' + e.message);
-                                }
-                            }}
-                        >
-                            Executar Reparo de Dados
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+                                }}
+                            >
+                                Executar Reparo de Dados
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
         </>
     );
 }

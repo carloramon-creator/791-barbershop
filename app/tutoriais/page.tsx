@@ -576,12 +576,13 @@ export default function TutoriaisPage() {
             }
 
             // Match steps
-            tutorial.steps.forEach((step) => {
+            tutorial.steps.forEach((step, index) => {
                 if (step.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     step.content.toLowerCase().includes(searchQuery.toLowerCase())) {
                     matches.push({
                         type: 'step',
                         id: tutorial.id,
+                        stepIndex: index,
                         title: step.title,
                         subtitle: tutorial.title
                     });
@@ -602,6 +603,26 @@ export default function TutoriaisPage() {
         setActiveTab(result.id);
         setSearchQuery('');
         setShowResults(false);
+
+        // Se for um passo, esperar a tab mudar e scrollar
+        if (result.type === 'step') {
+            setTimeout(() => {
+                const element = document.getElementById(`step-${result.stepIndex}`);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Adicionar uma breve animação de destaque
+                    element.classList.add('ring-2', 'ring-blue-500', 'ring-offset-4', 'ring-offset-slate-950');
+                    setTimeout(() => {
+                        element.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-4', 'ring-offset-slate-950');
+                    }, 2000);
+                }
+            }, 100);
+        } else {
+            // Se for tutorial, scrollar para o topo do conteúdo
+            setTimeout(() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 100);
+        }
     };
 
     return (
@@ -834,7 +855,7 @@ export default function TutoriaisPage() {
                             {/* Step-by-Step Detailed List */}
                             <div className="space-y-6">
                                 {activeTutorial.steps.map((step, i) => (
-                                    <div key={i} className="group relative pl-16">
+                                    <div key={i} id={`step-${i}`} className="group relative pl-16 transition-all duration-500 rounded-[2.5rem]">
                                         {/* Connector Line */}
                                         {i !== activeTutorial.steps.length - 1 && (
                                             <div className="absolute left-[31px] top-12 bottom-0 w-1 bg-gradient-to-b from-slate-800 to-transparent rounded-full" />

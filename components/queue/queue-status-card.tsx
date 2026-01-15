@@ -22,9 +22,9 @@ export function QueueStatusCard({ ticket }: QueueStatusCardProps) {
         switch (ticket.status) {
             case 'attending':
                 return {
-                    title: "Sua vez chegou!",
-                    description: "Você está sendo atendido agora. Aproveite!",
-                    color: "from-emerald-500 to-emerald-700",
+                    title: "CHEGOU SUA VEZ!",
+                    description: "O profissional já está te aguardando. Dirija-se à cadeira!",
+                    color: "from-blue-600 to-emerald-600",
                     glow: "shadow-emerald-900/40",
                     icon: <CheckCircle2 className="text-emerald-500 animate-bounce" size={48} />,
                     badge: "Em Atendimento"

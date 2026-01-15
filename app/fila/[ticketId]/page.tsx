@@ -18,6 +18,16 @@ export default function FilaPage({ params }: { params: Promise<{ ticketId: strin
     const fetchTicket = async () => {
         try {
             const data = await Api.getPublicTicket(ticketId);
+
+            // Notificação visual/sonora se mudou para attending
+            if (ticket && ticket.status === 'waiting' && data.status === 'attending') {
+                if (typeof window !== 'undefined') {
+                    // Tenta vibrar se possível
+                    if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]);
+                    alert("🔔 OBA! CHEGOU A SUA VEZ!\n\nPor favor, dirija-se ao profissional.");
+                }
+            }
+
             setTicket(data);
         } catch (err) {
             console.error(err);

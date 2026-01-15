@@ -18,7 +18,8 @@ import {
     TrendingUp,
     Pencil,
     Trash2,
-    Calendar
+    Calendar,
+    AlertTriangle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -125,18 +126,18 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                 </div>
 
                 {/* Global Summary Row */}
-                <div className="flex bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-8 shadow-xl">
-                    <div className="text-center">
-                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Atendimentos Totais</p>
-                        <p className="text-xl font-black text-slate-100">{totals.attendances}</p>
+                <div className="flex bg-slate-900 border border-slate-800 rounded-2xl p-2 gap-4 shadow-xl">
+                    <div className="text-center px-4">
+                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Atendimentos</p>
+                        <p className="text-sm font-black text-slate-100">{totals.attendances}</p>
                     </div>
-                    <div className="text-center border-x border-slate-800 px-8">
-                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Vendas Totais</p>
-                        <p className="text-xl font-black text-emerald-500">{formatCurrency(totals.revenue)}</p>
+                    <div className="text-center border-x border-slate-800 px-4">
+                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Vendas</p>
+                        <p className="text-sm font-black text-emerald-500">{formatCurrency(totals.revenue)}</p>
                     </div>
-                    <div className="text-center">
-                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Total Usuários</p>
-                        <p className="text-xl font-black text-purple-500">{totals.users}</p>
+                    <div className="text-center px-4">
+                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Usuários</p>
+                        <p className="text-sm font-black text-purple-500">{totals.users}</p>
                     </div>
                 </div>
             </div>
@@ -178,19 +179,25 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                     <div className="py-20 text-center"><Activity className="animate-spin inline text-blue-500" /></div>
                 ) : filteredTenants.map((tenant) => (
                     <Card key={tenant.id} className="bg-slate-900 border-slate-800 hover:border-blue-500/30 transition-all group shadow-xl">
-                        <CardContent className="p-6">
-                            <div className="flex flex-col lg:flex-row lg:items-center gap-8">
+                        <CardContent className="p-3">
+                            <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                                 {/* Brand & Location */}
-                                <div className="flex items-center gap-4 min-w-[250px]">
-                                    <div className="w-14 h-14 rounded-2xl bg-slate-950 p-1 flex items-center justify-center border border-slate-800 shadow-inner">
-                                        {tenant.logo_url ? <img src={tenant.logo_url} className="w-full h-full object-cover rounded-xl" /> : <Store className="text-slate-700" size={24} />}
+                                <div className="flex items-center gap-3 min-w-[200px]">
+                                    <div className="w-10 h-10 rounded-xl bg-slate-950 p-1 flex items-center justify-center border border-slate-800 shadow-inner shrink-0">
+                                        {tenant.logo_url ? <img src={tenant.logo_url} className="w-full h-full object-cover rounded-lg" /> : <Store className="text-slate-700" size={20} />}
                                     </div>
-                                    <div>
-                                        <h3 className="text-lg font-black text-slate-100 group-hover:text-blue-500 transition-colors">{tenant.name}</h3>
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{tenant.city}, {tenant.state}</p>
+                                    <div className="min-w-0">
+                                        <h3 className="text-sm font-black text-slate-100 group-hover:text-blue-500 transition-colors truncate">
+                                            {search ? (
+                                                <span dangerouslySetInnerHTML={{
+                                                    __html: tenant.name.replace(new RegExp(`(${search})`, 'gi'), '<span class="text-blue-500">$1</span>')
+                                                }} />
+                                            ) : tenant.name}
+                                        </h3>
+                                        <p className="text-[9px] text-slate-500 font-bold uppercase tracking-tight truncate">{tenant.city}, {tenant.state}</p>
                                         {tenant.created_at && (
-                                            <div className="flex items-center gap-1 text-[10px] text-slate-600 font-medium mt-1" title="Data de Cadastro">
-                                                <Calendar size={10} />
+                                            <div className="flex items-center gap-1 text-[9px] text-slate-600 font-medium mt-0.5" title="Data de Cadastro">
+                                                <Calendar size={8} />
                                                 {new Date(tenant.created_at).toLocaleDateString('pt-BR')}
                                             </div>
                                         )}
@@ -199,33 +206,33 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
 
                                 {/* Owner Details */}
                                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest leading-none mb-1">Proprietário</p>
-                                        <div className="flex items-center gap-2 text-sm font-bold text-slate-300">
-                                            <User size={14} className="text-blue-500" />
+                                    <div className="space-y-0.5">
+                                        <p className="text-[9px] font-black text-slate-600 uppercase tracking-tighter leading-none mb-0.5">Proprietário</p>
+                                        <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
+                                            <User size={12} className="text-blue-500" />
                                             {tenant.owner?.[0]?.name || 'N/A'}
                                         </div>
-                                        <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
-                                            <Mail size={12} />
+                                        <div className="flex items-center gap-2 text-[9px] text-slate-500 font-medium italic">
+                                            <Mail size={10} />
                                             {tenant.owner?.[0]?.email || 'N/A'}
                                         </div>
                                     </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest leading-none mb-1">Plano e Status</p>
+                                    <div className="space-y-0.5">
+                                        <p className="text-[9px] font-black text-slate-600 uppercase tracking-tighter leading-none mb-0.5">Plano e Status</p>
                                         <div className="flex items-center gap-2">
                                             <span className={cn(
-                                                "text-[10px] font-black px-2 py-0.5 rounded-md uppercase",
+                                                "text-[9px] font-black px-1.5 py-0.5 rounded uppercase",
                                                 tenant.plan === 'premium' ? "bg-amber-500/10 text-amber-500" : "bg-blue-500/10 text-blue-500"
                                             )}>
-                                                Plano {tenant.plan}
+                                                {tenant.plan}
                                             </span>
                                             {tenant.subscription_status === 'active' || !tenant.subscription_status ? (
-                                                <span className="flex items-center gap-1 text-[10px] font-black text-emerald-500 uppercase">
-                                                    <CheckCircle2 size={12} /> Adimplente
+                                                <span className="flex items-center gap-1 text-[9px] font-black text-emerald-500 uppercase">
+                                                    <CheckCircle2 size={10} /> OK
                                                 </span>
                                             ) : (
-                                                <span className="flex items-center gap-1 text-[10px] font-black text-red-500 uppercase">
-                                                    <XCircle size={12} /> {tenant.subscription_status}
+                                                <span className="flex items-center gap-1 text-[9px] font-black text-red-500 uppercase">
+                                                    <XCircle size={10} /> {tenant.subscription_status}
                                                 </span>
                                             )}
                                         </div>
@@ -233,18 +240,18 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                 </div>
 
                                 {/* Stats Block */}
-                                <div className="flex items-center gap-8 lg:border-l lg:border-slate-800 lg:pl-8">
+                                <div className="flex items-center gap-6 lg:border-l lg:border-slate-800 lg:pl-6">
                                     <div className="text-center">
-                                        <p className="text-lg font-black text-slate-100">{tenant.stats?.total_attendances || 0}</p>
-                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Atendimentos</p>
+                                        <p className="text-base font-black text-slate-100">{tenant.stats?.total_attendances || 0}</p>
+                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter">Atendimentos</p>
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-lg font-black text-slate-100">{tenant.stats?.total_users || 0}</p>
-                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Usuários</p>
+                                        <p className="text-base font-black text-slate-100">{tenant.stats?.total_users || 0}</p>
+                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter">Usuários</p>
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-lg font-black text-emerald-500">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(tenant.stats?.total_revenue || 0)}</p>
-                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Faturamento</p>
+                                        <p className="text-base font-black text-emerald-500">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(tenant.stats?.total_revenue || 0)}</p>
+                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter">Faturamento</p>
                                     </div>
                                 </div>
 
@@ -252,16 +259,46 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                 <div className="flex gap-2">
                                     <Button
                                         variant="outline"
-                                        size="icon"
-                                        className="border-slate-800 bg-slate-950 text-slate-400 hover:text-blue-500 hover:border-blue-500/50"
+                                        size="icon-sm"
+                                        className={cn(
+                                            "h-8 w-8 border-slate-800 bg-slate-950 transition-colors",
+                                            tenant.settings?.diagnostic_enabled
+                                                ? "text-amber-500 border-amber-500/50 bg-amber-500/10"
+                                                : "text-slate-400 hover:text-amber-500 hover:border-amber-500/50"
+                                        )}
+                                        onClick={async () => {
+                                            try {
+                                                const currentSettings = tenant.settings || {};
+                                                const newValue = !currentSettings.diagnostic_enabled;
+                                                await Api.updateSystemTenant(tenant.id, {
+                                                    settings: {
+                                                        ...currentSettings,
+                                                        diagnostic_enabled: newValue
+                                                    }
+                                                });
+                                                alert(`Diagnóstico ${newValue ? 'ativado' : 'desativado'} para ${tenant.name}`);
+                                                window.location.reload();
+                                            } catch (e: any) {
+                                                alert('Erro ao atualizar: ' + e.message);
+                                            }
+                                        }}
+                                        title={tenant.settings?.diagnostic_enabled ? "Desativar Diagnóstico" : "Ativar Diagnóstico de Suporte"}
+                                    >
+                                        <AlertTriangle size={14} />
+                                    </Button>
+
+                                    <Button
+                                        variant="outline"
+                                        size="icon-sm"
+                                        className="h-8 w-8 border-slate-800 bg-slate-950 text-slate-400 hover:text-blue-500 hover:border-blue-500/50"
                                         onClick={() => handleEditClick(tenant)}
                                         title="Editar Barbearia"
                                     >
-                                        <Pencil size={16} />
+                                        <Pencil size={14} />
                                     </Button>
                                     <Button
                                         variant="outline"
-                                        size="icon"
+                                        size="icon-sm"
                                         className="border-slate-800 bg-slate-950 text-slate-400 hover:text-blue-500 hover:border-blue-500/50"
                                         onClick={() => {
                                             // Navigate to dashboard as hidden user (impersonation) via API to set cookie
@@ -269,12 +306,12 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                         }}
                                         title="Acessar como usuário oculto"
                                     >
-                                        <ExternalLink size={16} />
+                                        <ExternalLink size={14} />
                                     </Button>
                                     <Button
                                         variant="outline"
-                                        size="icon"
-                                        className="border-slate-800 bg-slate-950 text-slate-400 hover:text-red-500 hover:border-red-500/50"
+                                        size="icon-sm"
+                                        className="h-8 w-8 border-slate-800 bg-slate-950 text-slate-400 hover:text-red-500 hover:border-red-500/50"
                                         onClick={async () => {
                                             if (window.confirm(`ATENÇÃO: Deseja EXCLUIR PERMANENTEMENTE a barbearia "${tenant.name}"?\n\nEsta ação apagará TODOS os dados vinculados e NÃO pode ser desfeita.`)) {
                                                 try {
@@ -287,7 +324,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                         }}
                                         title="Excluir Barbearia"
                                     >
-                                        <Trash2 size={16} />
+                                        <Trash2 size={14} />
                                     </Button>
                                 </div>
                             </div>

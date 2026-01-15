@@ -53,6 +53,7 @@ export default function BarberPage() {
     const [showWalkInDialog, setShowWalkInDialog] = useState(false);
     const [walkInName, setWalkInName] = useState('');
     const [submittingWalkIn, setSubmittingWalkIn] = useState(false);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
 
     const { user, role, roles, loading: authLoading } = useAuth();
 
@@ -141,13 +142,16 @@ export default function BarberPage() {
         const targetBarberId = barberId || currentBarber?.barber_id;
         if (!targetBarberId) return;
 
+        setActionLoading('next');
         try {
             const res = await Api.barberNext(targetBarberId);
             if (res.message) alert(res.message);
-            fetchStatus();
+            await fetchStatus();
         } catch (err: any) {
             alert(err.message);
-            fetchStatus();
+            await fetchStatus();
+        } finally {
+            setActionLoading(null);
         }
     };
 
@@ -166,12 +170,15 @@ export default function BarberPage() {
             }
         }
 
+        setActionLoading(queueId);
         try {
             await Api.startSpecificClient(queueId);
-            fetchStatus();
+            await fetchStatus();
         } catch (err: any) {
             alert(err.message);
-            fetchStatus();
+            await fetchStatus();
+        } finally {
+            setActionLoading(null);
         }
     };
 
@@ -204,16 +211,16 @@ export default function BarberPage() {
 
     // Lógica para Visão Unificada
     const unifiedAttending = isUnifiedView
-        ? allBarbers.flatMap(b => b.queue.filter(q => q.status === 'attending').map(q => ({ ...q, barber: b })))
+        ? allBarbers.flatMap(b => b.queue.filter(q => q.status?.toLowerCase() === 'attending').map(q => ({ ...q, barber: b })))
         : [];
 
     const unifiedWaiting = isUnifiedView
-        ? allBarbers.flatMap(b => b.queue.filter(q => q.status === 'waiting').map(q => ({ ...q, barber: b })))
+        ? allBarbers.flatMap(b => b.queue.filter(q => q.status?.toLowerCase() === 'waiting').map(q => ({ ...q, barber: b })))
             .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
         : [];
 
-    const currentAttending = isUnifiedView ? unifiedAttending : queue.filter(q => q.status === 'attending');
-    const currentWaiting = isUnifiedView ? unifiedWaiting : queue.filter(q => q.status === 'waiting');
+    const currentAttending = isUnifiedView ? unifiedAttending : queue.filter(q => q.status?.toLowerCase() === 'attending');
+    const currentWaiting = isUnifiedView ? unifiedWaiting : queue.filter(q => q.status?.toLowerCase() === 'waiting');
 
     if (loading) return (
         <div className="flex items-center justify-center p-20">
@@ -236,17 +243,28 @@ export default function BarberPage() {
 
                 <div className="flex items-center gap-2 flex-wrap">
                     {role === 'owner' && (
-                        <Button
-                            variant={isUnifiedView ? 'default' : 'outline'}
-                            onClick={() => setIsUnifiedView(!isUnifiedView)}
-                            className={cn(
-                                "h-14 px-6 rounded-xl font-black uppercase italic tracking-widest transition-all",
-                                isUnifiedView ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30 ring-2 ring-blue-400/50" : "border-slate-800 text-slate-400 hover:bg-slate-800"
-                            )}
-                        >
-                            {isUnifiedView ? <CheckCircle2 className="mr-2" /> : <BarChart3 className="mr-2" />}
-                            Visão Geral
-                        </Button>
+                        <>
+                            <Button
+                                variant={isUnifiedView ? 'default' : 'outline'}
+                                onClick={() => setIsUnifiedView(!isUnifiedView)}
+                                className={cn(
+                                    "h-14 px-6 rounded-xl font-black uppercase italic tracking-widest transition-all",
+                                    isUnifiedView ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30 ring-2 ring-blue-400/50" : "border-slate-800 text-slate-400 hover:bg-slate-800"
+                                )}
+                            >
+                                {isUnifiedView ? <CheckCircle2 className="mr-2" /> : <BarChart3 className="mr-2" />}
+                                Visão Geral
+                            </Button>
+
+                            <Button
+                                variant="outline"
+                                onClick={() => fetchStatus()}
+                                className="h-14 w-14 rounded-xl border-slate-800 text-slate-500 hover:text-white transition-all flex items-center justify-center p-0"
+                                title="Atualizar Fila Manualmente"
+                            >
+                                <RefreshCw className={cn(loading && "animate-spin")} size={20} />
+                            </Button>
+                        </>
                     )}
 
                     {!isUnifiedView && role === 'owner' && (
@@ -382,9 +400,16 @@ export default function BarberPage() {
                                     <Button
                                         className="w-full bg-blue-600 hover:bg-blue-700 h-16 text-md font-black uppercase italic tracking-widest shadow-lg shadow-blue-900/40"
                                         onClick={() => handleCallNext()}
+                                        disabled={actionLoading === 'next'}
                                     >
-                                        <Play className="mr-2 fill-current" size={20} />
-                                        Chamar Próximo
+                                        {actionLoading === 'next' ? (
+                                            <RefreshCw className="animate-spin" size={20} />
+                                        ) : (
+                                            <>
+                                                <Play className="mr-2 fill-current" size={20} />
+                                                Chamar Próximo
+                                            </>
+                                        )}
                                     </Button>
                                 )}
 
@@ -483,9 +508,10 @@ export default function BarberPage() {
                                                     <Button
                                                         size="sm"
                                                         onClick={() => handleStartClient(item.id, item.barber_id)}
+                                                        disabled={actionLoading === item.id}
                                                         className="h-8 bg-blue-600/10 text-blue-500 border border-blue-500/30 hover:bg-blue-600 hover:text-white font-black text-[10px] uppercase italic px-4 rounded-lg transform active:scale-95 transition-all"
                                                     >
-                                                        Chamar
+                                                        {actionLoading === item.id ? <RefreshCw className="animate-spin" size={12} /> : 'Chamar'}
                                                     </Button>
                                                     <Button
                                                         variant="ghost"
