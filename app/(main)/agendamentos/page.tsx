@@ -501,7 +501,7 @@ export default function AppointmentsPage() {
                                                             <p className="text-xs text-slate-400">{service.duration_minutes || 30} min</p>
                                                         </div>
                                                     </div>
-                                                    <span className="font-mono text-blue-400">R$ {service.price.toFixed(2)}</span>
+                                                    <span className="font-mono text-blue-400">{formatCurrency(service.price)}</span>
                                                 </div>
                                             );
                                         })}
@@ -640,7 +640,7 @@ export default function AppointmentsPage() {
                                             </div>
                                             <div className="flex justify-between pt-2 border-t border-slate-700 mt-2">
                                                 <span className="text-slate-400">Valor Total:</span>
-                                                <span className="font-bold text-emerald-400 text-lg">R$ {totalPrice.toFixed(2)}</span>
+                                                <span className="font-bold text-emerald-400 text-lg">{formatCurrency(totalPrice)}</span>
                                             </div>
                                         </div>
                                     </div>
