@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-provider';
+import { HelpTooltip } from '@/components/ui/help-tooltip';
 
 export default function DashboardPage() {
     const { tenant } = useAuth();
@@ -118,7 +119,10 @@ export default function DashboardPage() {
                         <TrendingUp size={48} className="text-blue-500" />
                     </div>
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] text-blue-400">Faturamento ({period === 'week' ? 'Semana' : period === 'fortnight' ? 'Quinzena' : 'Mês'})</CardTitle>
+                        <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] text-blue-400 flex items-center gap-2">
+                            Faturamento ({period === 'week' ? 'Semana' : period === 'fortnight' ? 'Quinzena' : 'Mês'})
+                            <HelpTooltip content="Soma de todos os serviços e produtos vendidos no período selecionado." />
+                        </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-black text-slate-100">
@@ -146,7 +150,10 @@ export default function DashboardPage() {
                         <Clock size={48} className="text-yellow-500" />
                     </div>
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] text-yellow-400">Média de Espera (Real)</CardTitle>
+                        <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] text-yellow-400 flex items-center gap-2">
+                            Média de Espera (Real)
+                            <HelpTooltip content="Tempo médio real que os clientes esperaram para iniciar o atendimento hoje." />
+                        </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-black text-slate-100">
@@ -209,7 +216,10 @@ export default function DashboardPage() {
 
             <Card className="bg-slate-900 border-slate-800">
                 <CardHeader>
-                    <CardTitle className="text-slate-100">Status dos {texts.professionals}</CardTitle>
+                    <CardTitle className="text-slate-100 flex items-center gap-2">
+                        Status dos {texts.professionals}
+                        <HelpTooltip content="Monitoramento em tempo real da disponibilidade e ocupação da sua equipe." />
+                    </CardTitle>
                 </CardHeader>
                 <CardContent>
                     <Table>

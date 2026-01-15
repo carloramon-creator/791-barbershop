@@ -19,8 +19,9 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { FileText, DollarSign, Download } from 'lucide-react';
+import { FileText, DollarSign, Download, HelpCircle } from 'lucide-react';
 import { Sale } from '@/lib/types';
+import { HelpTooltip } from '@/components/ui/help-tooltip';
 
 interface BarberClosingDialogProps {
     isOpen: boolean;
@@ -75,7 +76,10 @@ export function BarberClosingDialog({
                             </div>
                         </div>
                         <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                            <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Comissão Total</Label>
+                            <div className="flex items-center">
+                                <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Comissão Total</Label>
+                                <HelpTooltip content="Valor calculado com base na porcentagem de comissão configurada no perfil deste profissional." />
+                            </div>
                             <div className="text-xl font-black text-emerald-400 mt-1">
                                 {totals.commission.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                             </div>
@@ -128,7 +132,10 @@ export function BarberClosingDialog({
 
                     <div className="flex items-end gap-4 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
                         <div className="flex-1">
-                            <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2 block">Adicionar Bônus/Ajuste (R$)</Label>
+                            <div className="flex items-center mb-2">
+                                <Label className="text-[10px] uppercase font-bold text-slate-400 tracking-widest block">Adicionar Bônus/Ajuste (R$)</Label>
+                                <HelpTooltip content="Use este campo para somar bônus (valor positivo) ou subtrair vales/ajustes (valor negativo)." />
+                            </div>
                             <div className="relative">
                                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
                                 <Input

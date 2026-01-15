@@ -16,6 +16,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { HelpTooltip } from '@/components/ui/help-tooltip';
 
 export default function BarbershopSettingsPage() {
     const { refresh } = useAuth();
@@ -309,7 +310,10 @@ export default function BarbershopSettingsPage() {
                     <form onSubmit={handleSubmit} className="space-y-8">
                         {/* Logo Upload */}
                         <div className="space-y-4 bg-slate-950/50 p-6 rounded-lg border border-slate-800/50">
-                            <Label className="text-slate-200 font-bold uppercase text-xs tracking-wider">Logo e Branding</Label>
+                            <div className="flex items-center">
+                                <Label className="text-slate-200 font-bold uppercase text-xs tracking-wider">Logo e Branding</Label>
+                                <HelpTooltip content="Esta imagem aparecerá no App do Cliente e nos seus relatórios. Recomendamos um fundo sólido para melhor visibilidade." />
+                            </div>
                             <div className="flex items-center gap-6">
                                 <div className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-700 bg-slate-800 flex items-center justify-center overflow-hidden relative shrink-0 group">
                                     {logoUrl ? (
@@ -416,7 +420,10 @@ export default function BarbershopSettingsPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="slug" className="text-slate-400 text-xs uppercase font-bold">Slug URL (Identificador Único)</Label>
+                                <div className="flex items-center">
+                                    <Label htmlFor="slug" className="text-slate-400 text-xs uppercase font-bold">Slug URL (Identificador Único)</Label>
+                                    <HelpTooltip content="O SLUG é o que identifica sua página no link de agendamento. Use letras e números, evite espaços e caracteres especiais." />
+                                </div>
                                 <Input
                                     id="slug"
                                     value={slug}
@@ -436,7 +443,10 @@ export default function BarbershopSettingsPage() {
                             </div>
 
                             <div className="space-y-4 md:col-span-2 pt-4 border-t border-slate-800/30">
-                                <Label className="text-slate-400 text-xs uppercase font-bold">Tipo de Negócio</Label>
+                                <div className="flex items-center">
+                                    <Label className="text-slate-400 text-xs uppercase font-bold">Tipo de Negócio</Label>
+                                    <HelpTooltip content="Isso altera os termos usados no sistema (ex: Barbeiro vs. Profissional) e ajusta a identidade visual do app do cliente." />
+                                </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <button
                                         type="button"
@@ -587,6 +597,7 @@ export default function BarbershopSettingsPage() {
                                 <CardTitle className="flex items-center gap-2 text-slate-100">
                                     <Clock size={20} className="text-blue-500" />
                                     Horário de Funcionamento
+                                    <HelpTooltip content="Defina quando sua loja está aberta. Fora desses horários, os clientes não conseguirão agendar online." />
                                 </CardTitle>
                                 <CardDescription className="text-slate-400">
                                     Configure os dias e horários de atendimento da barbearia.
@@ -663,6 +674,7 @@ export default function BarbershopSettingsPage() {
                                         >
                                             Possui intervalo de almoço?
                                         </Label>
+                                        <HelpTooltip content="Se ativado, este período ficará bloqueado para novos agendamentos online em todos os profissionais." />
                                     </div>
 
                                     {openingHours.lunch_enabled && (
@@ -696,7 +708,10 @@ export default function BarbershopSettingsPage() {
                                 <div className="pt-4 border-t border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-3">
                                         <div className="space-y-1">
-                                            <Label className="text-slate-200">Tolerância de Atendimento (%)</Label>
+                                            <div className="flex items-center">
+                                                <Label className="text-slate-200">Tolerância de Atendimento (%)</Label>
+                                                <HelpTooltip content="Evita que agendamentos muito longos sejam feitos no final do expediente. Ex: Se faltam 30min para fechar e o corte leva 40min, uma tolerância de 50% permitiria o agendamento." />
+                                            </div>
                                             <p className="text-[10px] text-slate-500">
                                                 Permite agendar além do horário se o excesso for até X% do tempo restante.
                                             </p>
@@ -717,7 +732,10 @@ export default function BarbershopSettingsPage() {
 
                                     <div className="space-y-3">
                                         <div className="space-y-1">
-                                            <Label className="text-slate-200">Lembrete WhatsApp (minutos)</Label>
+                                            <div className="flex items-center">
+                                                <Label className="text-slate-200">Lembrete WhatsApp (minutos)</Label>
+                                                <HelpTooltip content="O sistema enviará uma mensagem automática de lembrete este número de minutos ANTES do horário marcado." />
+                                            </div>
                                             <p className="text-[10px] text-slate-500">
                                                 Tempo de antecedência para disparo do lembrete automático.
                                             </p>
@@ -851,7 +869,10 @@ export default function BarbershopSettingsPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-950/30 p-4 rounded-lg border border-slate-800/30">
                                 <div className="space-y-2">
-                                    <Label className="text-slate-200 text-xs uppercase font-bold">Chave PIX (Obrigatório)</Label>
+                                    <div className="flex items-center">
+                                        <Label className="text-slate-200 text-xs uppercase font-bold">Chave PIX (Obrigatório)</Label>
+                                        <HelpTooltip content="Esta chave é usada para gerar o QR Code de pagamento no balcão. Certifique-se de que está correta para receber os valores." />
+                                    </div>
                                     <Input
                                         value={pixKey}
                                         onChange={e => setPixKey(e.target.value)}
@@ -919,7 +940,10 @@ export default function BarbershopSettingsPage() {
                                                 <Users size={16} className="text-blue-500" />
                                             </div>
                                             <div>
-                                                <Label className="text-slate-200 font-bold text-sm">Módulo de Fila</Label>
+                                                <div className="flex items-center">
+                                                    <Label className="text-slate-200 font-bold text-sm">Módulo de Fila</Label>
+                                                    <HelpTooltip content="Ideal para atendimentos por ordem de chegada. Ativa o painel de espera e o botão 'Chamar Próximo'." />
+                                                </div>
                                                 <p className="text-[10px] text-slate-500">Sistema de fila digital para atendimento</p>
                                             </div>
                                         </div>
@@ -943,7 +967,10 @@ export default function BarbershopSettingsPage() {
                                                 <Calendar size={16} className="text-emerald-500" />
                                             </div>
                                             <div>
-                                                <Label className="text-slate-200 font-bold text-sm">Módulo de Agendamentos</Label>
+                                                <div className="flex items-center">
+                                                    <Label className="text-slate-200 font-bold text-sm">Módulo de Agendamentos</Label>
+                                                    <HelpTooltip content="Permite que clientes escolham um horário e profissional específico com antecedência no app." />
+                                                </div>
                                                 <p className="text-[10px] text-slate-500">Sistema de agendamento por horário</p>
                                             </div>
                                         </div>

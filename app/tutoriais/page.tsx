@@ -28,6 +28,36 @@ import { getBusinessTexts } from '@/lib/business-dictionary';
 
 const getTutorialContent = (texts: any, tenant: any) => [
     {
+        id: 'dashboard',
+        title: '2 - Dashboard: Visão Geral',
+        icon: LayoutDashboard,
+        images: ['/tutorials/dashboard-1.png'],
+        description: 'Seu centro de comando. Acompanhe os principais números do seu negócio em tempo real.',
+        steps: [
+            {
+                title: 'Métricas de Performance',
+                content: 'Visualize o faturamento total do período, a quantidade de atendimentos concluídos e a média de espera real dos seus clientes.',
+                imageIndex: 0
+            },
+            {
+                title: 'Filtros Inteligentes',
+                content: 'Alterne entre as visões de "Semana", "Quinzena" ou "Mês" para analisar o crescimento e as tendências do seu negócio.',
+                imageIndex: 0
+            },
+            {
+                title: 'Monitoramento da Fila',
+                content: 'Veja quantos clientes estão aguardando agora, quantos profissionais estão online e qual a previsão de espera para novos clientes.',
+                imageIndex: 0
+            },
+            {
+                title: 'Status da Equipe',
+                content: `Acompanhe em tempo real quem está "Livre", "Em Atendimento" ou "Offline". Essencial para gerir a escala do dia.`,
+                imageIndex: 0
+            }
+        ],
+        tip: 'O Dashboard é a bússola do seu negócio. Consulte-o diariamente para entender os horários de pico e otimizar sua equipe.'
+    },
+    {
         id: 'config-geral',
         title: '1.1 - Configurações: Geral',
         icon: LayoutDashboard,
@@ -362,37 +392,136 @@ const getTutorialContent = (texts: any, tenant: any) => [
         id: 'agendamento',
         title: '6 - Calendário & Agendamento',
         icon: Calendar,
-        images: ['/tutorials/appointments.png'],
-        description: 'Sua agenda completa. Marque horários e evite furos.',
-        steps: [
-            { title: 'Agilidade', content: 'Clique em qualquer espaço vazio para criar um novo agendamento rápido.', imageIndex: 0 },
-            { title: 'Flexibilidade', content: 'Arraste um compromisso para outro horário ou profissional se precisar realocar.', imageIndex: 0 }
+        images: [
+            '/tutorials/agendamento-1.png',
+            '/tutorials/agendamento-2.png',
+            '/tutorials/agendamento-3.png',
+            '/tutorials/agendamento-4.png',
+            '/tutorials/agendamento-5.png',
+            '/tutorials/agendamento-6.png',
+            '/tutorials/agendamento-7.png',
+            '/tutorials/agendamento-8.png'
         ],
-        tip: 'Sempre que possível, agende a próxima visita do cliente logo após o pagamento.'
+        description: 'Sua agenda completa. Marque horários, evite furos e tenha controle total sobre a produtividade da sua equipe.',
+        steps: [
+            {
+                title: 'Visão da Agenda',
+                content: 'Visualize todos os compromissos do dia de forma organizada. Use as setas laterais para navegar entre as datas ou o botão "Hoje" para retornar ao dia atual.',
+                imageIndex: 0
+            },
+            {
+                title: 'Novo Agendamento: Serviços',
+                content: 'Ao clicar em "Novo Agendamento", o primeiro passo é selecionar os serviços desejados. O sistema calcula automaticamente a duração total e o valor.',
+                imageIndex: 1
+            },
+            {
+                title: 'Escolha do Profissional',
+                content: 'Selecione qual profissional realizará o atendimento. O sistema mostra apenas aqueles habilitados para os serviços escolhidos no passo anterior.',
+                imageIndex: 2
+            },
+            {
+                title: 'Data e Horário',
+                content: 'Escolha o dia no calendário e o horário disponível. O sistema cruza as agendas para garantir que não haja conflitos de horário.',
+                imageIndex: 3
+            },
+            {
+                title: 'Confirmação e Cliente',
+                content: 'Revise o resumo do agendamento e insira os dados do cliente. O telefone é essencial para que o sistema envie lembretes automáticos via WhatsApp.',
+                imageIndex: 4
+            },
+            {
+                title: 'Gestão de Compromissos',
+                content: 'Após criado, o agendamento aparece em destaque. Você pode "Notificar" o cliente manualmente ou "Iniciar" o atendimento assim que ele chegar.',
+                imageIndex: 5
+            },
+            {
+                title: 'Atendimento em Curso',
+                content: 'Durante o atendimento, o status muda para "Em Atendimento", permitindo que você acompanhe quem está na cadeira em tempo real.',
+                imageIndex: 6
+            },
+            {
+                title: 'Finalização e Venda',
+                content: 'Ao "Finalizar", o sistema abre o caixa para você confirmar os serviços realizados e adicionar produtos extras (como bebidas) antes de receber o pagamento.',
+                imageIndex: 7
+            }
+        ],
+        tip: 'Sempre peça o WhatsApp do cliente. Lembretes automáticos reduzem em até 40% a taxa de desistência e esquecimento.'
     },
     {
         id: 'financeiro',
         title: '7 - Controle Financeiro',
         icon: BarChart3,
-        images: ['/tutorials/finance.png'],
-        description: 'Acompanhe seu fluxo de caixa, comissões e lucro líquido.',
-        steps: [
-            { title: 'Gestão', content: 'Registre despesas como aluguel, luz e compras de suprimentos diariamente.', imageIndex: 0 },
-            { title: 'Comissões', content: 'Consulte o fechamento de cada profissional para pagar as comissões corretamente.', imageIndex: 0 }
+        images: [
+            '/tutorials/financeiro-extrato.png',
+            '/tutorials/financeiro-pendentes.png',
+            '/tutorials/financeiro-despesa.png',
+            '/tutorials/financeiro-dre.png'
         ],
-        tip: 'Um financeiro organizado é o segredo para expandir seu negócio.'
+        description: 'Tenha total clareza sobre a saúde financeira do seu negócio. Acompanhe entradas, saídas e lucro real.',
+        steps: [
+            {
+                title: 'Fluxo de Caixa (Extrato)',
+                content: 'Consulte o histórico completo de todas as vendas e pagamentos realizados. Veja o método de pagamento, status de cada transação e o saldo líquido disponível.',
+                imageIndex: 0
+            },
+            {
+                title: 'Contas a Pagar (Pendentes)',
+                content: 'Acompanhe as despesas agendadas e os fechamentos de profissionais que ainda não foram pagos. O sistema destaca visualmente o que está pendente no dia.',
+                imageIndex: 1
+            },
+            {
+                title: 'Lançamento de Despesas',
+                content: 'Registre custos fixos (aluguel, luz) ou variáveis (suprimentos). Você pode configurar despesas recorrentes para aparecerem automaticamente todo mês.',
+                imageIndex: 2
+            },
+            {
+                title: 'Visão DRE (Lucro e Perda)',
+                content: 'Gere relatórios detalhados demonstrando o resultado do exercício. Visualize o total de receitas, detalhamento de despesas e seu lucro líquido final.',
+                imageIndex: 3
+            }
+        ],
+        tip: 'Alimente o sistema com todas as suas despesas. Só assim o cálculo de "Lucro Líquido" será 100% fiel à realidade do seu bolso.'
     },
     {
         id: 'estoque',
         title: '8 - Controle de Estoque',
         icon: ShoppingBag,
-        images: ['/tutorials/finance.png'],
-        description: 'Nunca fique sem produtos. Controle entradas, saídas e alertas.',
-        steps: [
-            { title: 'Entradas', content: 'Dê entrada em mercadorias informando a quantidade e valor pago.', imageIndex: 0 },
-            { title: 'Alertas', content: 'Receba avisos quando um item atingir a quantidade mínima de segurança.', imageIndex: 0 }
+        images: [
+            '/tutorials/estoque-1.png',
+            '/tutorials/estoque-2.png',
+            '/tutorials/estoque-3.png',
+            '/tutorials/estoque-4.png',
+            '/tutorials/estoque-5.png'
         ],
-        tip: 'Produtos parados em estoque são dinheiro parado.'
+        description: 'Gestão inteligente de suprimentos e produtos de revenda. Controle seu patrimônio e nunca perca uma venda por falta de produto.',
+        steps: [
+            {
+                title: 'Painel de Estoque',
+                content: 'Tenha uma visão geral do seu patrimônio: Total de itens, valor total em custo e potencial de venda. O sistema alerta automaticamente quais produtos estão com "Estoque Baixo".',
+                imageIndex: 0
+            },
+            {
+                title: 'Resumo de Vendas',
+                content: 'Monitore quais produtos são mais vendidos e o faturamento gerado por cada um. Isso ajuda a decidir quais itens merecem mais destaque ou recompra.',
+                imageIndex: 1
+            },
+            {
+                title: 'Entrada de Mercadoria',
+                content: 'Ao repor seu estoque, registre a entrada informando o custo unitário. Isso é vital para que o sistema calcule sua margem de lucro real corretamente.',
+                imageIndex: 2
+            },
+            {
+                title: 'Relatório de Movimentações',
+                content: 'Acompanhe cada saída (venda) ou entrada de forma detalhada. O relatório mostra o horário exato e quem realizou a operação, garantindo total segurança.',
+                imageIndex: 3
+            },
+            {
+                title: 'Inventário e Patrimônio',
+                content: 'Gere relatórios de conferência para Auditoria. Saiba exatamente quanto dinheiro você tem "parado" em prateleira em valor de custo e de venda.',
+                imageIndex: 4
+            }
+        ],
+        tip: 'Produtos parados são dinheiro parado. Use os relatórios de movimentação para identificar itens de baixa saída e crie promoções para girar seu estoque.'
     }
 ];
 
