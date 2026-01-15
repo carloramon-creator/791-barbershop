@@ -55,8 +55,8 @@ export async function GET(req: Request) {
                 name: b.name || (b as any).users?.name,
                 nickname: b.nickname || (b as any).users?.nickname,
                 photo_url: (b as any).users?.photo_url || b.photo_url,
-                // Status online/offline baseado em is_online se existir no banco, ou fallback
-                is_online: b.is_online,
+                // Status online/offline baseado em status para consistência com dashboard
+                is_online: b.status === 'available' || b.status === 'busy',
                 status: b.status, // available, busy, offline
                 people_waiting: peopleWaiting,
                 estimated_wait: peopleWaiting * avgTime,
