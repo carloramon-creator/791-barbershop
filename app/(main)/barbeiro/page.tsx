@@ -16,7 +16,8 @@ import {
     Trash2,
     RefreshCw,
     BarChart3,
-    Plus
+    Plus,
+    FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -54,6 +55,9 @@ export default function BarberPage() {
     const [walkInName, setWalkInName] = useState('');
     const [submittingWalkIn, setSubmittingWalkIn] = useState(false);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+    const [saleDialogMode, setSaleDialogMode] = useState<'finish' | 'draft'>('finish');
+    const [currentDraftItems, setCurrentDraftItems] = useState<any[] | undefined>(undefined);
 
     const { user, role, roles, loading: authLoading } = useAuth();
 
@@ -140,14 +144,23 @@ export default function BarberPage() {
 
     const handleCallNext = async (barberId?: string) => {
         const targetBarberId = barberId || currentBarber?.barber_id;
+        console.log('[DEBUG] handleCallNext START', { targetBarberId, currentBarber });
+
         if (!targetBarberId) return;
 
         setActionLoading('next');
         try {
+            console.log('[DEBUG] Calling API barberNext...');
             const res = await Api.barberNext(targetBarberId);
+            console.log('[DEBUG] API barberNext response:', res);
+
             if (res.message) alert(res.message);
+
+            console.log('[DEBUG] Fetching status after calling next...');
             await fetchStatus();
+            console.log('[DEBUG] Status fetched.');
         } catch (err: any) {
+            console.error('[DEBUG] Error calling next:', err);
             alert(err.message);
             await fetchStatus();
         } finally {
@@ -155,9 +168,15 @@ export default function BarberPage() {
         }
     };
 
-    const handleFinish = async (id: string) => {
-        setFinishedQueueId(id);
+    const handleOpenSaleDialog = (queueId: string, mode: 'finish' | 'draft', draftItems?: any[]) => {
+        setFinishedQueueId(queueId);
+        setSaleDialogMode(mode);
+        setCurrentDraftItems(draftItems);
         setShowSaleDialog(true);
+    };
+
+    const handleFinish = async (id: string, draftItems?: any[]) => {
+        handleOpenSaleDialog(id, 'finish', draftItems);
     };
 
     const handleStartClient = async (queueId: string, barberId?: string) => {
@@ -377,12 +396,22 @@ export default function BarberPage() {
                                                 </div>
                                             </div>
 
-                                            <Button
-                                                className="w-full bg-emerald-600 hover:bg-emerald-700 h-14 text-sm font-black uppercase tracking-widest shadow-lg shadow-emerald-900/20"
-                                                onClick={() => handleFinish(client.id)}
-                                            >
-                                                Finalizar
-                                            </Button>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    className="flex-1 h-14 border-slate-700 hover:bg-slate-800 text-slate-300 font-bold uppercase"
+                                                    onClick={() => handleOpenSaleDialog(client.id, 'draft', client.draft_items)}
+                                                >
+                                                    <FileText className="mr-2" size={18} />
+                                                    Comanda
+                                                </Button>
+                                                <Button
+                                                    className="flex-[2] bg-emerald-600 hover:bg-emerald-700 h-14 text-sm font-black uppercase tracking-widest shadow-lg shadow-emerald-900/20"
+                                                    onClick={() => handleFinish(client.id, client.draft_items)}
+                                                >
+                                                    Finalizar
+                                                </Button>
+                                            </div>
                                         </CardContent>
                                     </Card>
                                 ))}
@@ -525,6 +554,15 @@ export default function BarberPage() {
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
+                                                        onClick={() => handleOpenSaleDialog(item.id, 'draft', item.draft_items)}
+                                                        className="h-8 w-8 p-0 text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg"
+                                                        title="Abrir Comanda"
+                                                    >
+                                                        <FileText size={14} />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
                                                         onClick={() => handleCancelClient(item.id, item.client_name)}
                                                         className="h-8 w-8 p-0 text-slate-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg"
                                                     >
@@ -579,6 +617,8 @@ export default function BarberPage() {
                     isOpen={showSaleDialog}
                     onOpenChange={setShowSaleDialog}
                     queueId={finishedQueueId}
+                    mode={saleDialogMode}
+                    initialDraftItems={currentDraftItems}
                     onSuccess={() => {
                         setShowSaleDialog(false);
                         fetchStatus();

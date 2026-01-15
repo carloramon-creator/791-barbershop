@@ -149,6 +149,14 @@ export async function POST(req: Request) {
 
         if (insertError) throw insertError;
 
+        // 6. Atualizar FCM Token do cliente se fornecido
+        if (body.fcm_token) {
+            await supabaseAdmin
+                .from('clients')
+                .update({ fcm_token: body.fcm_token })
+                .eq('id', client.id);
+        }
+
         return addCorsHeaders(req, NextResponse.json(queueEntry));
     } catch (error: any) {
         console.error('[PUBLIC QUEUE ENTER ERROR]', error);

@@ -84,6 +84,9 @@ export const Api = {
             method: 'POST',
             body: JSON.stringify(payload),
         }),
+    saveQueueDraft: (queueId: string, items: any[]) =>
+        apiFetch(`/api/queue/${queueId}/draft`, { method: 'POST', body: JSON.stringify({ items }) }),
+
     getSales: () => apiFetch('/api/sales'),
 
     // Catalog

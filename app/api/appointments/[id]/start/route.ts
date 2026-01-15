@@ -14,7 +14,7 @@ export async function POST(
         // 1. Buscar o agendamento
         const { data: appt, error: apptError } = await supabaseAdmin
             .from('appointments')
-            .select('*')
+            .select('*, services(id, name, price)')
             .eq('id', id)
             .eq('tenant_id', tenant.id)
             .single();
@@ -32,10 +32,29 @@ export async function POST(
             appt.client_phone
         );
 
-        // 3. Inserir na Fila (com status 'attending' ou 'waiting' conforme desejado)
-        // Aqui vamos inserir como 'attending' para ser direto, ou 'waiting' se quiser passar por etapa
-        // O usuário pediu "Iniciar Procedimento", então 'attending' faz mais sentido.
+        // 3. Preparar Draft Items (Serviço do Agendamento)
+        let draftItems: any[] = [];
 
+        // Se já tiver draft_items salvo no appointment (futuro), usamos. 
+        // Senão, pegamos o serviço vinculado.
+        if (appt.draft_items && Array.isArray(appt.draft_items) && appt.draft_items.length > 0) {
+            draftItems = appt.draft_items;
+        } else if (appt.services) {
+            // O select services(id,name,price) retorna um objeto ou array dependendo da relação.
+            // Assumindo relação 1:1 ou N:1 (appointment -> service)
+            const srv = Array.isArray(appt.services) ? appt.services[0] : appt.services;
+            if (srv) {
+                draftItems.push({
+                    id: srv.id,
+                    name: srv.name,
+                    price: srv.price,
+                    type: 'service',
+                    qty: 1
+                });
+            }
+        }
+
+        // 4. Inserir na Fila
         const { data: queueEntry, error: queueError } = await supabaseAdmin
             .from('client_queue')
             .insert({
@@ -46,7 +65,8 @@ export async function POST(
                 client_phone: appt.client_phone,
                 status: 'attending',
                 started_at: new Date().toISOString(),
-                position: 0 // Início imediato
+                position: 0, // Início imediato
+                draft_items: draftItems
             })
             .select()
             .single();

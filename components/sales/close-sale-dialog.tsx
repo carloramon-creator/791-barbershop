@@ -31,6 +31,8 @@ interface CloseSaleDialogProps {
     queueId: string;
     initialServiceIds?: string[];
     onSuccess?: () => void;
+    mode?: 'finish' | 'draft';
+    initialDraftItems?: SelectedItem[];
 }
 
 interface SelectedItem {
@@ -41,7 +43,7 @@ interface SelectedItem {
     qty: number;
 }
 
-export function CloseSaleDialog({ isOpen, onOpenChange, queueId, initialServiceIds, onSuccess }: CloseSaleDialogProps) {
+export function CloseSaleDialog({ isOpen, onOpenChange, queueId, initialServiceIds, onSuccess, mode = 'finish', initialDraftItems }: CloseSaleDialogProps) {
     const [step, setStep] = useState<'selection' | 'payment' | 'pix'>('selection');
     const [services, setServices] = useState<Service[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
@@ -58,8 +60,10 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, initialServiceI
                 setServices(servicesData);
                 setProducts(p || []);
 
-                // Pre-fill if initialServiceIds provided
-                if (initialServiceIds && initialServiceIds.length > 0) {
+                // Pre-fill logic
+                if (initialDraftItems && initialDraftItems.length > 0) {
+                    setSelectedItems(initialDraftItems);
+                } else if (initialServiceIds && initialServiceIds.length > 0) {
                     const prefilled = servicesData
                         .filter((srv: Service) => initialServiceIds.includes(srv.id))
                         .map((srv: Service) => ({
@@ -77,11 +81,12 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, initialServiceI
         };
         if (isOpen) {
             setStep('selection');
-            setSelectedItems([]);
+            // Só reseta se não vier itens iniciais
+            if (!initialDraftItems) setSelectedItems([]);
             setPaymentMethod('cash');
             fetchData();
         }
-    }, [isOpen]);
+    }, [isOpen, initialDraftItems]);
 
     const addItem = (item: Service | Product, type: 'service' | 'product') => {
         const existing = selectedItems.find(i => i.id === item.id);
@@ -97,6 +102,20 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, initialServiceI
     };
 
     const total = selectedItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
+
+    const handleSaveDraft = async () => {
+        setLoading(true);
+        try {
+            await Api.saveQueueDraft(queueId, selectedItems);
+            alert('Comanda salva com sucesso!');
+            onOpenChange(false);
+            if (onSuccess) onSuccess();
+        } catch (err: any) {
+            alert(err.message);
+        } finally {
+            setLoading(false);
+        }
+    }
 
     const handleFinishSale = async () => {
         setLoading(true);
@@ -147,14 +166,14 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, initialServiceI
             <DialogContent className="max-w-2xl bg-slate-900 border-slate-800 text-slate-100 p-0 overflow-hidden min-h-[500px] flex flex-col">
                 <DialogHeader className="p-6 pb-0">
                     <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-                        {step === 'selection' && '1. O que foi feito?'}
+                        {step === 'selection' && (mode === 'draft' ? 'Abrir/Editar Comanda' : '1. O que foi feito?')}
                         {step === 'payment' && '2. Como vai pagar?'}
                         {step === 'pix' && '3. Pagamento PIX'}
                     </DialogTitle>
                     <DialogDescription>
-                        {step === 'selection' && 'Selecione os serviços e produtos realizados.'}
-                        {step === 'payment' && 'Confira o total e escolha o método de pagamento.'}
-                        {step === 'pix' && 'Aguarde o cliente realizar o pagamento.'}
+                        {mode === 'draft'
+                            ? 'Adicione itens à comanda. Eles ficarão salvos até finalizar.'
+                            : (step === 'selection' ? 'Selecione os serviços e produtos realizados.' : 'Confira o total e escolha o método de pagamento.')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -164,6 +183,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, initialServiceI
                             <div className="grid grid-cols-2 gap-0 flex-1 overflow-hidden">
                                 {/* Seleção */}
                                 <div className="p-6 space-y-6 border-r border-slate-800 overflow-y-auto max-h-[400px] custom-scrollbar">
+                                    {/* ... selection buttons ... */}
                                     <div className="space-y-3">
                                         <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Serviços</Label>
                                         <div className="space-y-2">
@@ -235,16 +255,26 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, initialServiceI
                             <DialogFooter className="p-6 bg-slate-900 border-t border-slate-800 flex justify-between sm:justify-between">
                                 <div className="flex gap-2">
                                     <Button variant="ghost" className="text-slate-500 hover:text-slate-300" onClick={() => onOpenChange(false)}>Cancelar</Button>
-                                    <Button variant="ghost" className="text-red-500 hover:text-red-400 hover:bg-red-500/10 text-xs" onClick={handleJustFinish}>Fechar s/ Venda</Button>
+                                    {mode === 'finish' && <Button variant="ghost" className="text-red-500 hover:text-red-400 hover:bg-red-500/10 text-xs" onClick={handleJustFinish}>Fechar s/ Venda</Button>}
                                 </div>
 
-                                <Button
-                                    onClick={() => setStep('payment')}
-                                    className="bg-blue-600 hover:bg-blue-700 min-w-32"
-                                    disabled={selectedItems.length === 0}
-                                >
-                                    Confirmar Valor
-                                </Button>
+                                {mode === 'draft' ? (
+                                    <Button
+                                        onClick={handleSaveDraft}
+                                        className="bg-primary-custom hover:bg-primary-custom/80 min-w-32"
+                                        disabled={loading}
+                                    >
+                                        {loading ? 'Salvando...' : 'Salvar Comanda'}
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        onClick={() => setStep('payment')}
+                                        className="bg-blue-600 hover:bg-blue-700 min-w-32"
+                                        disabled={selectedItems.length === 0}
+                                    >
+                                        Confirmar Valor
+                                    </Button>
+                                )}
                             </DialogFooter>
                         </>
                     )}

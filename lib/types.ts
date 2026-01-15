@@ -104,6 +104,7 @@ export interface ClientQueue {
     estimated_time_minutes?: number;
     started_at?: string;
     finished_at?: string;
+    draft_items?: any[];
     created_at: string;
 }
 
