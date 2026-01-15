@@ -426,20 +426,42 @@ export default function BarberPage() {
                         {!isUnifiedView && (
                             <div className="pt-4 space-y-3">
                                 {currentWaiting.length > 0 && currentAttending.length === 0 && (
-                                    <Button
-                                        className="w-full bg-blue-600 hover:bg-blue-700 h-16 text-md font-black uppercase tracking-widest shadow-lg shadow-blue-900/40"
-                                        onClick={() => handleCallNext()}
-                                        disabled={actionLoading === 'next'}
-                                    >
-                                        {actionLoading === 'next' ? (
-                                            <RefreshCw className="animate-spin" size={20} />
-                                        ) : (
-                                            <>
-                                                <Play className="mr-2 fill-current" size={20} />
-                                                Chamar Próximo
-                                            </>
-                                        )}
-                                    </Button>
+                                    <Card className="bg-slate-900 border-blue-500/30 border-2 overflow-hidden shadow-xl mb-4 relative">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-500" />
+                                        <CardContent className="p-6 text-center space-y-4">
+                                            <div className="text-xs font-black text-blue-400 uppercase tracking-widest mb-2">Próximo da Fila</div>
+
+                                            <div className="w-24 h-24 bg-slate-800 rounded-full mx-auto flex items-center justify-center text-slate-500 border-4 border-blue-500/20 overflow-hidden shadow-xl">
+                                                {currentWaiting[0]?.client_photo ? (
+                                                    <img src={currentWaiting[0].client_photo} alt={currentWaiting[0].client_name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <User size={48} />
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                <CardTitle className="text-2xl font-black text-slate-100 uppercase truncate px-2">{currentWaiting[0]?.client_name}</CardTitle>
+                                                {currentWaiting[0]?.client_phone && (
+                                                    <div className="text-xs text-slate-500 font-mono mt-1">{currentWaiting[0].client_phone}</div>
+                                                )}
+                                            </div>
+
+                                            <Button
+                                                className="w-full bg-blue-600 hover:bg-blue-700 h-14 text-md font-black uppercase tracking-widest shadow-lg shadow-blue-900/40 mt-2"
+                                                onClick={() => handleCallNext()}
+                                                disabled={actionLoading === 'next'}
+                                            >
+                                                {actionLoading === 'next' ? (
+                                                    <RefreshCw className="animate-spin" size={20} />
+                                                ) : (
+                                                    <>
+                                                        <Play className="mr-2 fill-current" size={20} />
+                                                        Chamar Agora
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
                                 )}
 
                                 {currentAttending.length === 0 && (

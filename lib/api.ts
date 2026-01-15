@@ -86,6 +86,8 @@ export const Api = {
         }),
     saveQueueDraft: (queueId: string, items: any[]) =>
         apiFetch(`/api/queue/${queueId}/draft`, { method: 'POST', body: JSON.stringify({ items }) }),
+    saveAppointmentDraft: (appointmentId: string, items: any[]) =>
+        apiFetch(`/api/appointments/${appointmentId}/draft`, { method: 'POST', body: JSON.stringify({ items }) }),
 
     getSales: () => apiFetch('/api/sales'),
 

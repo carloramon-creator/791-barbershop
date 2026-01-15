@@ -302,11 +302,34 @@ export default function AppointmentsPage() {
 
     const handleFinishProcedure = (appt: any) => {
         if (!appt.queue_id) {
+            // Se não tem queue_id, mas é pra abrir comanda, abrimos com appointmentId
+            // Mas handleFinishProcedure costuma ser pra finalizar (com queue).
+            // Vamos criar handleOpenComanda separado.
             alert('ID da fila não encontrado para este agendamento.');
             return;
         }
         setActiveQueueId(appt.queue_id);
+        setActiveAppointmentId(null);
         setInitialServiceIds(appt.service_ids || []);
+        setSaleDialogMode('finish'); // Default
+        setShowSaleDialog(true);
+    };
+
+    const [activeAppointmentId, setActiveAppointmentId] = useState<string | null>(null);
+    const [saleDialogMode, setSaleDialogMode] = useState<'finish' | 'draft'>('finish');
+    const [currentDraftItems, setCurrentDraftItems] = useState<any[] | undefined>(undefined);
+
+    const handleOpenComanda = (appt: any) => {
+        setActiveAppointmentId(appt.id);
+        setActiveQueueId(null);
+        setSaleDialogMode('draft');
+
+        // Se já tiver draft_items no appt, usa. Se não, usa os services do appt como "partial draft" para pre-fill?
+        // O CloseSaleDialog já tem logica pra pre-fill com initialServiceIds se initialDraftItems for null. 
+        // Mas se quisermos draft real:
+        setCurrentDraftItems(appt.draft_items);
+        setInitialServiceIds(appt.service_ids || []);
+
         setShowSaleDialog(true);
     };
 
