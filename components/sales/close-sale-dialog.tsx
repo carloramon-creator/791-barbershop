@@ -23,6 +23,7 @@ import {
     X
 } from 'lucide-react';
 import { Service, Product } from '@/lib/types';
+import { formatCurrency } from '@/lib/utils';
 import { QRCodeSVG } from 'qrcode.react';
 
 interface CloseSaleDialogProps {
@@ -228,7 +229,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                                                     onClick={() => addItem(s, 'service')}
                                                 >
                                                     <span className="font-medium text-left">{s.name}</span>
-                                                    <span className="text-blue-400 shrink-0 ml-2">R$ {s.price.toFixed(2)}</span>
+                                                    <span className="text-blue-400 shrink-0 ml-2">{formatCurrency(s.price)}</span>
                                                 </Button>
                                             ))}
                                         </div>
@@ -245,7 +246,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                                                     onClick={() => addItem(p, 'product')}
                                                 >
                                                     <span className="font-medium text-left">{p.name}</span>
-                                                    <span className="text-emerald-400 shrink-0 ml-2">R$ {p.price.toFixed(2)}</span>
+                                                    <span className="text-emerald-400 shrink-0 ml-2">{formatCurrency(p.price)}</span>
                                                 </Button>
                                             ))}
                                         </div>
@@ -265,10 +266,10 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                                                     <div key={item.id} className="flex justify-between items-center group">
                                                         <div>
                                                             <div className="text-sm font-medium">{item.name}</div>
-                                                            <div className="text-[10px] text-slate-500">{item.qty}x R$ {item.price.toFixed(2)}</div>
+                                                            <div className="text-[10px] text-slate-500">{item.qty}x {formatCurrency(item.price)}</div>
                                                         </div>
                                                         <div className="flex items-center gap-2">
-                                                            <span className="text-sm">R$ {(item.price * item.qty).toFixed(2)}</span>
+                                                            <span className="text-sm">{formatCurrency(item.price * item.qty)}</span>
                                                             <button onClick={() => removeItem(item.id)} className="text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100">
                                                                 <X size={14} />
                                                             </button>
@@ -281,7 +282,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
 
                                     <div className="mt-auto pt-4 border-t border-slate-800 flex justify-between items-center">
                                         <span className="text-slate-400 font-medium">Total</span>
-                                        <span className="text-2xl font-black text-slate-100">R$ {total.toFixed(2)}</span>
+                                        <span className="text-2xl font-black text-slate-100">{formatCurrency(total)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -316,7 +317,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                         <div className="p-6 flex flex-col gap-8 flex-1">
                             <div className="flex items-center justify-between p-4 bg-slate-800/30 rounded-xl border border-slate-800">
                                 <span className="text-slate-400">Valor Total a Pagar</span>
-                                <span className="text-3xl font-black text-white">R$ {total.toFixed(2)}</span>
+                                <span className="text-3xl font-black text-white">{formatCurrency(total)}</span>
                             </div>
 
                             <div className="space-y-4">
@@ -398,7 +399,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                             </div>
 
                             <div className="space-y-4 w-full max-w-sm">
-                                <div className="text-3xl font-black">R$ {total.toFixed(2)}</div>
+                                <div className="text-3xl font-black">{formatCurrency(total)}</div>
 
                                 <div className="flex gap-2 justify-center">
                                     <Button
