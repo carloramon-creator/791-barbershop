@@ -334,23 +334,6 @@ export default function AppointmentsPage() {
         setShowSaleDialog(true);
     };
 
-    const [activeAppointmentId, setActiveAppointmentId] = useState<string | null>(null);
-    const [saleDialogMode, setSaleDialogMode] = useState<'finish' | 'draft'>('finish');
-    const [currentDraftItems, setCurrentDraftItems] = useState<any[] | undefined>(undefined);
-
-    const handleOpenComanda = (appt: any) => {
-        setActiveAppointmentId(appt.id);
-        setActiveQueueId(null);
-        setSaleDialogMode('draft');
-
-        // Se já tiver draft_items no appt, usa. Se não, usa os services do appt como "partial draft" para pre-fill?
-        // O CloseSaleDialog já tem logica pra pre-fill com initialServiceIds se initialDraftItems for null. 
-        // Mas se quisermos draft real:
-        setCurrentDraftItems(appt.draft_items);
-        setInitialServiceIds(appt.service_ids || []);
-
-        setShowSaleDialog(true);
-    };
 
     const { role, user: currentUser } = useAuth();
     const isOwner = role === 'owner';

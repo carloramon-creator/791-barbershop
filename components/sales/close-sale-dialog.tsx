@@ -35,9 +35,75 @@ interface CloseSaleDialogProps {
     mode?: 'finish' | 'draft';
     initialDraftItems?: SelectedItem[];
 }
+
+interface SelectedItem {
+    id: string;
+    name: string;
+    price: number;
+    type: 'service' | 'product';
+    qty: number;
+}
 // ...
 export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, initialServiceIds, onSuccess, mode = 'finish', initialDraftItems }: CloseSaleDialogProps) {
-    // ...
+    const [step, setStep] = useState<'selection' | 'payment' | 'pix'>('selection');
+    const [services, setServices] = useState<Service[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
+    const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'pix'>('cash');
+    const [loading, setLoading] = useState(false);
+    const [pixData, setPixData] = useState<{ copyText?: string; qrBase64?: string } | null>(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [s, p] = await Promise.all([Api.getServices(), Api.getProducts()]);
+                const servicesData = s || [];
+                setServices(servicesData);
+                setProducts(p || []);
+
+                // Pre-fill logic
+                if (initialDraftItems && initialDraftItems.length > 0) {
+                    setSelectedItems(initialDraftItems);
+                } else if (initialServiceIds && initialServiceIds.length > 0) {
+                    const prefilled = servicesData
+                        .filter((srv: Service) => initialServiceIds.includes(srv.id))
+                        .map((srv: Service) => ({
+                            id: srv.id,
+                            name: srv.name,
+                            price: srv.price,
+                            type: 'service' as const,
+                            qty: 1
+                        }));
+                    setSelectedItems(prefilled);
+                }
+            } catch (err) {
+                console.error('Erro ao buscar dados para venda:', err);
+            }
+        };
+        if (isOpen) {
+            setStep('selection');
+            // Só reseta se não vier itens iniciais
+            if (!initialDraftItems) setSelectedItems([]);
+            setPaymentMethod('cash');
+            fetchData();
+        }
+    }, [isOpen]);
+
+    const addItem = (item: Service | Product, type: 'service' | 'product') => {
+        const existing = selectedItems.find(i => i.id === item.id);
+        if (existing) {
+            setSelectedItems(selectedItems.map(i => i.id === item.id ? { ...i, qty: i.qty + 1 } : i));
+        } else {
+            setSelectedItems([...selectedItems, { ...item, type, qty: 1 }]);
+        }
+    };
+
+    const removeItem = (id: string) => {
+        setSelectedItems(selectedItems.filter(i => i.id !== id));
+    };
+
+    const total = selectedItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
+
     const handleSaveDraft = async () => {
         setLoading(true);
         try {
@@ -57,6 +123,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
     }
 
     const handleFinishSale = async () => {
+        if (!queueId) return alert('ID da fila não encontrado');
         setLoading(true);
         try {
             const payload = {
@@ -65,7 +132,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                 payment_method: paymentMethod
             };
 
-            const res = await Api.createSale(queueId, payload);
+            const res = await Api.createSale(queueId!, payload);
 
             if (paymentMethod === 'pix' && res.pix) {
                 setPixData(res.pix);
@@ -86,6 +153,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
     };
 
     const handleJustFinish = async () => {
+        if (!queueId) return alert('ID da fila não encontrado');
         if (!confirm('Deseja finalizar o atendimento sem registrar nenhuma venda?')) return;
         setLoading(true);
         try {
@@ -320,6 +388,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                                     <Button
                                         className="bg-emerald-600 hover:bg-emerald-700 flex-1"
                                         onClick={async () => {
+                                            if (!queueId) return alert('ID da fila não encontrado');
                                             try {
                                                 await Api.finishService(queueId);
                                                 alert('Atendimento concluído!');
