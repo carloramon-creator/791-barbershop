@@ -82,8 +82,9 @@ export async function POST(req: Request) {
         if (!selectedBarberId) {
             const { data: barbers } = await supabaseAdmin
                 .from('barbers')
-                .select('id, avg_time_minutes')
+                .select('id, avg_time_minutes, status')
                 .eq('tenant_id', finalTenantId)
+                .neq('status', 'offline') // Only online barbers
                 .eq('is_active', true);
 
             if (!barbers || barbers.length === 0) {

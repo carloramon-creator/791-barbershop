@@ -61,8 +61,34 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                 setServices(servicesData);
                 setProducts(p || []);
 
-                // Pre-fill logic
-                if (initialDraftItems && initialDraftItems.length > 0) {
+                let freshItems: SelectedItem[] = [];
+
+                // Fetch latest draft items from server to avoid stale props
+                if (queueId) {
+                    try {
+                        const qStatus = await Api.getQueueStatus(); // This returns all, might be heavy but safe for now
+                        // Flatten data to find ours
+                        let myItem: any = null;
+                        if (Array.isArray(qStatus)) {
+                            for (const b of qStatus) {
+                                const found = b.queue.find((q: any) => q.id === queueId);
+                                if (found) { myItem = found; break; }
+                            }
+                        }
+                        if (myItem && myItem.draft_items) {
+                            freshItems = myItem.draft_items;
+                        }
+                    } catch (e) { console.error('Error fetching fresh queue draft:', e); }
+
+                } else if (appointmentId) {
+                    // Similar logic for appointments if we had a single fetcher
+                    // relying on passed props for appts for now as they are less real-time prone than queue
+                }
+
+                // Priority: Fresh Fetch -> Initial Draft Props -> Initial Service IDs
+                if (freshItems.length > 0) {
+                    setSelectedItems(freshItems);
+                } else if (initialDraftItems && initialDraftItems.length > 0) {
                     setSelectedItems(initialDraftItems);
                 } else if (initialServiceIds && initialServiceIds.length > 0) {
                     const prefilled = servicesData
