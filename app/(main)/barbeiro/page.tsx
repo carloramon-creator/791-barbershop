@@ -233,7 +233,7 @@ export default function BarberPage() {
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row justify-between items-start gap-6">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-100 uppercase italic">
+                    <h1 className="text-3xl font-black text-slate-100 uppercase">
                         {isUnifiedView ? 'Monitoramento Global' : 'Sala de Atendimento'}
                     </h1>
                     <p className="text-slate-400 font-medium">
@@ -248,7 +248,7 @@ export default function BarberPage() {
                                 variant={isUnifiedView ? 'default' : 'outline'}
                                 onClick={() => setIsUnifiedView(!isUnifiedView)}
                                 className={cn(
-                                    "h-14 px-6 rounded-xl font-black uppercase italic tracking-widest transition-all",
+                                    "h-14 px-6 rounded-xl font-black uppercase tracking-widest transition-all",
                                     isUnifiedView ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30 ring-2 ring-blue-400/50" : "border-slate-800 text-slate-400 hover:bg-slate-800"
                                 )}
                             >
@@ -313,7 +313,7 @@ export default function BarberPage() {
                                     <div className="flex flex-col mr-2">
                                         <span className="text-[8px] font-black text-slate-500 uppercase leading-none">Status</span>
                                         <span className={cn(
-                                            "text-[10px] font-black uppercase italic",
+                                            "text-[10px] font-black uppercase",
                                             currentBarber.status === 'available' ? "text-emerald-500" : "text-slate-400"
                                         )}>
                                             {currentBarber.status === 'available' ? 'Online' : 'Offline'}
@@ -343,7 +343,7 @@ export default function BarberPage() {
                 <div className="lg:col-span-1 space-y-6">
                     <div className="space-y-4">
                         <div className="flex items-center justify-between px-1">
-                            <h2 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] italic">Em Curso</h2>
+                            <h2 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Em Curso</h2>
                             <Badge variant="outline" className="text-blue-500 border-blue-500/30 bg-blue-500/5">{currentAttending.length}</Badge>
                         </div>
 
@@ -398,7 +398,7 @@ export default function BarberPage() {
                             <div className="pt-4 space-y-3">
                                 {currentWaiting.length > 0 && currentAttending.length === 0 && (
                                     <Button
-                                        className="w-full bg-blue-600 hover:bg-blue-700 h-16 text-md font-black uppercase italic tracking-widest shadow-lg shadow-blue-900/40"
+                                        className="w-full bg-blue-600 hover:bg-blue-700 h-16 text-md font-black uppercase tracking-widest shadow-lg shadow-blue-900/40"
                                         onClick={() => handleCallNext()}
                                         disabled={actionLoading === 'next'}
                                     >
@@ -420,7 +420,7 @@ export default function BarberPage() {
                                         className={cn(
                                             "w-full font-black uppercase tracking-widest transition-all",
                                             currentWaiting.length === 0
-                                                ? "h-16 bg-emerald-600/10 text-emerald-500 border-emerald-500/30 hover:bg-emerald-600 hover:text-white italic"
+                                                ? "h-16 bg-emerald-600/10 text-emerald-500 border-emerald-500/30 hover:bg-emerald-600 hover:text-white"
                                                 : "h-12 border-slate-800 text-slate-500 hover:bg-slate-800"
                                         )}
                                     >
@@ -437,7 +437,7 @@ export default function BarberPage() {
                     <CardHeader className="border-b border-slate-800/50 bg-slate-900/50">
                         <div className="flex justify-between items-center">
                             <div>
-                                <CardTitle className="text-xl font-black text-slate-100 uppercase italic leading-none">Lista de Espera</CardTitle>
+                                <CardTitle className="text-xl font-black text-slate-100 uppercase leading-none">Lista de Espera</CardTitle>
                                 <CardDescription className="text-slate-500 text-xs mt-1 font-medium">Fila completa em tempo real.</CardDescription>
                             </div>
                             {isUnifiedView && <Badge className="bg-blue-600 text-white font-black px-3 py-1">TOTAL: {currentWaiting.length}</Badge>}
@@ -475,7 +475,7 @@ export default function BarberPage() {
                                             <TableCell>
                                                 <div className="flex flex-col">
                                                     <span className="font-black text-slate-100 uppercase text-sm tracking-tight">{item.client_name}</span>
-                                                    <span className="text-[10px] text-slate-500 font-mono italic">{item.client_phone || 'Sem telefone'}</span>
+                                                    <span className="text-[10px] text-slate-500 font-mono">{item.client_phone || 'Sem telefone'}</span>
                                                 </div>
                                             </TableCell>
                                             {isUnifiedView && (
@@ -488,7 +488,7 @@ export default function BarberPage() {
                                                                 <span className="text-[10px] text-slate-500">{item.barber?.barber_name?.charAt(0)}</span>
                                                             )}
                                                         </div>
-                                                        <span className="text-[10px] font-black text-slate-300 uppercase italic">{item.barber?.barber_nickname || item.barber?.barber_name}</span>
+                                                        <span className="text-[10px] font-black text-slate-300 uppercase">{item.barber?.barber_nickname || item.barber?.barber_name}</span>
                                                     </div>
                                                 </TableCell>
                                             )}

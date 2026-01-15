@@ -498,7 +498,7 @@ export default function PlanPage() {
                                                         <div className="flex flex-col">
                                                             <span className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">Investimento</span>
                                                             <p className="text-sm font-black text-amber-500">
-                                                                R$ {Number(addon.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}<span className="text-[9px] text-slate-600 ml-1 italic lowercase">/mês</span>
+                                                                R$ {Number(addon.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}<span className="text-[9px] text-slate-600 ml-1 lowercase">/mês</span>
                                                             </p>
                                                         </div>
                                                         <Button
