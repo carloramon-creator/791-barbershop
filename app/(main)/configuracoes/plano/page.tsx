@@ -558,7 +558,7 @@ export default function PlanPage() {
                                         <CardHeader className="p-0 mb-6">
                                             <CardTitle className="text-3xl font-black text-slate-100 tracking-tight mb-2">{plan.name}</CardTitle>
                                             <div className="flex items-baseline gap-1">
-                                                <span className="text-4xl font-black text-slate-100">R$ {plan.price}</span>
+                                                <span className="text-4xl font-black text-slate-100">R$ {Number(plan.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                 <span className="text-slate-500 font-bold text-sm tracking-widest uppercase">/mês</span>
                                             </div>
                                             {plan.description && (
