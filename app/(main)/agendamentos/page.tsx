@@ -376,28 +376,17 @@ export default function AppointmentsPage() {
     };
 
     // --- Derived State for Start Button Logic ---
-    const { activeMap, nextScheduledMap } = useMemo(() => {
+    const activeMap = useMemo(() => {
         const active: Record<string, boolean> = {}; // barber_id -> has active appointment
-        const next: Record<string, string> = {}; // barber_id -> appointment_id of the next one
 
-        // 1. Identify active appointments
+        // Identify active appointments (barber is busy)
         appointments.forEach(a => {
             if (a.status === 'in_service') {
                 active[a.barber_id] = true;
             }
         });
 
-        // 2. Identify next scheduled for each barber (if no active)
-        appointments.forEach(a => {
-            if (a.status === 'scheduled') {
-                // Only set if not already set (first one found is the earliest/next)
-                if (!next[a.barber_id]) {
-                    next[a.barber_id] = a.id;
-                }
-            }
-        });
-
-        return { activeMap: active, nextScheduledMap: next };
+        return active;
     }, [appointments]);
 
     return (
@@ -859,19 +848,17 @@ export default function AppointmentsPage() {
                             {/* ATENDIMENTOS ATIVOS / AGENDADOS */}
                             {appointments.filter(a => a.status !== 'completed').map(appt => {
                                 const isThisBarberBusy = activeMap[appt.barber_id];
-                                const isNextForBarber = nextScheduledMap[appt.barber_id] === appt.id;
 
-                                // Show button if:
+                                // Simplified Logic:
                                 // 1. User has permission (Owner or Self)
                                 // 2. Is Today (Safety check)
-                                // 3. Status is scheduled AND (Barber is free AND This is the next one)
-                                // OR
-                                // 4. Status is in_service (Always show Finish button if active)
+                                // 3. If scheduled: Show button ONLY if barber is FREE (not busy)
+                                // 4. If in_service: Always show Finish button
 
                                 const canViewActions = (isOwner || (currentUser?.id === appt.barber_user_id)) && isToday(new Date(appt.start_time));
 
                                 const showStartBtn = canViewActions && (
-                                    (appt.status === 'scheduled' && !isThisBarberBusy && isNextForBarber) ||
+                                    (appt.status === 'scheduled' && !isThisBarberBusy) ||
                                     (appt.status === 'in_service')
                                 );
 
