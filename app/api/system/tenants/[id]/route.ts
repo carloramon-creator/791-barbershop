@@ -26,7 +26,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         const { id: tenantId } = await params;
 
         // Validar campos permitidos para segurança
-        const allowedFields = ['plan', 'subscription_status', 'trial_ends_at', 'name', 'active'];
+        const allowedFields = ['plan', 'subscription_status', 'trial_ends_at', 'name', 'active', 'settings'];
         const updates: any = {};
 
         for (const field of allowedFields) {

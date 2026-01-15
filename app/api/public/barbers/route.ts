@@ -30,14 +30,39 @@ export async function GET(req: Request) {
         if (error) throw error;
 
         // Formatar para resposta limpa
-        const formatted = data?.map(b => ({
-            id: b.id,
-            name: b.name || (b as any).users?.name,
-            nickname: b.nickname || (b as any).users?.nickname,
-            photo_url: (b as any).users?.photo_url || b.photo_url,
-            status: b.status,
-            service_ids: (b as any).barber_services?.map((bs: any) => bs.service_id) || []
-        })) || [];
+        // Buscar contagem da fila para cada barbeiro
+        const { data: queueCounts, error: queueError } = await supabaseAdmin
+            .from('client_queue')
+            .select('barber_id')
+            .eq('status', 'waiting')
+            .eq('tenant_id', tenantId);
+
+        // Mapa de contagem
+        const queueMap = new Map();
+        if (queueCounts) {
+            queueCounts.forEach((q: any) => {
+                queueMap.set(q.barber_id, (queueMap.get(q.barber_id) || 0) + 1);
+            });
+        }
+
+        // Formatar para resposta limpa
+        const formatted = data?.map(b => {
+            const peopleWaiting = queueMap.get(b.id) || 0;
+            const avgTime = b.avg_time_minutes || 30; // Default 30 min
+
+            return {
+                id: b.id,
+                name: b.name || (b as any).users?.name,
+                nickname: b.nickname || (b as any).users?.nickname,
+                photo_url: (b as any).users?.photo_url || b.photo_url,
+                // Status online/offline baseado em is_online se existir no banco, ou fallback
+                is_online: b.is_online,
+                status: b.status, // available, busy, offline
+                people_waiting: peopleWaiting,
+                estimated_wait: peopleWaiting * avgTime,
+                service_ids: (b as any).barber_services?.map((bs: any) => bs.service_id) || []
+            };
+        }) || [];
 
         return addCorsHeaders(req, NextResponse.json(formatted));
     } catch (error: any) {

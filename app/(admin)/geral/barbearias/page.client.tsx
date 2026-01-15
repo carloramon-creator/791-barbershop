@@ -19,7 +19,9 @@ import {
     Pencil,
     Trash2,
     Calendar,
-    AlertTriangle
+    AlertTriangle,
+    Scissors,
+    Sparkles
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -141,6 +143,46 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                     </div>
                 </div>
             </div>
+            {/* Business Type Stats */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+                <Card className="bg-slate-900 border-slate-800">
+                    <CardContent className="p-4 flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
+                            <Store size={20} />
+                        </div>
+                        <div>
+                            <p className="text-2xl font-black text-slate-100">{tenants.length}</p>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase">Total de Empresas</p>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="bg-slate-900 border-slate-800">
+                    <CardContent className="p-4 flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500">
+                            <Scissors size={20} />
+                        </div>
+                        <div>
+                            <p className="text-2xl font-black text-slate-100">
+                                {tenants.filter(t => t.business_type !== 'beauty_salon').length}
+                            </p>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase">Barbearias</p>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="bg-slate-900 border-slate-800">
+                    <CardContent className="p-4 flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-pink-500/10 flex items-center justify-center text-pink-500">
+                            <Sparkles size={20} />
+                        </div>
+                        <div>
+                            <p className="text-2xl font-black text-slate-100">
+                                {tenants.filter(t => t.business_type === 'beauty_salon').length}
+                            </p>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase">Salões de Beleza</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
 
             {/* Toolbar */}
             <div className="flex flex-col md:flex-row gap-4">
@@ -179,12 +221,12 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                     <div className="py-20 text-center"><Activity className="animate-spin inline text-blue-500" /></div>
                 ) : filteredTenants.map((tenant) => (
                     <Card key={tenant.id} className="bg-slate-900 border-slate-800 hover:border-blue-500/30 transition-all group shadow-xl">
-                        <CardContent className="p-3">
-                            <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                        <CardContent className="p-2">
+                            <div className="flex flex-col lg:flex-row lg:items-center gap-3">
                                 {/* Brand & Location */}
                                 <div className="flex items-center gap-3 min-w-[200px]">
-                                    <div className="w-10 h-10 rounded-xl bg-slate-950 p-1 flex items-center justify-center border border-slate-800 shadow-inner shrink-0">
-                                        {tenant.logo_url ? <img src={tenant.logo_url} className="w-full h-full object-cover rounded-lg" /> : <Store className="text-slate-700" size={20} />}
+                                    <div className="w-9 h-9 rounded-lg bg-slate-950 p-1 flex items-center justify-center border border-slate-800 shadow-inner shrink-0">
+                                        {tenant.logo_url ? <img src={tenant.logo_url} className="w-full h-full object-cover rounded-md" /> : <Store className="text-slate-700" size={16} />}
                                     </div>
                                     <div className="min-w-0">
                                         <h3 className="text-sm font-black text-slate-100 group-hover:text-blue-500 transition-colors truncate">
@@ -194,7 +236,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                 }} />
                                             ) : tenant.name}
                                         </h3>
-                                        <p className="text-[9px] text-slate-500 font-bold uppercase tracking-tight truncate">{tenant.city}, {tenant.state}</p>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight truncate leading-none mt-0.5">{tenant.city}, {tenant.state}</p>
                                         {tenant.created_at && (
                                             <div className="flex items-center gap-1 text-[9px] text-slate-600 font-medium mt-0.5" title="Data de Cadastro">
                                                 <Calendar size={8} />
@@ -205,20 +247,20 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                 </div>
 
                                 {/* Owner Details */}
-                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
                                     <div className="space-y-0.5">
                                         <p className="text-[9px] font-black text-slate-600 uppercase tracking-tighter leading-none mb-0.5">Proprietário</p>
-                                        <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
+                                        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300">
                                             <User size={12} className="text-blue-500" />
-                                            {tenant.owner?.[0]?.name || 'N/A'}
+                                            <span className="truncate">{tenant.owner?.[0]?.name || 'N/A'}</span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-[9px] text-slate-500 font-medium italic">
+                                        <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium italic">
                                             <Mail size={10} />
-                                            {tenant.owner?.[0]?.email || 'N/A'}
+                                            <span className="truncate">{tenant.owner?.[0]?.email || 'N/A'}</span>
                                         </div>
                                     </div>
                                     <div className="space-y-0.5">
-                                        <p className="text-[9px] font-black text-slate-600 uppercase tracking-tighter leading-none mb-0.5">Plano e Status</p>
+                                        <p className="text-[9px] font-black text-slate-600 uppercase tracking-tighter leading-none mb-0.5">Plano</p>
                                         <div className="flex items-center gap-2">
                                             <span className={cn(
                                                 "text-[9px] font-black px-1.5 py-0.5 rounded uppercase",
@@ -240,18 +282,18 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                 </div>
 
                                 {/* Stats Block */}
-                                <div className="flex items-center gap-6 lg:border-l lg:border-slate-800 lg:pl-6">
-                                    <div className="text-center">
-                                        <p className="text-base font-black text-slate-100">{tenant.stats?.total_attendances || 0}</p>
-                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter">Atendimentos</p>
+                                <div className="flex items-center gap-4 lg:border-l lg:border-slate-800 lg:pl-4">
+                                    <div className="text-center min-w-[60px]">
+                                        <p className="text-sm font-black text-slate-100 leading-none">{tenant.stats?.total_attendances || 0}</p>
+                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter mt-0.5">Antendimentos</p>
                                     </div>
-                                    <div className="text-center">
-                                        <p className="text-base font-black text-slate-100">{tenant.stats?.total_users || 0}</p>
-                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter">Usuários</p>
+                                    <div className="text-center min-w-[50px]">
+                                        <p className="text-sm font-black text-slate-100 leading-none">{tenant.stats?.total_users || 0}</p>
+                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter mt-0.5">Usuários</p>
                                     </div>
-                                    <div className="text-center">
-                                        <p className="text-base font-black text-emerald-500">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(tenant.stats?.total_revenue || 0)}</p>
-                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter">Faturamento</p>
+                                    <div className="text-center min-w-[80px]">
+                                        <p className="text-sm font-black text-emerald-500 leading-none">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(tenant.stats?.total_revenue || 0)}</p>
+                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter mt-0.5">Fat. Total</p>
                                     </div>
                                 </div>
 
