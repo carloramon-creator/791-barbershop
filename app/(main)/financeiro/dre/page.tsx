@@ -135,7 +135,7 @@ export default function DrePage() {
                             </div>
                         </CardContent>
                         <div className="p-4 bg-slate-800/30 text-center">
-                            <Button variant="ghost" size="sm" className="text-slate-400 hover:text-slate-100 italic" onClick={() => window.open(`/reports/dre?start=${dates.start}&end=${dates.end}`, '_blank')}>
+                            <Button variant="ghost" size="sm" className="text-slate-400 hover:text-slate-100" onClick={() => window.open(`/reports/dre?start=${dates.start}&end=${dates.end}`, '_blank')}>
                                 <Download size={14} className="mr-2" /> Versão de Impressão (PDF)
                             </Button>
                         </div>
@@ -151,7 +151,7 @@ export default function DrePage() {
                         <CardContent className="space-y-6">
                             <div className="space-y-2">
                                 <div className="flex justify-between text-xs">
-                                    <span className="text-slate-500 italic">Receitas</span>
+                                    <span className="text-slate-500">Receitas</span>
                                     <span className="text-slate-300">100%</span>
                                 </div>
                                 <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
@@ -160,7 +160,7 @@ export default function DrePage() {
                             </div>
                             <div className="space-y-2">
                                 <div className="flex justify-between text-xs">
-                                    <span className="text-slate-500 italic">Margem de Lucro</span>
+                                    <span className="text-slate-500">Margem de Lucro</span>
                                     <span className="text-slate-300">
                                         {dre.receitas.total > 0 ? ((dre.lucro / dre.receitas.total) * 100).toFixed(1) : 0}%
                                     </span>

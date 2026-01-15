@@ -514,7 +514,7 @@ export default function BarbershopSettingsPage() {
                                             </div>
                                             <div className="flex-1 space-y-4 text-center md:text-left">
                                                 <div className="space-y-1">
-                                                    <h4 className="text-xl font-black text-slate-100 uppercase italic">App do Cliente</h4>
+                                                    <h4 className="text-xl font-black text-slate-100 uppercase">App do Cliente</h4>
                                                     <p className="text-sm text-slate-400">Este QR Code leva seus clientes direto para a sua fila digital.</p>
                                                 </div>
 

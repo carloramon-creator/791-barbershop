@@ -509,7 +509,7 @@ export default function BarberPage() {
                                                         size="sm"
                                                         onClick={() => handleStartClient(item.id, item.barber_id)}
                                                         disabled={actionLoading === item.id}
-                                                        className="h-8 bg-blue-600/10 text-blue-500 border border-blue-500/30 hover:bg-blue-600 hover:text-white font-black text-[10px] uppercase italic px-4 rounded-lg transform active:scale-95 transition-all"
+                                                        className="h-8 bg-blue-600/10 text-blue-500 border border-blue-500/30 hover:bg-blue-600 hover:text-white font-black text-[10px] uppercase px-4 rounded-lg transform active:scale-95 transition-all"
                                                     >
                                                         {actionLoading === item.id ? <RefreshCw className="animate-spin" size={12} /> : 'Chamar'}
                                                     </Button>
@@ -536,7 +536,7 @@ export default function BarberPage() {
                 <Dialog open={showWalkInDialog} onOpenChange={setShowWalkInDialog}>
                     <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
                         <DialogHeader>
-                            <DialogTitle className="uppercase italic font-black">Atendimento Direto</DialogTitle>
+                            <DialogTitle className="uppercase font-black">Atendimento Direto</DialogTitle>
                             <DialogDescription>Inicie um atendimento agora para um cliente que já está na cadeira.</DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-4">
@@ -556,7 +556,7 @@ export default function BarberPage() {
                             <Button
                                 onClick={handleWalkIn}
                                 disabled={submittingWalkIn}
-                                className="bg-blue-600 hover:bg-blue-700 font-black uppercase italic"
+                                className="bg-blue-600 hover:bg-blue-700 font-black uppercase"
                             >
                                 {submittingWalkIn ? 'Iniciando...' : 'Começar Agora'}
                             </Button>

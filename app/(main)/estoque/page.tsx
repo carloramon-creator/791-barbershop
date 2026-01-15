@@ -389,7 +389,7 @@ export default function EstoquePage() {
                                         id="desc"
                                         value={purchase.description}
                                         onChange={(e) => setPurchase({ ...purchase, description: e.target.value })}
-                                        className="bg-slate-800 border-slate-700 h-11 italic"
+                                        className="bg-slate-800 border-slate-700 h-11"
                                     />
                                 </div>
                             </div>

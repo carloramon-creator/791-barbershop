@@ -976,7 +976,7 @@ export default function AppointmentsPage() {
                                     </div>
 
                                     {appointments.filter(a => a.status === 'completed').length === 0 ? (
-                                        <p className="text-center py-8 text-slate-600 text-xs italic">Nenhum atendimento finalizado para exibir.</p>
+                                        <p className="text-center py-8 text-slate-600 text-xs">Nenhum atendimento finalizado para exibir.</p>
                                     ) : (
                                         appointments.filter(a => a.status === 'completed').map(appt => (
                                             <div key={appt.id} className="flex items-center gap-4 p-4 bg-slate-900/40 rounded-xl border border-slate-800/50 opacity-60 hover:opacity-100 transition-opacity">
