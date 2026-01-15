@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server';
 import { supabaseClient } from '@/lib/supabase-client';
 import { addCorsHeaders } from '@/lib/server-utils';
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(
+    req: Request,
+    props: { params: Promise<{ id: string }> }
+) {
+    const params = await props.params;
+    const { id } = params;
+
     try {
         const body = await req.json();
         const { items } = body; // items: SelectedItem[]
@@ -14,7 +20,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         const { error } = await supabaseClient
             .from('client_queue')
             .update({ draft_items: items })
-            .eq('id', params.id);
+            .eq('id', id);
 
         if (error) throw error;
 
