@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Api } from '@/lib/api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -374,6 +374,31 @@ export default function AppointmentsPage() {
             </div>
         );
     };
+
+    // --- Derived State for Start Button Logic ---
+    const { activeMap, nextScheduledMap } = useMemo(() => {
+        const active: Record<string, boolean> = {}; // barber_id -> has active appointment
+        const next: Record<string, string> = {}; // barber_id -> appointment_id of the next one
+
+        // 1. Identify active appointments
+        appointments.forEach(a => {
+            if (a.status === 'in_service') {
+                active[a.barber_id] = true;
+            }
+        });
+
+        // 2. Identify next scheduled for each barber (if no active)
+        appointments.forEach(a => {
+            if (a.status === 'scheduled') {
+                // Only set if not already set (first one found is the earliest/next)
+                if (!next[a.barber_id]) {
+                    next[a.barber_id] = a.id;
+                }
+            }
+        });
+
+        return { activeMap: active, nextScheduledMap: next };
+    }, [appointments]);
 
     return (
         <div className="space-y-6">
@@ -833,7 +858,22 @@ export default function AppointmentsPage() {
                         <div className="grid gap-4">
                             {/* ATENDIMENTOS ATIVOS / AGENDADOS */}
                             {appointments.filter(a => a.status !== 'completed').map(appt => {
-                                const showStartBtn = (isOwner || (currentUser?.id === appt.barber_user_id)) && isToday(new Date(appt.start_time));
+                                const isThisBarberBusy = activeMap[appt.barber_id];
+                                const isNextForBarber = nextScheduledMap[appt.barber_id] === appt.id;
+
+                                // Show button if:
+                                // 1. User has permission (Owner or Self)
+                                // 2. Is Today (Safety check)
+                                // 3. Status is scheduled AND (Barber is free AND This is the next one)
+                                // OR
+                                // 4. Status is in_service (Always show Finish button if active)
+
+                                const canViewActions = (isOwner || (currentUser?.id === appt.barber_user_id)) && isToday(new Date(appt.start_time));
+
+                                const showStartBtn = canViewActions && (
+                                    (appt.status === 'scheduled' && !isThisBarberBusy && isNextForBarber) ||
+                                    (appt.status === 'in_service')
+                                );
 
                                 return (
                                     <div key={appt.id} className="group relative flex flex-col md:flex-row items-center gap-6 p-5 bg-slate-900/80 rounded-2xl border border-slate-800 hover:border-blue-500/50 hover:bg-slate-800/80 transition-all shadow-lg">
@@ -936,7 +976,8 @@ export default function AppointmentsPage() {
                                         </div>
                                     </div>
                                 );
-                            })}
+                            })
+                            }
 
                             {/* ATENDIMENTOS FINALIZADOS (EXPANSÍVEL) */}
                             {showFinished && (
