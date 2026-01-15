@@ -120,12 +120,15 @@ export async function GET(req: Request) {
         effLunchStart.setHours(lH, lM, 0, 0);
         let effLunchEnd = addMinutes(effLunchStart, Number(openingHours.lunch_duration || 0));
 
-        if (openingHours.lunch_duration > 0) {
+        if (Number(openingHours.lunch_duration) > 0) {
+            // Check if there is an appointment blocking the start of lunch, if so, push lunch
+            // Note: date-fns compare is safer
             const blockingApt = normalizedAppointments.find(apt =>
                 (apt.start.getTime() <= effLunchStart.getTime() && apt.end.getTime() > effLunchStart.getTime())
             );
             if (blockingApt) {
                 effLunchStart = new Date(blockingApt.end);
+                // Re-calculate end based on duration
                 effLunchEnd = addMinutes(effLunchStart, Number(openingHours.lunch_duration));
             }
         }

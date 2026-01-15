@@ -366,7 +366,7 @@ export default function BarberPage() {
                             <Badge variant="outline" className="text-blue-500 border-blue-500/30 bg-blue-500/5">{currentAttending.length}</Badge>
                         </div>
 
-                        {currentAttending.length > 0 ? (
+                        {(currentAttending.length > 0) ? (
                             <div className="space-y-4">
                                 {currentAttending.map((client: any) => (
                                     <Card key={client.id} className="bg-slate-900 border-blue-500/30 border-2 overflow-hidden shadow-2xl relative group">
@@ -417,10 +417,12 @@ export default function BarberPage() {
                                 ))}
                             </div>
                         ) : (
-                            <Card className="bg-slate-900/50 border-slate-800/50 border-dashed border-2 p-10 flex flex-col items-center justify-center text-center opacity-40">
-                                <User size={40} className="text-slate-600 mb-2" />
-                                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Ninguém agora</p>
-                            </Card>
+                            (isUnifiedView || currentWaiting.length === 0) && (
+                                <Card className="bg-slate-900/50 border-slate-800/50 border-dashed border-2 p-10 flex flex-col items-center justify-center text-center opacity-40">
+                                    <User size={40} className="text-slate-600 mb-2" />
+                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Ninguém agora</p>
+                                </Card>
+                            )
                         )}
 
                         {!isUnifiedView && (

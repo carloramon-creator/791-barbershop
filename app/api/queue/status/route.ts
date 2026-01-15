@@ -32,8 +32,8 @@ export async function GET() {
 
         if (queueError) throw queueError;
 
-        // 3. Buscar médias dinâmicas
-        const dynamicAverages = await getDynamicBarberAverages(tenant.id);
+        // 3. (Optimizado) Dados já disponíveis em 'barbers'
+        // const dynamicAverages = await getDynamicBarberAverages(tenant.id);
 
         // 4. Consolidar os dados em memória
         const consolidated = barbers.map(barber => {
@@ -55,8 +55,8 @@ export async function GET() {
             }
             // ---------------------------------
 
-            // Usa a média dinâmica se disponível, senão usa a do cadastro
-            const avgTime = dynamicAverages[barber.id] || barber.avg_time_minutes;
+            // Usa a média do cadastro (futuramente pode ser calculado via histórico real)
+            const avgTime = barber.avg_time_minutes || 30;
 
             const formattedQueue = barberQueue.map(q => {
                 let itemWait = 0;

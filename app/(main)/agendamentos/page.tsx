@@ -931,6 +931,16 @@ export default function AppointmentsPage() {
 
                                         {/* COLUNA 4: AÇÕES */}
                                         <div className="flex items-center gap-2 border-l border-slate-800/50 md:pl-6">
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={() => handleOpenComanda(appt)}
+                                                className="bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border-blue-500/20 gap-2 h-10 px-4"
+                                            >
+                                                <FileText size={16} />
+                                                <span className="hidden xl:inline">Comanda</span>
+                                            </Button>
+
                                             {appt.status === 'scheduled' && (
                                                 <Button
                                                     variant="secondary"
@@ -1024,12 +1034,15 @@ export default function AppointmentsPage() {
             )}
 
             {/* Close Sale Dialog */}
-            {showSaleDialog && activeQueueId && (
+            {showSaleDialog && (activeQueueId || activeAppointmentId) && (
                 <CloseSaleDialog
                     isOpen={showSaleDialog}
                     onOpenChange={setShowSaleDialog}
-                    queueId={activeQueueId}
+                    queueId={activeQueueId || undefined}
+                    appointmentId={activeAppointmentId || undefined}
                     initialServiceIds={initialServiceIds}
+                    initialDraftItems={currentDraftItems}
+                    mode={saleDialogMode}
                     onSuccess={() => fetchAppointments()}
                 />
             )}
