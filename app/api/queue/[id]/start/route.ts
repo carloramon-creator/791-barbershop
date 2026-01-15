@@ -67,6 +67,35 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         // 5. Atualizar barbeiro para 'busy'
         await client.from('barbers').update({ status: 'busy' }).eq('id', queueItem.barber_id);
 
+        // 6. Enviar Notificação Push para o cliente
+        try {
+            const { data: clientData } = await client
+                .from('clients')
+                .select('fcm_token')
+                .eq('id', queueItem.client_id)
+                .single();
+
+            if (clientData?.fcm_token) {
+                const { firebaseAdmin } = await import('@/lib/firebase-admin');
+                if (firebaseAdmin.apps.length) {
+                    await firebaseAdmin.messaging().send({
+                        token: clientData.fcm_token,
+                        notification: {
+                            title: 'Sua vez chegou!',
+                            body: `O barbeiro já está te aguardando. Dirija-se à cadeira.`,
+                        },
+                        webpush: {
+                            fcmOptions: {
+                                link: `https://app.791barber.com/queue/status?id=${queueId}`
+                            }
+                        }
+                    });
+                }
+            }
+        } catch (pushError) {
+            console.error('[PUSH ERROR] Falha ao enviar notificação:', pushError);
+        }
+
         return NextResponse.json(updatedClient);
     } catch (error: any) {
         console.error('[START SPECIFIC CLIENT ERROR]', error);

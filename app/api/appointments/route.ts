@@ -16,7 +16,7 @@ export async function GET(req: Request) {
 
         let query = supabaseAdmin
             .from('appointments')
-            .select('*, barbers(name, nickname, user_id)')
+            .select('*, draft_items, barbers(name, nickname, user_id)')
             .eq('tenant_id', tenant.id)
             .neq('status', 'cancelled');
 

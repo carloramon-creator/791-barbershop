@@ -84,6 +84,30 @@ export async function POST(
 
         if (updateError) throw updateError;
 
+        // 5. Enviar Notificação Push para o cliente
+        try {
+            // client variable is available from step 2
+            if (client && client.fcm_token) {
+                const { firebaseAdmin } = await import('@/lib/firebase-admin');
+                if (firebaseAdmin.apps.length) {
+                    await firebaseAdmin.messaging().send({
+                        token: client.fcm_token,
+                        notification: {
+                            title: 'Seu horário chegou!',
+                            body: `O seu atendimento foi iniciado.`,
+                        },
+                        webpush: {
+                            fcmOptions: {
+                                link: `https://app.791barber.com/appointments/status?id=${id}`
+                            }
+                        }
+                    });
+                }
+            }
+        } catch (pushError) {
+            console.error('[PUSH ERROR] Falha ao enviar notificação:', pushError);
+        }
+
         return NextResponse.json({ success: true, queueId: queueEntry.id });
 
     } catch (error: any) {

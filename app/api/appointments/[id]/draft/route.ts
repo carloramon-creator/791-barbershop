@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { supabaseClient } from '@/lib/supabase-client';
+import { supabaseAdmin } from '@/lib/supabase-server';
+import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function POST(
     req: Request,
@@ -9,17 +10,19 @@ export async function POST(
     const { id } = params;
 
     try {
+        const { tenant } = await getCurrentUserAndTenant();
         const body = await req.json();
-        const { items } = body; // items: SelectedItem[]
+        const { items } = body;
 
         if (!items) {
             return NextResponse.json({ error: 'Itens não fornecidos' }, { status: 400 });
         }
 
-        const { error } = await supabaseClient
+        const { error } = await supabaseAdmin
             .from('appointments')
             .update({ draft_items: items })
-            .eq('id', id);
+            .eq('id', id)
+            .eq('tenant_id', tenant.id); // Security check
 
         if (error) throw error;
 

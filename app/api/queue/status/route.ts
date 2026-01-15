@@ -24,7 +24,7 @@ export async function GET() {
         // Ordenar por prioridade primeiro, depois por posição
         const { data: allQueueItems, error: queueError } = await supabaseAdmin
             .from('client_queue')
-            .select('*, clients(photo_url, name)')
+            .select('*, draft_items, clients(photo_url, name)')
             .eq('tenant_id', tenant.id)
             .in('status', ['waiting', 'attending'])
             .order('is_priority', { ascending: false, nullsFirst: false })
