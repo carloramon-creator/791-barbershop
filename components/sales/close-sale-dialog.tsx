@@ -261,7 +261,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, initialServiceI
                                 {mode === 'draft' ? (
                                     <Button
                                         onClick={handleSaveDraft}
-                                        className="bg-primary-custom hover:bg-primary-custom/80 min-w-32"
+                                        className="bg-blue-600 hover:bg-blue-700 min-w-32 text-white"
                                         disabled={loading}
                                     >
                                         {loading ? 'Salvando...' : 'Salvar Comanda'}
