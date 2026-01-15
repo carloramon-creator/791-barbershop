@@ -21,11 +21,19 @@ export async function GET(req: Request) {
             .neq('status', 'cancelled');
 
         if (date) {
-            const start = `${date}T00:00:00Z`;
-            const end = `${date}T23:59:59Z`;
+            // Adjusting for Brazil Time (GMT-3) to ensure late night appointments (e.g. 23:00) 
+            // are fetched correctly for the selected day.
+            // 00:00 Local -> 03:00 UTC
+            // 23:59 Local -> 02:59 UTC (Next Day)
+            const start = `${date}T00:00:00-03:00`;
+            const end = `${date}T23:59:59-03:00`;
             query = query.gte('start_time', start).lte('start_time', end);
         } else if (startDate && endDate) {
-            query = query.gte('start_time', startDate).lte('start_time', endDate);
+            // Apply similar offset logic if simple dates are provided (YYYY-MM-DD)
+            // to ensure consistency with the daily view.
+            const start = startDate.length === 10 ? `${startDate}T00:00:00-03:00` : startDate;
+            const end = endDate.length === 10 ? `${endDate}T23:59:59-03:00` : endDate;
+            query = query.gte('start_time', start).lte('start_time', end);
         }
 
         if (barberId) {
