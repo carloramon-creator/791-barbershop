@@ -473,9 +473,18 @@ export default function BarberPage() {
                                                 </span>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="flex flex-col">
-                                                    <span className="font-black text-slate-100 uppercase text-sm tracking-tight">{item.client_name}</span>
-                                                    <span className="text-[10px] text-slate-500 font-mono">{item.client_phone || 'Sem telefone'}</span>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-slate-800 border-2 border-slate-700 overflow-hidden relative shrink-0">
+                                                        {item.client_photo ? (
+                                                            <img src={item.client_photo} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <User className="w-5 h-5 text-slate-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-black text-slate-100 uppercase text-sm tracking-tight">{item.client_name}</span>
+                                                        <span className="text-[10px] text-slate-500 font-mono">{item.client_phone || 'Sem telefone'}</span>
+                                                    </div>
                                                 </div>
                                             </TableCell>
                                             {isUnifiedView && (
