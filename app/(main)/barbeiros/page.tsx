@@ -51,6 +51,8 @@ export default function BarbeirosPage() {
     const [services, setServices] = useState<Service[]>([]);
     const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
     const [loadingServices, setLoadingServices] = useState(false);
+    const [reportShowActive, setReportShowActive] = useState(true);
+    const [reportShowInactive, setReportShowInactive] = useState(false);
 
     const { role, tenant } = useAuth();
     const texts = getBusinessTexts(tenant?.business_type);
@@ -220,28 +222,52 @@ export default function BarbeirosPage() {
                                         <Input type="date" id="rep-end" className="bg-slate-800 border-slate-700" />
                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label className="block mb-2">{texts.professionals}</Label>
-                                    <div className="flex flex-wrap gap-4 bg-slate-800/50 p-4 rounded-lg">
-                                        <div className="flex items-center space-x-2 w-full border-b border-slate-700 pb-2 mb-2">
-                                            <Checkbox id="all"
-                                                checked={reportBarbers.length === barbeiros.length && barbeiros.length > 0}
-                                                onCheckedChange={(c) => setReportBarbers(c ? barbeiros.map(b => b.id) : [])}
-                                            />
-                                            <Label htmlFor="all" className="font-bold">Todos</Label>
+                                <div className="space-y-4">
+                                    <Label className="block">{texts.professionals}</Label>
+
+                                    <div className="flex gap-4 bg-slate-800/30 p-2 rounded-lg border border-slate-800">
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox id="filter-active" checked={reportShowActive} onCheckedChange={(c) => setReportShowActive(!!c)} />
+                                            <Label htmlFor="filter-active" className="text-xs cursor-pointer">Ativos</Label>
                                         </div>
-                                        {barbeiros.map(b => (
-                                            <div key={b.id} className="flex items-center space-x-2">
-                                                <Checkbox id={`rb-${b.id}`}
-                                                    checked={reportBarbers.includes(b.id)}
-                                                    onCheckedChange={(c) => {
-                                                        if (c) setReportBarbers([...reportBarbers, b.id]);
-                                                        else setReportBarbers(reportBarbers.filter(id => id !== b.id));
-                                                    }}
-                                                />
-                                                <Label htmlFor={`rb-${b.id}`}>{b.name}</Label>
-                                            </div>
-                                        ))}
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox id="filter-inactive" checked={reportShowInactive} onCheckedChange={(c) => setReportShowInactive(!!c)} />
+                                            <Label htmlFor="filter-inactive" className="text-xs cursor-pointer">Inativos</Label>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-x-6 gap-y-3 bg-slate-800/50 p-4 rounded-lg max-h-[200px] overflow-y-auto border border-slate-700">
+                                        <div className="flex items-center space-x-2 w-full border-b border-slate-700 pb-2 mb-1">
+                                            <Checkbox id="all"
+                                                checked={reportBarbers.length === barbeiros.filter(b => (b.is_active && reportShowActive) || (!b.is_active && reportShowInactive)).length && barbeiros.filter(b => (b.is_active && reportShowActive) || (!b.is_active && reportShowInactive)).length > 0}
+                                                onCheckedChange={(c) => {
+                                                    const visibleIds = barbeiros
+                                                        .filter(b => (b.is_active && reportShowActive) || (!b.is_active && reportShowInactive))
+                                                        .map(b => b.id);
+                                                    setReportBarbers(c ? visibleIds : []);
+                                                }}
+                                            />
+                                            <Label htmlFor="all" className="font-bold cursor-pointer">Selecionar Todos Visíveis</Label>
+                                        </div>
+                                        {barbeiros
+                                            .filter(b => (b.is_active && reportShowActive) || (!b.is_active && reportShowInactive))
+                                            .map(b => (
+                                                <div key={b.id} className="flex items-center space-x-2">
+                                                    <Checkbox id={`rb-${b.id}`}
+                                                        checked={reportBarbers.includes(b.id)}
+                                                        onCheckedChange={(c) => {
+                                                            if (c) setReportBarbers([...reportBarbers, b.id]);
+                                                            else setReportBarbers(reportBarbers.filter(id => id !== b.id));
+                                                        }}
+                                                    />
+                                                    <Label htmlFor={`rb-${b.id}`} className={cn("cursor-pointer", !b.is_active && "text-slate-500 italic")}>
+                                                        {b.name} {!b.is_active && '(Inativo)'}
+                                                    </Label>
+                                                </div>
+                                            ))}
+                                        {barbeiros.filter(b => (b.is_active && reportShowActive) || (!b.is_active && reportShowInactive)).length === 0 && (
+                                            <p className="text-xs text-slate-500 w-full text-center py-2">Nenhum {texts.professional.toLowerCase()} encontrado com este filtro.</p>
+                                        )}
                                     </div>
                                 </div>
                                 <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => {
