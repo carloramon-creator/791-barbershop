@@ -855,9 +855,17 @@ export default function TutoriaisPage() {
                                     src={selectedImage}
                                     alt="Visualização ampliada"
                                     fill
-                                    className="object-contain shadow-2xl"
+                                    className="object-contain shadow-2xl blur-md grayscale opacity-90"
                                     priority
                                 />
+                                {/* Translucent Overlay in Lightbox */}
+                                <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]" />
+                                <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+                                    <div className="text-white/20 font-black uppercase tracking-[0.5em] text-2xl select-none pointer-events-none">
+                                        PROTEÇÃO DE DADOS
+                                    </div>
+                                    <p className="text-white/10 text-xs font-bold uppercase tracking-widest mt-4">Visualização Restrita para Tutorial</p>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -1051,11 +1059,11 @@ export default function TutoriaisPage() {
                                                     fill
                                                     className={cn(
                                                         "object-contain p-2 transition-all duration-700",
-                                                        "blur-[4px] opacity-50 brightness-75 group-hover:blur-[2px] group-hover:opacity-70"
+                                                        "blur-xl grayscale opacity-30 brightness-50 group-hover:blur-lg group-hover:opacity-50"
                                                     )}
                                                 />
                                                 {/* Shaded Overlay translucent */}
-                                                <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[2px] group-hover:backdrop-blur-none transition-all duration-700" />
+                                                <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm group-hover:bg-slate-950/40 transition-all duration-700" />
 
                                                 <div className="absolute inset-0 flex items-center justify-center p-4 z-20">
                                                     <div className="text-[7px] font-black text-white/20 uppercase tracking-[0.2em] text-center leading-none opacity-0 group-hover:opacity-100 transition-opacity">
