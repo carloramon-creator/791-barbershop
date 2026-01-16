@@ -222,6 +222,14 @@ export async function DELETE(req: Request) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) throw new Error('ID é obrigatório');
+
+    // Desativar barbeiro associado antes de deletar o usuário
+    await supabaseAdmin
+      .from('barbers')
+      .update({ is_active: false })
+      .eq('user_id', id)
+      .eq('tenant_id', tenant.id);
+
     const { error } = await supabaseAdmin.from('users').delete().eq('id', id).eq('tenant_id', tenant.id);
     if (error) throw error;
     return NextResponse.json({ success: true });
