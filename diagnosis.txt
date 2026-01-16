@@ -1,0 +1,15 @@
+--- DIAGNOSIS START ---
+
+Fetching Users (limit 20)...
+Error fetching users: {"code":"42703","details":null,"hint":null,"message":"column users.is_active does not exist"}
+
+Fetching Barbers (limit 20)...
+Found 6 barbers.
+Barber: Therbio | Active: true | Linked User: null
+Barber: yasmim | Active: true | Linked User: null
+Barber: Carlos Ramon Pinto | Active: false | Linked User: 4746ae4b-6e93-4390-b6e2-44688baf63d4
+Barber: juliana | Active: true | Linked User: aaacc6a2-2e7d-4e73-ab35-cbb38a40287e
+Barber: Juliana Sens | Active: true | Linked User: null
+Barber: Carlo Ramon | Active: true | Linked User: 84f7a5d0-7898-43f4-a2c4-2aa7fc12a209
+
+--- DIAGNOSIS END ---

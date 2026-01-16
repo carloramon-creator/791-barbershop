@@ -62,34 +62,31 @@ export async function GET() {
             .eq('tenant_id', tenant.id);
 
         if (currentBarbers && barberUsers) {
-            const validUserIds = new Set(barberUsers.map(u => u.id));
-
             // Identificar barbeiros que têm user_id mas este ID não está na lista de usuários válidos
             const barbersToDeactivate = currentBarbers.filter(
                 b => b.user_id && !validUserIds.has(b.user_id) && b.is_active
             );
 
-            for (const b of barbersToDeactivate) {
-                console.log(`[BACKEND] Deactivating orphaned barber ${b.id} (User ${b.user_id} not found or demoted)`);
-                await supabaseAdmin
-                    .from('barbers')
-                    .update({ is_active: false })
-                    .eq('id', b.id);
-            }
+            console.log(`[BACKEND] Deactivating orphaned barber ${b.id} (User ${b.user_id} not found or demoted)`);
+            await supabaseAdmin
+                .from('barbers')
+                .update({ is_active: false })
+                .eq('id', b.id);
         }
+    }
 
         // 3. Retornar a lista completa da tabela barbers
         const { data: barbers, error } = await supabaseAdmin
-            .from('barbers')
-            .select('*')
-            .eq('tenant_id', tenant.id)
-            .order('name');
+        .from('barbers')
+        .select('*')
+        .eq('tenant_id', tenant.id)
+        .order('name');
 
-        if (error) throw error;
-        return NextResponse.json(barbers || []);
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    if (error) throw error;
+    return NextResponse.json(barbers || []);
+} catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+}
 }
 
 export async function POST(req: Request) {
