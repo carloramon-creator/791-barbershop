@@ -15,6 +15,8 @@ export async function GET() {
 
         if (usersError) throw usersError;
 
+        const validUserIds = new Set(barberUsers?.map(u => u.id) || []);
+
         // 2. Para cada usuário barbeiro, garantir que existe uma entrada na tabela 'barbers'
         if (barberUsers && barberUsers.length > 0) {
             for (const user of barberUsers) {
@@ -55,38 +57,37 @@ export async function GET() {
         }
 
         // 2.5 Self-healing: Desativar barbeiros cujos usuários não existem mais ou perderam a role
-        // Buscar todos os barbeiros atuais
         const { data: currentBarbers } = await supabaseAdmin
             .from('barbers')
             .select('id, user_id, is_active')
             .eq('tenant_id', tenant.id);
 
         if (currentBarbers && barberUsers) {
-            // Identificar barbeiros que têm user_id mas este ID não está na lista de usuários válidos
             const barbersToDeactivate = currentBarbers.filter(
                 b => b.user_id && !validUserIds.has(b.user_id) && b.is_active
             );
 
-            console.log(`[BACKEND] Deactivating orphaned barber ${b.id} (User ${b.user_id} not found or demoted)`);
-            await supabaseAdmin
-                .from('barbers')
-                .update({ is_active: false })
-                .eq('id', b.id);
+            for (const b of barbersToDeactivate) {
+                console.log(`[BACKEND] Deactivating orphaned barber ${b.id} (User ${b.user_id} not found or demoted)`);
+                await supabaseAdmin
+                    .from('barbers')
+                    .update({ is_active: false })
+                    .eq('id', b.id);
+            }
         }
-    }
 
         // 3. Retornar a lista completa da tabela barbers
         const { data: barbers, error } = await supabaseAdmin
-        .from('barbers')
-        .select('*')
-        .eq('tenant_id', tenant.id)
-        .order('name');
+            .from('barbers')
+            .select('*')
+            .eq('tenant_id', tenant.id)
+            .order('name');
 
-    if (error) throw error;
-    return NextResponse.json(barbers || []);
-} catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-}
+        if (error) throw error;
+        return NextResponse.json(barbers || []);
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 }
 
 export async function POST(req: Request) {
