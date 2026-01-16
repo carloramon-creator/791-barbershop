@@ -755,7 +755,6 @@ export default function TutoriaisPage() {
     const [showResults, setShowResults] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isConfigExpanded, setIsConfigExpanded] = useState(true);
-    const [isPrivacyMode, setIsPrivacyMode] = useState(true);
 
     if (loading || !session) {
         return (
@@ -928,22 +927,6 @@ export default function TutoriaisPage() {
                                 </Card>
                             )}
                         </div>
-
-                        {/* Privacy Toggle */}
-                        <div className="flex items-center gap-3 bg-slate-900/40 border border-slate-800/50 p-1.5 rounded-2xl">
-                            <button
-                                onClick={() => setIsPrivacyMode(!isPrivacyMode)}
-                                className={cn(
-                                    "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                    isPrivacyMode
-                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
-                                        : "text-slate-500 hover:text-slate-300"
-                                )}
-                            >
-                                {isPrivacyMode ? <LayoutDashboard className="w-4 h-4" /> : <X className="w-4 h-4" />}
-                                {isPrivacyMode ? 'Proteção Ativa' : 'Ver Originais'}
-                            </button>
-                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -1067,17 +1050,18 @@ export default function TutoriaisPage() {
                                                     alt={`Referência ${i + 1}`}
                                                     fill
                                                     className={cn(
-                                                        "object-contain p-2 transition-all duration-500",
-                                                        isPrivacyMode && !img.includes('mockup') && !img.includes('censored') ? "blur-md grayscale opacity-40" : "opacity-80 group-hover:opacity-100"
+                                                        "object-contain p-2 transition-all duration-700",
+                                                        "blur-[4px] opacity-50 brightness-75 group-hover:blur-[2px] group-hover:opacity-70"
                                                     )}
                                                 />
-                                                {isPrivacyMode && !img.includes('mockup') && !img.includes('censored') && (
-                                                    <div className="absolute inset-0 flex items-center justify-center p-4">
-                                                        <div className="text-[8px] font-black text-white/40 uppercase tracking-tighter text-center leading-none">
-                                                            Dados<br />Ocultos
-                                                        </div>
+                                                {/* Shaded Overlay translucent */}
+                                                <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[2px] group-hover:backdrop-blur-none transition-all duration-700" />
+
+                                                <div className="absolute inset-0 flex items-center justify-center p-4 z-20">
+                                                    <div className="text-[7px] font-black text-white/20 uppercase tracking-[0.2em] text-center leading-none opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        Visualização<br />Protegida
                                                     </div>
-                                                )}
+                                                </div>
                                                 <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all backdrop-blur-[2px]">
                                                     <Maximize2 className="w-6 h-6 text-white" />
                                                 </div>
