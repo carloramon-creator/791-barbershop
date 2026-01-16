@@ -855,16 +855,16 @@ export default function TutoriaisPage() {
                                     src={selectedImage}
                                     alt="Visualização ampliada"
                                     fill
-                                    className="object-contain shadow-2xl blur-md grayscale opacity-90"
+                                    className="object-contain shadow-2xl blur-xl grayscale opacity-80"
                                     priority
                                 />
                                 {/* Translucent Overlay in Lightbox */}
-                                <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px]" />
+                                <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-md" />
                                 <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-                                    <div className="text-white/20 font-black uppercase tracking-[0.5em] text-2xl select-none pointer-events-none">
-                                        PROTEÇÃO DE DADOS
+                                    <div className="text-white/10 font-black uppercase tracking-[0.8em] text-3xl md:text-5xl select-none pointer-events-none text-center">
+                                        PROTEÇÃO DE DADOS<br />CONFIDENCIAIS
                                     </div>
-                                    <p className="text-white/10 text-xs font-bold uppercase tracking-widest mt-4">Visualização Restrita para Tutorial</p>
+                                    <p className="text-white/5 text-[10px] md:text-xs font-bold uppercase tracking-[0.3em] mt-8">O conteúdo original está oculto para preservar a privacidade</p>
                                 </div>
                             </div>
                         </div>
@@ -1046,12 +1046,13 @@ export default function TutoriaisPage() {
                                     </div>
 
                                     {/* Image Gallery With Lightbox Trigger */}
-                                    <div className="flex flex-wrap gap-3 shrink-0 lg:max-w-md xl:max-w-[420px] bg-slate-950/40 p-3 rounded-3xl border border-white/5">
+                                    {/* Image Gallery - ALBUM STYLE */}
+                                    <div className="flex gap-4 overflow-x-auto pb-4 shrink-0 w-full lg:max-w-md xl:max-w-[420px] bg-slate-950/40 p-4 rounded-3xl border border-white/5 snap-x">
                                         {activeTutorial.images.map((img, i) => (
                                             <div
                                                 key={i}
                                                 onClick={() => setSelectedImage(img)}
-                                                className="relative w-24 h-24 md:w-28 md:h-28 bg-slate-900 rounded-2xl overflow-hidden border-2 border-slate-800 hover:border-blue-500 hover:scale-105 transition-all group cursor-zoom-in shadow-lg shadow-black/40"
+                                                className="relative w-32 h-32 md:w-40 md:h-40 bg-slate-900 rounded-2xl overflow-hidden border-2 border-slate-800 hover:border-blue-500 hover:scale-[1.02] transition-all group cursor-zoom-in shadow-xl shadow-black/60 shrink-0 snap-center"
                                             >
                                                 <Image
                                                     src={img}
@@ -1059,22 +1060,22 @@ export default function TutoriaisPage() {
                                                     fill
                                                     className={cn(
                                                         "object-contain p-2 transition-all duration-700",
-                                                        "blur-xl grayscale opacity-30 brightness-50 group-hover:blur-lg group-hover:opacity-50"
+                                                        "blur-2xl grayscale opacity-20 brightness-50 group-hover:blur-xl group-hover:opacity-40"
                                                     )}
                                                 />
                                                 {/* Shaded Overlay translucent */}
-                                                <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm group-hover:bg-slate-950/40 transition-all duration-700" />
+                                                <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md group-hover:bg-slate-950/60 transition-all duration-700" />
 
                                                 <div className="absolute inset-0 flex items-center justify-center p-4 z-20">
-                                                    <div className="text-[7px] font-black text-white/20 uppercase tracking-[0.2em] text-center leading-none opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        Visualização<br />Protegida
+                                                    <div className="text-[6px] font-black text-white/10 uppercase tracking-[0.3em] text-center leading-none group-hover:text-white/20 transition-colors">
+                                                        ACESSO<br />RESTRITO
                                                     </div>
                                                 </div>
                                                 <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all backdrop-blur-[2px]">
                                                     <Maximize2 className="w-6 h-6 text-white" />
                                                 </div>
-                                                <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded-md bg-slate-950/80 border border-white/10 text-[9px] font-black text-white uppercase">
-                                                    Img {i + 1}
+                                                <div className="absolute bottom-2 left-2 px-2 py-1 rounded-md bg-slate-950/90 border border-white/10 text-[8px] font-black text-white/40 uppercase tracking-widest">
+                                                    FOTO {i + 1}
                                                 </div>
                                             </div>
                                         ))}
