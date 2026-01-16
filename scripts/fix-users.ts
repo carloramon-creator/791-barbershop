@@ -22,27 +22,27 @@ async function fixUsers() {
     // Actually, the client library allows update with filters.
 
     // 1. Fix NULLs
-    const { error: error1, count: count1 } = await supabase
+    const { error: error1, data: data1 } = await supabase
         .from('users')
         .update({ is_active: true })
         .is('is_active', null)
-        .select('id', { count: 'exact' });
+        .select('id');
 
     if (error1) console.error('Error fixing NULLs:', error1);
-    else console.log(`Fixed ${count1} users with NULL is_active.`);
+    else console.log(`Fixed ${data1?.length || 0} users with NULL is_active.`);
 
     // 2. Fix FALSEs (if we assumed they were archived by mistake, but maybe we shouldn't indiscriminately fix FALSE?)
     // The user said "não aparece nenhum usuário", implying EVERYONE disappeared.
     // So it's safer to set ALL to true to restore visibility, considering the migration just happened.
 
-    const { error: error2, count: count2 } = await supabase
+    const { error: error2, data: data2 } = await supabase
         .from('users')
         .update({ is_active: true })
         .eq('is_active', false)
-        .select('id', { count: 'exact' });
+        .select('id');
 
     if (error2) console.error('Error fixing FALSEs:', error2);
-    else console.log(`Fixed ${count2} users with FALSE is_active.`);
+    else console.log(`Fixed ${data2?.length || 0} users with FALSE is_active.`);
 
     console.log('Done.');
 }
