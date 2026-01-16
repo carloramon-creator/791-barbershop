@@ -104,11 +104,22 @@ export async function GET(req: Request) {
             return { start: startGrid, end: endGrid, isSameDayInBR };
         }).filter(a => a.isSameDayInBR) || [];
 
-        // 5. Almoço
+        // 5. Almoço com Deslocamento Dinâmico
         let effLunchStart = new Date(baseDate);
         const [lH, lM] = (openingHours.lunch_start || '12:00').split(':').map(Number);
         effLunchStart.setHours(lH, lM, 0, 0);
         let effLunchEnd = addMinutes(effLunchStart, Number(openingHours.lunch_duration || 0));
+
+        if (Number(openingHours.lunch_duration) > 0) {
+            // Se houver um agendamento que cruza o início do almoço, empurra o almoço para frente
+            const blockingApt = normalizedAppointments.find(apt =>
+                (apt.start.getTime() <= effLunchStart.getTime() && apt.end.getTime() > effLunchStart.getTime())
+            );
+            if (blockingApt) {
+                effLunchStart = new Date(blockingApt.end);
+                effLunchEnd = addMinutes(effLunchStart, Number(openingHours.lunch_duration));
+            }
+        }
 
         // 6. Gerar Slots
         const slots: any[] = [];
@@ -134,7 +145,8 @@ export async function GET(req: Request) {
             else if (openingHours.lunch_duration > 0 && current.getTime() < effLunchEnd.getTime() && slotEnd.getTime() > effLunchStart.getTime()) {
                 const overlapStart = Math.max(current.getTime(), effLunchStart.getTime());
                 const overlapEnd = Math.min(slotEnd.getTime(), effLunchEnd.getTime());
-                if ((overlapEnd - overlapStart) > (30 * 60 * 1000)) status = 'lunch';
+                // Se houver QUALQUER sobreposição com o almoço (mais de 1 minuto), bloqueia o slot
+                if ((overlapEnd - overlapStart) >= (1 * 60 * 1000)) status = 'lunch';
             } else {
                 const isOccupied = normalizedAppointments.some((apt: any) => (current.getTime() < apt.end.getTime() && slotEnd.getTime() > apt.start.getTime()));
                 if (isOccupied) status = 'occupied';

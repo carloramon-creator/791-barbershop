@@ -168,9 +168,9 @@ export async function GET(req: Request) {
                 const overlapStart = Math.max(current.getTime(), effLunchStart.getTime());
                 const overlapEnd = Math.min(slotEnd.getTime(), effLunchEnd.getTime());
                 const overlapMs = overlapEnd - overlapStart;
-                const toleranceMs = 30 * 60 * 1000; // 30 minutes tolerance
+                const toleranceMs = 1 * 60 * 1000; // 1 minute tolerance
 
-                if (overlapMs > toleranceMs) {
+                if (overlapMs >= toleranceMs) {
                     status = 'lunch';
                 }
             }
