@@ -409,22 +409,24 @@ export default function BarbeirosPage() {
                             <TableCell>
                                 <div className={cn(
                                     "flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase w-fit",
-                                    (b.status === 'available' || b.status === 'busy')
+                                    (b.is_active && (b.status === 'available' || b.status === 'busy'))
                                         ? "bg-emerald-500/10 text-emerald-500"
                                         : "bg-red-500/10 text-red-500"
                                 )}>
-                                    <div className={cn("w-1.5 h-1.5 rounded-full", (b.status === 'available' || b.status === 'busy') ? "bg-emerald-500" : "bg-red-500")} />
-                                    {(b.status === 'available' || b.status === 'busy') ? 'Online' : 'Offline'}
+                                    <div className={cn("w-1.5 h-1.5 rounded-full", (b.is_active && (b.status === 'available' || b.status === 'busy')) ? "bg-emerald-500" : "bg-red-500")} />
+                                    {(b.is_active && (b.status === 'available' || b.status === 'busy')) ? 'Online' : 'Offline'}
                                 </div>
                             </TableCell>
                             <TableCell>
                                 <span className={cn(
                                     "px-2 py-1 rounded-full text-[10px] font-bold uppercase",
-                                    b.status === 'available' ? "text-slate-500" :
-                                        b.status === 'busy' ? "bg-yellow-500/10 text-yellow-500" : "text-slate-600"
+                                    !b.is_active ? "text-slate-600" :
+                                        b.status === 'available' ? "text-slate-500" :
+                                            b.status === 'busy' ? "bg-yellow-500/10 text-yellow-500" : "text-slate-600"
                                 )}>
-                                    {b.status === 'available' ? 'Livre' :
-                                        b.status === 'busy' ? 'Atendendo' : '---'}
+                                    {!b.is_active ? 'Inativo' :
+                                        b.status === 'available' ? 'Livre' :
+                                            b.status === 'busy' ? 'Atendendo' : '---'}
                                 </span>
                             </TableCell>
                             <TableCell className="text-right space-x-2">
