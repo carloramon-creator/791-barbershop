@@ -840,7 +840,7 @@ export default function UsersPage() {
                             <DropdownMenuSeparator className="bg-slate-800" />
                             <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => handleRemoveUser(u.id)}>
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Remover da Barbearia
+                              Arquivar / Inativar
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

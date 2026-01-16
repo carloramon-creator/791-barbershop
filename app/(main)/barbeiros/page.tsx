@@ -75,6 +75,11 @@ export default function BarbeirosPage() {
         }
     };
 
+    const [showInactive, setShowInactive] = useState(false);
+
+    // Filtered list based on active state
+    const filteredBarbers = barbeiros.filter(b => showInactive ? !b.is_active : b.is_active);
+
     useEffect(() => {
         fetchBarbeiros();
         fetchServices();
@@ -178,6 +183,17 @@ export default function BarbeirosPage() {
                 </div>
 
                 <div className="flex gap-2">
+                    <Button
+                        variant={showInactive ? "default" : "outline"}
+                        onClick={() => setShowInactive(!showInactive)}
+                        className={cn(
+                            "border-slate-800 transition-all",
+                            showInactive ? "bg-slate-700 text-slate-100" : "text-slate-400 hover:text-white"
+                        )}
+                    >
+                        {showInactive ? 'Ver Ativos' : 'Ver Inativos'}
+                    </Button>
+
                     <Button onClick={fetchBarbeiros} variant="outline" className="border-slate-800 text-slate-400 hover:text-white">
                         <RefreshCw size={16} className={cn("mr-2", loading && "animate-spin")} />
                         Atualizar
@@ -370,9 +386,9 @@ export default function BarbeirosPage() {
                 <TableBody>
                     {loading ? (
                         <TableRow><TableCell colSpan={5} className="text-center py-8 text-slate-500">Carregando...</TableCell></TableRow>
-                    ) : barbeiros.length === 0 ? (
-                        <TableRow><TableCell colSpan={5} className="text-center py-8 text-slate-500">Nenhum {texts.professional.toLowerCase()} ativo encontrado.</TableCell></TableRow>
-                    ) : barbeiros.map((b) => (
+                    ) : filteredBarbers.length === 0 ? (
+                        <TableRow><TableCell colSpan={5} className="text-center py-8 text-slate-500">Nenhum {texts.professional.toLowerCase()} {showInactive ? 'inativo' : 'ativo'} encontrado.</TableCell></TableRow>
+                    ) : filteredBarbers.map((b) => (
                         <TableRow key={b.id} className={cn("border-slate-800 group hover:bg-slate-900/50 transition-colors", !b.is_active && "opacity-50")}>
                             <TableCell>
                                 <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-700">
