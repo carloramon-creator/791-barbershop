@@ -86,15 +86,21 @@ export async function POST(
 
         // 5. Enviar Notificação Push para o cliente
         try {
-            // client variable is available from step 2
-            if (client && client.fcm_token) {
+            // Re-busca o client para garantir que temos o fcm_token mais atualizado
+            const { data: clientData } = await supabaseAdmin
+                .from('clients')
+                .select('fcm_token')
+                .eq('id', client.id)
+                .single();
+
+            if (clientData?.fcm_token) {
                 const { firebaseAdmin } = await import('@/lib/firebase-admin');
                 if (firebaseAdmin.apps.length) {
                     await firebaseAdmin.messaging().send({
-                        token: client.fcm_token,
+                        token: clientData.fcm_token,
                         notification: {
-                            title: 'Seu horário chegou!',
-                            body: `O seu atendimento foi iniciado.`,
+                            title: 'Sua vez chegou!',
+                            body: `O seu atendimento foi iniciado. Dirija-se à cadeira!`,
                         },
                         webpush: {
                             fcmOptions: {
