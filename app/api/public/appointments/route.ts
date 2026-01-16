@@ -76,6 +76,14 @@ export async function POST(req: Request) {
 
         if (aptError) throw aptError;
 
+        // 3. Atualizar FCM Token do cliente se fornecido
+        if (body.fcm_token && clientId) {
+            await supabaseAdmin
+                .from('clients')
+                .update({ fcm_token: body.fcm_token })
+                .eq('id', clientId);
+        }
+
         return addCorsHeaders(req, NextResponse.json(appointment));
     } catch (error: any) {
         return addCorsHeaders(req, NextResponse.json({ error: error.message }, { status: 500 }));

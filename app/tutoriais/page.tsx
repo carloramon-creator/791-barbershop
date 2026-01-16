@@ -600,27 +600,139 @@ const getTutorialContent = (texts: any, tenant: any) => [
         description: 'Ofereça uma experiência premium. Seus clientes agendam em segundos, sem precisar baixar nada na App Store ou Play Store.',
         steps: [
             {
-                title: 'Instalação Ágil',
-                content: 'Ao abrir seu link, o cliente pode clicar em "Instalar" ou "Adicionar à Tela de Início". O sistema se comporta como um aplicativo real, com ícone e tela cheia.',
+                title: 'O que é um PWA?',
+                content: 'Diferente de apps comuns, o PWA funciona direto no navegador mas se comporta como um app instalado, ocupando pouco espaço e enviando notificações reais.',
                 imageIndex: 0
             },
             {
-                title: 'Agendamento em 3 Cliques',
-                content: 'O fluxo é intuitivo: selecionar serviço, profissional e horário. O sistema já pré-preenche os dados para clientes recorrentes.',
+                title: 'Vantagens do App',
+                content: 'Histórico de agendamentos, ticket virtual da fila em tempo real, lembretes push e facilidade de agendamento recorrente sem login burocrático.',
                 imageIndex: 1
             },
             {
-                title: 'Notificações Push Reais',
-                content: 'Diferente do WhatsApp, o App envia notificações do sistema (banners) avisando sobre promoções ou que a vez do cliente na fila chegou.',
+                title: 'Notificações Push',
+                content: 'O cliente recebe avisos diretamente na tela de bloqueio quando sua vez está chegando ou quando um agendamento é confirmado.',
+                imageIndex: 2
+            }
+        ],
+        tip: 'Incentive seus clientes a instalarem o App. Isso aumenta a taxa de retorno em até 35%.'
+    },
+    {
+        id: 'pwa-ios',
+        title: '13 - Instalando no iPhone (iOS)',
+        icon: Zap,
+        images: [
+            '/tutorials/pwa-ios-1.png',
+            '/tutorials/pwa-ios-2.png',
+            '/tutorials/pwa-ios-3.png',
+            '/tutorials/pwa-ios-4.png'
+        ],
+        description: 'Guia para orientar usuários de iPhone a instalarem o link da barbearia como um aplicativo na tela de início.',
+        steps: [
+            {
+                title: 'Abrir no Safari',
+                content: 'O cliente deve abrir o link da barbearia usando o navegador Safari (ícone da bússola).',
+                imageIndex: 0
+            },
+            {
+                title: 'Menu Compartilhar',
+                content: 'Toque no ícone de "Compartilhar" (o quadrado com uma seta para cima) na barra inferior do navegador.',
+                imageIndex: 1
+            },
+            {
+                title: 'Adicionar à Tela de Início',
+                content: 'Role a lista de opções para baixo e procure por "Adicionar à Tela de Início".',
                 imageIndex: 2
             },
             {
-                title: 'Acompanhamento de Status',
-                content: 'O cliente vê em tempo real se o profissional está atrasado ou se a fila está andando, direto pelo "Ticket Virtual" no celular.',
-                imageIndex: 1
+                title: 'Confirmar e Abrir',
+                content: 'Toque em "Adicionar" no canto superior direito. Agora o ícone da barbearia aparecerá junto com seus outros aplicativos.',
+                imageIndex: 3
             }
         ],
-        tip: 'Incentive seus melhores clientes a instalarem o App. Isso aumenta a frequência deles na sua barbearia em até 35%.'
+        tip: 'No iPhone, as notificações Push só funcionam se o cliente adicionar o site à Tela de Início.'
+    },
+    {
+        id: 'fila-cliente',
+        title: '14 - Como Entrar na Fila (Cliente)',
+        icon: UserCheck,
+        images: [
+            '/tutorials/queue-client-1.png',
+            '/tutorials/queue-client-2.png',
+            '/tutorials/queue-client-3.png',
+            '/tutorials/queue-client-4.png',
+            '/tutorials/queue-client-5.png'
+        ],
+        description: 'Passo a passo do cliente para entrar na lista de espera digital pelo celular.',
+        steps: [
+            {
+                title: 'Tela Inicial',
+                content: 'O cliente clica no botão principal "Entrar na Fila" para iniciar o processo.',
+                imageIndex: 0
+            },
+            {
+                title: 'Seleção de Barbeiro',
+                content: 'Ele pode escolher um profissional específico ou selecionar "Qualquer Barbeiro" para ser atendido por quem liberar primeiro.',
+                imageIndex: 1
+            },
+            {
+                title: 'Detalhes e Espera',
+                content: 'Ao selecionar o profissional, o sistema mostra o tempo estimado e quantas pessoas estão na frente.',
+                imageIndex: 2
+            },
+            {
+                title: 'Confirmação na Fila',
+                content: 'O cliente agora vê sua posição exata e pode acompanhar o cronômetro de qualquer lugar.',
+                imageIndex: 3
+            },
+            {
+                title: 'Aviso de Chamada',
+                content: 'Quando o barbeiro o chama, o celular vibra e mostra o aviso: "Sua vez chegou!".',
+                imageIndex: 4
+            }
+        ],
+        tip: 'Explique aos clientes que eles podem sair para tomar um café e acompanhar a fila pelo celular sem perder a vez.'
+    },
+    {
+        id: 'agendamento-cliente',
+        title: '15 - Como Agendar (Cliente)',
+        icon: Calendar,
+        images: [
+            '/tutorials/appt-client-1.png',
+            '/tutorials/appt-client-2.png',
+            '/tutorials/appt-client-3.png',
+            '/tutorials/appt-client-4.png',
+            '/tutorials/appt-client-5.png'
+        ],
+        description: 'Guia para o cliente realizar um agendamento futuro de forma autônoma pelo App.',
+        steps: [
+            {
+                title: 'Escolha de Serviços',
+                content: 'O cliente seleciona um ou mais serviços que deseja realizar. O valor e o tempo total são atualizados.',
+                imageIndex: 0
+            },
+            {
+                title: 'Seleção do Profissional',
+                content: 'Ele escolhe o profissional de sua preferência ou "Qualquer um" para maior disponibilidade.',
+                imageIndex: 1
+            },
+            {
+                title: 'Data e Horário',
+                content: 'O cliente navega pelo calendário e escolhe um dos horários livres mostrados pelo sistema.',
+                imageIndex: 2
+            },
+            {
+                title: 'Revisão e Confirmar',
+                content: 'Uma tela de resumo aparece com todos os detalhes. Basta clicar em "Confirmar" para reservar o horário.',
+                imageIndex: 3
+            },
+            {
+                title: 'Agendamento Realizado',
+                content: 'Tudo pronto! O agendamento é registrado e o cliente pode visualizá-lo em "Meus Agendamentos".',
+                imageIndex: 4
+            }
+        ],
+        tip: 'O sistema evita "conflito de horários" e garante que nenhum serviço seja marcado em horários já ocupados.'
     }
 ];
 
