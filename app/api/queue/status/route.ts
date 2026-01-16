@@ -16,6 +16,7 @@ export async function GET() {
             .from('barbers')
             .select('*, users(photo_url, name, nickname)')
             .eq('tenant_id', tenant.id)
+            .eq('is_active', true)
             .order('name', { ascending: true });
 
         if (barbersError) throw barbersError;
