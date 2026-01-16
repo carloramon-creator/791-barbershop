@@ -32,28 +32,34 @@ const getTutorialContent = (texts: any, tenant: any) => [
         id: 'dashboard',
         title: '2 - Dashboard: Visão Geral',
         icon: LayoutDashboard,
-        images: ['/tutorials/dashboard-1.png'],
+        images: [
+            '/tutorials/dashboard-1.png',
+            '/tutorials/dashboard-metrics.png',
+            '/tutorials/dashboard-filters.png',
+            '/tutorials/dashboard-queue.png',
+            '/tutorials/dashboard-status.png'
+        ],
         description: 'Seu centro de comando. Acompanhe os principais números do seu negócio em tempo real.',
         steps: [
             {
                 title: 'Métricas de Performance',
                 content: 'Visualize o faturamento total do período, a quantidade de atendimentos concluídos e a média de espera real dos seus clientes.',
-                imageIndex: 0
+                imageIndex: 1
             },
             {
                 title: 'Filtros Inteligentes',
                 content: 'Alterne entre as visões de "Semana", "Quinzena" ou "Mês" para analisar o crescimento e as tendências do seu negócio.',
-                imageIndex: 0
+                imageIndex: 2
             },
             {
                 title: 'Monitoramento da Fila',
                 content: 'Veja quantos clientes estão aguardando agora, quantos profissionais estão online e qual a previsão de espera para novos clientes.',
-                imageIndex: 0
+                imageIndex: 3
             },
             {
                 title: 'Status da Equipe',
                 content: `Acompanhe em tempo real quem está "Livre", "Em Atendimento" ou "Offline". Essencial para gerir a escala do dia.`,
-                imageIndex: 0
+                imageIndex: 4
             }
         ],
         tip: 'O Dashboard é a bússola do seu negócio. Consulte-o diariamente para entender os horários de pico e otimizar sua equipe.'

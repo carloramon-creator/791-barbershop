@@ -195,9 +195,25 @@ export default function UsersPage() {
       if (editingUserId) {
         const result = await Api.updateUser(payload);
 
-        const bId = result.barber?.id || result.id || currentBarberId;
-        if (bId && inviteRoles.includes('barber')) {
-          await Api.updateBarberServices(bId, selectedServiceIds);
+        if (inviteRoles.includes('barber')) {
+          let bId = result.barber?.id || currentBarberId;
+
+          // Fallback seguro: buscar ID do barbeiro se não estiver disponível
+          if (!bId) {
+            const { data: bData } = await supabaseClient
+              .from('barbers')
+              .select('id')
+              .eq('user_id', result.id)
+              .single();
+            bId = bData?.id;
+          }
+
+          if (bId) {
+            await Api.updateBarberServices(bId, selectedServiceIds);
+          } else {
+            console.error('Barber profile not found for user', result.id);
+            alert('Atenção: Perfil de barbeiro não encontrado. Os serviços não foram vinculados.');
+          }
         }
 
         setIsInviteOpen(false);
