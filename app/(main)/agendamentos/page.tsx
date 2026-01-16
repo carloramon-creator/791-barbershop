@@ -329,6 +329,7 @@ export default function AppointmentsPage() {
         }
         setActiveQueueId(appt.queue_id);
         setActiveAppointmentId(null);
+        setCurrentDraftItems(appt.draft_items || null);
         setInitialServiceIds(appt.service_ids || []);
         setSaleDialogMode('finish'); // Default
         setShowSaleDialog(true);
@@ -342,6 +343,7 @@ export default function AppointmentsPage() {
 
     // Filter barbers who perform ALL selected services
     const availableBarbers = barbers.filter(b => {
+        if (b.is_active === false) return false; // Filter out inactive professionals
         if (!b.status) return true; // Fail safe
         if (selectedServices.length === 0) return true;
         // Check if barber has all selected service IDs

@@ -67,8 +67,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                 // Fetch latest draft items from server to avoid stale props
                 if (queueId) {
                     try {
-                        const qStatus = await Api.getQueueStatus(); // This returns all, might be heavy but safe for now
-                        // Flatten data to find ours
+                        const qStatus = await Api.getQueueStatus();
                         let myItem: any = null;
                         if (Array.isArray(qStatus)) {
                             for (const b of qStatus) {
@@ -80,17 +79,21 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                             freshItems = myItem.draft_items;
                         }
                     } catch (e) { console.error('Error fetching fresh queue draft:', e); }
-
                 } else if (appointmentId) {
-                    // Similar logic for appointments if we had a single fetcher
-                    // relying on passed props for appts for now as they are less real-time prone than queue
+                    try {
+                        const allAppointments = await Api.getAllAppointments();
+                        const myAppt = allAppointments.find((a: any) => a.id === appointmentId);
+                        if (myAppt && myAppt.draft_items) {
+                            freshItems = myAppt.draft_items;
+                        }
+                    } catch (e) { console.error('Error fetching fresh appointment draft:', e); }
                 }
 
-                // Priority: Fresh Fetch -> Initial Draft Props -> Initial Service IDs
-                if (freshItems.length > 0) {
-                    setSelectedItems(freshItems);
-                } else if (initialDraftItems && initialDraftItems.length > 0) {
+                // Priority: Pass Props -> Fresh Fetch -> Initial Service IDs
+                if (initialDraftItems && initialDraftItems.length > 0) {
                     setSelectedItems(initialDraftItems);
+                } else if (freshItems.length > 0) {
+                    setSelectedItems(freshItems);
                 } else if (initialServiceIds && initialServiceIds.length > 0) {
                     const prefilled = servicesData
                         .filter((srv: Service) => initialServiceIds.includes(srv.id))
