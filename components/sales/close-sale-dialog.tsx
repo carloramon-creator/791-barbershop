@@ -89,13 +89,32 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                     } catch (e) { console.error('Error fetching fresh appointment draft:', e); }
                 }
 
-                // Priority: Pass Props -> Fresh Fetch -> Initial Service IDs
-                if (initialDraftItems && initialDraftItems.length > 0) {
-                    setSelectedItems(initialDraftItems);
-                } else if (freshItems.length > 0) {
-                    setSelectedItems(freshItems);
+                // Priority: Use Draft (Props or Fresh) and merge with Initial Service IDs if missing
+                let finalItems: SelectedItem[] = [];
+                let baseItems: SelectedItem[] = (initialDraftItems && initialDraftItems.length > 0) ? initialDraftItems : freshItems;
+
+                if (baseItems.length > 0) {
+                    finalItems = [...baseItems];
+
+                    // Se temos serviços iniciais, garantimos que eles estejam no draft
+                    if (initialServiceIds && initialServiceIds.length > 0) {
+                        const existingServiceIds = baseItems.filter(i => i.type === 'service').map(i => i.id);
+                        const missingServices = servicesData
+                            .filter((srv: Service) => initialServiceIds.includes(srv.id) && !existingServiceIds.includes(srv.id))
+                            .map((srv: Service) => ({
+                                id: srv.id,
+                                name: srv.name,
+                                price: srv.price,
+                                type: 'service' as const,
+                                qty: 1
+                            }));
+
+                        if (missingServices.length > 0) {
+                            finalItems = [...finalItems, ...missingServices];
+                        }
+                    }
                 } else if (initialServiceIds && initialServiceIds.length > 0) {
-                    const prefilled = servicesData
+                    finalItems = servicesData
                         .filter((srv: Service) => initialServiceIds.includes(srv.id))
                         .map((srv: Service) => ({
                             id: srv.id,
@@ -104,8 +123,8 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                             type: 'service' as const,
                             qty: 1
                         }));
-                    setSelectedItems(prefilled);
                 }
+                setSelectedItems(finalItems);
             } catch (err) {
                 console.error('Erro ao buscar dados para venda:', err);
             }

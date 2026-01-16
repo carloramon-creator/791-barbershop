@@ -224,7 +224,19 @@ export default function AppointmentsPage() {
     };
 
     const handleConfirm = async () => {
-        if (!selectedBarber || !selectedServices.length || (wizardMode === 'booking' && !selectedTime) || isSubmitting) return;
+        // Validation: No barber, no services, or missing booking time/client info
+        if (!selectedBarber || !selectedServices.length || isSubmitting) return;
+
+        if (wizardMode === 'booking') {
+            if (!selectedTime || !clientName.trim() || !clientPhone.trim()) {
+                return;
+            }
+        } else if (wizardMode === 'walkin') {
+            // Para walk-in o nome é opcional (default 'Cliente Balcão') mas o telefone pode ser util se fornecido
+            if (!clientName.trim() && !clientPhone.trim()) {
+                // Se ambos vazios, permitimos (usa default), mas se começou a preencher um, permitimos também
+            }
+        }
 
         setIsSubmitting(true);
         try {
@@ -703,7 +715,9 @@ export default function AppointmentsPage() {
                                         disabled={
                                             (step === 1 && selectedServices.length === 0) ||
                                             (step === 2 && !selectedBarber) ||
-                                            (step === 3 && wizardMode === 'booking' && (!selectedDate || !selectedTime))
+                                            (step === 3 && wizardMode === 'booking' && (!selectedDate || !selectedTime)) ||
+                                            (step === 4 && wizardMode === 'booking' && (!clientName.trim() || !clientPhone.trim())) ||
+                                            (step === 3 && wizardMode === 'walkin' && !clientName.trim())
                                         }
                                         className="bg-blue-600 hover:bg-blue-700 text-white px-8"
                                     >
@@ -712,7 +726,11 @@ export default function AppointmentsPage() {
                                 ) : (
                                     <Button
                                         onClick={handleConfirm}
-                                        disabled={isSubmitting}
+                                        disabled={
+                                            isSubmitting ||
+                                            (wizardMode === 'booking' && (!clientName.trim() || !clientPhone.trim())) ||
+                                            (wizardMode === 'walkin' && !clientName.trim())
+                                        }
                                         className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 shadow-lg shadow-emerald-900/20 min-w-[200px]"
                                     >
                                         {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle2 size={16} className="mr-2" />}
