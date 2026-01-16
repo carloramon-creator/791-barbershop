@@ -9,6 +9,7 @@ import {
     Users,
     BarChart3,
     MessageSquare,
+    ChevronLeft,
     ChevronRight,
     ChevronDown,
     CheckCircle2,
@@ -753,7 +754,7 @@ export default function TutoriaisPage() {
     const [activeTab, setActiveTab] = useState(tutorials[0].id);
     const [searchQuery, setSearchQuery] = useState('');
     const [showResults, setShowResults] = useState(false);
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
     const [isConfigExpanded, setIsConfigExpanded] = useState(true);
 
     if (loading || !session) {
@@ -808,6 +809,7 @@ export default function TutoriaisPage() {
         setActiveTab(newId);
         setSearchQuery('');
         setShowResults(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleSelectResult = (result: any) => {
@@ -842,29 +844,49 @@ export default function TutoriaisPage() {
                 <div className="space-y-10 animate-in fade-in duration-500 pb-24 relative">
 
                     {/* Image Modal (Lightbox) */}
-                    {selectedImage && (
+                    {selectedImageIndex !== null && (
                         <div
-                            className="fixed inset-0 z-[100] bg-slate-950/98 flex items-center justify-center p-4 md:p-12 animate-in fade-in duration-300 cursor-pointer backdrop-blur-md"
-                            onClick={() => setSelectedImage(null)}
+                            className="fixed inset-0 z-[100] bg-slate-950/95 flex items-center justify-center p-4 md:p-12 animate-in fade-in duration-300 backdrop-blur-xl"
+                            onClick={() => setSelectedImageIndex(null)}
                         >
                             <button className="absolute top-8 right-8 p-3 rounded-full bg-slate-900 border border-slate-800 text-slate-100 hover:bg-slate-800 transition-all z-[110] shadow-2xl">
                                 <X className="w-6 h-6" />
                             </button>
-                            <div className="relative w-full h-full">
+
+                            {/* Navigation Arrows */}
+                            {activeTutorial.images.length > 1 && (
+                                <>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedImageIndex((prev) => (prev === 0 ? activeTutorial.images.length - 1 : prev! - 1));
+                                        }}
+                                        className="absolute left-4 md:left-8 p-4 rounded-full bg-slate-900/80 border border-slate-800 text-slate-100 hover:bg-blue-600 transition-all z-[110] shadow-2xl"
+                                    >
+                                        <ChevronLeft className="w-8 h-8" />
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedImageIndex((prev) => (prev === activeTutorial.images.length - 1 ? 0 : prev! + 1));
+                                        }}
+                                        className="absolute right-4 md:right-8 p-4 rounded-full bg-slate-900/80 border border-slate-800 text-slate-100 hover:bg-blue-600 transition-all z-[110] shadow-2xl"
+                                    >
+                                        <ChevronRight className="w-8 h-8" />
+                                    </button>
+                                </>
+                            )}
+
+                            <div className="relative w-full h-full" onClick={(e) => e.stopPropagation()}>
                                 <Image
-                                    src={selectedImage}
+                                    src={activeTutorial.images[selectedImageIndex]}
                                     alt="Visualização ampliada"
                                     fill
-                                    className="object-contain shadow-2xl blur-xl grayscale opacity-80"
+                                    className="object-contain shadow-2xl"
                                     priority
                                 />
-                                {/* Translucent Overlay in Lightbox */}
-                                <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-md" />
-                                <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-                                    <div className="text-white/10 font-black uppercase tracking-[0.8em] text-3xl md:text-5xl select-none pointer-events-none text-center">
-                                        PROTEÇÃO DE DADOS<br />CONFIDENCIAIS
-                                    </div>
-                                    <p className="text-white/5 text-[10px] md:text-xs font-bold uppercase tracking-[0.3em] mt-8">O conteúdo original está oculto para preservar a privacidade</p>
+                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/80 border border-slate-800 px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest text-slate-100">
+                                    Foto {selectedImageIndex + 1} de {activeTutorial.images.length}
                                 </div>
                             </div>
                         </div>
@@ -1047,34 +1069,24 @@ export default function TutoriaisPage() {
 
                                     {/* Image Gallery With Lightbox Trigger */}
                                     {/* Image Gallery - ALBUM STYLE */}
-                                    <div className="flex gap-4 overflow-x-auto pb-4 shrink-0 w-full lg:max-w-md xl:max-w-[420px] bg-slate-950/40 p-4 rounded-3xl border border-white/5 snap-x">
+                                    <div className="flex gap-4 overflow-x-auto pb-4 shrink-0 w-full lg:max-w-md xl:max-w-[420px] bg-slate-900/40 p-4 rounded-3xl border border-white/5 snap-x scrollbar-hide">
                                         {activeTutorial.images.map((img, i) => (
                                             <div
                                                 key={i}
-                                                onClick={() => setSelectedImage(img)}
-                                                className="relative w-32 h-32 md:w-40 md:h-40 bg-slate-900 rounded-2xl overflow-hidden border-2 border-slate-800 hover:border-blue-500 hover:scale-[1.02] transition-all group cursor-zoom-in shadow-xl shadow-black/60 shrink-0 snap-center"
+                                                onClick={() => setSelectedImageIndex(i)}
+                                                className="relative w-32 h-32 md:w-40 md:h-40 bg-slate-900 rounded-2xl overflow-hidden border-2 border-slate-800 hover:border-blue-500 hover:scale-[1.02] transition-all group cursor-zoom-in shadow-xl shadow-black/40 shrink-0 snap-center"
                                             >
                                                 <Image
                                                     src={img}
                                                     alt={`Referência ${i + 1}`}
                                                     fill
-                                                    className={cn(
-                                                        "object-contain p-2 transition-all duration-700",
-                                                        "blur-2xl grayscale opacity-20 brightness-50 group-hover:blur-xl group-hover:opacity-40"
-                                                    )}
+                                                    className="object-contain p-2 transition-all duration-700 opacity-80 group-hover:opacity-100"
                                                 />
-                                                {/* Shaded Overlay translucent */}
-                                                <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md group-hover:bg-slate-950/60 transition-all duration-700" />
 
-                                                <div className="absolute inset-0 flex items-center justify-center p-4 z-20">
-                                                    <div className="text-[6px] font-black text-white/10 uppercase tracking-[0.3em] text-center leading-none group-hover:text-white/20 transition-colors">
-                                                        ACESSO<br />RESTRITO
-                                                    </div>
+                                                <div className="absolute inset-0 bg-blue-600/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                                                    <Maximize2 className="w-8 h-8 text-white/50" />
                                                 </div>
-                                                <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all backdrop-blur-[2px]">
-                                                    <Maximize2 className="w-6 h-6 text-white" />
-                                                </div>
-                                                <div className="absolute bottom-2 left-2 px-2 py-1 rounded-md bg-slate-950/90 border border-white/10 text-[8px] font-black text-white/40 uppercase tracking-widest">
+                                                <div className="absolute bottom-2 left-2 px-2 py-1 rounded-md bg-slate-950/90 border border-white/10 text-[8px] font-black text-white/60 uppercase tracking-widest">
                                                     FOTO {i + 1}
                                                 </div>
                                             </div>
@@ -1107,7 +1119,7 @@ export default function TutoriaisPage() {
                                                 </h4>
                                                 {step.imageIndex !== undefined && (
                                                     <button
-                                                        onClick={() => setSelectedImage(activeTutorial.images[step.imageIndex])}
+                                                        onClick={() => setSelectedImageIndex(step.imageIndex!)}
                                                         className="self-start md:self-auto text-[10px] font-black text-slate-400 border-2 border-slate-800 px-4 py-2 rounded-xl uppercase hover:border-blue-600 hover:text-white hover:bg-blue-600 transition-all flex items-center gap-2 shadow-lg"
                                                     >
                                                         Visualizar Guia Visual {step.imageIndex + 1}
