@@ -18,6 +18,7 @@ interface AuthContextType {
     isImpersonating: boolean;
     refresh: () => Promise<void>;
     checkPermission: (action: string) => boolean;
+    profile: { name: string; nickname: string; email: string; photo_url: string } | null;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -32,6 +33,7 @@ const AuthContext = createContext<AuthContextType>({
     isImpersonating: false,
     refresh: async () => { },
     checkPermission: () => false,
+    profile: null,
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -42,6 +44,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [role, setRole] = useState<string | null>(null);
     const [roles, setRoles] = useState<string[] | null>(null);
     const [isSystemAdmin, setIsSystemAdmin] = useState<boolean>(false);
+    const [profile, setProfile] = useState<{ name: string; nickname: string; email: string; photo_url: string } | null>(null);
 
     const [isImpersonating, setIsImpersonating] = useState(false);
 
@@ -58,15 +61,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setIsImpersonating(!!impersonateCookie);
 
             if (session?.user) {
-                // Obter role do usuário
+                // Obter role e perfil do usuário
                 const { data } = await supabaseClient
                     .from('users')
-                    .select('role, roles, is_system_admin')
+                    .select('role, roles, is_system_admin, name, nickname, email, photo_url')
                     .eq('id', session.user.id)
                     .single();
                 setRole(data?.role ?? null);
                 setRoles(data?.roles ?? (data?.role ? [data.role] : null));
                 setIsSystemAdmin(data?.is_system_admin ?? false);
+                setProfile(data ? {
+                    name: data.name,
+                    nickname: data.nickname,
+                    email: data.email,
+                    photo_url: data.photo_url
+                } : null);
 
                 // Obter tenant/branding
                 // Como Api.getBarbershop usa a session (que acabamos de pegar), 
@@ -83,6 +92,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setRole(null);
                 setRoles(null);
                 setIsSystemAdmin(false);
+                setProfile(null);
                 setTenant(null);
             }
         } catch (error) {
@@ -110,6 +120,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setRole(null);
                 setRoles(null);
                 setTenant(null);
+                setProfile(null);
                 setLoading(false);
             }
         });
@@ -129,6 +140,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setRole(null);
         setRoles(null);
         setIsSystemAdmin(false);
+        setProfile(null);
         setTenant(null);
         setUser(null);
         setSession(null);
@@ -159,7 +171,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return (
         <AuthContext.Provider value={{
             user, session, tenant, loading, signOut, role, roles, isSystemAdmin, isImpersonating, refresh: fetchSession,
-            checkPermission // Exporting this
+            checkPermission, profile
         }}>
             {children}
         </AuthContext.Provider>

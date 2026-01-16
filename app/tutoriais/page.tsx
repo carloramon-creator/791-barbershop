@@ -284,7 +284,9 @@ const getTutorialContent = (texts: any, tenant: any) => [
         images: [
             '/tutorials/clientes-1.png',
             '/tutorials/clientes-2.png',
-            '/tutorials/clientes-3.png'
+            '/tutorials/clientes-1.png', // Placeholder para Busca
+            '/tutorials/clientes-3.png', // Link App
+            '/tutorials/clientes-1.png'  // Placeholder para Fidelização
         ],
         description: 'Mantenha sua base de contatos organizada, acompanhe o histórico de cada cliente e facilite o agendamento recorrente.',
         steps: [
@@ -301,17 +303,17 @@ const getTutorialContent = (texts: any, tenant: any) => [
             {
                 title: 'Busca Inteligente',
                 content: 'Encontre rapidamente qualquer cliente pelo nome, telefone ou CPF usando a barra de pesquisa no topo da página.',
-                imageIndex: 0
+                imageIndex: 2
             },
             {
                 title: 'Link do App (Convite)',
                 content: 'Envie o link exclusivo da sua barbearia via WhatsApp. Com ele, o cliente acessa seu App (PWA) para entrar na fila remotamente ou agendar horários em segundos, sem precisar baixar nada na loja de aplicativos.',
-                imageIndex: 2
+                imageIndex: 3
             },
             {
                 title: 'Fidelização',
                 content: 'O sistema registra automaticamente a data do último atendimento, ajudando você a identificar clientes sumidos para ações de retorno.',
-                imageIndex: 0
+                imageIndex: 4
             }
         ],
         tip: 'Clientes cadastrados com telefone correto permitem que o sistema envie lembretes automáticos, reduzindo faltas drasticamente.'
@@ -1073,7 +1075,10 @@ export default function TutoriaisPage() {
                                         {activeTutorial.images.map((img, i) => (
                                             <div
                                                 key={i}
-                                                onClick={() => setSelectedImageIndex(i)}
+                                                onClick={() => {
+                                                    setSelectedImageIndex(i);
+                                                    document.getElementById(`step-${i}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                }}
                                                 className="relative w-32 h-32 md:w-40 md:h-40 bg-slate-900 rounded-2xl overflow-hidden border-2 border-slate-800 hover:border-blue-500 hover:scale-[1.02] transition-all group cursor-zoom-in shadow-xl shadow-black/40 shrink-0 snap-center"
                                             >
                                                 <Image
