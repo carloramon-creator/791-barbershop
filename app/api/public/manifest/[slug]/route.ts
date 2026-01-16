@@ -6,10 +6,12 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
     req: Request,
-    { params }: { params: { slug: string } }
+    { params }: { params: Promise<{ slug: string }> }
 ) {
     try {
-        const slug = params.slug;
+        const { slug } = await params;
+        const { searchParams } = new URL(req.url);
+        const clientId = searchParams.get('c');
 
         const { data: tenant, error } = await supabaseAdmin
             .from('tenants')
@@ -24,7 +26,7 @@ export async function GET(
         const manifest = {
             "name": tenant.name,
             "short_name": tenant.name,
-            "start_url": `/${slug}`,
+            "start_url": clientId ? `/${slug}?c=${clientId}` : `/${slug}`,
             "display": "standalone",
             "background_color": "#020617",
             "theme_color": "#3b82f6",
