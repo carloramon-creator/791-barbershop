@@ -46,3 +46,28 @@ export async function GET(req: Request) {
         return addCorsHeaders(req, NextResponse.json({ error: 'Erro interno no servidor' }, { status: 500 }));
     }
 }
+
+export async function PATCH(req: Request) {
+    try {
+        const body = await req.json();
+        const { id, fcm_token } = body;
+
+        if (!id) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'ID é obrigatório' }, { status: 400 }));
+        }
+
+        const { data, error } = await supabaseAdmin
+            .from('clients')
+            .update({ fcm_token })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        return addCorsHeaders(req, NextResponse.json(data));
+    } catch (error: any) {
+        console.error('[PUBLIC CLIENT PATCH] Error:', error.message);
+        return addCorsHeaders(req, NextResponse.json({ error: 'Erro interno no servidor' }, { status: 500 }));
+    }
+}

@@ -66,8 +66,11 @@ export default function ClientsPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [showRegisterDialog, setShowRegisterDialog] = useState(false);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [clientToDelete, setClientToDelete] = useState<string | null>(null);
     const [editingClient, setEditingClient] = useState<Client | null>(null);
     const [saving, setSaving] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -131,13 +134,23 @@ export default function ClientsPage() {
         setShowRegisterDialog(true);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Tem certeza que deseja remover este cliente?')) return;
+    const handleDelete = (id: string) => {
+        setClientToDelete(id);
+        setShowDeleteDialog(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!clientToDelete) return;
         try {
-            await Api.deleteClient(id);
+            setDeleting(true);
+            await Api.deleteClient(clientToDelete);
+            setShowDeleteDialog(false);
+            setClientToDelete(null);
             loadClients();
         } catch (error: any) {
             alert('Erro ao excluir: ' + error.message);
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -438,6 +451,53 @@ export default function ClientsPage() {
                             </Button>
                         </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <DialogContent className="bg-slate-950 border-slate-800 text-slate-100 max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-black text-red-500 tracking-tight flex items-center gap-2">
+                            <Trash2 size={24} />
+                            REMOVER CLIENTE
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    <div className="py-4 space-y-4">
+                        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                            <h4 className="text-red-500 font-black text-xs uppercase tracking-widest mb-2 flex items-center gap-2">
+                                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                                AVISO DE RESTRIÇÃO
+                            </h4>
+                            <p className="text-sm text-slate-300 leading-relaxed font-medium">
+                                <span className="text-red-400 font-bold italic">ATENÇÃO!</span> Não remova clientes do sistema, a não ser que o cadastro esteja <span className="text-white font-bold underline underline-offset-4 Decoration-red-500">DUPLICADO</span>.
+                            </p>
+                        </div>
+
+                        <p className="text-xs text-slate-500 text-center font-medium">
+                            Remover um cliente apagará permanentemente seu histórico de atendimentos e preferências.
+                        </p>
+                    </div>
+
+                    <DialogFooter className="grid grid-cols-2 gap-3 pb-2 h-auto">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setShowDeleteDialog(false)}
+                            className="w-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-white rounded-xl h-12 font-bold"
+                        >
+                            CANCELAR
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={confirmDelete}
+                            disabled={deleting}
+                            className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl h-12 font-black shadow-lg shadow-red-600/20"
+                        >
+                            {deleting ? <Loader2 className="animate-spin" /> : 'EXCLUIR'}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

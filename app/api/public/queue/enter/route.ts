@@ -68,6 +68,14 @@ export async function POST(req: Request) {
             .maybeSingle();
 
         if (existingQueue) {
+            // Se já está na fila, ainda assim atualizamos o token FCM se veio no body
+            if (body.fcm_token) {
+                await supabaseAdmin
+                    .from('clients')
+                    .update({ fcm_token: body.fcm_token })
+                    .eq('id', client.id);
+            }
+
             return addCorsHeaders(req, NextResponse.json({
                 error: 'CLIENT_ALREADY_IN_QUEUE',
                 message: 'Você já está na fila. Conclua o atendimento atual antes de entrar novamente.',
