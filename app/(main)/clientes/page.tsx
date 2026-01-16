@@ -19,7 +19,8 @@ import {
     Copy,
     ExternalLink,
     UserCheck,
-    Scissors
+    Scissors,
+    MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
