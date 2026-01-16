@@ -255,7 +255,7 @@ export async function DELETE(req: Request) {
       const { error } = await supabaseAdmin.from('users').update({ is_active: false }).eq('id', id).eq('tenant_id', tenant.id);
       if (error) throw error;
     }
-    if (error) throw error;
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 });
