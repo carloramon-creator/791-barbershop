@@ -95,7 +95,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800">
-                    {(['week', 'fortnight', 'month'] as const).map((p) => (
+                    {(['today', 'week', 'fortnight', 'month'] as const).map((p) => (
                         <Button
                             key={p}
                             variant="ghost"
@@ -106,7 +106,7 @@ export default function DashboardPage() {
                                 period === p ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-200"
                             )}
                         >
-                            {p === 'week' ? 'Semana' : p === 'fortnight' ? 'Quinzena' : 'Mês'}
+                            {p === 'today' ? 'Dia' : p === 'week' ? 'Semana' : p === 'fortnight' ? 'Quinzena' : 'Mês'}
                         </Button>
                     ))}
                 </div>
@@ -120,7 +120,7 @@ export default function DashboardPage() {
                     </div>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-[10px] uppercase font-bold tracking-[0.2em] text-blue-400 flex items-center gap-2">
-                            Faturamento ({period === 'week' ? 'Semana' : period === 'fortnight' ? 'Quinzena' : 'Mês'})
+                            Faturamento ({period === 'today' ? 'Dia' : period === 'week' ? 'Semana' : period === 'fortnight' ? 'Quinzena' : 'Mês'})
                             <HelpTooltip content="Soma de todos os serviços e produtos vendidos no período selecionado." />
                         </CardTitle>
                     </CardHeader>
