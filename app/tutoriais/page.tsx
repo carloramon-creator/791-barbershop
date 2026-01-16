@@ -303,8 +303,8 @@ const getTutorialContent = (texts: any, tenant: any) => [
                 imageIndex: 0
             },
             {
-                title: 'Ações de Relacionamento',
-                content: 'No menu de ações ao lado de cada cliente, você pode editar o cadastro, remover ou enviar o link do App via WhatsApp com um clique.',
+                title: 'Link do App (Convite)',
+                content: 'Envie o link exclusivo da sua barbearia via WhatsApp. Com ele, o cliente acessa seu App (PWA) para entrar na fila remotamente ou agendar horários em segundos, sem precisar baixar nada na loja de aplicativos.',
                 imageIndex: 2
             },
             {
