@@ -360,9 +360,26 @@ export default function BarbeirosPage() {
                             </div>
 
                             <div className="space-y-2 col-span-2 pt-4 border-t border-slate-800">
-                                <Label className="flex items-center gap-2 mb-2">
-                                    <Scissors size={16} className="text-blue-500" />
-                                    Serviços Habilitados
+                                <Label className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <Scissors size={16} className="text-blue-500" />
+                                        Serviços Habilitados
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            if (selectedServiceIds.length === services.length) {
+                                                setSelectedServiceIds([]);
+                                            } else {
+                                                setSelectedServiceIds(services.map(s => s.id));
+                                            }
+                                        }}
+                                        className="text-[10px] h-6 uppercase font-black text-blue-500 hover:text-blue-400 hover:bg-blue-500/5 transition-all"
+                                    >
+                                        {selectedServiceIds.length === services.length ? 'Desmarcar Tudo' : 'Selecionar Tudo'}
+                                    </Button>
                                 </Label>
                                 <div className="bg-slate-950/50 p-3 rounded-lg border border-slate-800 max-h-[150px] overflow-y-auto space-y-2">
                                     {loadingServices ? (

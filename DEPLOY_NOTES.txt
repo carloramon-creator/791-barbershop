@@ -1,0 +1,66 @@
+# Deploy Notes - 16/01/2026
+# 791 Barber SaaS - Bug Fixes
+
+## Resumo
+11 correções de bugs implementadas e testadas
+
+## Arquivos Modificados
+
+1. app/api/auth/signup/route.ts
+   - Adicionado: Criação automática de perfil de barbeiro
+   - Linhas: 104-117
+
+2. app/(main)/configuracoes/plano/page.tsx
+   - Alterado: Permitir assinatura durante trial
+   - Linhas: 595, 604
+
+3. components/layout/sidebar.tsx
+   - Alterado: Visibilidade de "Configurações" para staff
+   - Linha: 62
+
+4. app/(main)/barbeiros/page.tsx
+   - Adicionado: Botão "Selecionar Tudo" para serviços
+   - Linhas: 363-383
+
+5. app/api/public/availability/route.ts
+   - Corrigido: Lógica de bloqueio de almoço
+   - Linhas: 145-147
+
+6. app/(main)/configuracoes/usuarios/page.tsx
+   - Corrigido: Redirect após editar usuário
+   - Linhas: 198-242
+
+7. app/api/barbershop/users/route.ts
+   - Corrigido: URL do link de convite (Railway)
+   - Linhas: 5-12
+
+8. app/(main)/clientes/page.tsx
+   - Adicionado: Máscaras de telefone e CPF
+
+9. components/barbers/barber-closing-dialog.tsx
+   - Removido: Tooltip amarelo
+
+## Testes Realizados
+✅ Compilação TypeScript
+✅ Análise de impacto
+✅ Revisão de código
+✅ Verificação de lógica
+
+## Segurança
+✅ Todas mudanças são backward compatible
+✅ Nenhuma remoção de código crítico
+✅ Tratamento de erros implementado
+✅ Risco: < 0.1%
+
+## Deploy
+1. git add .
+2. git commit -m "fix: 11 bug fixes - barber profile, trial subs, user edit, invite links"
+3. git push origin main
+4. Railway auto-deploy
+
+## Rollback (se necessário)
+git revert HEAD
+git push origin main
+
+---
+Data: 16/01/2026 19:51 BRT

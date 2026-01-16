@@ -101,6 +101,22 @@ export async function POST(req: Request) {
             throw userError;
         }
 
+        // 4.1 Criar registro na tabela barbers (Perfil do Barbeiro)
+        const { error: barberError } = await supabaseAdmin
+            .from('barbers')
+            .insert({
+                user_id: userId,
+                tenant_id: tenant.id,
+                name,
+                is_active: true,
+                status: 'available'
+            });
+
+        if (barberError) {
+            console.error('[API SIGNUP] Barber insertion error:', barberError);
+            // We continue as it's not fatal for the account, but logged
+        }
+
         // 5. Criar trial subscription (7 dias)
         const { error: trialError } = await supabaseAdmin
             .from('trial_subscriptions')
@@ -148,10 +164,16 @@ export async function POST(req: Request) {
             console.log('[API SIGNUP] Categories criadas:', categories?.length);
         }
 
+        // Re-fetch categories if not returned or to be sure
+        const { data: finalCategories } = await supabaseAdmin
+            .from('product_categories')
+            .select('*')
+            .eq('tenant_id', tenant.id);
+
         // 8. Insert products (if any)
         if (products && products.length > 0 && categories) {
             const productsWithCategories = products.map((p: any) => {
-                const category = categories.find((c: any) => c.name === p.category);
+                const category = finalCategories?.find((c: any) => c.name === p.category);
                 return {
                     tenant_id: tenant.id,
                     name: p.name,

@@ -5,10 +5,11 @@ import { getCurrentUserAndTenant, checkRolePermission } from '@/lib/server-utils
 // Função auxiliar para garantir o URL correto de redirecionamento
 const getRedirectUrl = () => {
   const envUrl = process.env.NEXT_PUBLIC_OWNER_URL;
-  if (envUrl && !envUrl.includes('localhost')) {
+  if (envUrl) {
     return `${envUrl}/login`;
   }
-  return 'https://791barber.com/login';
+  // Fallback para produção no Railway
+  return 'https://frontend-owner-production.up.railway.app/login';
 };
 
 export async function GET(req: Request) {

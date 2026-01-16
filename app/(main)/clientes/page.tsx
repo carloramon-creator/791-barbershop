@@ -16,16 +16,16 @@ import {
     Upload,
     Loader2,
     Calendar,
-    ArrowUpDown,
-    MessageSquare,
     Copy,
     ExternalLink,
-    UserCheck
+    UserCheck,
+    Scissors
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { cn, formatPhone, formatCPF } from '@/lib/utils';
 import {
     Dialog,
     DialogContent,
@@ -423,7 +423,7 @@ export default function ClientsPage() {
                                     <Input
                                         id="phone"
                                         value={formData.phone}
-                                        onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                        onChange={e => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
                                         placeholder="(11) 99999-9999"
                                         required
                                         className="bg-slate-900 border-slate-700 h-11 focus:ring-blue-500/20"
@@ -434,7 +434,7 @@ export default function ClientsPage() {
                                     <Input
                                         id="cpf"
                                         value={formData.cpf}
-                                        onChange={e => setFormData({ ...formData, cpf: e.target.value })}
+                                        onChange={e => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
                                         placeholder="000.000.000-00"
                                         className="bg-slate-900 border-slate-700 h-11 focus:ring-blue-500/20 font-mono"
                                     />

@@ -7,7 +7,7 @@ import { Scissors, Sparkles, ArrowLeft, ArrowRight, Loader2, Calendar, Users, Cl
 import { WizardProgress } from '@/components/onboarding/WizardProgress';
 import { EditableTable } from '@/components/ui/editable-table';
 import { getDefaultServices, getDefaultProducts, type BusinessType } from '@/lib/default-data';
-import { cn } from '@/lib/utils';
+import { cn, formatPhone } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { supabaseClient } from '@/lib/supabase-client';
 
@@ -368,7 +368,7 @@ function Step2({ formData, setFormData, onNext, onBack, onBusinessSelection }: a
                     <input
                         type="tel"
                         value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors"
                         placeholder="(48) 99999-9999"
                     />

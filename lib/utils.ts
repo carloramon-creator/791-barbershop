@@ -5,6 +5,27 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function formatPhone(value: string) {
+  if (!value) return "";
+  const numbers = value.replace(/\D/g, "");
+  if (numbers.length <= 11) {
+    return numbers
+      .replace(/^(\d{2})(\d)/g, "($1) $2")
+      .replace(/(\d)(\d{4})$/, "$1-$2");
+  }
+  return numbers;
+}
+
+export function formatCPF(value: string) {
+  if (!value) return "";
+  const numbers = value.replace(/\D/g, "");
+  return numbers
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
+    .replace(/(-\d{2})\d+?$/, "$1");
+}
+
 export function isValidCNPJ(cnpj: string) {
   cnpj = cnpj.replace(/[^\d]+/g, '');
 

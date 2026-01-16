@@ -143,10 +143,7 @@ export async function GET(req: Request) {
 
             if (isOffline) status = 'offline';
             else if (openingHours.lunch_duration > 0 && current.getTime() < effLunchEnd.getTime() && slotEnd.getTime() > effLunchStart.getTime()) {
-                const overlapStart = Math.max(current.getTime(), effLunchStart.getTime());
-                const overlapEnd = Math.min(slotEnd.getTime(), effLunchEnd.getTime());
-                // Permite sobreposição de até 30 minutos com o almoço
-                if ((overlapEnd - overlapStart) > (30 * 60 * 1000)) status = 'lunch';
+                status = 'lunch';
             } else {
                 const isOccupied = normalizedAppointments.some((apt: any) => (current.getTime() < apt.end.getTime() && slotEnd.getTime() > apt.start.getTime()));
                 if (isOccupied) status = 'occupied';

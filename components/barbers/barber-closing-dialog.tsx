@@ -78,7 +78,6 @@ export function BarberClosingDialog({
                         <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
                             <div className="flex items-center">
                                 <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Comissão Total</Label>
-                                <HelpTooltip content="Valor calculado com base na porcentagem de comissão configurada no perfil deste profissional." />
                             </div>
                             <div className="text-xl font-black text-emerald-400 mt-1">
                                 {totals.commission.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}

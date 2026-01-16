@@ -219,9 +219,11 @@ export default function UsersPage() {
           }
         }
 
+        // IMPORTANTE: Ao editar, nunca mostrar a tela de link de convite
         setIsInviteOpen(false);
         resetForm();
         alert('Usuário atualizado com sucesso!');
+        fetchUsers();
       } else {
         const result = await Api.inviteUser(payload);
 
@@ -230,6 +232,7 @@ export default function UsersPage() {
           await Api.updateBarberServices(result.barber.id, selectedServiceIds);
         }
 
+        // Apenas mostrar link de convite ao CRIAR novo usuário
         if (result.inviteLink) {
           setGeneratedLink(result.inviteLink);
         } else {
@@ -237,9 +240,8 @@ export default function UsersPage() {
           resetForm();
           alert('Usuário adicionado com sucesso!');
         }
+        fetchUsers();
       }
-
-      fetchUsers();
     } catch (err: unknown) {
       const error = err as Error;
       alert('Erro: ' + error.message);
