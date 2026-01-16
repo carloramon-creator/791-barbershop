@@ -15,11 +15,20 @@ export async function GET(req: Request) {
   try {
     const { tenant, role } = await getCurrentUserAndTenant();
     checkRolePermission(role, 'manage_users');
-    const { data: users, error } = await supabaseAdmin
+    const { searchParams } = new URL(req.url);
+    const includeArchived = searchParams.get('include_archived') === 'true';
+
+    let query = supabaseAdmin
       .from('users')
       .select('*')
       .eq('tenant_id', tenant.id)
       .order('created_at', { ascending: false });
+
+    if (!includeArchived) {
+      query = query.eq('is_active', true);
+    }
+
+    const { data: users, error } = await query;
     if (error) throw error;
     return NextResponse.json(users);
   } catch (error: any) {
@@ -221,16 +230,31 @@ export async function DELETE(req: Request) {
     checkRolePermission(role, 'manage_users');
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
-    if (!id) throw new Error('ID é obrigatório');
+    const permanent = searchParams.get('permanent') === 'true';
 
-    // Desativar barbeiro associado antes de deletar o usuário
-    await supabaseAdmin
-      .from('barbers')
-      .update({ is_active: false })
-      .eq('user_id', id)
-      .eq('tenant_id', tenant.id);
+    // Se for exclusão permanente
+    if (permanent) {
+      // Desativar barbeiro associado antes de deletar o usuário
+      await supabaseAdmin
+        .from('barbers')
+        .update({ is_active: false })
+        .eq('user_id', id)
+        .eq('tenant_id', tenant.id);
 
-    const { error } = await supabaseAdmin.from('users').delete().eq('id', id).eq('tenant_id', tenant.id);
+      const { error } = await supabaseAdmin.from('users').delete().eq('id', id).eq('tenant_id', tenant.id);
+      if (error) throw error;
+    } else {
+      // Soft delete (Arquivar)
+      // Desativar barbeiro associado
+      await supabaseAdmin
+        .from('barbers')
+        .update({ is_active: false })
+        .eq('user_id', id)
+        .eq('tenant_id', tenant.id);
+
+      const { error } = await supabaseAdmin.from('users').update({ is_active: false }).eq('id', id).eq('tenant_id', tenant.id);
+      if (error) throw error;
+    }
     if (error) throw error;
     return NextResponse.json({ success: true });
   } catch (error: any) {

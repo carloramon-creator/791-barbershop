@@ -75,6 +75,7 @@ export default function UsersPage() {
   const [generatedLink, setGeneratedLink] = useState('');
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [isViewOnly, setIsViewOnly] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
 
   // Services Management State (for Barbers)
   const [services, setServices] = useState<any[]>([]);
@@ -85,7 +86,9 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const data = await Api.getUsers();
+      // Fetch users (active only by default, or all/archived if we had a dedicated endpoint, 
+      // but here we use include_archived param)
+      const data = await Api.getUsers(showArchived);
       setUsers(data);
     } catch (error) {
       console.error('Failed to fetch users', error);
@@ -96,7 +99,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [showArchived]);
 
   const resetForm = () => {
     setInviteName('');
@@ -298,17 +301,25 @@ export default function UsersPage() {
   };
 
   const loadAllServicesOnly = async () => {
-    if (services.length > 0) return;
-    setLoadingServices(true);
-    try {
-      const allServices = await Api.getServices();
-      setServices(allServices);
-    } catch (err) {
-      console.error("Error loading services", err);
-    } finally {
-      setLoadingServices(false);
+    if (services.length === 0) {
+      setLoadingServices(true);
+      try {
+        const allServices = await Api.getServices();
+        setServices(allServices);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoadingServices(false);
+      }
     }
   };
+
+  useEffect(() => {
+    if (inviteRoles.includes('barber') && isInviteOpen) {
+      loadAllServicesOnly();
+    }
+  }, [inviteRoles, isInviteOpen]);
+
 
   const handleCepBlur = async () => {
     const cleanCep = inviteCep.replace(/\D/g, '');

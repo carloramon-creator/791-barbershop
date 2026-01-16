@@ -149,7 +149,7 @@ export const Api = {
     updateBarbershop: (payload: Record<string, unknown>) => apiFetch('/api/barbershop', { method: 'PUT', body: JSON.stringify(payload) }),
 
     // Users
-    getUsers: () => apiFetch('/api/barbershop/users'),
+    getUsers: (includeArchived: boolean = false) => apiFetch(`/api/barbershop/users?include_archived=${includeArchived}`),
     inviteUser: (payload: Record<string, unknown>) => apiFetch('/api/barbershop/users', { method: 'POST', body: JSON.stringify(payload) }),
     updateUser: (payload: Record<string, unknown>) => apiFetch('/api/barbershop/users', { method: 'PUT', body: JSON.stringify(payload) }),
     removeUser: (id: string) => apiFetch(`/api/barbershop/users?id=${id}`, { method: 'DELETE' }),
