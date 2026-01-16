@@ -566,38 +566,8 @@ const getTutorialContent = (texts: any, tenant: any) => [
         tip: 'Produtos parados são dinheiro parado. Use os relatórios de movimentação para identificar itens de baixa saída e crie promoções para girar seu estoque.'
     },
     {
-        id: 'whatsapp',
-        title: '11 - Automação WhatsApp',
-        icon: MessageSquare,
-        images: ['/tutorials/whatsapp-1.png', '/tutorials/whatsapp-2.png'],
-        description: 'Reduza faltas e fidelize clientes com mensagens automáticas enviadas diretamente para o celular deles.',
-        steps: [
-            {
-                title: 'Ativação e Agendamento',
-                content: 'O sistema envia automaticamente um convite via WhatsApp assim que você cria um agendamento, contendo data, hora e link de confirmação.',
-                imageIndex: 0
-            },
-            {
-                title: 'Lembretes Inteligentes',
-                content: 'Configure o tempo de antecedência (ex: 2 horas antes) para o sistema disparar um lembrete automático, garantindo que o cliente não esqueça o compromisso.',
-                imageIndex: 1
-            },
-            {
-                title: 'Notificações de Fila',
-                content: 'Clientes que entram na fila virtual recebem um link via WhatsApp onde podem acompanhar a posição deles em tempo real pelo celular.',
-                imageIndex: 0
-            },
-            {
-                title: 'Aviso "Sua Vez Chegou"',
-                content: 'Ao chamar o próximo cliente no painel, o sistema envia opcionalmente uma mensagem avisando que o profissional já o aguarda na cadeira.',
-                imageIndex: 1
-            }
-        ],
-        tip: 'Lembretes automáticos reduzem o "No-show" (faltas) em até 60%, protegendo seu faturamento.'
-    },
-    {
         id: 'pwa',
-        title: '12 - App do Cliente (PWA)',
+        title: '11 - App do Cliente (PWA)',
         icon: Zap,
         images: ['/tutorials/pwa-1.png', '/tutorials/pwa-2.png', '/tutorials/pwa-3.png'],
         description: 'Ofereça uma experiência premium. Seus clientes agendam em segundos, sem precisar baixar nada na App Store ou Play Store.',
@@ -622,7 +592,7 @@ const getTutorialContent = (texts: any, tenant: any) => [
     },
     {
         id: 'pwa-ios',
-        title: '13 - Instalando no iPhone (iOS)',
+        title: '12 - Instalando no iPhone (iOS)',
         icon: Zap,
         images: [
             '/tutorials/pwa-ios-1.png',
@@ -657,7 +627,7 @@ const getTutorialContent = (texts: any, tenant: any) => [
     },
     {
         id: 'fila-cliente',
-        title: '14 - Como Entrar na Fila (Cliente)',
+        title: '13 - Como Entrar na Fila (Cliente)',
         icon: UserCheck,
         images: [
             '/tutorials/queue-client-1.png',
@@ -698,7 +668,7 @@ const getTutorialContent = (texts: any, tenant: any) => [
     },
     {
         id: 'agendamento-cliente',
-        title: '15 - Como Agendar (Cliente)',
+        title: '14 - Como Agendar (Cliente)',
         icon: Calendar,
         images: [
             '/tutorials/appt-client-1.png',
