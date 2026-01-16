@@ -218,7 +218,7 @@ const getTutorialContent = (texts: any, tenant: any) => [
     },
     {
         id: 'produtos',
-        title: '2 - Gestão de Produtos',
+        title: '3 - Gestão de Produtos',
         icon: ShoppingBag,
         images: ['/tutorials/produtos-1.png', '/tutorials/produtos-2.png'],
         description: 'Controle seu catálogo de produtos, organize por categorias e venda com agilidade na recepção.',
@@ -248,7 +248,7 @@ const getTutorialContent = (texts: any, tenant: any) => [
     },
     {
         id: 'servicos',
-        title: '3 - Gestão de Serviços',
+        title: '4 - Gestão de Serviços',
         icon: Zap,
         images: ['/tutorials/servicos-1.png', '/tutorials/servicos-2.png'],
         description: 'Configure seu cardápio de serviços com preços, duração e vincule os produtos necessários.',
@@ -277,8 +277,47 @@ const getTutorialContent = (texts: any, tenant: any) => [
         tip: 'Vincular produtos aos serviços ajuda a calcular a lucratividade real de cada procedimento, descontando o custo dos insumos.'
     },
     {
+        id: 'clientes',
+        title: '5 - Gestão de Clientes',
+        icon: UserCheck,
+        images: [
+            '/tutorials/clientes-1.png',
+            '/tutorials/clientes-2.png',
+            '/tutorials/clientes-3.png'
+        ],
+        description: 'Mantenha sua base de contatos organizada, acompanhe o histórico de cada cliente e facilite o agendamento recorrente.',
+        steps: [
+            {
+                title: 'Base de Clientes',
+                content: 'Visualize sua lista completa de clientes cadastrados, com status da última visita e dados de contato rápidos.',
+                imageIndex: 0
+            },
+            {
+                title: 'Novo Cadastro',
+                content: 'Ao clicar em "+ Novo Cliente", você pode registrar nome, telefone, CPF (opcional) e adicionar uma foto para identificação fácil na fila.',
+                imageIndex: 1
+            },
+            {
+                title: 'Busca Inteligente',
+                content: 'Encontre rapidamente qualquer cliente pelo nome, telefone ou CPF usando a barra de pesquisa no topo da página.',
+                imageIndex: 0
+            },
+            {
+                title: 'Ações de Relacionamento',
+                content: 'No menu de ações ao lado de cada cliente, você pode editar o cadastro, remover ou enviar o link do App via WhatsApp com um clique.',
+                imageIndex: 2
+            },
+            {
+                title: 'Fidelização',
+                content: 'O sistema registra automaticamente a data do último atendimento, ajudando você a identificar clientes sumidos para ações de retorno.',
+                imageIndex: 0
+            }
+        ],
+        tip: 'Clientes cadastrados com telefone correto permitem que o sistema envie lembretes automáticos, reduzindo faltas drasticamente.'
+    },
+    {
         id: 'profissionais',
-        title: `4 - Equipe de ${texts.professionals}`,
+        title: `6 - Equipe de ${texts.professionals}`,
         icon: Users,
         images: [
             '/tutorials/profissionais-1.png',
@@ -325,7 +364,7 @@ const getTutorialContent = (texts: any, tenant: any) => [
     },
     {
         id: 'fila',
-        title: '5 - Sala de Atendimento (Fila)',
+        title: '7 - Sala de Atendimento (Fila)',
         icon: UserCheck,
         images: [
             '/tutorials/fila-1.png',
@@ -390,7 +429,7 @@ const getTutorialContent = (texts: any, tenant: any) => [
     },
     {
         id: 'agendamento',
-        title: '6 - Calendário & Agendamento',
+        title: '8 - Calendário & Agendamento',
         icon: Calendar,
         images: [
             '/tutorials/agendamento-1.png',
@@ -449,7 +488,7 @@ const getTutorialContent = (texts: any, tenant: any) => [
     },
     {
         id: 'financeiro',
-        title: '7 - Controle Financeiro',
+        title: '9 - Controle Financeiro',
         icon: BarChart3,
         images: [
             '/tutorials/financeiro-extrato.png',
@@ -484,7 +523,7 @@ const getTutorialContent = (texts: any, tenant: any) => [
     },
     {
         id: 'estoque',
-        title: '8 - Controle de Estoque',
+        title: '10 - Controle de Estoque',
         icon: ShoppingBag,
         images: [
             '/tutorials/estoque-1.png',
@@ -522,6 +561,66 @@ const getTutorialContent = (texts: any, tenant: any) => [
             }
         ],
         tip: 'Produtos parados são dinheiro parado. Use os relatórios de movimentação para identificar itens de baixa saída e crie promoções para girar seu estoque.'
+    },
+    {
+        id: 'whatsapp',
+        title: '11 - Automação WhatsApp',
+        icon: MessageSquare,
+        images: ['/tutorials/whatsapp-1.png', '/tutorials/whatsapp-2.png'],
+        description: 'Reduza faltas e fidelize clientes com mensagens automáticas enviadas diretamente para o celular deles.',
+        steps: [
+            {
+                title: 'Ativação e Agendamento',
+                content: 'O sistema envia automaticamente um convite via WhatsApp assim que você cria um agendamento, contendo data, hora e link de confirmação.',
+                imageIndex: 0
+            },
+            {
+                title: 'Lembretes Inteligentes',
+                content: 'Configure o tempo de antecedência (ex: 2 horas antes) para o sistema disparar um lembrete automático, garantindo que o cliente não esqueça o compromisso.',
+                imageIndex: 1
+            },
+            {
+                title: 'Notificações de Fila',
+                content: 'Clientes que entram na fila virtual recebem um link via WhatsApp onde podem acompanhar a posição deles em tempo real pelo celular.',
+                imageIndex: 0
+            },
+            {
+                title: 'Aviso "Sua Vez Chegou"',
+                content: 'Ao chamar o próximo cliente no painel, o sistema envia opcionalmente uma mensagem avisando que o profissional já o aguarda na cadeira.',
+                imageIndex: 1
+            }
+        ],
+        tip: 'Lembretes automáticos reduzem o "No-show" (faltas) em até 60%, protegendo seu faturamento.'
+    },
+    {
+        id: 'pwa',
+        title: '12 - App do Cliente (PWA)',
+        icon: Zap,
+        images: ['/tutorials/pwa-1.png', '/tutorials/pwa-2.png', '/tutorials/pwa-3.png'],
+        description: 'Ofereça uma experiência premium. Seus clientes agendam em segundos, sem precisar baixar nada na App Store ou Play Store.',
+        steps: [
+            {
+                title: 'Instalação Ágil',
+                content: 'Ao abrir seu link, o cliente pode clicar em "Instalar" ou "Adicionar à Tela de Início". O sistema se comporta como um aplicativo real, com ícone e tela cheia.',
+                imageIndex: 0
+            },
+            {
+                title: 'Agendamento em 3 Cliques',
+                content: 'O fluxo é intuitivo: selecionar serviço, profissional e horário. O sistema já pré-preenche os dados para clientes recorrentes.',
+                imageIndex: 1
+            },
+            {
+                title: 'Notificações Push Reais',
+                content: 'Diferente do WhatsApp, o App envia notificações do sistema (banners) avisando sobre promoções ou que a vez do cliente na fila chegou.',
+                imageIndex: 2
+            },
+            {
+                title: 'Acompanhamento de Status',
+                content: 'O cliente vê em tempo real se o profissional está atrasado ou se a fila está andando, direto pelo "Ticket Virtual" no celular.',
+                imageIndex: 1
+            }
+        ],
+        tip: 'Incentive seus melhores clientes a instalarem o App. Isso aumenta a frequência deles na sua barbearia em até 35%.'
     }
 ];
 
@@ -544,6 +643,7 @@ export default function TutoriaisPage() {
     const [showResults, setShowResults] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isConfigExpanded, setIsConfigExpanded] = useState(true);
+    const [isPrivacyMode, setIsPrivacyMode] = useState(true);
 
     if (loading || !session) {
         return (
@@ -716,6 +816,22 @@ export default function TutoriaisPage() {
                                 </Card>
                             )}
                         </div>
+
+                        {/* Privacy Toggle */}
+                        <div className="flex items-center gap-3 bg-slate-900/40 border border-slate-800/50 p-1.5 rounded-2xl">
+                            <button
+                                onClick={() => setIsPrivacyMode(!isPrivacyMode)}
+                                className={cn(
+                                    "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                    isPrivacyMode
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+                                        : "text-slate-500 hover:text-slate-300"
+                                )}
+                            >
+                                {isPrivacyMode ? <LayoutDashboard className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                                {isPrivacyMode ? 'Proteção Ativa' : 'Ver Originais'}
+                            </button>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -838,8 +954,18 @@ export default function TutoriaisPage() {
                                                     src={img}
                                                     alt={`Referência ${i + 1}`}
                                                     fill
-                                                    className="object-contain p-2 opacity-80 group-hover:opacity-100 transition-opacity"
+                                                    className={cn(
+                                                        "object-contain p-2 transition-all duration-500",
+                                                        isPrivacyMode && !img.includes('mockup') && !img.includes('censored') ? "blur-md grayscale opacity-40" : "opacity-80 group-hover:opacity-100"
+                                                    )}
                                                 />
+                                                {isPrivacyMode && !img.includes('mockup') && !img.includes('censored') && (
+                                                    <div className="absolute inset-0 flex items-center justify-center p-4">
+                                                        <div className="text-[8px] font-black text-white/40 uppercase tracking-tighter text-center leading-none">
+                                                            Dados<br />Ocultos
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all backdrop-blur-[2px]">
                                                     <Maximize2 className="w-6 h-6 text-white" />
                                                 </div>
