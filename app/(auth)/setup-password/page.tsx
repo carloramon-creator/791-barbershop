@@ -20,12 +20,54 @@ function SetupPasswordForm() {
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+    const [verifying, setVerifying] = useState(false);
+
     useEffect(() => {
-        const emailParam = searchParams.get('email');
-        if (emailParam) {
-            setEmail(emailParam);
-        }
+        const verifyToken = async () => {
+            const token = searchParams.get('token');
+            const type = searchParams.get('type') as any; // 'invite' | 'recovery'
+
+            if (token && type) {
+                setVerifying(true);
+                try {
+                    const { error } = await supabaseClient.auth.verifyOtp({
+                        token_hash: token,
+                        type: type,
+                    });
+
+                    if (error) {
+                        console.error('Erro ao verificar token:', error);
+                        setError('Link inválido ou expirado.');
+                    } else {
+                        // Sucesso! A sessão foi estabelecida.
+                        // O email será preenchido automaticamente pelo supabaseClient.auth.getUser() em background ou podemos pegar da sessão
+                        const { data: { user } } = await supabaseClient.auth.getUser();
+                        if (user?.email) setEmail(user.email);
+                    }
+                } catch (e) {
+                    console.error('Exceção na verificação:', e);
+                    setError('Erro ao processar o link de convite.');
+                } finally {
+                    setVerifying(false);
+                }
+            } else {
+                // Fallback antigo: email via query param (para fluxos legados)
+                const emailParam = searchParams.get('email');
+                if (emailParam) setEmail(emailParam);
+            }
+        };
+
+        verifyToken();
     }, [searchParams]);
+
+    if (verifying) {
+        return (
+            <div className="flex flex-col items-center justify-center p-8 space-y-4 text-slate-400">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                <p>Verificando seu convite...</p>
+            </div>
+        );
+    }
 
     const handleSetupPassword = async (e: React.FormEvent) => {
         e.preventDefault();
