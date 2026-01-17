@@ -59,7 +59,7 @@ export function Sidebar() {
         { name: 'Estoque', href: '/estoque', icon: ShoppingBag, roles: ['owner', 'staff'], permission: 'inventory', feature: 'inventory' },
         { name: 'Financeiro', href: '/financeiro', icon: BarChart3, roles: ['owner'], permission: 'finance', feature: 'finance' },
         { name: 'Manual do Sistema', href: '/tutoriais', icon: HelpCircle, roles: ['owner', 'staff'], newTab: true },
-        { name: 'Configurações', href: '/configuracoes/barbearia', icon: Settings, roles: ['owner', 'staff'], permission: 'settings' },
+        { name: 'Configurações', href: '/configuracoes/barbearia', icon: Settings, roles: ['owner', 'staff'] },
         { name: 'Super Admin', href: '/geral', icon: ShieldCheck, roles: ['owner'], isSystemOnly: true },
     ];
 

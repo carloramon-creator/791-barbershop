@@ -222,6 +222,7 @@ export default function PlansPage() {
                                                     { key: 'products', label: 'Produtos' },
                                                     { key: 'inventory', label: 'Estoque' },
                                                     { key: 'finance', label: 'Financeiro' },
+                                                    { key: 'settings', label: 'Configurações' },
                                                 ].map((item) => (
                                                     <label key={item.key} className="flex items-center gap-2 cursor-pointer group">
                                                         <input
