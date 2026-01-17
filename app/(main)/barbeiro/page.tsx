@@ -286,7 +286,7 @@ export default function BarberPage() {
                         </>
                     )}
 
-                    {!isUnifiedView && role === 'owner' && (
+                    {!isUnifiedView && (role === 'owner' || roles?.includes('owner')) && (
                         <div className="flex items-center gap-3">
                             <div className="flex gap-2 bg-slate-900/50 p-1 rounded-2xl border border-slate-800">
                                 {allBarbers.map(barber => (
