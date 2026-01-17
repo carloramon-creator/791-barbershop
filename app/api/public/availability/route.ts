@@ -142,7 +142,9 @@ export async function GET(req: Request) {
             }
 
             if (isOffline) status = 'offline';
-            else if (openingHours.lunch_duration > 0 && current.getTime() < effLunchEnd.getTime() && slotEnd.getTime() > effLunchStart.getTime()) {
+            else if (openingHours.lunch_duration > 0 &&
+                (current.getTime() >= effLunchStart.getTime() && current.getTime() < effLunchEnd.getTime())) {
+                // Bloqueia se o slot INICIA durante o horário de almoço
                 status = 'lunch';
             } else {
                 const isOccupied = normalizedAppointments.some((apt: any) => (current.getTime() < apt.end.getTime() && slotEnd.getTime() > apt.start.getTime()));
