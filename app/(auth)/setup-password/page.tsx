@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Scissors, Lock, CheckCircle2, Loader2, ArrowRight, Mail } from 'lucide-react';
 
 function SetupPasswordForm() {
+    console.log('[SetupPassword] Component mounted'); // Force rebuild trigger
     const searchParams = useSearchParams();
     const router = useRouter();
 
