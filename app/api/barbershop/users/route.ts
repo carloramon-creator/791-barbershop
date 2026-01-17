@@ -4,12 +4,8 @@ import { getCurrentUserAndTenant, checkRolePermission } from '@/lib/server-utils
 
 // Função auxiliar para garantir o URL correto de redirecionamento
 const getRedirectUrl = () => {
-  const envUrl = process.env.NEXT_PUBLIC_OWNER_URL;
-  if (envUrl) {
-    return `${envUrl}/login`;
-  }
-  // Fallback para produção no Railway
-  return 'https://frontend-owner-production.up.railway.app/login';
+  // Redirecionar para setup-password para o usuário definir sua senha
+  return `/setup-password`;
 };
 
 export async function GET(req: Request) {
@@ -21,7 +17,10 @@ export async function GET(req: Request) {
 
     let query = supabaseAdmin
       .from('users')
-      .select('*')
+      .select(`
+        *,
+        barber:barbers(*)
+      `)
       .eq('tenant_id', tenant.id)
       .order('created_at', { ascending: false });
 
@@ -141,15 +140,31 @@ export async function POST(req: Request) {
         options: { redirectTo }
       });
 
+      let rawLink = null;
       if (linkErr || !linkData.properties?.action_link) {
+        // Fallback para recovery se invite falhar (usuário já existe?)
         const { data: recoveryData, error: recoveryErr } = await supabaseAdmin.auth.admin.generateLink({
           type: 'recovery',
           email: targetEmail,
           options: { redirectTo }
         });
-        if (!recoveryErr) inviteLink = recoveryData.properties?.action_link;
+        if (!recoveryErr) rawLink = recoveryData.properties?.action_link;
       } else {
-        inviteLink = linkData.properties?.action_link;
+        rawLink = linkData.properties?.action_link;
+      }
+
+      if (rawLink) {
+        // Transformar link do Supabase em link amigável da aplicação
+        try {
+          const urlObj = new URL(rawLink);
+          const token = urlObj.searchParams.get('token');
+          const type = urlObj.searchParams.get('type') || 'invite';
+
+          const baseUrl = process.env.NEXT_PUBLIC_OWNER_URL || 'https://frontend-owner-production.up.railway.app';
+          inviteLink = `${baseUrl}/setup-password?token=${token}&type=${type}`;
+        } catch (e) {
+          inviteLink = rawLink;
+        }
       }
     }
 
