@@ -469,64 +469,82 @@ export default function AppointmentsPage() {
                 </div>
 
                 <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
-                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-4xl h-[600px] flex flex-col p-0 gap-0 overflow-hidden">
+                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-5xl h-[700px] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl shadow-black/80">
                         <DialogHeader className="p-6 border-b border-slate-800 bg-slate-950/50">
                             <div className="flex items-center justify-between">
-                                <DialogTitle>{wizardMode === 'walkin' ? 'Novo Atendimento' : stepTitle}</DialogTitle>
-                                <div className="flex items-center gap-2 text-sm text-slate-500">
-                                    <span className={cn("w-6 h-6 rounded-full flex items-center justify-center border", step >= 1 ? "bg-blue-600 border-blue-600 text-white" : "border-slate-700")}>1</span>
-                                    <span className="w-8 h-[1px] bg-slate-800" />
-                                    <span className={cn("w-6 h-6 rounded-full flex items-center justify-center border", step >= 2 ? "bg-blue-600 border-blue-600 text-white" : "border-slate-700")}>2</span>
-                                    <span className="w-8 h-[1px] bg-slate-800" />
-                                    <span className={cn("w-6 h-6 rounded-full flex items-center justify-center border", step >= 3 ? (wizardMode === 'walkin' ? "bg-blue-600 border-blue-600 text-white" : "bg-blue-600 border-blue-600 text-white") : "border-slate-700")}>3</span>
-                                    {wizardMode === 'booking' && (
-                                        <>
-                                            <span className="w-8 h-[1px] bg-slate-800" />
-                                            <span className={cn("w-6 h-6 rounded-full flex items-center justify-center border", step >= 4 ? "bg-blue-600 border-blue-600 text-white" : "border-slate-700")}>4</span>
-                                        </>
-                                    )}
+                                <div>
+                                    <DialogTitle className="text-xl font-bold">{wizardMode === 'walkin' ? 'Novo Atendimento' : stepTitle}</DialogTitle>
+                                    <p className="text-sm text-slate-500 mt-1">
+                                        {step === 1 ? 'Selecione um ou mais serviços' :
+                                            step === 2 ? 'Escolha o profissional disponível' :
+                                                step === 3 ? (wizardMode === 'walkin' ? 'Dados do cliente' : 'Selecione data e hora') : 'Confirmação'}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-4 text-sm text-slate-500">
+                                    <div className="flex items-center gap-2">
+                                        <span className={cn("w-8 h-8 rounded-full flex items-center justify-center border font-bold transition-all", step >= 1 ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-900/50" : "border-slate-700 bg-slate-800/50")}>1</span>
+                                        <span className={cn("h-[2px] w-8 transition-colors", step >= 2 ? "bg-blue-600" : "bg-slate-800")} />
+                                        <span className={cn("w-8 h-8 rounded-full flex items-center justify-center border font-bold transition-all", step >= 2 ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-900/50" : "border-slate-700 bg-slate-800/50")}>2</span>
+                                        <span className={cn("h-[2px] w-8 transition-colors", step >= 3 ? "bg-blue-600" : "bg-slate-800")} />
+                                        <span className={cn("w-8 h-8 rounded-full flex items-center justify-center border font-bold transition-all", step >= 3 ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-900/50" : "border-slate-700 bg-slate-800/50")}>3</span>
+                                        {wizardMode === 'booking' && (
+                                            <>
+                                                <span className={cn("h-[2px] w-8 transition-colors", step >= 4 ? "bg-blue-600" : "bg-slate-800")} />
+                                                <span className={cn("w-8 h-8 rounded-full flex items-center justify-center border font-bold transition-all", step >= 4 ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-900/50" : "border-slate-700 bg-slate-800/50")}>4</span>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </DialogHeader>
 
-                        <div className="flex-1 overflow-y-auto p-6 bg-slate-900">
+                        <div className="flex-1 overflow-y-auto p-8 bg-slate-900">
                             {/* STEP 1: SERVICES */}
                             {step === 1 && (
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="space-y-4 max-w-4xl mx-auto">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {services.map(service => {
                                             const isSelected = selectedServices.some(s => s.id === service.id);
                                             return (
                                                 <div
                                                     key={service.id}
                                                     className={cn(
-                                                        "p-4 rounded-xl border cursor-pointer transition-all flex items-start gap-4 hover:shadow-md",
-                                                        isSelected ? "bg-blue-600/10 border-blue-600/50" : "bg-slate-800/50 border-slate-800 hover:border-slate-700"
+                                                        "group relative p-5 rounded-2xl border transition-all duration-200 cursor-pointer flex items-center gap-5 hover:shadow-xl hover:-translate-y-1",
+                                                        isSelected
+                                                            ? "bg-blue-600/10 border-blue-500/[0.5] shadow-lg shadow-blue-900/20"
+                                                            : "bg-slate-800/40 border-slate-700 hover:bg-slate-800 hover:border-slate-600"
                                                     )}
                                                     onClick={() => {
                                                         if (isSelected) setSelectedServices(selectedServices.filter(s => s.id !== service.id));
                                                         else setSelectedServices([...selectedServices, service]);
                                                     }}
                                                 >
-                                                    <Checkbox
-                                                        checked={isSelected}
-                                                        className="mt-1 border-slate-500 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 shrink-0"
-                                                    />
 
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex justify-between items-start w-full gap-2">
-                                                            <div className="space-y-1">
-                                                                <p className={cn("font-bold text-sm md:text-base leading-tight break-words pr-2", isSelected ? "text-blue-100" : "text-slate-200")}>
-                                                                    {service.name}
-                                                                </p>
-                                                                <p className="text-xs text-slate-400 flex items-center gap-1">
-                                                                    <Clock size={12} />
+                                                    <div className={cn(
+                                                        "w-6 h-6 rounded-md border flex items-center justify-center transition-colors shrink-0 mt-0.5",
+                                                        isSelected ? "bg-blue-500 border-blue-500" : "border-slate-600 group-hover:border-slate-500"
+                                                    )}>
+                                                        {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
+                                                    </div>
+
+                                                    <div className="flex-1 flex flex-col md:flex-row md:items-center justify-between gap-2">
+                                                        <div className="space-y-1 flex-1 min-w-0 pr-2">
+                                                            <h4 className={cn("font-bold text-lg leading-tight break-words transition-colors", isSelected ? "text-blue-100" : "text-slate-200")}>
+                                                                {service.name}
+                                                            </h4>
+                                                            <div className="flex items-center gap-3 text-sm text-slate-500 font-medium">
+                                                                <span className="flex items-center gap-1 bg-slate-950 px-2 py-0.5 rounded text-xs border border-slate-800">
+                                                                    <Clock size={10} />
                                                                     {service.duration_minutes || 30} min
-                                                                </p>
+                                                                </span>
                                                             </div>
-                                                            <span className={cn("font-mono font-bold text-sm shrink-0 whitespace-nowrap", isSelected ? "text-blue-300" : "text-slate-400")}>
-                                                                {formatCurrency(service.price)}
-                                                            </span>
+                                                        </div>
+
+                                                        <div className={cn(
+                                                            "self-start md:self-center px-4 py-2 rounded-xl font-mono font-bold text-lg tracking-tight bg-slate-950 border border-slate-800 shrink-0 min-w-[100px] text-center transition-colors",
+                                                            isSelected ? "text-blue-400 border-blue-500/30 bg-blue-500/10" : "text-slate-400"
+                                                        )}>
+                                                            {formatCurrency(service.price)}
                                                         </div>
                                                     </div>
                                                 </div>
