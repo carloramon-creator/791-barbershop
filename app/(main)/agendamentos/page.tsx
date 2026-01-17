@@ -469,7 +469,7 @@ export default function AppointmentsPage() {
                 </div>
 
                 <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
-                    <DialogContent className="bg-slate-950 border-slate-800 text-slate-100 w-full max-w-[90vw] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl shadow-black">
+                    <DialogContent className="bg-slate-950 border-slate-800 text-slate-100 w-full !max-w-[90vw] h-[85vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl shadow-black">
                         <DialogHeader className="p-6 border-b border-slate-800 bg-slate-900 shrink-0">
                             <div className="flex items-center justify-between">
                                 <div>

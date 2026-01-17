@@ -6,8 +6,8 @@ const envUrl = process.env.NEXT_PUBLIC_OWNER_URL || 'https://frontend-owner-prod
 
 // Função auxiliar para garantir o URL correto de redirecionamento
 const getRedirectUrl = () => {
-  // Redirecionar para setup-password para o usuário definir sua senha
-  return `${envUrl}/criar-senha`;
+  // Redirecionar para ativar-conta para o usuário definir sua senha
+  return `${envUrl}/ativar-conta`;
 };
 
 export async function GET(req: Request) {
@@ -164,7 +164,7 @@ export async function POST(req: Request) {
 
           const baseUrl = process.env.NEXT_PUBLIC_OWNER_URL || 'https://frontend-owner-production.up.railway.app';
           // Transformar em link da nossa aplicação
-          inviteLink = `${baseUrl}/criar-senha?token=${token}&type=${type}`;
+          inviteLink = `${baseUrl}/ativar-conta?token=${token}&type=${type}`;
         } catch (e) {
           inviteLink = rawLink;
         }
