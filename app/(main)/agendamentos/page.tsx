@@ -469,8 +469,8 @@ export default function AppointmentsPage() {
                 </div>
 
                 <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
-                    <DialogContent className="bg-slate-950 border-slate-800 text-slate-100 max-w-6xl h-[80vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl shadow-black">
-                        <DialogHeader className="p-6 border-b border-slate-800 bg-slate-900">
+                    <DialogContent className="bg-slate-950 border-slate-800 text-slate-100 w-full max-w-6xl h-[85vh] flex flex-col p-0 gap-0 overflow-hidden shadow-2xl shadow-black">
+                        <DialogHeader className="p-6 border-b border-slate-800 bg-slate-900 shrink-0">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <DialogTitle className="text-2xl font-bold tracking-tight text-white">{wizardMode === 'walkin' ? 'Novo Atendimento' : stepTitle}</DialogTitle>
@@ -517,34 +517,34 @@ export default function AppointmentsPage() {
                                                         else setSelectedServices([...selectedServices, service]);
                                                     }}
                                                     className={cn(
-                                                        "group relative flex flex-col justify-between p-6 rounded-2xl border-2 transition-all duration-200 cursor-pointer min-h-[140px]",
+                                                        "group relative flex flex-col justify-between p-5 rounded-2xl border-2 transition-all duration-200 cursor-pointer min-h-[160px] hover:shadow-xl",
                                                         isSelected
-                                                            ? "bg-blue-600/5 border-blue-500 shadow-xl shadow-blue-900/20 translate-y-[-2px]"
-                                                            : "bg-slate-900/50 border-slate-800 hover:border-slate-600 hover:bg-slate-800"
+                                                            ? "bg-blue-900/10 border-blue-500 shadow-blue-900/20 translate-y-[-2px]"
+                                                            : "bg-slate-900/40 border-slate-800 hover:border-slate-600 hover:bg-slate-800"
                                                     )}
                                                 >
                                                     <div className="flex justify-between items-start gap-4 mb-4">
                                                         <h4 className={cn(
-                                                            "font-bold text-lg leading-snug break-words pr-2",
+                                                            "font-bold text-xl leading-snug break-words pr-2",
                                                             isSelected ? "text-white" : "text-slate-300 group-hover:text-white"
                                                         )}>
                                                             {service.name}
                                                         </h4>
                                                         <div className={cn(
-                                                            "w-6 h-6 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors",
-                                                            isSelected ? "bg-blue-500 border-blue-500" : "border-slate-600 group-hover:border-slate-500"
+                                                            "w-7 h-7 rounded-lg border-2 flex items-center justify-center shrink-0 transition-colors",
+                                                            isSelected ? "bg-blue-500 border-blue-500" : "border-slate-700 group-hover:border-slate-500"
                                                         )}>
-                                                            {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
+                                                            {isSelected && <CheckCircle2 className="w-5 h-5 text-white" />}
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-800/50 group-hover:border-slate-700 transition-colors">
-                                                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                                            <Clock size={12} />
+                                                    <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-800/50 group-hover:border-slate-700 transition-colors gap-2">
+                                                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap bg-slate-950/30 px-2 py-1 rounded-md">
+                                                            <Clock size={14} className="text-slate-400" />
                                                             {service.duration_minutes || 30} min
                                                         </div>
                                                         <div className={cn(
-                                                            "font-mono font-bold text-xl",
+                                                            "font-mono font-black text-2xl whitespace-nowrap",
                                                             isSelected ? "text-blue-400" : "text-slate-400 group-hover:text-slate-200"
                                                         )}>
                                                             {formatCurrency(service.price)}
