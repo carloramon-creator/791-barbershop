@@ -171,7 +171,7 @@ export async function POST(req: Request) {
             .eq('tenant_id', tenant.id);
 
         // 8. Insert products (if any)
-        if (products && products.length > 0 && categories) {
+        if (products && products.length > 0 && finalCategories && finalCategories.length > 0) {
             const productsWithCategories = products.map((p: any) => {
                 const category = finalCategories?.find((c: any) => c.name === p.category);
                 return {
