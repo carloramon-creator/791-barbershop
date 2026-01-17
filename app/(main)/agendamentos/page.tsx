@@ -500,7 +500,7 @@ export default function AppointmentsPage() {
                                                 <div
                                                     key={service.id}
                                                     className={cn(
-                                                        "p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between",
+                                                        "p-4 rounded-xl border cursor-pointer transition-all flex items-start gap-4 hover:shadow-md",
                                                         isSelected ? "bg-blue-600/10 border-blue-600/50" : "bg-slate-800/50 border-slate-800 hover:border-slate-700"
                                                     )}
                                                     onClick={() => {
@@ -508,14 +508,27 @@ export default function AppointmentsPage() {
                                                         else setSelectedServices([...selectedServices, service]);
                                                     }}
                                                 >
-                                                    <div className="flex items-center gap-3">
-                                                        <Checkbox checked={isSelected} className="border-slate-500 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500" />
-                                                        <div>
-                                                            <p className="font-bold text-slate-100">{service.name}</p>
-                                                            <p className="text-xs text-slate-400">{service.duration_minutes || 30} min</p>
+                                                    <Checkbox
+                                                        checked={isSelected}
+                                                        className="mt-1 border-slate-500 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 shrink-0"
+                                                    />
+
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex justify-between items-start w-full gap-2">
+                                                            <div className="space-y-1">
+                                                                <p className={cn("font-bold text-sm md:text-base leading-tight break-words pr-2", isSelected ? "text-blue-100" : "text-slate-200")}>
+                                                                    {service.name}
+                                                                </p>
+                                                                <p className="text-xs text-slate-400 flex items-center gap-1">
+                                                                    <Clock size={12} />
+                                                                    {service.duration_minutes || 30} min
+                                                                </p>
+                                                            </div>
+                                                            <span className={cn("font-mono font-bold text-sm shrink-0 whitespace-nowrap", isSelected ? "text-blue-300" : "text-slate-400")}>
+                                                                {formatCurrency(service.price)}
+                                                            </span>
                                                         </div>
                                                     </div>
-                                                    <span className="font-mono text-blue-400">{formatCurrency(service.price)}</span>
                                                 </div>
                                             );
                                         })}
