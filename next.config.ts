@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+// Trigger rebuild: fix 404 route setup-password -> criar-senha
 
 const nextConfig: NextConfig = {
   async headers() {
