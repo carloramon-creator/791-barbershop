@@ -130,9 +130,11 @@ export default function BarberPage() {
 
     const handleUpdateStatus = async (barberId: string, status: string) => {
         try {
-            if (role === 'owner') {
+            // Se for owner (ou tiver permissão de owner), usa a rota administrativa para atualizar qualquer barbeiro
+            if (role === 'owner' || roles?.includes('owner')) {
                 await Api.updateBarber(barberId, { status });
             } else {
+                // Se não, atualiza apenas o próprio status
                 await Api.updateMyBarberStatus(status);
             }
             fetchStatus();

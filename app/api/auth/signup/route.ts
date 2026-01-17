@@ -90,6 +90,7 @@ export async function POST(req: Request) {
                 email,
                 tenant_id: tenant.id,
                 role: 'owner',
+                roles: ['owner', 'barber'], // Garantir array correto sem 'staff'
                 is_barber: true, // Owner também é barbeiro por padrão
             });
 
