@@ -228,8 +228,24 @@ export default function UsersPage() {
         const result = await Api.inviteUser(payload);
 
         // Link services if barber was created
-        if (result.barber?.id && inviteRoles.includes('barber') && selectedServiceIds.length > 0) {
-          await Api.updateBarberServices(result.barber.id, selectedServiceIds);
+        if (inviteRoles.includes('barber') && selectedServiceIds.length > 0) {
+          let bId = result.barber?.id;
+
+          // Tenta buscar o barbeiro caso não venha no retorno (garantia)
+          if (!bId) {
+            const { data: bData } = await supabaseClient
+              .from('barbers')
+              .select('id')
+              .eq('user_id', result.id)
+              .single();
+            bId = bData?.id;
+          }
+
+          if (bId) {
+            await Api.updateBarberServices(bId, selectedServiceIds);
+          } else {
+            console.warn('Barber ID not found after creation, services not linked automatically.');
+          }
         }
 
         // Apenas mostrar link de convite ao CRIAR novo usuário
@@ -252,6 +268,7 @@ export default function UsersPage() {
 
   const handleEditClick = (u: User, viewOnly: boolean = false) => {
     setIsViewOnly(viewOnly);
+    setGeneratedLink(''); // IMPORTANTE: Limpar link anterior para não travar o modal
     setEditingUserId(u.id);
     setInviteName(u.name || '');
     setInviteNickname(u.nickname || '');
@@ -643,10 +660,31 @@ export default function UsersPage() {
                     {/* SERVICES SECTION FOR BARBERS */}
                     {inviteRoles.includes('barber') && (
                       <div className="md:col-span-2 space-y-2 pt-4 border-t border-slate-800 animate-in fade-in">
-                        <Label className="flex items-center gap-2 mb-2 text-slate-200">
-                          <Scissors size={16} className="text-blue-500" />
-                          Serviços Realizados (Vínculo Profissional)
-                        </Label>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="flex items-center gap-2 text-slate-200">
+                            <Scissors size={16} className="text-blue-500" />
+                            Serviços Realizados (Vínculo Profissional)
+                          </Label>
+
+                          {!isViewOnly && services.length > 0 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (selectedServiceIds.length === services.length) {
+                                  setSelectedServiceIds([]);
+                                } else {
+                                  setSelectedServiceIds(services.map(s => s.id));
+                                }
+                              }}
+                              className="text-xs h-6 px-2 text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
+                            >
+                              {selectedServiceIds.length === services.length ? 'Desmarcar Todos' : 'Selecionar Todos'}
+                            </Button>
+                          )}
+                        </div>
+
                         <div className="bg-slate-950/50 p-4 rounded-lg border border-slate-800 max-h-[200px] overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-3">
                           {loadingServices ? (
                             <p className="text-xs text-slate-500 col-span-2">Carregando serviços...</p>
