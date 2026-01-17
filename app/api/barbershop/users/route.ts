@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant, checkRolePermission } from '@/lib/server-utils';
 
+const envUrl = process.env.NEXT_PUBLIC_OWNER_URL || 'https://frontend-owner-production.up.railway.app';
+
 // Função auxiliar para garantir o URL correto de redirecionamento
 const getRedirectUrl = () => {
   // Redirecionar para setup-password para o usuário definir sua senha
-  return `/setup-password`;
+  return `${envUrl}/criar-senha`;
 };
 
 export async function GET(req: Request) {
@@ -161,7 +163,8 @@ export async function POST(req: Request) {
           const type = urlObj.searchParams.get('type') || 'invite';
 
           const baseUrl = process.env.NEXT_PUBLIC_OWNER_URL || 'https://frontend-owner-production.up.railway.app';
-          inviteLink = `${baseUrl}/setup-password?token=${token}&type=${type}`;
+          // Transformar em link da nossa aplicação
+          inviteLink = `${baseUrl}/criar-senha?token=${token}&type=${type}`;
         } catch (e) {
           inviteLink = rawLink;
         }
