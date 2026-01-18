@@ -4,24 +4,49 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Api } from '@/lib/api';
-import { Loader2 } from 'lucide-react';
+import { Loader2, FileText, CheckCircle } from 'lucide-react';
 
 export default function ContractPage() {
     const [plans, setPlans] = useState<any[]>([]);
     const [addons, setAddons] = useState<any[]>([]);
+    const [tenant, setTenant] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [isFixed, setIsFixed] = useState(false);
 
     useEffect(() => {
         async function loadData() {
             try {
-                const [plansData, addonsData] = await Promise.all([
-                    Api.getSystemPlans(),
-                    Api.getSystemAddons()
-                ]);
-                setPlans(plansData || []);
-                setAddons(addonsData || []);
+                // Tentar carregar dados do tenant (caso logado)
+                const tenantData = await Api.getBarbershop();
+                setTenant(tenantData);
+
+                if (tenantData?.contract_snapshot) {
+                    // Se já existir um snapshot, usar os dados fixados
+                    setPlans(tenantData.contract_snapshot.plans || []);
+                    setAddons(tenantData.contract_snapshot.addons || []);
+                    setIsFixed(true);
+                } else {
+                    // Se não houver snapshot (Wizard ou sem aceite), buscar planos dinâmicos
+                    const [plansData, addonsData] = await Promise.all([
+                        Api.getSystemPlans(),
+                        Api.getSystemAddons()
+                    ]);
+                    setPlans(plansData || []);
+                    setAddons(addonsData || []);
+                }
             } catch (error) {
-                console.error('Erro ao carregar planos para o contrato:', error);
+                console.error('Erro ao carregar dados para o contrato:', error);
+                // Fallback: tentar buscar planos mesmo se não houver tenant logado (Wizard)
+                try {
+                    const [plansData, addonsData] = await Promise.all([
+                        Api.getSystemPlans(),
+                        Api.getSystemAddons()
+                    ]);
+                    setPlans(plansData || []);
+                    setAddons(addonsData || []);
+                } catch (e) {
+                    console.error('Fallback failed:', e);
+                }
             } finally {
                 setLoading(false);
             }
@@ -29,9 +54,31 @@ export default function ContractPage() {
         loadData();
     }, []);
 
+    // Formatar endereço do CONTRATANTE
+    const formatAddress = (t: any) => {
+        if (!t) return "[ENDEREÇO NÃO CADASTRADO]";
+        const parts = [t.street, t.number, t.complement, t.neighborhood, t.city, t.state].filter(Boolean);
+        return parts.length > 0 ? parts.join(', ') : "[ENDEREÇO NÃO CADASTRADO]";
+    };
+
     return (
         <div className="container mx-auto p-6 max-w-4xl space-y-6">
-            <h1 className="text-3xl font-black text-slate-100 mb-6 tracking-tighter uppercase">Contrato de Assinatura</h1>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div>
+                    <h1 className="text-3xl font-black text-slate-100 tracking-tighter uppercase flex items-center gap-3">
+                        <FileText className="text-blue-500" size={32} />
+                        Contrato de Assinatura
+                    </h1>
+                    <p className="text-slate-500 font-medium">Contrato de Licença de Uso de Software (SaaS).</p>
+                </div>
+                {isFixed && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 flex items-center gap-2">
+                        <CheckCircle size={14} className="text-emerald-500" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Contrato Aceito e Firmado</span>
+                    </div>
+                )}
+            </div>
+
             <Card className="bg-slate-900 border-slate-800 shadow-2xl">
                 <CardContent className="p-8 text-slate-300 space-y-6 leading-relaxed text-sm text-justify">
                     <div className="text-center space-y-1 mb-8">
@@ -44,7 +91,15 @@ export default function ContractPage() {
                             <strong>CONTRATADA:</strong> 791 SOLUÇÕES EMPRESARIAIS LTDA, inscrita no CNPJ sob o nº 61.887.941/0001-83, com sede na Rua Eugênio Portela, 415, Barreiros, São José/SC, neste ato representada por seu Diretor, Carlos Ramon Pinto.
                         </p>
                         <p>
-                            <strong>CONTRATANTE:</strong> A Pessoa Jurídica ou Física identificada no ato de cadastro no sistema 791 Barber, neste ato denominada "CLIENTE".
+                            <strong>CONTRATANTE:</strong> {tenant ? (
+                                <>
+                                    <span className="text-slate-100 font-bold">{tenant.name.toUpperCase()}</span>,
+                                    {tenant.cnpj ? ` inscrita no CNPJ sob o nº ${tenant.cnpj}` : ' (CNPJ não informado)'},
+                                    com sede em {formatAddress(tenant)}.
+                                </>
+                            ) : (
+                                "A Pessoa Jurídica ou Física identificada no ato de cadastro no sistema 791 Barber, neste ato denominada \"CLIENTE\"."
+                            )}
                         </p>
                     </section>
 
@@ -65,11 +120,11 @@ export default function ContractPage() {
 
                     <section className="space-y-3">
                         <p><strong>2. DOS PLANOS E PREÇOS</strong></p>
-                        <p>2.1. O acesso ao 791 Barber é oferecido mediante assinatura aos planos vigentes. Na data desta última atualização, os planos disponíveis são:</p>
+                        <p>2.1. O acesso ao 791 Barber é oferecido mediante assinatura aos planos vigentes. {isFixed ? "Na data de aceitação deste contrato, os planos e valores acordados são:" : "Na data desta última atualização, os planos disponíveis são:"}</p>
 
                         {loading ? (
                             <div className="flex items-center gap-2 text-slate-500 py-2">
-                                <Loader2 size={14} className="animate-spin" /> Carregando valores atualizados...
+                                <Loader2 size={14} className="animate-spin" /> Carregando valores...
                             </div>
                         ) : (
                             <ul className="list-disc pl-5 space-y-2">
@@ -85,7 +140,7 @@ export default function ContractPage() {
                         <p>2.3. O CLIENTE terá direito a uma avaliação gratuita (período trial) conforme indicado na plataforma, findo o qual a cobrança será automaticamente ativada, exceto se o cancelamento for solicitado antes do término do período.</p>
 
                         <p><strong>2.4. DOS MÓDULOS ADICIONAIS (ADD-ONS)</strong></p>
-                        <p>O CLIENTE poderá, a qualquer momento, contratar módulos extras ("Add-ons") para turbinar as funcionalidades de seu plano. Atualmente, os módulos disponíveis são:</p>
+                        <p>O CLIENTE poderá, a qualquer momento, contratar módulos extras ("Add-ons") para turbinar as funcionalidades de seu plano. {isFixed ? "Módulos disponíveis no momento da firma:" : "Atualmente, os módulos disponíveis são:"}</p>
                         {loading ? (
                             <div className="flex items-center gap-2 text-slate-500 py-2">
                                 <Loader2 size={14} className="animate-spin" /> Carregando módulos...
@@ -107,6 +162,9 @@ export default function ContractPage() {
                     <section className="space-y-3">
                         <p><strong>3. DA VIGÊNCIA E RENOVAÇÃO</strong></p>
                         <p>3.1. Este Contrato entra em vigor na data de aceite digital dos Termos de Uso e Política de Privacidade do 791 Barber e permanece válido enquanto a assinatura estiver ativa.</p>
+                        {tenant?.terms_accepted_at && (
+                            <p className="text-emerald-500 font-bold">Aceite digital realizado em: {new Date(tenant.terms_accepted_at).toLocaleString('pt-BR')}.</p>
+                        )}
                         <p>3.2. Após o término do primeiro ciclo de cobrança (mensal, semestral ou anual), o Contrato será automaticamente renovado pelos mesmos termos, salvo cancelamento solicitado pelo CLIENTE com antecedência mínima de 5 (cinco) dias úteis antes do vencimento.</p>
                         <p>3.3. A CONTRATADA poderá modificar os preços ou planos com notificação de 30 (trinta) dias via e-mail ou avisos na plataforma, tendo o CLIENTE direito a cancelar sem penalidades caso discorde da alteração.</p>
                     </section>

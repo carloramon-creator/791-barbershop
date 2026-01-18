@@ -56,6 +56,17 @@ export async function POST(req: Request) {
         const randomSuffix = Math.random().toString(36).substring(2, 7);
         const slug = `${baseSlug}-${randomSuffix}`;
 
+        // 2.5 Capture Contract Snapshot (Plans and Addons)
+        const { data: currentPlans } = await supabaseAdmin.from('system_plans').select('*');
+        const { data: currentAddons } = await supabaseAdmin.from('system_addons').select('*');
+        const contractSnapshot = {
+            plans: currentPlans || [],
+            addons: currentAddons || [],
+            accepted_at: new Date().toISOString(),
+            accepted_by: name,
+            ip: req.headers.get('x-forwarded-for') || '0.0.0.0'
+        };
+
         // 3. Criar tenant (Barbearia) com plano PREMIUM e período de trial
         const { data: tenant, error: tenantError } = await supabaseAdmin
             .from('tenants')
@@ -69,6 +80,9 @@ export async function POST(req: Request) {
                 subscription_current_period_end: trialEndsAt.toISOString(),
                 module_queue_enabled: module_queue_enabled !== undefined ? module_queue_enabled : true,
                 module_appointments_enabled: module_appointments_enabled !== undefined ? module_appointments_enabled : true,
+                terms_accepted_at: new Date().toISOString(),
+                terms_version: '2026-01-18',
+                contract_snapshot: contractSnapshot
             })
             .select()
             .single();
