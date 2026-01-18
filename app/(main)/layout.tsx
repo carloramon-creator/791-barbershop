@@ -17,19 +17,34 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             return;
         }
 
-        if (!loading && session && tenant) {
-            const isTrial = tenant.subscription_status === 'trial';
-            const isExpired = tenant.subscription_current_period_end && new Date() > new Date(tenant.subscription_current_period_end);
-            const isCanceled = tenant.subscription_status === 'canceled';
-            const isPastDue = tenant.subscription_status === 'past_due';
 
+        if (!loading && session && tenant) {
             // Páginas que NÃO devem ser bloqueadas
             const isWhiteListed =
                 window.location.pathname.startsWith('/checkout') ||
                 window.location.pathname === '/configuracoes/plano';
 
-            if (!isWhiteListed) {
-                if ((isTrial && isExpired) || (isCanceled && isExpired) || isPastDue) {
+            if (isWhiteListed) return;
+
+            // 1. Status explícitos de bloqueio
+            const isBlockedStatus = ['canceled', 'unpaid', 'past_due', 'incomplete_expired'].includes(tenant.subscription_status || '');
+
+            if (isBlockedStatus) {
+                router.push('/configuracoes/plano?expired=true');
+                return;
+            }
+
+            // 2. Verificar Validade do Trial (Se não estiver ativo)
+            if (tenant.subscription_status !== 'active' && tenant.subscription_status !== 'trialing') {
+                // Se não tem status do Stripe (null ou 'trial' manual), verificamos os 7 dias
+                const created = new Date(tenant.created_at || new Date());
+                const now = new Date();
+                const diffTime = Math.abs(now.getTime() - created.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                // Se passou de 7 dias e não tem assinatura ativa -> Bloqueia
+                // Nota: usamos 8 dias para dar uma folga no último dia
+                if (diffDays > 8) {
                     router.push('/configuracoes/plano?expired=true');
                 }
             }
