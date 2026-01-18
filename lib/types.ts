@@ -10,6 +10,7 @@ export interface Tenant {
     name: string;
     plan: Plan;
     stripe_id?: string;
+    stripe_subscription_id?: string;
     cnpj?: string;
     phone?: string;
     cep?: string;
