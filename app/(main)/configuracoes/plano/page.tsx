@@ -592,7 +592,7 @@ export default function PlanPage() {
                                                         ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
                                                         : 'bg-blue-600 hover:bg-white hover:text-blue-600 text-white shadow-blue-600/20 active:scale-95'
                                                 )}
-                                                disabled={currentPlan === plan.slug && !['trial', 'trialing'].includes(subscriptionStatus || '')}
+                                                disabled={currentPlan === plan.slug && subscriptionStatus === 'active'}
                                                 onClick={() => {
                                                     setSelectedPlan(plan.slug);
                                                     setSelectedAddon(null);
@@ -600,7 +600,7 @@ export default function PlanPage() {
                                                     setOpenDialog(true);
                                                 }}
                                             >
-                                                {currentPlan === plan.slug && !['trial', 'trialing'].includes(subscriptionStatus || '') ? 'Plano Ativo' : 'Assinar Agora'}
+                                                {currentPlan === plan.slug && subscriptionStatus === 'active' ? 'Plano Ativo' : 'Assinar Agora'}
                                             </Button>
                                         </CardContent>
                                     </div>
@@ -630,7 +630,17 @@ export default function PlanPage() {
                                     {selectedAddon ? (
                                         <>Módulo <span className="text-amber-500 uppercase">{selectedAddon.name}</span> — R$ {Number(selectedAddon.price).toFixed(2).replace('.', ',')}/mês</>
                                     ) : (
-                                        <>Plano <span className="text-blue-600 capitalize">{selectedPlan}</span> — R$ {(dynamicPlans.find(p => p.slug === selectedPlan)?.price || 0).toFixed(2).replace('.', ',')}/mês</>
+                                        <div className="flex flex-col gap-1">
+                                            <span>
+                                                Plano <span className="text-blue-600 capitalize">{selectedPlan}</span> — R$ {(dynamicPlans.find(p => p.slug === selectedPlan)?.price || 0).toFixed(2).replace('.', ',')}/mês
+                                            </span>
+                                            {/* VISUALIZAÇÃO DO DESCONTO 10% */}
+                                            {(!['active', 'active_paid'].includes(subscriptionStatus || '') || ['trial', 'trialing'].includes(subscriptionStatus || '')) && (
+                                                <span className="text-emerald-500 font-black text-xs uppercase tracking-wider animate-pulse">
+                                                    🎉 Desconto de 10% na 1ª fatura aplicado!
+                                                </span>
+                                            )}
+                                        </div>
                                     )}
                                 </DialogDescription>
                             </DialogHeader>
