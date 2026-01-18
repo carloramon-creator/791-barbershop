@@ -60,20 +60,19 @@ export function Topbar() {
                                     }
                                 }
 
-                                    const isTimeTrialExpired = isTimeTrial && daysLeft <= 0;
+                                const isTimeTrialExpired = isTimeTrial && daysLeft <= 0;
 
-                                    if (isTimeTrial && !isTimeTrialExpired) {
-                                        return (
-                                           <Link href="/configuracoes/plano">
-                                                <div className="flex items-center gap-2 bg-amber-500 text-slate-950 px-4 py-1.5 rounded-full font-bold shadow-lg shadow-amber-500/20 animate-in fade-in zoom-in duration-300 hover:scale-105 transition-transform cursor-pointer hover:bg-amber-400">
-                                                    <Clock size={16} className="text-slate-900" />
-                                                    <span>
-                                                        Seu teste acaba em {daysLeft} dias! Assine agora: APROVEITE E GANHE 10% DE DESCONTO NA PRIMEIRA ASSINATURA
-                                                    </span>
-                                                </div>
-                                            </Link>
-                                        );
-                                    }
+                                if (isTimeTrial && !isTimeTrialExpired) {
+                                    return (
+                                        <Link href="/configuracoes/plano">
+                                            <div className="flex items-center gap-2 bg-amber-500 text-slate-950 px-4 py-1.5 rounded-full font-bold shadow-lg shadow-amber-500/20 animate-in fade-in zoom-in duration-300 hover:scale-105 transition-transform cursor-pointer hover:bg-amber-400">
+                                                <Clock size={16} className="text-slate-900" />
+                                                <span>
+                                                    Seu teste acaba em {daysLeft} dias! Assine agora: APROVEITE E GANHE 10% DE DESCONTO NA PRIMEIRA ASSINATURA
+                                                </span>
+                                            </div>
+                                        </Link>
+                                    );
                                 }
 
                                 // 3. VERIFICAÇÃO DE RENOVAÇÃO (10 dias antes)
@@ -85,26 +84,23 @@ export function Topbar() {
 
                                     // Se faltam 10 dias ou menos (e não expirou ainda)
                                     if (diffDays <= 10 && diffDays >= 0) {
-                                         const isStripe = tenant.stripe_subscription_id && !tenant.stripe_subscription_id.startsWith('sub_manual');
-                                         // Se for Stripe, avisa renovação automática
-                                         // Se for Boleto/Pix (sem stripe ID ou com flag manual), pede pra gerar.
-                                         // Nota: tenant.stripe_subscription_id costuma ser a source da verdade.
+                                        const isStripe = tenant.stripe_subscription_id && !tenant.stripe_subscription_id.startsWith('sub_manual');
 
-                                         return (
+                                        return (
                                             <Link href={isStripe ? '#' : "/configuracoes/plano?renew=true"}>
                                                 <div className="flex items-center gap-2 bg-yellow-400 text-slate-900 px-4 py-1.5 rounded-full font-bold shadow-lg shadow-yellow-500/20 animate-in fade-in zoom-in duration-300 hover:scale-105 transition-transform cursor-pointer">
                                                     <AlertTriangle size={16} className="text-slate-900" />
                                                     <span>
-                                                        {isStripe 
+                                                        {isStripe
                                                             ? `Sua assinatura renova em ${diffDays} dias (Cobrança Automática)`
                                                             : `Sua assinatura vence em ${diffDays} dias. Clique para gerar o boleto.`}
                                                     </span>
                                                 </div>
                                             </Link>
-                                         );
+                                        );
                                     }
                                 }
-                                
+
                                 // Fallback para Trial expirado (deveria ser pego pelo layout, mas visualmente útil se redirecionamento falhar ou em transição)
                                 if (isTrial) { // Lógica antiga mantida
                                     return (
