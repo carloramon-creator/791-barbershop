@@ -168,6 +168,18 @@ export function Sidebar() {
                     ))}
                 </nav>
 
+                <div className="p-3 mx-3 mb-1 bg-slate-800/50 rounded-xl border border-slate-800">
+                    <a
+                        href="mailto:contato@791solucoes.com.br?subject=Feedback/Erro - 791 Barber"
+                        className="flex items-center gap-2 text-[10px] font-bold text-slate-500 hover:text-slate-300 transition-colors uppercase tracking-wider"
+                    >
+                        <div className="p-1.5 bg-slate-800 rounded-lg">
+                            <Sparkles size={12} className="text-amber-500" />
+                        </div>
+                        Reportar Erro / Sugestão
+                    </a>
+                </div>
+
                 <div className="p-6 mt-auto border-t border-slate-800">
                     <Button
                         variant="ghost"
