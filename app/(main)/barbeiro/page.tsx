@@ -289,72 +289,70 @@ export default function BarberPage() {
                     )}
 
                     {!isUnifiedView && (role === 'owner' || roles?.includes('owner')) && (
-                        <div className="flex items-center gap-3">
-                            <div className="flex gap-2 bg-slate-900/50 p-1 rounded-2xl border border-slate-800">
-                                {allBarbers.map(barber => (
-                                    <button
-                                        key={barber.barber_id}
-                                        onClick={() => {
-                                            setSelectedBarberId(barber.barber_id);
-                                            setCurrentBarber(barber);
-                                            setQueue(barber.queue);
-                                        }}
-                                        className={cn(
-                                            "relative p-2 rounded-xl flex flex-col items-center gap-1 transition-all min-w-[70px]",
-                                            currentBarber?.barber_id === barber.barber_id
-                                                ? "bg-slate-800 text-white shadow-inner ring-1 ring-blue-500/50"
-                                                : "text-slate-500 hover:text-slate-300"
+                        <div className="flex gap-2 bg-slate-900/50 p-1 rounded-2xl border border-slate-800">
+                            {allBarbers.map(barber => (
+                                <button
+                                    key={barber.barber_id}
+                                    onClick={() => {
+                                        setSelectedBarberId(barber.barber_id);
+                                        setCurrentBarber(barber);
+                                        setQueue(barber.queue);
+                                    }}
+                                    className={cn(
+                                        "relative p-2 rounded-xl flex flex-col items-center gap-1 transition-all min-w-[70px]",
+                                        currentBarber?.barber_id === barber.barber_id
+                                            ? "bg-slate-800 text-white shadow-inner ring-1 ring-blue-500/50"
+                                            : "text-slate-500 hover:text-slate-300"
+                                    )}
+                                >
+                                    <div className={cn(
+                                        "w-10 h-10 rounded-full flex items-center justify-center font-bold border-2 transition-transform duration-300 relative",
+                                        currentBarber?.barber_id === barber.barber_id ? "border-blue-500 scale-110 shadow-[0_0_15px_rgba(59,130,246,0.3)]" : "border-slate-700 opacity-60"
+                                    )}>
+                                        {barber.photo_url ? (
+                                            <Image src={barber.photo_url} alt={barber.barber_name} width={40} height={40} className="w-full h-full rounded-full object-cover" unoptimized />
+                                        ) : (
+                                            (barber.barber_nickname || barber.barber_name)?.charAt(0)
                                         )}
-                                    >
+                                        {/* Status indicator on avatar */}
                                         <div className={cn(
-                                            "w-10 h-10 rounded-full flex items-center justify-center font-bold border-2 transition-transform duration-300 relative",
-                                            currentBarber?.barber_id === barber.barber_id ? "border-blue-500 scale-110 shadow-[0_0_15px_rgba(59,130,246,0.3)]" : "border-slate-700 opacity-60"
-                                        )}>
-                                            {barber.photo_url ? (
-                                                <Image src={barber.photo_url} alt={barber.barber_name} width={40} height={40} className="w-full h-full rounded-full object-cover" unoptimized />
-                                            ) : (
-                                                (barber.barber_nickname || barber.barber_name)?.charAt(0)
-                                            )}
-                                            {/* Status indicator on avatar */}
-                                            <div className={cn(
-                                                "absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-slate-900",
-                                                barber.status === 'available' ? "bg-emerald-500" : "bg-slate-500"
-                                            )} />
-                                        </div>
-                                        <span className="text-[9px] font-black uppercase truncate w-full text-center">
-                                            {barber.barber_nickname || barber.barber_name.split(' ')[0]}
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Status Toggle for Selected Barber */}
-                            {currentBarber && (
-                                <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800 h-14 items-center px-2 gap-2">
-                                    <div className="flex flex-col mr-2">
-                                        <span className="text-[8px] font-black text-slate-500 uppercase leading-none">Status</span>
-                                        <span className={cn(
-                                            "text-[10px] font-black uppercase",
-                                            currentBarber.status === 'available' ? "text-emerald-500" : "text-slate-400"
-                                        )}>
-                                            {currentBarber.status === 'available' ? 'Online' : 'Offline'}
-                                        </span>
+                                            "absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-slate-900",
+                                            barber.status === 'available' ? "bg-emerald-500" : "bg-slate-500"
+                                        )} />
                                     </div>
-                                    <Button
-                                        size="sm"
-                                        variant={currentBarber.status === 'available' ? 'default' : 'outline'}
-                                        onClick={() => handleUpdateStatus(currentBarber.barber_id, currentBarber.status === 'available' ? 'offline' : 'available')}
-                                        className={cn(
-                                            "h-10 px-4 rounded-lg font-black uppercase text-[10px] tracking-widest transition-all",
-                                            currentBarber.status === 'available'
-                                                ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                                                : "border-slate-700 text-slate-500 hover:bg-slate-800"
-                                        )}
-                                    >
-                                        {currentBarber.status === 'available' ? 'Ficar Offline' : 'Ficar Online'}
-                                    </Button>
-                                </div>
-                            )}
+                                    <span className="text-[9px] font-black uppercase truncate w-full text-center">
+                                        {barber.barber_nickname || barber.barber_name.split(' ')[0]}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Status Toggle for Selected Barber (Visible to Owner and Barber) */}
+                    {!isUnifiedView && currentBarber && (
+                        <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800 h-14 items-center px-2 gap-2">
+                            <div className="flex flex-col mr-2">
+                                <span className="text-[8px] font-black text-slate-500 uppercase leading-none">Status</span>
+                                <span className={cn(
+                                    "text-[10px] font-black uppercase",
+                                    currentBarber.status === 'available' ? "text-emerald-500" : "text-slate-400"
+                                )}>
+                                    {currentBarber.status === 'available' ? 'Online' : 'Offline'}
+                                </span>
+                            </div>
+                            <Button
+                                size="sm"
+                                variant={currentBarber.status === 'available' ? 'default' : 'outline'}
+                                onClick={() => handleUpdateStatus(currentBarber.barber_id, currentBarber.status === 'available' ? 'offline' : 'available')}
+                                className={cn(
+                                    "h-10 px-4 rounded-lg font-black uppercase text-[10px] tracking-widest transition-all",
+                                    currentBarber.status === 'available'
+                                        ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                                        : "border-slate-700 text-slate-500 hover:bg-slate-800"
+                                )}
+                            >
+                                {currentBarber.status === 'available' ? 'Ficar Offline' : 'Ficar Online'}
+                            </Button>
                         </div>
                     )}
                 </div>
@@ -605,52 +603,56 @@ export default function BarberPage() {
                 </Card>
             </div>
 
-            {showWalkInDialog && (
-                <Dialog open={showWalkInDialog} onOpenChange={setShowWalkInDialog}>
-                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
-                        <DialogHeader>
-                            <DialogTitle className="uppercase font-black">Atendimento Direto</DialogTitle>
-                            <DialogDescription>Inicie um atendimento agora para um cliente que já está na cadeira.</DialogDescription>
-                        </DialogHeader>
-                        <div className="py-4 space-y-4">
-                            <div className="space-y-2">
-                                <Label>Nome do Cliente (Opcional)</Label>
-                                <Input
-                                    placeholder="Ex: Cliente Avulso"
-                                    className="bg-slate-950 border-slate-800"
-                                    value={walkInName}
-                                    onChange={e => setWalkInName(e.target.value)}
-                                    autoFocus
-                                />
+            {
+                showWalkInDialog && (
+                    <Dialog open={showWalkInDialog} onOpenChange={setShowWalkInDialog}>
+                        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
+                            <DialogHeader>
+                                <DialogTitle className="uppercase font-black">Atendimento Direto</DialogTitle>
+                                <DialogDescription>Inicie um atendimento agora para um cliente que já está na cadeira.</DialogDescription>
+                            </DialogHeader>
+                            <div className="py-4 space-y-4">
+                                <div className="space-y-2">
+                                    <Label>Nome do Cliente (Opcional)</Label>
+                                    <Input
+                                        placeholder="Ex: Cliente Avulso"
+                                        className="bg-slate-950 border-slate-800"
+                                        value={walkInName}
+                                        onChange={e => setWalkInName(e.target.value)}
+                                        autoFocus
+                                    />
+                                </div>
                             </div>
-                        </div>
-                        <DialogFooter>
-                            <Button variant="ghost" onClick={() => setShowWalkInDialog(false)}>Cancelar</Button>
-                            <Button
-                                onClick={handleWalkIn}
-                                disabled={submittingWalkIn}
-                                className="bg-blue-600 hover:bg-blue-700 font-black uppercase"
-                            >
-                                {submittingWalkIn ? 'Iniciando...' : 'Começar Agora'}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            )}
+                            <DialogFooter>
+                                <Button variant="ghost" onClick={() => setShowWalkInDialog(false)}>Cancelar</Button>
+                                <Button
+                                    onClick={handleWalkIn}
+                                    disabled={submittingWalkIn}
+                                    className="bg-blue-600 hover:bg-blue-700 font-black uppercase"
+                                >
+                                    {submittingWalkIn ? 'Iniciando...' : 'Começar Agora'}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                )
+            }
 
-            {showSaleDialog && finishedQueueId && (
-                <CloseSaleDialog
-                    isOpen={showSaleDialog}
-                    onOpenChange={setShowSaleDialog}
-                    queueId={finishedQueueId}
-                    mode={saleDialogMode}
-                    initialDraftItems={currentDraftItems}
-                    onSuccess={() => {
-                        setShowSaleDialog(false);
-                        fetchStatus();
-                    }}
-                />
-            )}
-        </div>
+            {
+                showSaleDialog && finishedQueueId && (
+                    <CloseSaleDialog
+                        isOpen={showSaleDialog}
+                        onOpenChange={setShowSaleDialog}
+                        queueId={finishedQueueId}
+                        mode={saleDialogMode}
+                        initialDraftItems={currentDraftItems}
+                        onSuccess={() => {
+                            setShowSaleDialog(false);
+                            fetchStatus();
+                        }}
+                    />
+                )
+            }
+        </div >
     );
 }
