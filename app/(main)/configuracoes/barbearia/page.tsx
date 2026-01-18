@@ -493,7 +493,7 @@ export default function BarbershopSettingsPage() {
                             </div>
 
                             {/* Legal Section */}
-                            <div className="space-y-4 pt-6 border-t border-slate-800/50">
+                            <div className="space-y-4 md:col-span-2 pt-6 border-t border-slate-800/50">
                                 <h3 className="text-sm font-bold uppercase text-slate-400 flex items-center gap-2">
                                     <ShieldCheck size={16} className="text-blue-500" /> Jurídico & Termos
                                 </h3>
