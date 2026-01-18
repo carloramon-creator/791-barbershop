@@ -238,7 +238,38 @@ export async function POST(req: Request) {
                 }
             }
         } else {
-            // Se não enviou cupom, habilita o campo na tela do Stripe (será setado no sessionConfig)
+            // Se não enviou cupom, verifica se deve aplicar desconto automático de Trial
+            const isTrial = tenant.plan === 'trial' || tenant.subscription_status === 'trialing'; // Ou verifique se subscription_status é vazio/nulo
+            // Para garantir que é a "primeira assinatura", idealmente verificariamos se já teve invoices pagos, 
+            // mas assumindo que 'trial' só ocorre antes da primeira expiração...
+
+            if (isTrial && !isAddon) {
+                try {
+                    // Nome fixo para o cupom de boas-vindas
+                    const welcomeCouponCode = 'TRIAL_WELCOME_10';
+
+                    // Tenta criar (idempotente se usarmos o ID) ou recuperar
+                    try {
+                        await stripeClient.coupons.create({
+                            id: welcomeCouponCode,
+                            percent_off: 10,
+                            duration: 'once',
+                            name: 'Desconto de Boas-vindas (10%)',
+                        });
+                    } catch (e: any) {
+                        // Se já existe, tudo bem
+                        if (!e.message?.includes('already exists')) {
+                            console.warn('Erro ao criar cupom de welcome:', e);
+                        }
+                    }
+
+                    discounts.push({ coupon: welcomeCouponCode });
+                    console.log(`[CHECKOUT] Aplicando desconto de boas-vindas para ${tenant.name}`);
+
+                } catch (err) {
+                    console.error('[CHECKOUT] Erro ao configurar desconto automático:', err);
+                }
+            }
         }
 
         const sessionConfig: Stripe.Checkout.SessionCreateParams = {

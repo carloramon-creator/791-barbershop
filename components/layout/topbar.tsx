@@ -66,7 +66,7 @@ export function Topbar() {
                                             <div className="flex items-center gap-2 bg-amber-500 text-slate-950 px-4 py-1.5 rounded-full font-bold shadow-lg shadow-amber-500/20 animate-in fade-in zoom-in duration-300 hover:scale-105 transition-transform cursor-pointer hover:bg-amber-400">
                                                 <Clock size={16} className="text-slate-900" />
                                                 <span>
-                                                    Seu teste acaba em {daysLeft} dias! Assine agora
+                                                    Seu teste acaba em {daysLeft} dias! Assine agora: APROVEITE E GANHE 10% DE DESCONTO NA PRIMEIRA ASSINATURA
                                                 </span>
                                             </div>
                                         </Link>

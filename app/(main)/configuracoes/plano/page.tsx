@@ -592,7 +592,7 @@ export default function PlanPage() {
                                                         ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
                                                         : 'bg-blue-600 hover:bg-white hover:text-blue-600 text-white shadow-blue-600/20 active:scale-95'
                                                 )}
-                                                disabled={currentPlan === plan.slug && subscriptionStatus !== 'trial'}
+                                                disabled={currentPlan === plan.slug && !['trial', 'trialing'].includes(subscriptionStatus || '')}
                                                 onClick={() => {
                                                     setSelectedPlan(plan.slug);
                                                     setSelectedAddon(null);
@@ -600,7 +600,7 @@ export default function PlanPage() {
                                                     setOpenDialog(true);
                                                 }}
                                             >
-                                                {currentPlan === plan.slug && subscriptionStatus !== 'trial' ? 'Plano Ativo' : 'Assinar Agora'}
+                                                {currentPlan === plan.slug && !['trial', 'trialing'].includes(subscriptionStatus || '') ? 'Plano Ativo' : 'Assinar Agora'}
                                             </Button>
                                         </CardContent>
                                     </div>
