@@ -544,32 +544,123 @@ export default function BarbershopSettingsPage() {
                                                                     <head>
                                                                         <title>Imprimir QR Code - ${name}</title>
                                                                         <style>
-                                                                            body { font-family: sans-serif; display: flex; flex-direction: column; items-center; justify-content: center; height: 100vh; margin: 0; text-align: center; background: white; color: black; }
-                                                                            .card { border: 2px solid #000; padding: 40px; border-radius: 20px; max-width: 400px; display: flex; flex-direction: column; align-items: center; }
-                                                                            h1 { margin-top: 0; font-size: 28px; text-transform: uppercase; margin-bottom: 5px; }
-                                                                            p { color: #666; margin-bottom: 30px; }
-                                                                            #qr-container { background: white; padding: 10px; border-radius: 10px; }
-                                                                            .footer { font-size: 10px; margin-top: 40px; color: #999; text-transform: uppercase; font-weight: bold; }
+                                                                            body { 
+                                                                                font-family: sans-serif; 
+                                                                                display: flex; 
+                                                                                flex-direction: column; 
+                                                                                align-items: center; 
+                                                                                justify-content: center; 
+                                                                                min-height: 100vh; 
+                                                                                margin: 0; 
+                                                                                background: white; 
+                                                                                color: black; 
+                                                                            }
+                                                                            .container {
+                                                                                display: flex;
+                                                                                flex-direction: column;
+                                                                                align-items: center;
+                                                                                gap: 40px;
+                                                                                max-width: 600px;
+                                                                                width: 100%;
+                                                                                padding: 20px;
+                                                                            }
+                                                                            .card { 
+                                                                                border: 3px solid #000; 
+                                                                                padding: 40px; 
+                                                                                border-radius: 30px; 
+                                                                                width: 100%;
+                                                                                display: flex; 
+                                                                                flex-direction: column; 
+                                                                                align-items: center; 
+                                                                                box-sizing: border-box;
+                                                                            }
+                                                                            h1 { margin-top: 0; font-size: 32px; text-transform: uppercase; margin-bottom: 5px; text-align: center; }
+                                                                            p { color: #666; margin-bottom: 30px; font-size: 18px; text-align: center; }
+                                                                            #qr-container { 
+                                                                                background: white; 
+                                                                                padding: 10px; 
+                                                                                border-radius: 10px; 
+                                                                            }
+                                                                            .instructions {
+                                                                                display: flex;
+                                                                                gap: 20px;
+                                                                                width: 100%;
+                                                                                justify-content: space-between;
+                                                                            }
+                                                                            .instruction-box {
+                                                                                flex: 1;
+                                                                                border: 1px dashed #ccc;
+                                                                                border-radius: 15px;
+                                                                                padding: 20px;
+                                                                                display: flex;
+                                                                                flex-direction: column;
+                                                                                align-items: center;
+                                                                                text-align: center;
+                                                                            }
+                                                                            .instruction-title {
+                                                                                font-weight: bold;
+                                                                                text-transform: uppercase;
+                                                                                margin-bottom: 10px;
+                                                                                font-size: 14px;
+                                                                            }
+                                                                            .instruction-steps {
+                                                                                font-size: 12px;
+                                                                                color: #555;
+                                                                                line-height: 1.5;
+                                                                            }
+                                                                            .footer { 
+                                                                                font-size: 10px; 
+                                                                                margin-top: 40px; 
+                                                                                color: #999; 
+                                                                                text-transform: uppercase; 
+                                                                                font-weight: bold; 
+                                                                            }
+                                                                            @media print {
+                                                                                body { -webkit-print-color-adjust: exact; }
+                                                                            }
                                                                         </style>
                                                                     </head>
                                                                     <body>
-                                                                        <div class="card">
-                                                                            <img src="${logoUrl}" style="height: 60px; max-width: 150px; object-fit: contain; margin-bottom: 20px;" />
-                                                                            <h1>${name}</h1>
-                                                                            <p>Escaneie para entrar na fila digital</p>
-                                                                            <div id="qr-container"></div>
-                                                                            <div class="footer">Powered by 791 Barber</div>
+                                                                        <div class="container">
+                                                                            <div class="card">
+                                                                                ${logoUrl ? `<img src="${logoUrl}" style="height: 80px; max-width: 200px; object-fit: contain; margin-bottom: 20px;" />` : ''}
+                                                                                <h1>${name}</h1>
+                                                                                <p>Escaneie para entrar na fila digital</p>
+                                                                                <div id="qr-container"></div>
+                                                                            </div>
+
+                                                                            <div class="instructions">
+                                                                                <div class="instruction-box">
+                                                                                    <div class="instruction-title">📱 iPhone (iOS)</div>
+                                                                                    <div class="instruction-steps">
+                                                                                        1. Abra a câmera e escaneie o QR Code<br/>
+                                                                                        2. Toque no botão <strong>Compartilhar</strong><br/>
+                                                                                        3. Selecione <strong>"Adicionar à Tela de Início"</strong>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div class="instruction-box">
+                                                                                    <div class="instruction-title">🤖 Android</div>
+                                                                                    <div class="instruction-steps">
+                                                                                        1. Abra a câmera e escaneie o QR Code<br/>
+                                                                                        2. Toque no menu (três pontinhos)<br/>
+                                                                                        3. Selecione <strong>"Instalar App"</strong> ou <strong>"Adicionar à Tela Inicial"</strong>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div class="footer">Powered by 791 Barber System</div>
                                                                         </div>
+
                                                                         <script>
                                                                             window.onload = () => {
                                                                                 const container = document.getElementById('qr-container');
                                                                                 const originalSvg = window.opener.document.getElementById('qr-code-to-print');
                                                                                 if (originalSvg) {
                                                                                     const svg = originalSvg.cloneNode(true);
-                                                                                    svg.setAttribute('width', '300');
-                                                                                    svg.setAttribute('height', '300');
+                                                                                    svg.setAttribute('width', '250');
+                                                                                    svg.setAttribute('height', '250');
                                                                                     container.appendChild(svg);
-                                                                                    setTimeout(() => { window.print(); window.close(); }, 500);
+                                                                                    setTimeout(() => { window.print(); window.close(); }, 800);
                                                                                 } else {
                                                                                     container.innerHTML = "<p>Erro ao gerar QR Code. Tente novamente.</p>";
                                                                                 }
