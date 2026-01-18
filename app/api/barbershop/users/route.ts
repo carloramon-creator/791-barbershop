@@ -162,7 +162,7 @@ export async function POST(req: Request) {
           const token = urlObj.searchParams.get('token');
           const type = urlObj.searchParams.get('type') || 'invite';
 
-          const baseUrl = process.env.NEXT_PUBLIC_OWNER_URL || 'https://frontend-owner-production.up.railway.app';
+          const baseUrl = process.env.NEXT_PUBLIC_OWNER_URL || 'https://791-barbershop-production.up.railway.app';
           // Transformar em link da nossa aplicação
           inviteLink = `${baseUrl}/ativar-conta?token=${token}&type=${type}`;
         } catch (e) {
