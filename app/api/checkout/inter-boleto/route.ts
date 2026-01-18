@@ -83,6 +83,17 @@ export async function POST(req: Request) {
             }
         }
 
+        // Se não enviou cupom (ou inválido), verifica se deve aplicar desconto automático de Trial
+        if (discount === 0) {
+            const isTrial = tenant.plan === 'trial' || tenant.subscription_status === 'trialing' || !tenant.stripe_subscription_id;
+
+            if (isTrial && !isAddon) {
+                console.log('[SAAS BOLETO] Aplicando desconto de boas-vindas (10%) para Trial');
+                discount = (amount * 10) / 100; // 10%
+                couponApplied = 'TRIAL_WELCOME_10';
+            }
+        }
+
         amount = Math.max(0, amount - discount);
         const currentDate = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
         const dueDate = new Date();
