@@ -529,54 +529,55 @@ export default function BarbershopSettingsPage() {
                                     </CardContent>
                                 </Card>
                             </div>
+                        </div>
 
-                            {/* Public Access Section - NEW */}
-                            {!isEditing && (
-                                <div className="space-y-4 pt-6 border-t border-slate-800/50">
-                                    <h3 className="text-sm font-bold uppercase text-slate-400 flex items-center gap-2">
-                                        <Sparkles size={16} className="text-blue-500" /> Divulgação para Clientes
-                                    </h3>
+                        {/* Public Access Section - NEW */}
+                        {!isEditing && (
+                            <div className="space-y-4 pt-6 border-t border-slate-800/50">
+                                <h3 className="text-sm font-bold uppercase text-slate-400 flex items-center gap-2">
+                                    <Sparkles size={16} className="text-blue-500" /> Divulgação para Clientes
+                                </h3>
 
-                                    <Card className="bg-slate-950/50 border-slate-800">
-                                        <CardContent className="pt-6">
-                                            <div className="flex flex-col md:flex-row items-center gap-8">
-                                                <div className="bg-white p-4 rounded-2xl shadow-2xl">
-                                                    <QRCodeSVG
-                                                        id="qr-code-to-print"
-                                                        value={`https://791barber.com/${slug}`}
-                                                        size={160}
-                                                        includeMargin={true}
-                                                        level="H"
-                                                    />
+                                <Card className="bg-slate-950/50 border-slate-800">
+                                    <CardContent className="pt-6">
+                                        <div className="flex flex-col md:flex-row items-center gap-8">
+                                            <div className="bg-white p-4 rounded-2xl shadow-2xl">
+                                                <QRCodeSVG
+                                                    id="qr-code-to-print"
+                                                    value={`https://791barber.com/${slug}`}
+                                                    size={160}
+                                                    includeMargin={true}
+                                                    level="H"
+                                                />
+                                            </div>
+                                            <div className="flex-1 space-y-4 text-center md:text-left">
+                                                <div className="space-y-1">
+                                                    <h4 className="text-xl font-black text-slate-100 uppercase">App do Cliente</h4>
+                                                    <p className="text-sm text-slate-400">Este QR Code leva seus clientes direto para a sua fila digital.</p>
                                                 </div>
-                                                <div className="flex-1 space-y-4 text-center md:text-left">
-                                                    <div className="space-y-1">
-                                                        <h4 className="text-xl font-black text-slate-100 uppercase">App do Cliente</h4>
-                                                        <p className="text-sm text-slate-400">Este QR Code leva seus clientes direto para a sua fila digital.</p>
-                                                    </div>
 
-                                                    <div className="flex flex-col sm:flex-row gap-3">
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            className="border-slate-700 hover:bg-slate-800 gap-2"
-                                                            onClick={() => {
-                                                                if (!slug) return alert('Por favor, defina um "Slug URL" acima antes de copiar.');
-                                                                const url = `https://791barber.com/${slug}`;
-                                                                navigator.clipboard.writeText(url);
-                                                                alert('Link copiado!');
-                                                            }}
-                                                        >
-                                                            Copiar Link
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            className="bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-lg shadow-blue-900/40"
-                                                            onClick={() => {
-                                                                const printWindow = window.open('', '_blank');
-                                                                if (!printWindow) return;
-                                                                const url = `https://791barber.com/${slug}`;
-                                                                printWindow.document.write(`
+                                                <div className="flex flex-col sm:flex-row gap-3">
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        className="border-slate-700 hover:bg-slate-800 gap-2"
+                                                        onClick={() => {
+                                                            if (!slug) return alert('Por favor, defina um "Slug URL" acima antes de copiar.');
+                                                            const url = `https://791barber.com/${slug}`;
+                                                            navigator.clipboard.writeText(url);
+                                                            alert('Link copiado!');
+                                                        }}
+                                                    >
+                                                        Copiar Link
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        className="bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-lg shadow-blue-900/40"
+                                                        onClick={() => {
+                                                            const printWindow = window.open('', '_blank');
+                                                            if (!printWindow) return;
+                                                            const url = `https://791barber.com/${slug}`;
+                                                            printWindow.document.write(`
                                                                 <html>
                                                                     <head>
                                                                         <title>Imprimir QR Code - ${name}</title>
@@ -706,438 +707,438 @@ export default function BarbershopSettingsPage() {
                                                                     </body>
                                                                 </html>
                                                             `);
-                                                                printWindow.document.close();
-                                                            }}
-                                                        >
-                                                            Imprimir QR Code
-                                                        </Button>
-                                                    </div>
+                                                            printWindow.document.close();
+                                                        }}
+                                                    >
+                                                        Imprimir QR Code
+                                                    </Button>
                                                 </div>
                                             </div>
-                                        </CardContent>
-                                    </Card>
-                                </div>
-                            )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
 
-                            {/* --- SEÇÃO DE HORÁRIOS --- */}
-                            <Card className="bg-slate-900 border-slate-800">
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2 text-slate-100">
-                                        <Clock size={20} className="text-blue-500" />
-                                        Horário de Funcionamento
-                                        <HelpTooltip content="Defina quando sua loja está aberta. Fora desses horários, os clientes não conseguirão agendar online." />
-                                    </CardTitle>
-                                    <CardDescription className="text-slate-400">
-                                        Configure os dias e horários de atendimento da barbearia.
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-6">
-                                    <div className="space-y-4">
-                                        <Label className="text-slate-200">Configuração Semanal</Label>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-                                            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((dayName, idx) => {
-                                                const dayConfig = openingHours.days?.[idx] || { active: false, start: '09:00', end: '19:00' };
-                                                return (
-                                                    <div key={idx} className={cn("flex flex-col gap-2 p-2 rounded-lg border text-center transition-colors h-full", dayConfig.active ? "bg-slate-950 border-slate-700" : "bg-slate-900/50 border-slate-800 opacity-60")}>
-                                                        <div className="flex flex-col items-center gap-2 mb-2">
-                                                            <span className="text-sm font-bold text-slate-200">{dayName}</span>
-                                                            <div
-                                                                className={cn("w-8 h-5 rounded-full relative cursor-pointer transition-colors", dayConfig.active ? "bg-blue-600" : "bg-slate-700")}
-                                                                onClick={() => isEditing && setOpeningHours(prev => ({ ...prev, days: { ...prev.days, [idx]: { ...dayConfig, active: !dayConfig.active } } }))}
-                                                            >
-                                                                <div className={cn("absolute top-1 w-3 h-3 rounded-full bg-white transition-all", dayConfig.active ? "left-4" : "left-1")} />
+                        {/* --- SEÇÃO DE HORÁRIOS --- */}
+                        <Card className="bg-slate-900 border-slate-800">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-slate-100">
+                                    <Clock size={20} className="text-blue-500" />
+                                    Horário de Funcionamento
+                                    <HelpTooltip content="Defina quando sua loja está aberta. Fora desses horários, os clientes não conseguirão agendar online." />
+                                </CardTitle>
+                                <CardDescription className="text-slate-400">
+                                    Configure os dias e horários de atendimento da barbearia.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="space-y-4">
+                                    <Label className="text-slate-200">Configuração Semanal</Label>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                                        {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((dayName, idx) => {
+                                            const dayConfig = openingHours.days?.[idx] || { active: false, start: '09:00', end: '19:00' };
+                                            return (
+                                                <div key={idx} className={cn("flex flex-col gap-2 p-2 rounded-lg border text-center transition-colors h-full", dayConfig.active ? "bg-slate-950 border-slate-700" : "bg-slate-900/50 border-slate-800 opacity-60")}>
+                                                    <div className="flex flex-col items-center gap-2 mb-2">
+                                                        <span className="text-sm font-bold text-slate-200">{dayName}</span>
+                                                        <div
+                                                            className={cn("w-8 h-5 rounded-full relative cursor-pointer transition-colors", dayConfig.active ? "bg-blue-600" : "bg-slate-700")}
+                                                            onClick={() => isEditing && setOpeningHours(prev => ({ ...prev, days: { ...prev.days, [idx]: { ...dayConfig, active: !dayConfig.active } } }))}
+                                                        >
+                                                            <div className={cn("absolute top-1 w-3 h-3 rounded-full bg-white transition-all", dayConfig.active ? "left-4" : "left-1")} />
+                                                        </div>
+                                                    </div>
+
+                                                    {dayConfig.active && (
+                                                        <div className="space-y-2 animate-in fade-in zoom-in-95 duration-200">
+                                                            <div className="space-y-1">
+                                                                <span className="text-[10px] text-slate-500 uppercase tracking-wider">Abre</span>
+                                                                <Input
+                                                                    type="time"
+                                                                    value={dayConfig.start}
+                                                                    className="h-8 text-sm bg-slate-800 border-slate-700 px-2 text-white font-medium [color-scheme:dark]"
+                                                                    disabled={!isEditing}
+                                                                    onChange={e => setOpeningHours(prev => ({ ...prev, days: { ...prev.days, [idx]: { ...dayConfig, start: e.target.value } } }))}
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <span className="text-[10px] text-slate-500 uppercase tracking-wider">Fecha</span>
+                                                                <Input
+                                                                    type="time"
+                                                                    value={dayConfig.end}
+                                                                    className="h-8 text-sm bg-slate-800 border-slate-700 px-2 text-white font-medium [color-scheme:dark]"
+                                                                    disabled={!isEditing}
+                                                                    onChange={e => setOpeningHours(prev => ({ ...prev, days: { ...prev.days, [idx]: { ...dayConfig, end: e.target.value } } }))}
+                                                                />
                                                             </div>
                                                         </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
 
-                                                        {dayConfig.active && (
-                                                            <div className="space-y-2 animate-in fade-in zoom-in-95 duration-200">
-                                                                <div className="space-y-1">
-                                                                    <span className="text-[10px] text-slate-500 uppercase tracking-wider">Abre</span>
-                                                                    <Input
-                                                                        type="time"
-                                                                        value={dayConfig.start}
-                                                                        className="h-8 text-sm bg-slate-800 border-slate-700 px-2 text-white font-medium [color-scheme:dark]"
-                                                                        disabled={!isEditing}
-                                                                        onChange={e => setOpeningHours(prev => ({ ...prev, days: { ...prev.days, [idx]: { ...dayConfig, start: e.target.value } } }))}
-                                                                    />
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <span className="text-[10px] text-slate-500 uppercase tracking-wider">Fecha</span>
-                                                                    <Input
-                                                                        type="time"
-                                                                        value={dayConfig.end}
-                                                                        className="h-8 text-sm bg-slate-800 border-slate-700 px-2 text-white font-medium [color-scheme:dark]"
-                                                                        disabled={!isEditing}
-                                                                        onChange={e => setOpeningHours(prev => ({ ...prev, days: { ...prev.days, [idx]: { ...dayConfig, end: e.target.value } } }))}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
+                                <div className="pt-4 border-t border-slate-800 space-y-4">
+                                    <div className="flex items-center space-x-2">
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            role="checkbox"
+                                            disabled={!isEditing}
+                                            aria-checked={openingHours.lunch_enabled}
+                                            onClick={() => isEditing && setOpeningHours({ ...openingHours, lunch_enabled: !openingHours.lunch_enabled })}
+                                            className={cn(
+                                                "w-5 h-5 p-0 rounded border flex items-center justify-center",
+                                                openingHours.lunch_enabled ? "bg-blue-600 border-blue-600 text-white" : "border-slate-600 bg-transparent",
+                                                !isEditing && "opacity-50 cursor-not-allowed"
+                                            )}
+                                        >
+                                            {openingHours.lunch_enabled && <Check size={14} />}
+                                        </Button>
+                                        <Label
+                                            className={cn("text-slate-200", isEditing ? "cursor-pointer" : "cursor-not-allowed opacity-70")}
+                                            onClick={() => isEditing && setOpeningHours({ ...openingHours, lunch_enabled: !openingHours.lunch_enabled })}
+                                        >
+                                            Possui intervalo de almoço?
+                                        </Label>
+                                        <HelpTooltip content="Se ativado, este período ficará bloqueado para novos agendamentos online em todos os profissionais." />
                                     </div>
 
-                                    <div className="pt-4 border-t border-slate-800 space-y-4">
-                                        <div className="flex items-center space-x-2">
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                role="checkbox"
+                                    {openingHours.lunch_enabled && (
+                                        <div className="flex flex-wrap gap-4 pl-7 animate-in fade-in slide-in-from-top-2">
+                                            <div className="space-y-2">
+                                                <Label className="text-slate-200">Início do Almoço</Label>
+                                                <Input
+                                                    type="time"
+                                                    disabled={!isEditing}
+                                                    value={openingHours.lunch_start}
+                                                    onChange={e => setOpeningHours({ ...openingHours, lunch_start: e.target.value })}
+                                                    className="bg-slate-800 border-slate-700 text-white w-32 font-medium [color-scheme:dark]"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-slate-200">Duração (minutos)</Label>
+                                                <Input
+                                                    type="number"
+                                                    disabled={!isEditing}
+                                                    value={openingHours.lunch_duration}
+                                                    onChange={e => setOpeningHours({ ...openingHours, lunch_duration: Number(e.target.value) })}
+                                                    className="bg-slate-800 border-slate-700 text-white w-32 font-medium"
+                                                    min={0}
+                                                    step={15}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="pt-4 border-t border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-3">
+                                        <div className="space-y-1">
+                                            <div className="flex items-center">
+                                                <Label className="text-slate-200">Tolerância de Atendimento (%)</Label>
+                                                <HelpTooltip content="Evita que agendamentos muito longos sejam feitos no final do expediente. Ex: Se faltam 30min para fechar e o corte leva 40min, uma tolerância de 50% permitiria o agendamento." />
+                                            </div>
+                                            <p className="text-[10px] text-slate-500">
+                                                Permite agendar além do horário se o excesso for até X% do tempo restante.
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <Input
+                                                type="number"
                                                 disabled={!isEditing}
-                                                aria-checked={openingHours.lunch_enabled}
-                                                onClick={() => isEditing && setOpeningHours({ ...openingHours, lunch_enabled: !openingHours.lunch_enabled })}
-                                                className={cn(
-                                                    "w-5 h-5 p-0 rounded border flex items-center justify-center",
-                                                    openingHours.lunch_enabled ? "bg-blue-600 border-blue-600 text-white" : "border-slate-600 bg-transparent",
-                                                    !isEditing && "opacity-50 cursor-not-allowed"
-                                                )}
-                                            >
-                                                {openingHours.lunch_enabled && <Check size={14} />}
-                                            </Button>
-                                            <Label
-                                                className={cn("text-slate-200", isEditing ? "cursor-pointer" : "cursor-not-allowed opacity-70")}
-                                                onClick={() => isEditing && setOpeningHours({ ...openingHours, lunch_enabled: !openingHours.lunch_enabled })}
-                                            >
-                                                Possui intervalo de almoço?
-                                            </Label>
-                                            <HelpTooltip content="Se ativado, este período ficará bloqueado para novos agendamentos online em todos os profissionais." />
+                                                value={openingHours.overtime_tolerance_percent}
+                                                onChange={e => setOpeningHours({ ...openingHours, overtime_tolerance_percent: Number(e.target.value) })}
+                                                className="bg-slate-950 border-slate-800 text-slate-100 w-24"
+                                                min={0}
+                                                max={200}
+                                            />
+                                            <span className="text-slate-400 font-bold">%</span>
                                         </div>
-
-                                        {openingHours.lunch_enabled && (
-                                            <div className="flex flex-wrap gap-4 pl-7 animate-in fade-in slide-in-from-top-2">
-                                                <div className="space-y-2">
-                                                    <Label className="text-slate-200">Início do Almoço</Label>
-                                                    <Input
-                                                        type="time"
-                                                        disabled={!isEditing}
-                                                        value={openingHours.lunch_start}
-                                                        onChange={e => setOpeningHours({ ...openingHours, lunch_start: e.target.value })}
-                                                        className="bg-slate-800 border-slate-700 text-white w-32 font-medium [color-scheme:dark]"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-slate-200">Duração (minutos)</Label>
-                                                    <Input
-                                                        type="number"
-                                                        disabled={!isEditing}
-                                                        value={openingHours.lunch_duration}
-                                                        onChange={e => setOpeningHours({ ...openingHours, lunch_duration: Number(e.target.value) })}
-                                                        className="bg-slate-800 border-slate-700 text-white w-32 font-medium"
-                                                        min={0}
-                                                        step={15}
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
 
-                                    <div className="pt-4 border-t border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-3">
-                                            <div className="space-y-1">
+                                    <div className="space-y-3">
+                                        <div className="space-y-1">
+                                            <div className="flex items-center">
+                                                <Label className="text-slate-200">Lembrete WhatsApp (minutos)</Label>
+                                                <HelpTooltip content="O sistema enviará uma mensagem automática de lembrete este número de minutos ANTES do horário marcado." />
+                                            </div>
+                                            <p className="text-[10px] text-slate-500">
+                                                Tempo de antecedência para disparo do lembrete automático.
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <Input
+                                                type="number"
+                                                disabled={!isEditing}
+                                                value={openingHours.whatsapp_reminder_minutes}
+                                                onChange={e => setOpeningHours({ ...openingHours, whatsapp_reminder_minutes: Number(e.target.value) })}
+                                                className="bg-slate-950 border-slate-800 text-slate-100 w-24"
+                                                min={0}
+                                                step={5}
+                                            />
+                                            <span className="text-slate-400 font-bold">min</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </CardContent>
+                        </Card>
+
+
+
+                        {/* Address Section */}
+                        <div className="space-y-4 pt-6 border-t border-slate-800/50">
+                            <h3 className="text-sm font-bold uppercase text-slate-400 flex items-center gap-2">
+                                <Building2 size={16} /> Endereço
+                            </h3>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="cep" className="text-slate-400 text-xs uppercase font-bold">CEP</Label>
+                                    <MaskedInput
+                                        mask="99999-999"
+                                        value={cep}
+                                        onChange={(e) => setCep(e.target.value)}
+                                        onBlur={handleCepBlur}
+                                        required
+                                        placeholder="00000-000"
+                                        disabled={!isEditing}
+                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10"
+                                    />
+                                </div>
+                                <div className="space-y-2 md:col-span-2">
+                                    <Label htmlFor="street" className="text-slate-400 text-xs uppercase font-bold">Rua / Logradouro</Label>
+                                    <Input
+                                        id="street"
+                                        value={street}
+                                        onChange={(e) => setStreet(e.target.value)}
+                                        required
+                                        disabled={!isEditing}
+                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="number" className="text-slate-400 text-xs uppercase font-bold">Número</Label>
+                                    <Input
+                                        id="number"
+                                        value={number}
+                                        onChange={(e) => setNumber(e.target.value)}
+                                        placeholder="123"
+                                        required
+                                        disabled={!isEditing}
+                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10"
+                                    />
+                                </div>
+                                <div className="space-y-2 md:col-span-2">
+                                    <Label htmlFor="complement" className="text-slate-400 text-xs uppercase font-bold">Complemento</Label>
+                                    <Input
+                                        id="complement"
+                                        value={complement}
+                                        onChange={(e) => setComplement(e.target.value)}
+                                        placeholder="Sala 1, Bloco B"
+                                        disabled={!isEditing}
+                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="neighborhood" className="text-slate-400 text-xs uppercase font-bold">Bairro</Label>
+                                    <Input
+                                        id="neighborhood"
+                                        value={neighborhood}
+                                        onChange={(e) => setNeighborhood(e.target.value)}
+                                        required
+                                        disabled={!isEditing}
+                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="city" className="text-slate-400 text-xs uppercase font-bold">Cidade</Label>
+                                    <Input
+                                        id="city"
+                                        value={city}
+                                        onChange={(e) => setCity(e.target.value)}
+                                        required
+                                        disabled={!isEditing}
+                                        className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="state" className="text-slate-400 text-xs uppercase font-bold">UF</Label>
+                                    <Input
+                                        id="state"
+                                        value={state}
+                                        onChange={(e) => setState(e.target.value)}
+                                        required
+                                        maxLength={2}
+                                        placeholder="SP"
+                                        disabled={!isEditing}
+                                        className="bg-slate-950 border-slate-800 text-slate-100 uppercase disabled:bg-slate-900 disabled:text-slate-400 h-10"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Banking Section - NEW */}
+                        <div className="space-y-4 pt-6 border-t border-slate-800/50">
+                            <h3 className="text-sm font-bold uppercase text-slate-400 flex items-center gap-2">
+                                <CreditCard size={16} /> Dados Bancários e PIX
+                            </h3>
+                            <p className="text-xs text-slate-500 mb-4">
+                                Configure sua chave PIX para gerar QR Codes automaticamente no momento da venda.
+                            </p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-950/30 p-4 rounded-lg border border-slate-800/30">
+                                <div className="space-y-2">
+                                    <div className="flex items-center">
+                                        <Label className="text-slate-200 text-xs uppercase font-bold">Chave PIX (Obrigatório)</Label>
+                                        <HelpTooltip content="Esta chave é usada para gerar o QR Code de pagamento no balcão. Certifique-se de que está correta para receber os valores." />
+                                    </div>
+                                    <Input
+                                        value={pixKey}
+                                        onChange={e => setPixKey(e.target.value)}
+                                        placeholder="CPF, CNPJ, Email ou Telefone"
+                                        disabled={!isEditing}
+                                        className="bg-slate-900 border-slate-700 text-emerald-400 font-bold h-11"
+                                    />
+                                    <p className="text-[10px] text-slate-500">Esta chave aparecerá no QR Code para o cliente pagar.</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-slate-200 text-xs uppercase font-bold">Tipo da Chave</Label>
+                                    <Select value={pixKeyType} onValueChange={setPixKeyType} disabled={!isEditing}>
+                                        <SelectTrigger className="bg-slate-900 border-slate-700 h-11">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-slate-800 border-slate-700">
+                                            <SelectItem value="cpf">CPF</SelectItem>
+                                            <SelectItem value="cnpj">CNPJ</SelectItem>
+                                            <SelectItem value="email">E-mail</SelectItem>
+                                            <SelectItem value="phone">Telefone (Celular)</SelectItem>
+                                            <SelectItem value="random">Chave Aleatória</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 opacity-50 hover:opacity-100 transition-opacity">
+                                <div className="space-y-2">
+                                    <Label className="text-slate-500 text-[10px] uppercase font-bold">Banco (Código)</Label>
+                                    <Input value={bankCode} onChange={e => setBankCode(e.target.value)} disabled={!isEditing} className="h-9 text-xs bg-slate-950 border-slate-800" placeholder="Ex: 260 (Nubank)" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-slate-500 text-[10px] uppercase font-bold">Agência</Label>
+                                    <Input value={bankAgency} onChange={e => setBankAgency(e.target.value)} disabled={!isEditing} className="h-9 text-xs bg-slate-950 border-slate-800" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-slate-500 text-[10px] uppercase font-bold">Conta Corrente</Label>
+                                    <Input value={bankAccount} onChange={e => setBankAccount(e.target.value)} disabled={!isEditing} className="h-9 text-xs bg-slate-950 border-slate-800" />
+                                </div>
+                                <div className="space-y-2 md:col-span-2">
+                                    <Label className="text-slate-500 text-[10px] uppercase font-bold">Nome do Titular</Label>
+                                    <Input value={bankAccountHolder} onChange={e => setBankAccountHolder(e.target.value)} disabled={!isEditing} className="h-9 text-xs bg-slate-950 border-slate-800" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-slate-500 text-[10px] uppercase font-bold">CPF/CNPJ do Titular</Label>
+                                    <Input value={bankAccountDoc} onChange={e => setBankAccountDoc(e.target.value)} disabled={!isEditing} className="h-9 text-xs bg-slate-950 border-slate-800" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Modules Section - NEW */}
+                        <div className="space-y-4 pt-6 border-t border-slate-800/50">
+                            <h3 className="text-sm font-bold uppercase text-slate-400 flex items-center gap-2">
+                                <Sparkles size={16} className="text-blue-500" /> Módulos do Sistema
+                            </h3>
+                            <p className="text-xs text-slate-500 mb-4">
+                                Escolha quais funcionalidades estarão disponíveis no seu painel. Você pode ativar apenas Fila, apenas Agendamentos, ou ambos.
+                            </p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-slate-950/30 p-4 rounded-lg border border-slate-800/30 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 bg-blue-600/10 rounded-lg flex items-center justify-center">
+                                                <Users size={16} className="text-blue-500" />
+                                            </div>
+                                            <div>
                                                 <div className="flex items-center">
-                                                    <Label className="text-slate-200">Tolerância de Atendimento (%)</Label>
-                                                    <HelpTooltip content="Evita que agendamentos muito longos sejam feitos no final do expediente. Ex: Se faltam 30min para fechar e o corte leva 40min, uma tolerância de 50% permitiria o agendamento." />
+                                                    <Label className="text-slate-200 font-bold text-sm">Módulo de Fila</Label>
+                                                    <HelpTooltip content="Ideal para atendimentos por ordem de chegada. Ativa o painel de espera e o botão 'Chamar Próximo'." />
                                                 </div>
-                                                <p className="text-[10px] text-slate-500">
-                                                    Permite agendar além do horário se o excesso for até X% do tempo restante.
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                <Input
-                                                    type="number"
-                                                    disabled={!isEditing}
-                                                    value={openingHours.overtime_tolerance_percent}
-                                                    onChange={e => setOpeningHours({ ...openingHours, overtime_tolerance_percent: Number(e.target.value) })}
-                                                    className="bg-slate-950 border-slate-800 text-slate-100 w-24"
-                                                    min={0}
-                                                    max={200}
-                                                />
-                                                <span className="text-slate-400 font-bold">%</span>
+                                                <p className="text-[10px] text-slate-500">Sistema de fila digital para atendimento</p>
                                             </div>
                                         </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={moduleQueueEnabled}
+                                                onChange={(e) => setModuleQueueEnabled(e.target.checked)}
+                                                disabled={!isEditing}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 peer-disabled:opacity-50"></div>
+                                        </label>
+                                    </div>
+                                </div>
 
-                                        <div className="space-y-3">
-                                            <div className="space-y-1">
+                                <div className="bg-slate-950/30 p-4 rounded-lg border border-slate-800/30 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 bg-emerald-600/10 rounded-lg flex items-center justify-center">
+                                                <Calendar size={16} className="text-emerald-500" />
+                                            </div>
+                                            <div>
                                                 <div className="flex items-center">
-                                                    <Label className="text-slate-200">Lembrete WhatsApp (minutos)</Label>
-                                                    <HelpTooltip content="O sistema enviará uma mensagem automática de lembrete este número de minutos ANTES do horário marcado." />
+                                                    <Label className="text-slate-200 font-bold text-sm">Módulo de Agendamentos</Label>
+                                                    <HelpTooltip content="Permite que clientes escolham um horário e profissional específico com antecedência no app." />
                                                 </div>
-                                                <p className="text-[10px] text-slate-500">
-                                                    Tempo de antecedência para disparo do lembrete automático.
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                <Input
-                                                    type="number"
-                                                    disabled={!isEditing}
-                                                    value={openingHours.whatsapp_reminder_minutes}
-                                                    onChange={e => setOpeningHours({ ...openingHours, whatsapp_reminder_minutes: Number(e.target.value) })}
-                                                    className="bg-slate-950 border-slate-800 text-slate-100 w-24"
-                                                    min={0}
-                                                    step={5}
-                                                />
-                                                <span className="text-slate-400 font-bold">min</span>
+                                                <p className="text-[10px] text-slate-500">Sistema de agendamento por horário</p>
                                             </div>
                                         </div>
-                                    </div>
-
-                                </CardContent>
-                            </Card>
-
-
-
-                            {/* Address Section */}
-                            <div className="space-y-4 pt-6 border-t border-slate-800/50">
-                                <h3 className="text-sm font-bold uppercase text-slate-400 flex items-center gap-2">
-                                    <Building2 size={16} /> Endereço
-                                </h3>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="cep" className="text-slate-400 text-xs uppercase font-bold">CEP</Label>
-                                        <MaskedInput
-                                            mask="99999-999"
-                                            value={cep}
-                                            onChange={(e) => setCep(e.target.value)}
-                                            onBlur={handleCepBlur}
-                                            required
-                                            placeholder="00000-000"
-                                            disabled={!isEditing}
-                                            className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10"
-                                        />
-                                    </div>
-                                    <div className="space-y-2 md:col-span-2">
-                                        <Label htmlFor="street" className="text-slate-400 text-xs uppercase font-bold">Rua / Logradouro</Label>
-                                        <Input
-                                            id="street"
-                                            value={street}
-                                            onChange={(e) => setStreet(e.target.value)}
-                                            required
-                                            disabled={!isEditing}
-                                            className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="number" className="text-slate-400 text-xs uppercase font-bold">Número</Label>
-                                        <Input
-                                            id="number"
-                                            value={number}
-                                            onChange={(e) => setNumber(e.target.value)}
-                                            placeholder="123"
-                                            required
-                                            disabled={!isEditing}
-                                            className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10"
-                                        />
-                                    </div>
-                                    <div className="space-y-2 md:col-span-2">
-                                        <Label htmlFor="complement" className="text-slate-400 text-xs uppercase font-bold">Complemento</Label>
-                                        <Input
-                                            id="complement"
-                                            value={complement}
-                                            onChange={(e) => setComplement(e.target.value)}
-                                            placeholder="Sala 1, Bloco B"
-                                            disabled={!isEditing}
-                                            className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="neighborhood" className="text-slate-400 text-xs uppercase font-bold">Bairro</Label>
-                                        <Input
-                                            id="neighborhood"
-                                            value={neighborhood}
-                                            onChange={(e) => setNeighborhood(e.target.value)}
-                                            required
-                                            disabled={!isEditing}
-                                            className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="city" className="text-slate-400 text-xs uppercase font-bold">Cidade</Label>
-                                        <Input
-                                            id="city"
-                                            value={city}
-                                            onChange={(e) => setCity(e.target.value)}
-                                            required
-                                            disabled={!isEditing}
-                                            className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="state" className="text-slate-400 text-xs uppercase font-bold">UF</Label>
-                                        <Input
-                                            id="state"
-                                            value={state}
-                                            onChange={(e) => setState(e.target.value)}
-                                            required
-                                            maxLength={2}
-                                            placeholder="SP"
-                                            disabled={!isEditing}
-                                            className="bg-slate-950 border-slate-800 text-slate-100 uppercase disabled:bg-slate-900 disabled:text-slate-400 h-10"
-                                        />
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={moduleAppointmentsEnabled}
+                                                onChange={(e) => setModuleAppointmentsEnabled(e.target.checked)}
+                                                disabled={!isEditing}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600 peer-disabled:opacity-50"></div>
+                                        </label>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            {/* Banking Section - NEW */}
-                            <div className="space-y-4 pt-6 border-t border-slate-800/50">
-                                <h3 className="text-sm font-bold uppercase text-slate-400 flex items-center gap-2">
-                                    <CreditCard size={16} /> Dados Bancários e PIX
-                                </h3>
-                                <p className="text-xs text-slate-500 mb-4">
-                                    Configure sua chave PIX para gerar QR Codes automaticamente no momento da venda.
-                                </p>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-950/30 p-4 rounded-lg border border-slate-800/30">
-                                    <div className="space-y-2">
-                                        <div className="flex items-center">
-                                            <Label className="text-slate-200 text-xs uppercase font-bold">Chave PIX (Obrigatório)</Label>
-                                            <HelpTooltip content="Esta chave é usada para gerar o QR Code de pagamento no balcão. Certifique-se de que está correta para receber os valores." />
-                                        </div>
-                                        <Input
-                                            value={pixKey}
-                                            onChange={e => setPixKey(e.target.value)}
-                                            placeholder="CPF, CNPJ, Email ou Telefone"
-                                            disabled={!isEditing}
-                                            className="bg-slate-900 border-slate-700 text-emerald-400 font-bold h-11"
-                                        />
-                                        <p className="text-[10px] text-slate-500">Esta chave aparecerá no QR Code para o cliente pagar.</p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-slate-200 text-xs uppercase font-bold">Tipo da Chave</Label>
-                                        <Select value={pixKeyType} onValueChange={setPixKeyType} disabled={!isEditing}>
-                                            <SelectTrigger className="bg-slate-900 border-slate-700 h-11">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-slate-800 border-slate-700">
-                                                <SelectItem value="cpf">CPF</SelectItem>
-                                                <SelectItem value="cnpj">CNPJ</SelectItem>
-                                                <SelectItem value="email">E-mail</SelectItem>
-                                                <SelectItem value="phone">Telefone (Celular)</SelectItem>
-                                                <SelectItem value="random">Chave Aleatória</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 opacity-50 hover:opacity-100 transition-opacity">
-                                    <div className="space-y-2">
-                                        <Label className="text-slate-500 text-[10px] uppercase font-bold">Banco (Código)</Label>
-                                        <Input value={bankCode} onChange={e => setBankCode(e.target.value)} disabled={!isEditing} className="h-9 text-xs bg-slate-950 border-slate-800" placeholder="Ex: 260 (Nubank)" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-slate-500 text-[10px] uppercase font-bold">Agência</Label>
-                                        <Input value={bankAgency} onChange={e => setBankAgency(e.target.value)} disabled={!isEditing} className="h-9 text-xs bg-slate-950 border-slate-800" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-slate-500 text-[10px] uppercase font-bold">Conta Corrente</Label>
-                                        <Input value={bankAccount} onChange={e => setBankAccount(e.target.value)} disabled={!isEditing} className="h-9 text-xs bg-slate-950 border-slate-800" />
-                                    </div>
-                                    <div className="space-y-2 md:col-span-2">
-                                        <Label className="text-slate-500 text-[10px] uppercase font-bold">Nome do Titular</Label>
-                                        <Input value={bankAccountHolder} onChange={e => setBankAccountHolder(e.target.value)} disabled={!isEditing} className="h-9 text-xs bg-slate-950 border-slate-800" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-slate-500 text-[10px] uppercase font-bold">CPF/CNPJ do Titular</Label>
-                                        <Input value={bankAccountDoc} onChange={e => setBankAccountDoc(e.target.value)} disabled={!isEditing} className="h-9 text-xs bg-slate-950 border-slate-800" />
-                                    </div>
-                                </div>
+                        {isEditing && (
+                            <div className="pt-6 flex justify-end gap-4 sticky bottom-0 bg-slate-950/80 backdrop-blur-sm p-4 border-t border-slate-800 z-10">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => { setIsEditing(false); loadBarbershop(); }}
+                                    className="border-slate-800 text-slate-400 hover:bg-slate-800"
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={loading || uploading}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white min-w-[200px] shadow-lg shadow-blue-900/40"
+                                >
+                                    {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                                    {loading ? 'Salvando...' : 'Salvar Alterações'}
+                                </Button>
                             </div>
-
-                            {/* Modules Section - NEW */}
-                            <div className="space-y-4 pt-6 border-t border-slate-800/50">
-                                <h3 className="text-sm font-bold uppercase text-slate-400 flex items-center gap-2">
-                                    <Sparkles size={16} className="text-blue-500" /> Módulos do Sistema
-                                </h3>
-                                <p className="text-xs text-slate-500 mb-4">
-                                    Escolha quais funcionalidades estarão disponíveis no seu painel. Você pode ativar apenas Fila, apenas Agendamentos, ou ambos.
-                                </p>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="bg-slate-950/30 p-4 rounded-lg border border-slate-800/30 space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 bg-blue-600/10 rounded-lg flex items-center justify-center">
-                                                    <Users size={16} className="text-blue-500" />
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center">
-                                                        <Label className="text-slate-200 font-bold text-sm">Módulo de Fila</Label>
-                                                        <HelpTooltip content="Ideal para atendimentos por ordem de chegada. Ativa o painel de espera e o botão 'Chamar Próximo'." />
-                                                    </div>
-                                                    <p className="text-[10px] text-slate-500">Sistema de fila digital para atendimento</p>
-                                                </div>
-                                            </div>
-                                            <label className="relative inline-flex items-center cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={moduleQueueEnabled}
-                                                    onChange={(e) => setModuleQueueEnabled(e.target.checked)}
-                                                    disabled={!isEditing}
-                                                    className="sr-only peer"
-                                                />
-                                                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 peer-disabled:opacity-50"></div>
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-slate-950/30 p-4 rounded-lg border border-slate-800/30 space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 bg-emerald-600/10 rounded-lg flex items-center justify-center">
-                                                    <Calendar size={16} className="text-emerald-500" />
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center">
-                                                        <Label className="text-slate-200 font-bold text-sm">Módulo de Agendamentos</Label>
-                                                        <HelpTooltip content="Permite que clientes escolham um horário e profissional específico com antecedência no app." />
-                                                    </div>
-                                                    <p className="text-[10px] text-slate-500">Sistema de agendamento por horário</p>
-                                                </div>
-                                            </div>
-                                            <label className="relative inline-flex items-center cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={moduleAppointmentsEnabled}
-                                                    onChange={(e) => setModuleAppointmentsEnabled(e.target.checked)}
-                                                    disabled={!isEditing}
-                                                    className="sr-only peer"
-                                                />
-                                                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600 peer-disabled:opacity-50"></div>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-
-                            {isEditing && (
-                                <div className="pt-6 flex justify-end gap-4 sticky bottom-0 bg-slate-950/80 backdrop-blur-sm p-4 border-t border-slate-800 z-10">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => { setIsEditing(false); loadBarbershop(); }}
-                                        className="border-slate-800 text-slate-400 hover:bg-slate-800"
-                                    >
-                                        Cancelar
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        disabled={loading || uploading}
-                                        className="bg-blue-600 hover:bg-blue-700 text-white min-w-[200px] shadow-lg shadow-blue-900/40"
-                                    >
-                                        {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                                        {loading ? 'Salvando...' : 'Salvar Alterações'}
-                                    </Button>
-                                </div>
-                            )}
+                        )}
                     </form>
                 </CardContent>
             </Card >
