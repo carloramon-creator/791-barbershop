@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant, checkRolePermission } from '@/lib/server-utils';
 
-const envUrl = process.env.NEXT_PUBLIC_OWNER_URL || 'https://791-barbershop-production.up.railway.app';
+const envUrl = 'https://791-barbershop-production.up.railway.app';
 
 // Função auxiliar para garantir o URL correto de redirecionamento
 const getRedirectUrl = () => {
@@ -162,7 +162,8 @@ export async function POST(req: Request) {
           const token = urlObj.searchParams.get('token');
           const type = urlObj.searchParams.get('type') || 'invite';
 
-          const baseUrl = process.env.NEXT_PUBLIC_OWNER_URL || 'https://791-barbershop-production.up.railway.app';
+          // FORÇANDO A URL CORRETA PARA IGNORAR VARIÁVEL DE AMBIENTE DO RAILWAY
+          const baseUrl = 'https://791-barbershop-production.up.railway.app';
           // Transformar em link da nossa aplicação
           inviteLink = `${baseUrl}/ativar-conta?token=${token}&type=${type}`;
         } catch (e) {
