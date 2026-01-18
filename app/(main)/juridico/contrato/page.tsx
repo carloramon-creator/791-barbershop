@@ -4,55 +4,109 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function ContractPage() {
     return (
         <div className="container mx-auto p-6 max-w-4xl space-y-6">
-            <h1 className="text-3xl font-black text-slate-100 mb-6">Contrato de Assinatura</h1>
-            <Card className="bg-slate-900 border-slate-800">
+            <h1 className="text-3xl font-black text-slate-100 mb-6 tracking-tighter uppercase">Contrato de Assinatura</h1>
+            <Card className="bg-slate-900 border-slate-800 shadow-2xl">
                 <CardContent className="p-8 text-slate-300 space-y-6 leading-relaxed text-sm text-justify">
-                    <p className="text-center font-bold text-slate-100">CONTRATO DE LICENÇA DE USO DE SOFTWARE (SaaS)</p>
+                    <div className="text-center space-y-1 mb-8">
+                        <h2 className="text-lg font-black text-slate-100 uppercase">CONTRATO DE LICENÇA DE USO DE SOFTWARE (SaaS)</h2>
+                        <p className="text-blue-500 font-bold">791 BARBER</p>
+                    </div>
 
-                    <section className="space-y-2">
-                        <p><strong>1. PARTES</strong></p>
-                        <p>De um lado, <strong>791 SOLUÇÕES EMPRESARIAIS LTDA</strong>, inscrita no CNPJ sob o nº [CNPJ DA 791], com sede em Florianópolis/SC, doravante denominada <strong>CONTRATADA</strong>.</p>
-                        <p>De outro lado, a pessoa física ou jurídica identificada no momento do cadastro e aceite digital, doravante denominada <strong>CONTRATANTE</strong>.</p>
+                    <section className="space-y-4">
+                        <p>
+                            <strong>CONTRATADA:</strong> 791 Soluções Empresariais LTDA, inscrita no CNPJ [INSERIR CNPJ], com sede em Florianópolis - SC, representada por seu representante legal.
+                        </p>
+                        <p>
+                            <strong>CONTRATANTE:</strong> A Pessoa Jurídica ou Física identificada no ato de cadastro no sistema 791 Barber, neste ato denominada "CLIENTE".
+                        </p>
                     </section>
 
-                    <section className="space-y-2">
-                        <p><strong>2. OBJETO</strong></p>
-                        <p>O presente contrato tem por objeto a licença de uso do software <strong>791 Barber</strong>, disponibilizado via internet (SaaS), para a gestão administrativa, operacional e financeira de barbearias e salões de beleza.</p>
+                    <section className="space-y-4">
+                        <p className="font-bold text-slate-100 uppercase text-xs tracking-widest">CONSIDERANDOS:</p>
+                        <ul className="list-disc pl-5 space-y-2">
+                            <li>Considerando que a CONTRATADA é desenvolvedora do software 791 Barber, voltado para gestão e agendamento de barbearias e salões de beleza;</li>
+                            <li>Considerando que o CLIENTE deseja contratar a licença de uso deste software na modalidade de Software as a Service (SaaS);</li>
+                        </ul>
+                        <p>As partes acordam nos seguintes termos e condições:</p>
                     </section>
 
-                    <section className="space-y-2">
-                        <p><strong>3. PLANOS E ACESSO</strong></p>
-                        <p>O CONTRATANTE terá acesso aos módulos e funcionalidades correspondentes ao plano escolhido (Basic, Complete ou Premium) no ato da contratação. A CONTRATADA reserva-se o direito de atualizar, modificar ou remover funcionalidades para a melhoria do ecossistema do software.</p>
+                    <section className="space-y-3">
+                        <p><strong>1. DO OBJETO</strong></p>
+                        <p>1.1. A CONTRATADA concede ao CLIENTE uma licença de uso não exclusiva, não transmissível e revogável do software 791 Barber, disponibilizado na modalidade SaaS (Software as a Service), para utilização em plataforma web e/ou aplicativo mobile, destinado exclusivamente ao gerenciamento operacional de barbearias e salões de beleza.</p>
+                        <p>1.2. A licença autoriza o uso do software conforme as funcionalidades e limites definidos no plano escolhido pelo CLIENTE, não conferindo direito de propriedade, cessão, aluguel, venda ou transferência a terceiros.</p>
                     </section>
 
-                    <section className="space-y-2">
-                        <p><strong>4. VALORES E PAGAMENTO</strong></p>
-                        <p>Pela licença de uso, o CONTRATANTE pagará os valores vigentes para o plano e ciclo escolhidos (mensal, semestral ou anual). O pagamento será realizado via cartão de crédito, Pix ou boleto através das plataformas integradas.</p>
-                        <p>A inadimplência superior a 5 (cinco) dias poderá acarretar na suspensão automática do acesso ao sistema até a efetiva regularização.</p>
+                    <section className="space-y-3">
+                        <p><strong>2. DOS PLANOS E PREÇOS</strong></p>
+                        <p>2.1. O acesso ao 791 Barber é oferecido mediante assinatura aos seguintes planos:</p>
+                        <ul className="list-disc pl-5 space-y-2">
+                            <li><strong>Plano Basic:</strong> Gestão operacional essencial, no valor de R$ 59,90 mensal;</li>
+                            <li><strong>Plano Complete:</strong> Gestão completa com módulos avançados, no valor de R$ 99,90 mensal;</li>
+                            <li><strong>Plano Premium:</strong> Experiência total com todos os recursos e suporte prioritário, no valor de R$ 149,90 mensal.</li>
+                        </ul>
+                        <p>2.2. Os valores poderão ser cobrados em ciclos mensais, semestrais ou anuais, conforme escolha do CLIENTE no cadastro.</p>
+                        <p>2.3. O CLIENTE terá direito a uma avaliação gratuita (período trial) conforme indicado na plataforma, findo o qual a cobrança será automaticamente ativada, exceto se o cancelamento for solicitado antes do término do período.</p>
                     </section>
 
-                    <section className="space-y-2">
-                        <p><strong>5. NÍVEL DE SERVIÇO (SLA) E SUPORTE</strong></p>
-                        <p>A CONTRATADA envidará os melhores esforços para manter a plataforma disponível 24 (vinte e quatro) horas por dia, 7 (sete) dias por semana, com um índice de disponibilidade (uptime) de 99%, salvo interrupções para manutenções programadas ou falhas decorrentes de infraestrutura de terceiros (servidores, redes de internet).</p>
+                    <section className="space-y-3">
+                        <p><strong>3. DA VIGÊNCIA E RENOVAÇÃO</strong></p>
+                        <p>3.1. Este Contrato entra em vigor na data de aceite digital dos Termos de Uso e Política de Privacidade do 791 Barber e permanece válido enquanto a assinatura estiver ativa.</p>
+                        <p>3.2. Após o término do primeiro ciclo de cobrança (mensal, semestral ou anual), o Contrato será automaticamente renovado pelos mesmos termos, salvo cancelamento solicitado pelo CLIENTE com antecedência mínima de 5 (cinco) dias úteis antes do vencimento.</p>
+                        <p>3.3. A CONTRATADA poderá modificar os preços ou planos com notificação de 30 (trinta) dias via e-mail ou avisos na plataforma, tendo o CLIENTE direito a cancelar sem penalidades caso discorde da alteração.</p>
                     </section>
 
-                    <section className="space-y-2">
-                        <p><strong>6. PROPRIEDADE INTELECTUAL</strong></p>
-                        <p>O 791 Barber, incluindo seu código-fonte, interface, marcas e metodologias, é propriedade exclusiva da 791 Soluções. A licença concedida é de uso pessoal e intransferível, sendo vedada qualquer tentativa de cópia, engenharia reversa ou sublicenciamento.</p>
+                    <section className="space-y-3">
+                        <p><strong>4. DAS CONDIÇÕES DE PAGAMENTO</strong></p>
+                        <p>4.1. Os pagamentos serão processados através de gateways de pagamento integrados ao sistema (Stripe, Pix, transferência bancária ou outros métodos disponibilizados).</p>
+                        <p>4.2. O faturamento ocorrerá automaticamente na data de cobrança ou será enviada notificação com boleto/link de pagamento.</p>
+                        <p>4.3. O não pagamento dentro de 10 (dez) dias úteis do vencimento implicará suspensão automática do acesso até a regularização, sem prejuízo de cobranças de juros e multa conforme legislação aplicável.</p>
+                        <p>4.4. Não há reembolso por períodos já pagos, exceto nos casos previstos neste Contrato ou em lei.</p>
                     </section>
 
-                    <section className="space-y-2">
-                        <p><strong>7. VIGÊNCIA E RESCISÃO</strong></p>
-                        <p>O contrato vigora por prazo indeterminado. O CONTRATANTE pode solicitar o cancelamento a qualquer momento através do painel. Em caso de cancelamento, não haverá reembolso de valores proporcionais ao período já pago e ainda não utilizado.</p>
+                    <section className="space-y-3">
+                        <p><strong>5. DO SUPORTE TÉCNICO</strong></p>
+                        <p>5.1. A CONTRATADA oferece suporte técnico através dos seguintes canais:</p>
+                        <ul className="list-disc pl-5 space-y-1">
+                            <li><strong>E-mail:</strong> contato@791solucoes.com.br</li>
+                            <li><strong>WhatsApp:</strong> (48) 99180-3379</li>
+                        </ul>
+                        <p>5.2. O suporte é fornecido em horário comercial (segunda a sexta-feira, das 09h às 18h, horário de Brasília), exceto feriados nacionais e estaduais.</p>
+                        <p>5.3. O tempo de resposta estimado é de até 24 (vinte e quatro) horas úteis para suporte técnico básico.</p>
                     </section>
 
-                    <section className="space-y-2">
-                        <p><strong>8. FORO</strong></p>
-                        <p>As partes elegem o Foro da Comarca de Florianópolis/SC para dirimir quaisquer dúvidas oriundas deste contrato.</p>
+                    <section className="space-y-3">
+                        <p><strong>6. DAS OBRIGAÇÕES DO CLIENTE</strong></p>
+                        <p>O CLIENTE se obriga a, entre outros: manter a confidencialidade de suas credenciais, utilizar o software para fins legítimos, não realizar engenharia reversa e cumprir com a Lei Geral de Proteção de Dados (LGPD).</p>
                     </section>
 
-                    <p className="pt-6 text-xs text-slate-500 font-bold italic text-center">Este contrato é aceito digitalmente ao confirmar a assinatura do serviço.</p>
-                    <p className="text-xs text-slate-500 font-bold text-center">Última atualização: 18 de janeiro de 2026.</p>
+                    <section className="space-y-3">
+                        <p><strong>10. DO NÍVEL DE SERVIÇO (SLA)</strong></p>
+                        <p>10.1. A CONTRATADA se compromete a manter uma disponibilidade de 99,5% (noventa e nove vírgula cinco por cento) do serviço, medida mensalmente, excluindo manutenções programadas e força maior.</p>
+                    </section>
+
+                    <section className="space-y-3">
+                        <p><strong>12. DO CANCELAMENTO</strong></p>
+                        <p>12.1. O CLIENTE poderá solicitar o cancelamento da assinatura a qualquer momento. O cancelamento entra em vigor no final do ciclo de cobrança atual. Dados do CLIENTE serão mantidos por 30 (trinta) dias após cancelamento para fins de exportação.</p>
+                    </section>
+
+                    <section className="space-y-3">
+                        <p><strong>15. DADOS E CONFORMIDADE COM LGPD</strong></p>
+                        <p>15.1. Os dados pessoais são tratados conforme a LGPD. Para exercer direitos ou dúvidas, contate o Encarregado (DPO) em: <strong>contato@791solucoes.com.br</strong>.</p>
+                    </section>
+
+                    <section className="space-y-3">
+                        <p><strong>17. DA LEGISLAÇÃO E FORO COMPETENTE</strong></p>
+                        <p>17.1. Fica eleito o foro da Comarca de Florianópolis – SC para dirimir controvérsias oriundas deste Contrato.</p>
+                    </section>
+
+                    <div className="pt-10 border-t border-slate-800 text-center space-y-4">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                            Assinado eletronicamente por aceite do CLIENTE no ato de cadastro/assinatura no 791 Barber.
+                        </p>
+                        <p className="text-blue-500 font-black text-xs">
+                            Última atualização: 18 de janeiro de 2026
+                        </p>
+                    </div>
                 </CardContent>
             </Card>
         </div>
