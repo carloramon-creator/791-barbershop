@@ -365,6 +365,25 @@ function Step1({ formData, setFormData, onNext, checkingEmail }: any) {
 
 // STEP 2: Barbershop Info & Config
 function Step2({ formData, setFormData, onNext, onBack, onBusinessSelection }: any) {
+    const [cnpjError, setCnpjError] = React.useState('');
+
+    const handleCnpjBlur = () => {
+        if (!formData.cnpj) {
+            setCnpjError('');
+            return;
+        }
+
+        const isValid = formData.hasCnpj
+            ? isValidCNPJ(formData.cnpj)
+            : isValidCPF(formData.cnpj);
+
+        if (!isValid) {
+            setCnpjError(formData.hasCnpj ? 'CNPJ inválido' : 'CPF inválido');
+        } else {
+            setCnpjError('');
+        }
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -398,7 +417,10 @@ function Step2({ formData, setFormData, onNext, onBack, onBusinessSelection }: a
                         </label>
                         <button
                             type="button"
-                            onClick={() => setFormData({ ...formData, hasCnpj: !formData.hasCnpj, cnpj: '' })}
+                            onClick={() => {
+                                setFormData({ ...formData, hasCnpj: !formData.hasCnpj, cnpj: '' });
+                                setCnpjError('');
+                            }}
                             className="text-[10px] text-blue-500 hover:text-blue-400 font-bold uppercase"
                         >
                             {formData.hasCnpj ? 'Não tenho CNPJ' : 'Tenho CNPJ'}
@@ -407,13 +429,24 @@ function Step2({ formData, setFormData, onNext, onBack, onBusinessSelection }: a
                     <input
                         type="text"
                         value={formData.cnpj}
-                        onChange={(e) => setFormData({ ...formData, cnpj: formatIdentification(e.target.value) })}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors"
+                        onChange={(e) => {
+                            setFormData({ ...formData, cnpj: formatIdentification(e.target.value) });
+                            if (cnpjError) setCnpjError('');
+                        }}
+                        onBlur={handleCnpjBlur}
+                        className={cn(
+                            "w-full bg-slate-800 border rounded-lg px-4 py-3 text-slate-100 focus:outline-none transition-colors",
+                            cnpjError ? "border-red-500 focus:border-red-500" : "border-slate-700 focus:border-blue-500"
+                        )}
                         placeholder={formData.hasCnpj ? "00.000.000/0000-00" : "000.000.000-00"}
                     />
-                    <p className="text-[10px] text-slate-500 mt-1">
-                        {formData.hasCnpj ? 'Ideal para empresas formalizadas.' : 'Use seu CPF caso não seja empresa formal (MEI/etc).'}
-                    </p>
+                    {cnpjError ? (
+                        <p className="text-[10px] text-red-500 mt-1 font-bold">{cnpjError}</p>
+                    ) : (
+                        <p className="text-[10px] text-slate-500 mt-1">
+                            {formData.hasCnpj ? 'Ideal para empresas formalizadas.' : 'Use seu CPF caso não seja empresa formal (MEI/etc).'}
+                        </p>
+                    )}
                 </div>
             </div>
 
@@ -659,7 +692,7 @@ function Step5({ formData, services, products, loading, onSubmit, onBack }: any)
                         </svg>
                     </div>
                     <span className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">
-                        Li e aceito os <Link href="/juridico/termos" target="_blank" className="text-blue-400 hover:underline">Termos de Uso</Link>, <Link href="/juridico/privacidade" target="_blank" className="text-blue-400 hover:underline">Política de Privacidade</Link> e o <Link href="/juridico/contrato" target="_blank" className="text-blue-400 hover:underline">Contrato de Assinatura</Link>.
+                        Li e aceito os <a href="/juridico/termos" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Termos de Uso</a>, <a href="/juridico/privacidade" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Política de Privacidade</a> e o <a href="/juridico/contrato" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Contrato de Assinatura</a>.
                     </span>
                 </label>
             </div>
