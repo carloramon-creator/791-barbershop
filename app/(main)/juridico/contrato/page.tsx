@@ -41,7 +41,7 @@ export default function ContractPage() {
 
                     <section className="space-y-4">
                         <p>
-                            <strong>CONTRATADA:</strong> 791 Soluções Empresariais LTDA, inscrita no CNPJ [INSERIR CNPJ], com sede em Florianópolis - SC, representada por seu representante legal.
+                            <strong>CONTRATADA:</strong> 791 SOLUÇÕES EMPRESARIAIS LTDA, inscrita no CNPJ sob o nº 61.887.941/0001-83, com sede na Rua Eugênio Portela, 415, Barreiros, São José/SC, neste ato representada por seu Diretor, Carlos Ramon Pinto.
                         </p>
                         <p>
                             <strong>CONTRATANTE:</strong> A Pessoa Jurídica ou Física identificada no ato de cadastro no sistema 791 Barber, neste ato denominada "CLIENTE".

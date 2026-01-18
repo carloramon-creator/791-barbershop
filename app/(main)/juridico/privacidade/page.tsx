@@ -9,7 +9,7 @@ export default function PrivacyPage() {
                 <CardContent className="p-8 text-slate-300 space-y-6 leading-relaxed text-sm text-justify">
                     <section className="space-y-2">
                         <p><strong>1. DISPOSIÇÕES GERAIS</strong></p>
-                        <p>Esta Política de Privacidade descreve como a 791 Soluções Empresariais LTDA (“791 Soluções”, “nós”) coleta, utiliza, armazena e protege os dados pessoais dos usuários do sistema 791 Barber e dos clientes cadastrados pelos estabelecimentos (barbearias e salões).</p>
+                        <p>Esta Política de Privacidade descreve como a <strong>791 SOLUÇÕES EMPRESARIAIS LTDA</strong>, inscrita no CNPJ sob o nº <strong>61.887.941/0001-83</strong>, sediada na Rua Eugênio Portela, 415, Barreiros, São José/SC (“791 Soluções”, “nós”), coleta, utiliza, armazena e protege os dados pessoais dos usuários do sistema 791 Barber e dos clientes cadastrados pelos estabelecimentos (barbearias e salões).</p>
                         <p>O tratamento de dados pessoais é realizado em conformidade com a Lei nº 13.709/2018 – Lei Geral de Proteção de Dados Pessoais (LGPD) e demais normas aplicáveis.</p>
                     </section>
 
