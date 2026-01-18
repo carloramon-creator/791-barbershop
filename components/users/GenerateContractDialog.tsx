@@ -29,7 +29,7 @@ export function GenerateContractDialog({ open, onOpenChange, user }: GenerateCon
 
 Pelo presente instrumento particular, as partes:
 
-SALÃO PARCEIRO: ${tenant.name}, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº [CNPJ DA BARBEARIA], com sede em [ENDEREÇO DA BARBEARIA], neste ato representada por seu sócio administrador.
+SALÃO PARCEIRO: ${tenant.name}, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº ${tenant.cnpj || "[CNPJ DA BARBEARIA]"}, com sede em ${[tenant.street, tenant.number, tenant.complement, tenant.neighborhood, tenant.city, tenant.state].filter(Boolean).join(', ') || "[ENDEREÇO DA BARBEARIA]"}, neste ato representada por seu sócio administrador.
 
 PROFISSIONAL PARCEIRO: ${user.name}, inscrito(a) no CPF/CNPJ sob o nº ${user.cpf || user.cnpj_mei || "[CPF/CNPJ DO BARBEIRO]"}, residente e domiciliado(a) em ${user.street || "[ENDEREÇO DO BARBEIRO]"}, doravante denominado(a) simplesmente PARCEIRO(A).
 
