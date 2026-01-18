@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon, MapPin, Copy, Loader2, Key, Pencil, Save, MessageCircle, Clock, Percent, DollarSign, Eye, Camera, Scissors } from 'lucide-react';
+import { Users, Building2, CreditCard, Plus, MoreHorizontal, Trash2, Shield, User as UserIcon, MapPin, Copy, Loader2, Key, Pencil, Save, MessageCircle, Clock, Percent, DollarSign, Eye, Camera, Scissors, FolderOpen, FileText } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +42,8 @@ import { User, UserRole } from '@/lib/types';
 import { useAuth } from '@/lib/auth-provider';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { supabaseClient } from '@/lib/supabase-client';
+import { GenerateContractDialog } from '@/components/users/GenerateContractDialog';
+import { UserFilesDialog } from '@/components/users/UserFilesDialog';
 
 export default function UsersPage() {
   const pathname = usePathname();
@@ -52,6 +54,11 @@ export default function UsersPage() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [showAuditMode, setShowAuditMode] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // Contract & Files Dialog State
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isContractOpen, setIsContractOpen] = useState(false);
+  const [isFilesOpen, setIsFilesOpen] = useState(false);
 
   // Form State
   const [inviteName, setInviteName] = useState('');
@@ -872,6 +879,29 @@ export default function UsersPage() {
                               <Pencil className="mr-2 h-4 w-4" />
                               Editar Usuário
                             </DropdownMenuItem>
+
+                            <DropdownMenuSeparator className="bg-slate-800" />
+                            <DropdownMenuLabel className="text-xs text-slate-500 font-normal">Contratos & Arquivos</DropdownMenuLabel>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedUser(u);
+                                setIsContractOpen(true);
+                              }}
+                              className="text-slate-300 focus:bg-slate-800 cursor-pointer"
+                            >
+                              <FileText className="mr-2 h-4 w-4 text-blue-400" />
+                              Gerar Contrato
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedUser(u);
+                                setIsFilesOpen(true);
+                              }}
+                              className="text-slate-300 focus:bg-slate-800 cursor-pointer"
+                            >
+                              <FolderOpen className="mr-2 h-4 w-4 text-amber-400" />
+                              Arquivos / Upload
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-slate-800" />
                             <DropdownMenuItem onClick={() => handleGenerateLink(u.id)} className="text-blue-400 focus:text-blue-400">
                               <Key className="mr-2 h-4 w-4" />
@@ -900,6 +930,18 @@ export default function UsersPage() {
           </div>
         )}
       </CardContent>
+
+      <GenerateContractDialog
+        open={isContractOpen}
+        onOpenChange={setIsContractOpen}
+        user={selectedUser}
+      />
+
+      <UserFilesDialog
+        open={isFilesOpen}
+        onOpenChange={setIsFilesOpen}
+        user={selectedUser}
+      />
     </Card>
   );
 }

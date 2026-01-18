@@ -553,6 +553,8 @@ function Step4({ products, setProducts, onNext, onBack, onSkip }: any) {
 
 // STEP 5: Complete
 function Step5({ formData, services, products, loading, onSubmit, onBack }: any) {
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
+
     return (
         <div className="space-y-6 text-center animate-in fade-in zoom-in-95 duration-500">
             <div className="text-6xl mb-4">🎉</div>
@@ -601,11 +603,40 @@ function Step5({ formData, services, products, loading, onSubmit, onBack }: any)
                 </ul>
             </div>
 
+            <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700 text-left">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                    <div className="relative flex items-center">
+                        <input
+                            type="checkbox"
+                            className="peer h-5 w-5 appearance-none rounded border border-slate-600 bg-slate-800 checked:bg-blue-600 checked:border-blue-600 transition-all cursor-pointer"
+                            checked={acceptedTerms}
+                            onChange={(e) => setAcceptedTerms(e.target.checked)}
+                        />
+                        <svg className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-0 peer-checked:opacity-100 text-white" viewBox="0 0 14 14" fill="none">
+                            <path d="M11.6666 3.5L5.24992 9.91667L2.33325 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </div>
+                    <span className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">
+                        Li e aceito os <Link href="/juridico/termos" target="_blank" className="text-blue-400 hover:underline">Termos de Uso</Link>, <Link href="/juridico/privacidade" target="_blank" className="text-blue-400 hover:underline">Política de Privacidade</Link> e o <Link href="/juridico/contrato" target="_blank" className="text-blue-400 hover:underline">Contrato de Assinatura</Link>.
+                    </span>
+                </label>
+            </div>
+
             <div className="flex justify-between pt-4">
                 <Button onClick={onBack} variant="ghost" className="text-slate-400 hover:text-slate-300" disabled={loading}>
                     <ArrowLeft className="mr-2" size={16} /> Voltar
                 </Button>
-                <Button onClick={onSubmit} className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-8" disabled={loading}>
+                <Button
+                    onClick={() => {
+                        if (acceptedTerms) {
+                            onSubmit();
+                        } else {
+                            alert('Você precisa aceitar os termos para continuar.');
+                        }
+                    }}
+                    className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-8"
+                    disabled={loading}
+                >
                     {loading ? (
                         <>
                             <Loader2 className="mr-2 animate-spin" size={16} />

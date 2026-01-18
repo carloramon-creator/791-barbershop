@@ -35,6 +35,8 @@ export interface Tenant {
     subscription_current_period_end?: string;
     module_queue_enabled?: boolean;
     module_appointments_enabled?: boolean;
+    terms_accepted_at?: string;
+    terms_version?: string;
     settings?: {
         permissions?: Array<{
             action: string;
