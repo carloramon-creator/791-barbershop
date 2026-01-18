@@ -88,7 +88,7 @@ export default function ContractPage() {
 
                     <section className="space-y-4">
                         <p>
-                            <strong>CONTRATADA:</strong> 791 SOLUÇÕES EMPRESARIAIS LTDA, inscrita no CNPJ sob o nº 61.887.941/0001-83, com sede na Rua Eugênio Portela, 415, Barreiros, São José/SC, neste ato representada por seu Diretor, Carlos Ramon Pinto.
+                            <strong>CONTRATADA:</strong> 791 SOLUÇÕES EMPRESARIAIS LTDA, inscrita no CNPJ nº 61.887.941/0001-83, com sede em São José/SC, neste ato representada na forma de seu contrato social, doravante denominada CONTRATADA.
                         </p>
                         <p>
                             <strong>CONTRATANTE:</strong> {tenant ? (
