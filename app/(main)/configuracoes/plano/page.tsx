@@ -417,36 +417,6 @@ export default function PlanPage() {
                             Regularizar Assinatura
                         </Button>
 
-                        <Button
-                            variant="destructive"
-                            onClick={async () => {
-                                if (confirm('A liberação de confiança concede 3 dias de acesso extra para regularização. Confirmar?')) {
-                                    setLoading(true);
-                                    try {
-                                        const { data: { session } } = await supabaseClient.auth.getSession();
-                                        const res = await fetch('/api/barbershop/trust-release', {
-                                            method: 'POST',
-                                            headers: { 'Authorization': `Bearer ${session?.access_token}` }
-                                        });
-                                        const data = await res.json();
-                                        if (res.ok) {
-                                            alert(data.message);
-                                            window.location.href = '/dashboard'; // Force reload/unblock
-                                        } else {
-                                            alert(data.error);
-                                        }
-                                    } catch (e) {
-                                        alert('Erro ao processar.');
-                                    } finally {
-                                        setLoading(false);
-                                    }
-                                }
-                            }}
-                            className="bg-amber-600 hover:bg-amber-700 text-white font-black uppercase text-xs"
-                        >
-                            <Shield className="w-4 h-4 mr-2" />
-                            Liberar por Confiança (3 dias)
-                        </Button>
                     </div>
                 </div>
             )}

@@ -19,38 +19,40 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
 
         if (!loading && session && tenant) {
-            // Páginas que NÃO devem ser bloqueadas
+            const status = tenant.subscription_status || '';
+
+            // 1. Se estiver ATIVO, libera tudo
+            if (status === 'active') return;
+
+            // 2. Páginas Brancas (Checkout e Plano) - Sempre acessíveis
             const isWhiteListed =
                 window.location.pathname.startsWith('/checkout') ||
                 window.location.pathname === '/configuracoes/plano';
 
             if (isWhiteListed) return;
 
-            // 1. Status explícitos de bloqueio
-            const isBlockedStatus = ['canceled', 'unpaid', 'past_due', 'incomplete_expired'].includes(tenant.subscription_status || '');
-
-
-            // 0. Verificar Liberação de Confiança
-            const trustUntilStr = tenant.settings?.trust_release_until;
-            const isTrustActive = trustUntilStr && new Date() < new Date(trustUntilStr);
-
-            if (isBlockedStatus && !isTrustActive) {
+            // 3. Bloqueio Imediato para Status Irreversíveis no mês
+            if (['canceled', 'incomplete_expired'].includes(status)) {
                 router.push('/configuracoes/plano?expired=true');
                 return;
             }
 
-            // 2. Verificar Validade do Trial (Se não estiver ativo)
-            if (tenant.subscription_status !== 'active' && tenant.subscription_status !== 'trialing' && !isTrustActive) {
-                // Se não tem status do Stripe (null ou 'trial' manual), verificamos os 7 dias
-                const created = new Date(tenant.created_at || new Date());
-                const now = new Date();
-                const diffTime = Math.abs(now.getTime() - created.getTime());
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            // 4. Lógica de Carência (10 dias) para TRIAL e ATRASO
+            // Vencimento = current_period_end (assinaturas) ou created_at (novos cadastros/trial)
+            const referenceDateStr = (['past_due', 'unpaid', 'incomplete'].includes(status) && tenant.subscription_current_period_end)
+                ? tenant.subscription_current_period_end
+                : tenant.created_at;
 
-                // Se passou de 10 dias e não tem assinatura ativa -> Bloqueia
-                if (diffDays > 10) {
-                    router.push('/configuracoes/plano?expired=true');
-                }
+            const referenceDate = new Date(referenceDateStr || tenant.created_at);
+            const now = new Date();
+
+            // Diferença em dias (agora - referência)
+            // Se diffDays > 10, significa que passaram mais de 10 dias do vencimento/cadastro
+            const diffTime = now.getTime() - referenceDate.getTime();
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays > 10) {
+                router.push('/configuracoes/plano?expired=true');
             }
         }
     }, [session, loading, tenant, router]);
