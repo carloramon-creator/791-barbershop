@@ -49,7 +49,7 @@ export function Topbar() {
                                     }
                                 }
 
-                                const isTrial = isStripeTrial || isTimeTrial;
+                                const isTrial = (isStripeTrial || isTimeTrial) && tenant.subscription_status !== 'active';
 
                                 // Recalcula daysLeft se for Stripe Trial (tem data fim definida)
                                 if (isStripeTrial && tenant.subscription_current_period_end) {
