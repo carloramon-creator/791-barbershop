@@ -39,8 +39,8 @@ async function generateLinks() {
             }
         }
 
-        if (error) {
-            console.log(`❌ [${email}]: Erro - ${error.message}`);
+        if (error || !data?.properties?.action_link) {
+            console.log(`❌ [${email}]: Erro - ${error?.message || 'Link não gerado'}`);
         } else {
             const rawLink = data.properties.action_link;
             // Formatar link manual
