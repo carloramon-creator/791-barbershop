@@ -56,7 +56,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { environment, pfxBase64, passphrase } = body;
+        const { environment, pfxBase64, passphrase, auto_emit } = body;
 
         // Busca configuração existente
         const { data: existing } = await supabaseAdmin
@@ -68,6 +68,7 @@ export async function POST(req: Request) {
         const newValue = {
             ...(existing?.value || {}),
             environment: environment || existing?.value?.environment || 'homologacao',
+            auto_emit: auto_emit !== undefined ? auto_emit : existing?.value?.auto_emit || false,
             lastUpdated: new Date().toISOString()
         };
 

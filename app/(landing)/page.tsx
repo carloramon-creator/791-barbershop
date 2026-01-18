@@ -57,7 +57,7 @@ export default function LandingPage() {
                     </h2>
                     <p className="text-lg text-slate-400">
                         Sistema completo para agendamentos, controle de barbeiros, produtos e financeiro.
-                        Teste grátis por 7 dias!
+                        Teste grátis por 10 dias!
                     </p>
 
                     <div className="space-y-4 pt-4">
@@ -83,7 +83,7 @@ export default function LandingPage() {
                         <Button
                             className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 text-lg mt-6 w-full"
                         >
-                            Comece Grátis por 7 Dias
+                            Comece Grátis por 10 Dias
                         </Button>
                     </Link>
 
@@ -94,7 +94,7 @@ export default function LandingPage() {
 
                 <div className="hidden md:block">
                     <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-12 text-center">
-                        <div className="text-6xl font-bold text-blue-400 mb-4">7</div>
+                        <div className="text-6xl font-bold text-blue-400 mb-4">10</div>
                         <p className="text-2xl font-semibold text-slate-100 mb-2">Dias Grátis</p>
                         <p className="text-slate-400">Acesso completo ao Premium</p>
                     </div>

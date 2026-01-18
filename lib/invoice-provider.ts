@@ -48,7 +48,7 @@ class InvoiceProvider {
     /**
      * Emite uma nota fiscal de faturamento do SaaS para uma barbearia.
      */
-    public async emitSaaSInvoice(invoice: InvoiceData): Promise<InvoiceResponse> {
+    public async emitSaaSInvoice(invoice: InvoiceData, skipAutoCheck: boolean = true): Promise<InvoiceResponse> {
         console.log(`[INVOICE-PROVIDER] Iniciando emissão MONOLÍTICA para: ${invoice.customerName}`);
 
         try {
@@ -62,6 +62,11 @@ class InvoiceProvider {
             const config = settings?.value || {};
             const pfxBase64 = config.pfxBase64;
             const passphrase = config.passphrase;
+
+            if (!skipAutoCheck && !config.auto_emit) {
+                console.log('[INVOICE-PROVIDER] Emissão automática desativada nas configurações.');
+                return { success: false, status: 'pending', message: 'Emissão automática desativada.' };
+            }
 
             if (!pfxBase64 || !passphrase) {
                 throw new Error('Certificado digital ou senha não configurados no painel SuperAdmin.');

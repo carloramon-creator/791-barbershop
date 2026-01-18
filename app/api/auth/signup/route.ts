@@ -44,7 +44,7 @@ export async function POST(req: Request) {
         console.log('[API SIGNUP] Usuário criado:', userId);
 
         const trialEndsAt = new Date();
-        trialEndsAt.setDate(trialEndsAt.getDate() + 7);
+        trialEndsAt.setDate(trialEndsAt.getDate() + 10);
 
         // 2. Generate unique slug
         const baseSlug = barbershopName.toLowerCase()
@@ -133,7 +133,7 @@ export async function POST(req: Request) {
             // We continue as it's not fatal for the account, but logged
         }
 
-        // 5. Criar trial subscription (7 dias)
+        // 5. Criar trial subscription (10 dias)
         const { error: trialError } = await supabaseAdmin
             .from('trial_subscriptions')
             .insert({

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, FileCheck, Shield, Globe, Save, AlertCircle } from 'lucide-react';
+import { Loader2, FileCheck, Shield, Globe, Save, AlertCircle, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function NfseConfigPage() {
@@ -14,6 +14,7 @@ export default function NfseConfigPage() {
     const [saving, setSaving] = useState(false);
     const [config, setConfig] = useState({
         environment: 'homologacao',
+        auto_emit: false,
         certificateUploaded: false,
         lastUpdated: null
     });
@@ -58,6 +59,7 @@ export default function NfseConfigPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     environment: config.environment,
+                    auto_emit: config.auto_emit,
                     ...files
                 })
             });
@@ -158,6 +160,32 @@ export default function NfseConfigPage() {
                                 onChange={(e) => setFiles(prev => ({ ...prev, passphrase: e.target.value }))}
                                 className="bg-slate-800 border-slate-700"
                             />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-slate-900 border-slate-800 md:col-span-2">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Zap className="w-5 h-5 text-amber-500" /> Automação SaaS
+                        </CardTitle>
+                        <CardDescription>Configure o comportamento automático da plataforma.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                            <div className="space-y-1">
+                                <Label className="text-base font-bold text-slate-100">Emissão Automática (SaaS)</Label>
+                                <p className="text-xs text-slate-400">Emitir NFS-e Nacional automaticamente após a confirmação de pagamento (Stripe/Inter).</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={config.auto_emit}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, auto_emit: e.target.checked }))}
+                                />
+                                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
                         </div>
                     </CardContent>
                 </Card>

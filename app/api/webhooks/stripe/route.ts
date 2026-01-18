@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe-server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import Stripe from 'stripe';
+import { invoiceProvider } from '@/lib/invoice-provider';
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 
@@ -175,7 +176,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
     // Buscar tenant pelo customer_id
     const { data: tenant } = await supabaseAdmin
         .from('tenants')
-        .select('id, plan, name')
+        .select('id, plan, name, cnpj, cpf')
         .eq('stripe_customer_id', customerId)
         .single();
 
@@ -193,7 +194,8 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
             ? `Upgrade/Alteração SaaS - Plano ${tenant.plan} (Stripe)`
             : `Renovação SaaS - Plano ${tenant.plan} (Stripe)`;
 
-    await supabaseAdmin
+    // 3. Registrar no financeiro
+    const { data: financeRecord } = await supabaseAdmin
         .from('finance')
         .insert({
             tenant_id: tenant.id, // Associar ao tenant
@@ -210,7 +212,9 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
                 method: 'stripe_card',
                 billing_reason: invoice.billing_reason
             }
-        });
+        })
+        .select('*')
+        .single();
 
     // Atualizar status para active caso estivesse past_due
     await supabaseAdmin
@@ -219,6 +223,39 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
         .eq('id', tenant.id);
 
     console.log('[STRIPE] Receita recorrente registrada para:', tenant.name);
+
+    // 4. Emissão Automática de NFS-e
+    if (financeRecord) {
+        try {
+            const invoiceData = {
+                id: financeRecord.id,
+                tenantId: tenant.id,
+                customerName: tenant.name || 'Cliente SaaS',
+                customerDocument: tenant.cnpj || tenant.cpf || 'Documento não informado',
+                serviceDescription: financeRecord.description || 'Assinatura SaaS 791 Barber',
+                value: financeRecord.value,
+                date: financeRecord.date
+            };
+
+            const result = await invoiceProvider.emitSaaSInvoice(invoiceData, false);
+
+            if (result.success) {
+                await supabaseAdmin.from('finance').update({
+                    metadata: {
+                        ...financeRecord.metadata,
+                        nfe_id: result.invoiceId,
+                        nfe_pdf_url: result.pdfUrl,
+                        nfe_xml_url: result.xmlUrl,
+                        nfe_status: result.status,
+                        nfe_emission_date: new Date().toISOString()
+                    }
+                }).eq('id', financeRecord.id);
+                console.log('[STRIPE] NFS-e emitida e vinculada ao financeiro.');
+            }
+        } catch (nfseError) {
+            console.error('[STRIPE] Erro na emissão automática de NFS-e:', nfseError);
+        }
+    }
 }
 
 async function handleSubscriptionChange(subscription: Stripe.Subscription) {

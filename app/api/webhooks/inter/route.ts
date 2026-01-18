@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
+import { invoiceProvider } from '@/lib/invoice-provider';
 
 /**
  * Endpoint para receber notificações de Pix e Boleto (Cobranca) do Banco Inter V3.
@@ -185,6 +186,47 @@ async function processPayment(params: { identifier: string, identifierType: 'txi
         if (financeError) throw financeError;
 
         console.log('[INTER WEBHOOK] Sucesso Absoluto! Tenant liberado e financeiro quitado.');
+
+        // 4. Emissão Automática de NFS-e
+        if (tenantId) {
+            try {
+                const { data: tenantObj } = await supabaseAdmin
+                    .from('tenants')
+                    .select('id, name, cnpj, cpf')
+                    .eq('id', tenantId)
+                    .single();
+
+                if (tenantObj) {
+                    const invoiceData = {
+                        id: charge.id,
+                        tenantId: tenantId,
+                        customerName: tenantObj.name || 'Cliente SaaS',
+                        customerDocument: tenantObj.cnpj || tenantObj.cpf || 'Documento não informado',
+                        serviceDescription: charge.description || 'Assinatura SaaS 791 Barber',
+                        value: charge.value,
+                        date: charge.date
+                    };
+
+                    const result = await invoiceProvider.emitSaaSInvoice(invoiceData, false);
+
+                    if (result.success) {
+                        await supabaseAdmin.from('finance').update({
+                            metadata: {
+                                ...charge.metadata,
+                                nfe_id: result.invoiceId,
+                                nfe_pdf_url: result.pdfUrl,
+                                nfe_xml_url: result.xmlUrl,
+                                nfe_status: result.status,
+                                nfe_emission_date: new Date().toISOString()
+                            }
+                        }).eq('id', charge.id);
+                        console.log('[INTER WEBHOOK] NFS-e emitida e vinculada ao financeiro.');
+                    }
+                }
+            } catch (nfseError) {
+                console.error('[INTER WEBHOOK] Erro na emissão automática de NFS-e:', nfseError);
+            }
+        }
     } catch (err: any) {
         console.error('[INTER WEBHOOK] Erro ao atualizar banco de dados:', err);
         throw err;

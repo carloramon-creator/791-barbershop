@@ -52,6 +52,15 @@ export interface Tenant {
         menu_permissions: string[];
         staff_limit: number;
     };
+    cpf?: string;
+    fiscal_config?: {
+        environment: 'homologacao' | 'producao';
+        pfx_base64?: string;
+        passphrase?: string;
+        service_code?: string;
+        auto_emit?: boolean;
+        municipal_code?: string;
+    };
     created_at: string;
 }
 

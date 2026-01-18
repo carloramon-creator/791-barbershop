@@ -49,7 +49,7 @@ export default function TrialExpiredPage() {
                             <div>
                                 <CardTitle className="text-orange-500">Período de Teste Expirado</CardTitle>
                                 <CardDescription className="text-orange-400/80">
-                                    Seu trial de 7 dias chegou ao fim. Assine agora para continuar usando o 791 Barber!
+                                    Seu trial de 10 dias chegou ao fim. Assine agora para continuar usando o 791 Barber!
                                 </CardDescription>
                             </div>
                         </div>
