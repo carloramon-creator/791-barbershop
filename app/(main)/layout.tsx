@@ -29,13 +29,18 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             // 1. Status explícitos de bloqueio
             const isBlockedStatus = ['canceled', 'unpaid', 'past_due', 'incomplete_expired'].includes(tenant.subscription_status || '');
 
-            if (isBlockedStatus) {
+
+            // 0. Verificar Liberação de Confiança
+            const trustUntilStr = tenant.settings?.trust_release_until;
+            const isTrustActive = trustUntilStr && new Date() < new Date(trustUntilStr);
+
+            if (isBlockedStatus && !isTrustActive) {
                 router.push('/configuracoes/plano?expired=true');
                 return;
             }
 
             // 2. Verificar Validade do Trial (Se não estiver ativo)
-            if (tenant.subscription_status !== 'active' && tenant.subscription_status !== 'trialing') {
+            if (tenant.subscription_status !== 'active' && tenant.subscription_status !== 'trialing' && !isTrustActive) {
                 // Se não tem status do Stripe (null ou 'trial' manual), verificamos os 7 dias
                 const created = new Date(tenant.created_at || new Date());
                 const now = new Date();

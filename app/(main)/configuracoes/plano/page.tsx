@@ -372,11 +372,64 @@ export default function PlanPage() {
     return (
         <div className="space-y-6">
             {isExpired && (
-                <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex items-center gap-3 text-red-400">
-                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                    <div>
-                        <p className="font-bold uppercase text-[10px] tracking-widest">Atenção: Período Expirado</p>
-                        <p className="text-xs font-medium text-red-500/80">Seu período de teste ou assinatura expirou. Escolha um plano abaixo para continuar utilizando a plataforma.</p>
+                <div className="bg-red-500/10 border border-red-500/20 p-6 rounded-2xl space-y-4">
+                    <div className="flex items-start gap-4">
+                        <AlertCircle className="w-8 h-8 text-red-500 flex-shrink-0 mt-1" />
+                        <div>
+                            <h3 className="text-lg font-black uppercase tracking-tight text-red-500">Atenção: Acesso Bloqueado</h3>
+                            <p className="text-red-400 font-medium leading-relaxed">
+                                Sua assinatura expirou ou o período de teste encerrou. Para continuar utilizando a plataforma, escolha um plano abaixo e realize o pagamento.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 pl-0 md:pl-12">
+                        <a
+                            href="mailto:contato@791solucoes.com.br?subject=Erro de Pagamento - 791 Barber"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold uppercase transition-colors"
+                        >
+                            <ExternalLink size={14} /> Reportar Erro (Email)
+                        </a>
+                        <a
+                            href="https://wa.me/5548991803379?text=Olá, preciso de ajuda com minha assinatura no 791 Barber."
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 rounded-lg text-xs font-bold uppercase transition-colors"
+                        >
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" className="w-4 h-4" />
+                            Falar no Suporte
+                        </a>
+
+                        <Button
+                            variant="destructive"
+                            onClick={async () => {
+                                if (confirm('A liberação de confiança concede 3 dias de acesso extra para regularização. Confirmar?')) {
+                                    setLoading(true);
+                                    try {
+                                        const { data: { session } } = await supabaseClient.auth.getSession();
+                                        const res = await fetch('/api/barbershop/trust-release', {
+                                            method: 'POST',
+                                            headers: { 'Authorization': `Bearer ${session?.access_token}` }
+                                        });
+                                        const data = await res.json();
+                                        if (res.ok) {
+                                            alert(data.message);
+                                            window.location.href = '/dashboard'; // Force reload/unblock
+                                        } else {
+                                            alert(data.error);
+                                        }
+                                    } catch (e) {
+                                        alert('Erro ao processar.');
+                                    } finally {
+                                        setLoading(false);
+                                    }
+                                }
+                            }}
+                            className="bg-amber-600 hover:bg-amber-700 text-white font-black uppercase text-xs"
+                        >
+                            <Shield className="w-4 h-4 mr-2" />
+                            Liberar por Confiança (3 dias)
+                        </Button>
                     </div>
                 </div>
             )}
