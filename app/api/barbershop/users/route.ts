@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant, checkRolePermission } from '@/lib/server-utils';
 
-const envUrl = process.env.NEXT_PUBLIC_OWNER_URL || 'https://frontend-owner-production.up.railway.app';
+const envUrl = process.env.NEXT_PUBLIC_OWNER_URL || 'https://791-barbershop-production.up.railway.app';
 
 // Função auxiliar para garantir o URL correto de redirecionamento
 const getRedirectUrl = () => {
