@@ -9,8 +9,8 @@ export async function OPTIONS(req: Request) {
 
 export async function GET(req: Request) {
     try {
-        // Permitir que qualquer usuário autenticado veja os addons
-        await getCurrentUserAndTenant();
+        // Permitir que qualquer pessoa veja os addons (público)
+        // await getCurrentUserAndTenant();
 
         const { data: addons, error } = await supabaseAdmin
             .from('system_addons')

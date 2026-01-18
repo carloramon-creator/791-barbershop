@@ -9,8 +9,8 @@ export async function OPTIONS(req: Request) {
 
 export async function GET(req: Request) {
     try {
-        // Permitir que qualquer usuário autenticado veja os planos
-        await getCurrentUserAndTenant();
+        // Permitir que qualquer pessoa veja os planos (público)
+        // await getCurrentUserAndTenant();
 
         const { data: plans, error } = await supabaseAdmin
             .from('system_plans')

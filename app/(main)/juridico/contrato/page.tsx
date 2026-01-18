@@ -1,7 +1,34 @@
 
+'use client';
+
+import { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
+import { Api } from '@/lib/api';
+import { Loader2 } from 'lucide-react';
 
 export default function ContractPage() {
+    const [plans, setPlans] = useState<any[]>([]);
+    const [addons, setAddons] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function loadData() {
+            try {
+                const [plansData, addonsData] = await Promise.all([
+                    Api.getSystemPlans(),
+                    Api.getSystemAddons()
+                ]);
+                setPlans(plansData || []);
+                setAddons(addonsData || []);
+            } catch (error) {
+                console.error('Erro ao carregar planos para o contrato:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        loadData();
+    }, []);
+
     return (
         <div className="container mx-auto p-6 max-w-4xl space-y-6">
             <h1 className="text-3xl font-black text-slate-100 mb-6 tracking-tighter uppercase">Contrato de Assinatura</h1>
@@ -38,14 +65,43 @@ export default function ContractPage() {
 
                     <section className="space-y-3">
                         <p><strong>2. DOS PLANOS E PREÇOS</strong></p>
-                        <p>2.1. O acesso ao 791 Barber é oferecido mediante assinatura aos seguintes planos:</p>
-                        <ul className="list-disc pl-5 space-y-2">
-                            <li><strong>Plano Basic:</strong> Gestão operacional essencial, no valor de R$ 59,90 mensal;</li>
-                            <li><strong>Plano Complete:</strong> Gestão completa com módulos avançados, no valor de R$ 99,90 mensal;</li>
-                            <li><strong>Plano Premium:</strong> Experiência total com todos os recursos e suporte prioritário, no valor de R$ 149,90 mensal.</li>
-                        </ul>
+                        <p>2.1. O acesso ao 791 Barber é oferecido mediante assinatura aos planos vigentes. Na data desta última atualização, os planos disponíveis são:</p>
+
+                        {loading ? (
+                            <div className="flex items-center gap-2 text-slate-500 py-2">
+                                <Loader2 size={14} className="animate-spin" /> Carregando valores atualizados...
+                            </div>
+                        ) : (
+                            <ul className="list-disc pl-5 space-y-2">
+                                {plans.filter(p => p.slug !== 'trial').map(plan => (
+                                    <li key={plan.id}>
+                                        <strong className="capitalize">{plan.name}:</strong> {plan.description}, no valor de R$ {Number(plan.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} mensal;
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+
                         <p>2.2. Os valores poderão ser cobrados em ciclos mensais, semestrais ou anuais, conforme escolha do CLIENTE no cadastro.</p>
                         <p>2.3. O CLIENTE terá direito a uma avaliação gratuita (período trial) conforme indicado na plataforma, findo o qual a cobrança será automaticamente ativada, exceto se o cancelamento for solicitado antes do término do período.</p>
+
+                        <p><strong>2.4. DOS MÓDULOS ADICIONAIS (ADD-ONS)</strong></p>
+                        <p>O CLIENTE poderá, a qualquer momento, contratar módulos extras ("Add-ons") para turbinar as funcionalidades de seu plano. Atualmente, os módulos disponíveis são:</p>
+                        {loading ? (
+                            <div className="flex items-center gap-2 text-slate-500 py-2">
+                                <Loader2 size={14} className="animate-spin" /> Carregando módulos...
+                            </div>
+                        ) : (
+                            <ul className="list-disc pl-5 space-y-1">
+                                {addons.map(addon => (
+                                    <li key={addon.id}>
+                                        <strong>{addon.name}:</strong> R$ {Number(addon.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês.
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                        <p className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20 text-blue-400 font-bold">
+                            Importante: Após a contratação de qualquer módulo extra, o valor do respectivo add-on será somado ao valor do plano atual, passando o valor total da fatura a ser a soma de todos os serviços contratados.
+                        </p>
                     </section>
 
                     <section className="space-y-3">
@@ -72,11 +128,6 @@ export default function ContractPage() {
                         </ul>
                         <p>5.2. O suporte é fornecido em horário comercial (segunda a sexta-feira, das 09h às 18h, horário de Brasília), exceto feriados nacionais e estaduais.</p>
                         <p>5.3. O tempo de resposta estimado é de até 24 (vinte e quatro) horas úteis para suporte técnico básico.</p>
-                    </section>
-
-                    <section className="space-y-3">
-                        <p><strong>6. DAS OBRIGAÇÕES DO CLIENTE</strong></p>
-                        <p>O CLIENTE se obriga a, entre outros: manter a confidencialidade de suas credenciais, utilizar o software para fins legítimos, não realizar engenharia reversa e cumprir com a Lei Geral de Proteção de Dados (LGPD).</p>
                     </section>
 
                     <section className="space-y-3">
