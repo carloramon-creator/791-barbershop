@@ -68,6 +68,7 @@ export default function PlanPage() {
     const [stripeSubscriptionId, setStripeSubscriptionId] = useState<string | null>(null);
     const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
     const [activeAddons, setActiveAddons] = useState<string[]>([]);
+    const [tenantCreatedAt, setTenantCreatedAt] = useState<string | null>(null);
     const [canceling, setCanceling] = useState(false);
 
     const tabs = [
@@ -131,6 +132,7 @@ export default function PlanPage() {
             setStripeSubscriptionId(planData.stripeSubscriptionId);
             setSubscriptionStatus(planData.subscriptionStatus);
             setActiveAddons(planData.activeAddons || []);
+            setTenantCreatedAt(tenantData.created_at);
 
             const doc = tenantData.cnpj || tenantData.cpf_cnpj || '';
             setTenantHasDocument(doc.replace(/\D/g, '').length >= 11);
@@ -399,6 +401,21 @@ export default function PlanPage() {
                             <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" className="w-4 h-4" />
                             Falar no Suporte
                         </a>
+
+                        <Button
+                            variant="default"
+                            onClick={() => {
+                                const targetPlan = (currentPlan && currentPlan !== 'trial') ? currentPlan : 'basic';
+                                setSelectedPlan(targetPlan);
+                                setSelectedAddon(null);
+                                setPaymentMethod('card');
+                                setOpenDialog(true);
+                            }}
+                            className="bg-blue-600 hover:bg-blue-500 text-white font-black uppercase text-xs"
+                        >
+                            <CreditCard className="w-4 h-4 mr-2" />
+                            Regularizar Assinatura
+                        </Button>
 
                         <Button
                             variant="destructive"
@@ -687,12 +704,24 @@ export default function PlanPage() {
                                             <span>
                                                 Plano <span className="text-blue-600 capitalize">{selectedPlan}</span> — R$ {(dynamicPlans.find(p => p.slug === selectedPlan)?.price || 0).toFixed(2).replace('.', ',')}/mês
                                             </span>
-                                            {/* VISUALIZAÇÃO DO DESCONTO 10% */}
-                                            {(!['active', 'active_paid'].includes(subscriptionStatus || '') || ['trial', 'trialing'].includes(subscriptionStatus || '')) && (
-                                                <span className="text-emerald-500 font-black text-xs uppercase tracking-wider animate-pulse">
-                                                    🎉 Desconto de 10% na 1ª fatura aplicado!
-                                                </span>
-                                            )}
+                                            {/* VISUALIZAÇÃO DO DESCONTO 10% (Apenas se cadastrado há menos de 5 dias) */}
+                                            {(() => {
+                                                const created = new Date(tenantCreatedAt || new Date());
+                                                const now = new Date();
+                                                const diffDays = Math.ceil(Math.abs(now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+
+                                                const isNewAccount = diffDays <= 5;
+                                                const isTrialOrUnpaid = (!['active', 'active_paid'].includes(subscriptionStatus || '') || ['trial', 'trialing'].includes(subscriptionStatus || ''));
+
+                                                if (tenantCreatedAt && isNewAccount && isTrialOrUnpaid) {
+                                                    return (
+                                                        <span className="text-emerald-500 font-black text-[10px] md:text-xs uppercase tracking-wider animate-pulse flex items-center gap-1">
+                                                            <span>🎉</span> Desconto de 10% na 1ª fatura aplicado!
+                                                        </span>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
                                         </div>
                                     )}
                                 </DialogDescription>

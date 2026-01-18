@@ -90,8 +90,13 @@ export async function POST(req: Request) {
         if (discount === 0) {
             const isTrial = tenant.plan === 'trial' || tenant.subscription_status === 'trialing' || !tenant.stripe_subscription_id;
 
-            if (isTrial && !isAddon) {
-                console.log('[SAAS PIX] Aplicando desconto de boas-vindas (10%) para Trial');
+            const tenantCreated = new Date(tenant.created_at || new Date());
+            const now = new Date();
+            const diffDays = Math.ceil(Math.abs(now.getTime() - tenantCreated.getTime()) / (1000 * 60 * 60 * 24));
+            const isNewAccount = diffDays <= 5;
+
+            if (isTrial && !isAddon && isNewAccount) {
+                console.log(`[SAAS PIX] Aplicando desconto de boas-vindas (10%) para Trial (${diffDays} dias de cadastro)`);
                 discount = (amount * 10) / 100; // 10%
                 couponApplied = 'TRIAL_WELCOME_10';
             }

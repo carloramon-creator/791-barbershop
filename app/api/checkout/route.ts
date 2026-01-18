@@ -244,9 +244,15 @@ export async function POST(req: Request) {
             // Lógica:
             // 1. Se o plano explicitamente é 'trial'.
             // 2. Se o status no stripe é 'trialing'.
-            // 3. Se NÃO TEM stripe_subscription_id (primeira assinatura de quem entrou direto num plano pago mas está no período grátis inicial).
+            // 3. Se NÃO TEM stripe_subscription_id (primeira assinatura).
+            // 4. "Esse desconto é para novas barbearias que assinarem o saas antes de 5 dias após o cadastro".
 
-            if (isTrial && !isAddon) {
+            const tenantCreated = new Date(tenant.created_at || new Date());
+            const now = new Date();
+            const diffDays = Math.ceil(Math.abs(now.getTime() - tenantCreated.getTime()) / (1000 * 60 * 60 * 24));
+            const isNewAccount = diffDays <= 5;
+
+            if (isTrial && !isAddon && isNewAccount) {
                 try {
                     // Nome fixo para o cupom de boas-vindas
                     const welcomeCouponCode = 'TRIAL_WELCOME_10';
