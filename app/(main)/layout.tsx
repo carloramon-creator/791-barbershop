@@ -47,9 +47,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 const diffTime = Math.abs(now.getTime() - created.getTime());
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                // Se passou de 7 dias e não tem assinatura ativa -> Bloqueia
-                // Nota: usamos 8 dias para dar uma folga no último dia
-                if (diffDays > 8) {
+                // Se passou de 10 dias e não tem assinatura ativa -> Bloqueia
+                if (diffDays > 10) {
                     router.push('/configuracoes/plano?expired=true');
                 }
             }

@@ -94,7 +94,11 @@ export default function ContractPage() {
                             <strong>CONTRATANTE:</strong> {tenant ? (
                                 <>
                                     <span className="text-slate-100 font-bold">{tenant.name.toUpperCase()}</span>,
-                                    {tenant.cnpj ? ` inscrita no CNPJ sob o nº ${tenant.cnpj}` : ' (CNPJ não informado)'},
+                                    {tenant.cnpj ? (
+                                        tenant.cnpj.replace(/\D/g, '').length > 11
+                                            ? ` inscrita no CNPJ sob o nº ${tenant.cnpj}`
+                                            : ` inscrito no CPF sob o nº ${tenant.cnpj}`
+                                    ) : ' (Documento não informado)'},
                                     com sede em {formatAddress(tenant)}.
                                 </>
                             ) : (

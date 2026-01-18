@@ -7,7 +7,7 @@ import { Scissors, Sparkles, ArrowLeft, ArrowRight, Loader2, Calendar, Users, Cl
 import { WizardProgress } from '@/components/onboarding/WizardProgress';
 import { EditableTable } from '@/components/ui/editable-table';
 import { getDefaultServices, getDefaultProducts, type BusinessType } from '@/lib/default-data';
-import { cn, formatPhone } from '@/lib/utils';
+import { cn, formatPhone, isValidCNPJ, isValidCPF, formatIdentification } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { supabaseClient } from '@/lib/supabase-client';
 
@@ -27,6 +27,8 @@ export default function SignupPage() {
         confirmPassword: '',
         barbershopName: '',
         phone: '',
+        cnpj: '',
+        hasCnpj: true,
         businessType: 'barbershop' as BusinessType,
         serviceMethod: 'queue' as ServiceMethod, // Default to queue
     });
@@ -91,9 +93,22 @@ export default function SignupPage() {
         }
 
         if (step === 2) {
-            if (!formData.barbershopName || !formData.phone) {
-                setError('Preencha todos os campos');
+            if (!formData.barbershopName || !formData.phone || !formData.cnpj) {
+                setError('Preencha todos os campos, incluindo o documento');
                 return false;
+            }
+
+            const docOnlyNumbers = formData.cnpj.replace(/\D/g, '');
+            if (formData.hasCnpj) {
+                if (!isValidCNPJ(formData.cnpj)) {
+                    setError('CNPJ inválido. Verifique os números.');
+                    return false;
+                }
+            } else {
+                if (!isValidCPF(formData.cnpj)) {
+                    setError('CPF inválido. Verifique os números.');
+                    return false;
+                }
             }
         }
 
@@ -372,6 +387,33 @@ function Step2({ formData, setFormData, onNext, onBack, onBusinessSelection }: a
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors"
                         placeholder="(48) 99999-9999"
                     />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+                <div>
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-bold text-slate-300">
+                            {formData.hasCnpj ? 'CNPJ da Empresa' : 'CPF do Proprietário'}
+                        </label>
+                        <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, hasCnpj: !formData.hasCnpj, cnpj: '' })}
+                            className="text-[10px] text-blue-500 hover:text-blue-400 font-bold uppercase"
+                        >
+                            {formData.hasCnpj ? 'Não tenho CNPJ' : 'Tenho CNPJ'}
+                        </button>
+                    </div>
+                    <input
+                        type="text"
+                        value={formData.cnpj}
+                        onChange={(e) => setFormData({ ...formData, cnpj: formatIdentification(e.target.value) })}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors"
+                        placeholder={formData.hasCnpj ? "00.000.000/0000-00" : "000.000.000-00"}
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">
+                        {formData.hasCnpj ? 'Ideal para empresas formalizadas.' : 'Use seu CPF caso não seja empresa formal (MEI/etc).'}
+                    </p>
                 </div>
             </div>
 

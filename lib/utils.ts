@@ -61,6 +61,38 @@ export function isValidCNPJ(cnpj: string) {
   return true;
 }
 
+export function isValidCPF(cpf: string) {
+  cpf = cpf.replace(/[^\d]+/g, '');
+  if (cpf.length !== 11 || !!cpf.match(/^(.)\1*$/)) return false;
+  const res = [0, 0];
+  [9, 10].forEach((j, i) => {
+    let soma = 0;
+    for (let k = 0; k < j; k++) soma += parseInt(cpf.charAt(k)) * (j + 1 - k);
+    res[i] = (soma * 10) % 11 % 10;
+  });
+  return res[0] === parseInt(cpf.charAt(9)) && res[1] === parseInt(cpf.charAt(10));
+}
+
+export function formatIdentification(value: string) {
+  if (!value) return "";
+  const numbers = value.replace(/\D/g, "");
+  if (numbers.length > 11) {
+    // CNPJ
+    return numbers
+      .replace(/^(\d{2})(\d)/, "$1.$2")
+      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1/$2")
+      .replace(/(\d{4})(\d)/, "$1-$2")
+      .substring(0, 18);
+  }
+  // CPF
+  return numbers
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
+    .substring(0, 14);
+}
+
 export function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',

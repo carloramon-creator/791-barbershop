@@ -11,7 +11,7 @@ export async function OPTIONS(req: Request) {
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { name, email, password, barbershopName, phone, businessType, services, products, module_queue_enabled, module_appointments_enabled } = body;
+        const { name, email, password, barbershopName, phone, cnpj, businessType, services, products, module_queue_enabled, module_appointments_enabled } = body;
 
         console.log('[API SIGNUP] Email:', email, 'Barbershop:', barbershopName, 'Type:', businessType);
 
@@ -74,6 +74,7 @@ export async function POST(req: Request) {
                 name: barbershopName,
                 slug,
                 phone: phone || null,
+                cnpj: cnpj || null,
                 business_type: businessType || 'barbershop',
                 plan: 'premium',
                 subscription_status: 'trial',

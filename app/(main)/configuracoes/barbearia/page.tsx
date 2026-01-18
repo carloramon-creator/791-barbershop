@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { QRCodeSVG } from 'qrcode.react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import { cn, formatPhone, isValidCNPJ, isValidCPF } from '@/lib/utils';
 import { HelpTooltip } from '@/components/ui/help-tooltip';
 
 export default function BarbershopSettingsPage() {
@@ -414,8 +414,15 @@ export default function BarbershopSettingsPage() {
                                     disabled={!isEditing}
                                     className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-11"
                                 />
-                                <p className="text-[10px] text-slate-500">
-                                    {hasCnpj ? 'Ideal para empresas formalizadas.' : 'Use seu CPF caso não seja empresa formal (MEI/etc).'}
+                                <p className={cn(
+                                    "text-[10px] font-medium",
+                                    cnpj.replace(/\D/g, '').length > 0 && !(hasCnpj ? isValidCNPJ(cnpj) : isValidCPF(cnpj))
+                                        ? "text-red-500"
+                                        : "text-slate-500"
+                                )}>
+                                    {cnpj.replace(/\D/g, '').length > 0 && !(hasCnpj ? isValidCNPJ(cnpj) : isValidCPF(cnpj))
+                                        ? `⚠️ ${hasCnpj ? 'CNPJ' : 'CPF'} inválido! Verifique os números.`
+                                        : hasCnpj ? 'Ideal para empresas formalizadas.' : 'Use seu CPF caso não seja empresa formal (MEI/etc).'}
                                 </p>
                             </div>
 
