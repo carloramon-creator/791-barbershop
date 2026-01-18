@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-provider';
 import { Sidebar } from '@/components/layout/sidebar';
 import { ConfigAlertBar } from '@/components/layout/config-alert-bar';
@@ -10,6 +10,47 @@ import { Topbar } from '@/components/layout/topbar';
 export default function MainLayout({ children }: { children: React.ReactNode }) {
     const { session, loading, tenant } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
+
+    // -- LÓGICA DE BLOQUEIO --
+    let isBlocked = false;
+    let isWhiteListed = false;
+
+    if (!loading && session && tenant) {
+        const status = tenant.subscription_status || '';
+
+        // 1. ATIVO -> Livre
+        if (status === 'active') {
+            isBlocked = false;
+        } else {
+            // 2. WhiteList (sempre livre)
+            isWhiteListed =
+                pathname.startsWith('/checkout') ||
+                pathname === '/configuracoes/plano';
+
+            if (!isWhiteListed) {
+                // 3. Status Irreversíveis no mês
+                if (['canceled', 'incomplete_expired'].includes(status)) {
+                    isBlocked = true;
+                } else {
+                    // 4. Carência (10 dias) para TRIAL e ATRASO
+                    // Vencimento = current_period_end (assinaturas) ou created_at (novos cadastros/trial)
+                    const referenceDateStr = (['past_due', 'unpaid', 'incomplete'].includes(status) && tenant.subscription_current_period_end)
+                        ? tenant.subscription_current_period_end
+                        : tenant.created_at;
+
+                    const referenceDate = new Date(referenceDateStr || tenant.created_at);
+                    const now = new Date();
+                    const diffTime = now.getTime() - referenceDate.getTime();
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (diffDays > 10) {
+                        isBlocked = true;
+                    }
+                }
+            }
+        }
+    }
 
     useEffect(() => {
         if (!loading && !session) {
@@ -17,45 +58,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             return;
         }
 
-
-        if (!loading && session && tenant) {
-            const status = tenant.subscription_status || '';
-
-            // 1. Se estiver ATIVO, libera tudo
-            if (status === 'active') return;
-
-            // 2. Páginas Brancas (Checkout e Plano) - Sempre acessíveis
-            const isWhiteListed =
-                window.location.pathname.startsWith('/checkout') ||
-                window.location.pathname === '/configuracoes/plano';
-
-            if (isWhiteListed) return;
-
-            // 3. Bloqueio Imediato para Status Irreversíveis no mês
-            if (['canceled', 'incomplete_expired'].includes(status)) {
-                router.push('/configuracoes/plano?expired=true');
-                return;
-            }
-
-            // 4. Lógica de Carência (10 dias) para TRIAL e ATRASO
-            // Vencimento = current_period_end (assinaturas) ou created_at (novos cadastros/trial)
-            const referenceDateStr = (['past_due', 'unpaid', 'incomplete'].includes(status) && tenant.subscription_current_period_end)
-                ? tenant.subscription_current_period_end
-                : tenant.created_at;
-
-            const referenceDate = new Date(referenceDateStr || tenant.created_at);
-            const now = new Date();
-
-            // Diferença em dias (agora - referência)
-            // Se diffDays > 10, significa que passaram mais de 10 dias do vencimento/cadastro
-            const diffTime = now.getTime() - referenceDate.getTime();
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-            if (diffDays > 10) {
-                router.push('/configuracoes/plano?expired=true');
-            }
+        if (isBlocked && !isWhiteListed) {
+            router.push('/configuracoes/plano?expired=true');
         }
-    }, [session, loading, tenant, router]);
+    }, [isBlocked, isWhiteListed, loading, session, router]);
 
     if (loading) {
         return (
@@ -67,6 +73,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
     if (!session) return null;
 
+    // Se estiver bloqueado e tentando ver conteúdo restrito, mostramos um fallback em vez do conteúdo original
+    // para evitar "flicker" de dados confidenciais antes do redirect.
+    const content = (isBlocked && !isWhiteListed) ? (
+        <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-400">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-blue-500"></div>
+            <p className="font-bold uppercase tracking-widest text-xs">Redirecionando para pagamentos...</p>
+        </div>
+    ) : children;
+
     return (
         <div className="flex h-screen bg-slate-950 light:bg-slate-50 overflow-hidden">
             <Sidebar />
@@ -75,7 +90,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <ConfigAlertBar />
                 <main className="flex-1 overflow-y-auto p-2 md:p-4 light:bg-white text-slate-50 light:text-slate-900 custom-scrollbar transition-colors">
                     <div className="w-full max-w-none">
-                        {children}
+                        {content}
                     </div>
                     <footer className="mt-8 py-4 text-center text-xs text-slate-600 light:text-slate-400">
                         Licensed by <span className="text-slate-500 font-semibold">791 Barber</span>
