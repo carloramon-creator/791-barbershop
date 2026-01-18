@@ -509,8 +509,8 @@ export default function UsersPage() {
                     </Button>
                     <Button
                       onClick={() => {
-                        const subject = encodeURIComponent('Convite: Acesso ao Sistema 791 Barber');
-                        const body = encodeURIComponent(`Olá ${inviteName}!\n\nSeja bem-vindo. Sua conta foi criada.\nClique no link abaixo para configurar sua senha:\n\n${generatedLink}`);
+                        const subject = encodeURIComponent(`Convite (${tenant?.name || '791 Barber'}): Acesso ao Sistema`);
+                        const body = encodeURIComponent(`Olá ${inviteName}!\n\nSeja bem-vindo. Sua conta foi criada pela ${tenant?.name || 'nossa barbearia'}.\nClique no link abaixo para configurar sua senha:\n\n${generatedLink}`);
                         window.location.href = `mailto:${inviteEmail}?subject=${subject}&body=${body}`;
                       }}
                       className="bg-blue-600 hover:bg-blue-700 text-white gap-2"

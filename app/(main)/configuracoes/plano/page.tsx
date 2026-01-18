@@ -69,6 +69,7 @@ export default function PlanPage() {
     const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
     const [activeAddons, setActiveAddons] = useState<string[]>([]);
     const [tenantCreatedAt, setTenantCreatedAt] = useState<string | null>(null);
+    const [tenantObject, setTenantObject] = useState<any>(null);
     const [canceling, setCanceling] = useState(false);
 
     const tabs = [
@@ -133,6 +134,7 @@ export default function PlanPage() {
             setSubscriptionStatus(planData.subscriptionStatus);
             setActiveAddons(planData.activeAddons || []);
             setTenantCreatedAt(tenantData.created_at);
+            setTenantObject(tenantData);
 
             const doc = tenantData.cnpj || tenantData.cpf_cnpj || '';
             setTenantHasDocument(doc.replace(/\D/g, '').length >= 11);
@@ -387,7 +389,7 @@ export default function PlanPage() {
 
                     <div className="flex flex-wrap items-center gap-3 pl-0 md:pl-12">
                         <a
-                            href="mailto:contato@791solucoes.com.br?subject=Erro de Pagamento - 791 Barber"
+                            href={`mailto:contato@791solucoes.com.br?subject=Erro de Pagamento - ${tenantObject?.name || '791 Barber'}`}
                             className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold uppercase transition-colors"
                         >
                             <ExternalLink size={14} /> Reportar Erro (Email)
