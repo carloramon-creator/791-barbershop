@@ -588,7 +588,7 @@ export default function PlanPage() {
                                             <Button
                                                 className={cn(
                                                     'w-full py-7 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl',
-                                                    currentPlan === plan.slug
+                                                    currentPlan === plan.slug && subscriptionStatus === 'active'
                                                         ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
                                                         : 'bg-blue-600 hover:bg-white hover:text-blue-600 text-white shadow-blue-600/20 active:scale-95'
                                                 )}

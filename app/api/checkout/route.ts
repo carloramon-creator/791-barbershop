@@ -239,9 +239,12 @@ export async function POST(req: Request) {
             }
         } else {
             // Se não enviou cupom, verifica se deve aplicar desconto automático de Trial
-            const isTrial = tenant.plan === 'trial' || tenant.subscription_status === 'trialing'; // Ou verifique se subscription_status é vazio/nulo
-            // Para garantir que é a "primeira assinatura", idealmente verificariamos se já teve invoices pagos, 
-            // mas assumindo que 'trial' só ocorre antes da primeira expiração...
+            const isTrial = tenant.plan === 'trial' || tenant.subscription_status === 'trialing' || !tenant.stripe_subscription_id;
+
+            // Lógica:
+            // 1. Se o plano explicitamente é 'trial'.
+            // 2. Se o status no stripe é 'trialing'.
+            // 3. Se NÃO TEM stripe_subscription_id (primeira assinatura de quem entrou direto num plano pago mas está no período grátis inicial).
 
             if (isTrial && !isAddon) {
                 try {
