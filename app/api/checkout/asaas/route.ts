@@ -26,10 +26,6 @@ export async function POST(req: Request) {
 
         // 1. Buscar Preço Dinâmico e Descontos
         let baseAmount = 0;
-        // ... (lines 26-166 are preserved/skipped, I need to match context carefully or use chunks correctly. Since I am replacing the logic around reading body AND the logic around setting installments, I should probably do two chunks or one large one if contiguous. The body read is at the top, the installment logic is at bottom.
-        // Let's do two chunks to be safe and precise.
-
-        let baseAmount = 0;
         let itemName = '';
         let isAddon = false;
         let discountPercent = 0;
