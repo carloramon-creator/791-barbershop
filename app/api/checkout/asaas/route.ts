@@ -243,8 +243,15 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error('[ASAAS CHECKOUT ERROR]', error);
+
+        // Melhora o log para erros do Axios/API Asaas
+        const errorMessage = error.response?.data?.errors?.[0]?.description ||
+            error.response?.data?.error ||
+            error.message ||
+            'Erro ao processar pagamento';
+
         return addCorsHeaders(req, NextResponse.json({
-            error: error.message || 'Erro ao processar pagamento'
-        }, { status: 500 }));
+            error: errorMessage
+        }, { status: error.response?.status || 500 }));
     }
 }

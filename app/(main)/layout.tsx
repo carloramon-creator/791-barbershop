@@ -18,9 +18,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
     if (!loading && session && tenant) {
         const status = tenant.subscription_status || '';
+        const now = new Date();
+        const endDate = tenant.subscription_current_period_end ? new Date(tenant.subscription_current_period_end) : null;
+        const isFuture = endDate && endDate > now;
 
-        // 1. ATIVO -> Livre
-        if (status === 'active') {
+        // 1. ATIVO ou VENCIMENTO FUTURO -> Livre
+        if (status === 'active' || isFuture) {
             isBlocked = false;
         } else {
             // 2. WhiteList (sempre livre)
@@ -29,18 +32,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 pathname === '/configuracoes/plano';
 
             if (!isWhiteListed) {
-                // 3. Status Irreversíveis no mês
-                if (['canceled', 'incomplete_expired'].includes(status)) {
+                // 3. Status Irreversíveis no mês (apenas se vencido)
+                if (['canceled', 'incomplete_expired'].includes(status) && !isFuture) {
                     isBlocked = true;
                 } else {
                     // 4. Carência (10 dias) para TRIAL e ATRASO
-                    // Vencimento = current_period_end (assinaturas) ou created_at (novos cadastros/trial)
-                    const referenceDateStr = (['past_due', 'unpaid', 'incomplete'].includes(status) && tenant.subscription_current_period_end)
-                        ? tenant.subscription_current_period_end
-                        : tenant.created_at;
-
-                    const referenceDate = new Date(referenceDateStr || tenant.created_at);
-                    const now = new Date();
+                    // Se não tiver data futura, usa created_at como fallback para trial
+                    const referenceDate = new Date(tenant.created_at);
                     const diffTime = now.getTime() - referenceDate.getTime();
                     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
