@@ -212,6 +212,8 @@ export default function PlanPage() {
         };
     }, [pendingData]);
 
+    const [installments, setInstallments] = useState(1);
+
     async function handleChangePlan() {
         if (!selectedPlan && !selectedAddon) return;
 
@@ -225,122 +227,63 @@ export default function PlanPage() {
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) throw new Error('Usuário não autenticado ou sessão expirada');
 
-            if (paymentMethod === 'card') {
-                // SE JÁ TEM ASSINATURA E É ADDON -> ATIVAÇÃO DIRETA
-                if (stripeSubscriptionId && selectedAddon) {
-                    const res = await fetch('/api/barbershop/addons/activate', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${session.access_token}`
-                        },
-                        body: JSON.stringify({ addonSlug: selectedAddon.slug }),
-                    });
+            const paymentMethodMap = {
+                'card': 'CREDIT_CARD',
+                'pix': 'PIX',
+                'boleto-inter': 'BOLETO'
+            };
 
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error);
+            const payload = {
+                plan: selectedPlan,
+                addon: selectedAddon?.slug,
+                coupon: couponCode,
+                interval: selectedInterval,
+                paymentMethod: paymentMethodMap[paymentMethod as keyof typeof paymentMethodMap] || 'CREDIT_CARD',
+                installments: paymentMethod === 'card' ? installments : 1
+            };
 
-                    alert(data.message || 'Add-on ativado com sucesso!');
-                    setOpenDialog(false);
-                    await fetchCurrentPlan();
-                    return;
-                }
+            const res = await fetch(`${API_URL}/api/checkout/asaas`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify(payload),
+            });
 
-                // CASO CONTRÁRIO -> CHECKOUT STRIPE (Upgrade de plano ou nova assinatura)
-                const res = await fetch(`${API_URL}/api/checkout`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`
-                    },
-                    body: JSON.stringify({
-                        plan: selectedPlan,
-                        addon: selectedAddon?.slug,
-                        coupon: couponCode,
-                        interval: selectedInterval
-                    }),
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Erro ao processar pagamento');
+
+            if (data.checkoutUrl) {
+                // Cartão de Crédito -> Redireciona para checkout Asaas
+                window.location.href = data.checkoutUrl;
+            } else if (data.pixQrCode) {
+                // Pix
+                setPixData({
+                    pixPayload: data.pixCopyPaste,
+                    amount: data.amount,
+                    expiresAt: data.expiresAt,
+                    pdfUrl: undefined // Asaas não retorna PDF de Pix na criação
                 });
-
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-
-                if (data.url) {
-                    window.location.href = data.url;
-                } else {
-                    throw new Error('URL de checkout não retornada');
-                }
-            } else if (paymentMethod === 'pix') {
-                // ID numérico para evitar problemas de compatibilidade
-                const tempId = Date.now().toString().slice(-15);
-                setPendingData({ message: 'Iniciando registro do Pix...', pending: true, seu_numero: tempId });
-
-                const res = await fetch('/api/checkout/inter-pix', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`
-                    },
-                    body: JSON.stringify({ plan: selectedPlan, coupon: couponCode, tempId, interval: selectedInterval }),
+                fetchInvoices();
+            } else if (data.boletoUrl) {
+                // Boleto
+                setBoletoData({
+                    nossoNumero: '', // Não usado no front
+                    codigoBarras: data.barCode,
+                    linhaDigitavel: data.barCode,
+                    pdfUrl: data.boletoUrl,
+                    amount: data.amount
                 });
-
-                const data = await res.json();
-                if (!res.ok) {
-                    setPendingData(null);
-                    throw new Error(data.error);
-                }
-
-                if (data.pending) {
-                    setPendingData({
-                        ...data,
-                        seu_numero: data.seu_numero || tempId
-                    });
-                    return;
-                }
-
-                setPixData(data);
-                setPendingData(null);
-                fetchInvoices(); // Atualiza o histórico imediatamente
-            } else if (paymentMethod === 'boleto-inter') {
-                // ID numérico para evitar problemas de compatibilidade
-                const tempId = Date.now().toString().slice(-15);
-                setPendingData({ message: 'Iniciando registro do boleto...', pending: true, seu_numero: tempId });
                 setPaymentMethod('boleto-result');
-
-                const res = await fetch('/api/checkout/inter-boleto', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`
-                    },
-                    body: JSON.stringify({ plan: selectedPlan, coupon: couponCode, tempId, interval: selectedInterval }),
-                });
-
-                const data = await res.json();
-                if (!res.ok) {
-                    setPendingData(null);
-                    setPaymentMethod('boleto-inter'); // Volta pro form se der erro
-                    throw new Error(data.error);
-                }
-
-                if (data.pending) {
-                    setPendingData({
-                        ...data,
-                        seu_numero: data.seu_numero || tempId
-                    });
-                    return;
-                }
-
-                setBoletoData(data);
-                setPendingData(null);
-                fetchInvoices(); // Atualiza o histórico imediatamente
+                fetchInvoices();
+            } else {
+                throw new Error('Retorno desconhecido do gateway');
             }
+
         } catch (err: any) {
             console.error('[CHECKOUT ERROR]', err);
-            if (err.message === 'Failed to fetch' || err.message === 'fetch failed') {
-                setError(`Erro de conexão (${err.message}). Tente novamente ou contate o suporte.`);
-            } else {
-                setError(err.message || 'Erro inesperado ao processar pagamento');
-            }
+            setError(err.message || 'Erro inesperado ao processar pagamento');
         } finally {
             setSaving(false);
         }
@@ -799,7 +742,7 @@ export default function PlanPage() {
                                             )}
                                         >
                                             <span className="text-lg font-black leading-none">PIX</span>
-                                            <span className="text-[10px] font-black uppercase">Inter</span>
+                                            <span className="text-[10px] font-black uppercase">Instantâneo</span>
                                         </button>
                                         <button
                                             onClick={() => setPaymentMethod('boleto-inter')}
@@ -814,6 +757,40 @@ export default function PlanPage() {
                                             <span className="text-[10px] font-black uppercase">Boleto</span>
                                         </button>
                                     </div>
+
+                                    {/* SELETOR DE PARCELAS (Só aparece para cartão e se valor > 0) */}
+                                    {paymentMethod === 'card' && (
+                                        <div className="space-y-2 pt-2 animate-in fade-in slide-in-from-top-2">
+                                            <Label className="text-xs text-slate-500 uppercase tracking-wider">Parcelamento</Label>
+                                            <select
+                                                value={installments}
+                                                onChange={(e) => setInstallments(Number(e.target.value))}
+                                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-100 focus:border-amber-500 outline-none transition-all"
+                                            >
+                                                {Array.from({ length: 12 }, (_, i) => i + 1).map((i) => {
+                                                    // Se for Anual/Semestral, permitir até o nº de meses do plano? Ou sempre 12x?
+                                                    // O Asaas permite 12x. Vamos limitar ao intervalo ou 12x?
+                                                    // O ideal é permitir parcelar o plano anual em 12x.
+                                                    // Só validar se a parcela mínima (> R$ 5) permite.
+                                                    return (
+                                                        <option key={i} value={i}>
+                                                            {i}x de R$ {
+                                                                // Simulação básica da parcela
+                                                                (() => {
+                                                                    const plan = dynamicPlans.find(p => p.slug === selectedPlan);
+                                                                    const basePrice = selectedAddon ? selectedAddon.price : (plan?.price || 0);
+                                                                    const discount = selectedInterval === 6 ? 10 : selectedInterval === 12 ? 20 : 0;
+                                                                    const total = (basePrice * selectedInterval) * (1 - (discount / 100));
+                                                                    return (total / i).toFixed(2).replace('.', ',');
+                                                                })()
+                                                            }
+                                                            {i === 1 ? ' (À vista)' : ' sem juros'}
+                                                        </option>
+                                                    );
+                                                })}
+                                            </select>
+                                        </div>
+                                    )}
 
                                     <div className="space-y-2 pt-2">
                                         <Label className="text-xs text-slate-500 uppercase tracking-wider">Possui um cupom?</Label>

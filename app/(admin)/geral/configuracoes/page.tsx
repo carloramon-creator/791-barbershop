@@ -76,52 +76,114 @@ export default function SystemSettingsPage() {
                             <CreditCard size={20} />
                         </div>
                         <div>
-                            <CardTitle className="text-slate-100">Stripe SaaS (Assinaturas)</CardTitle>
-                            <CardDescription className="text-slate-400">Chaves para cobrança de licenças das barbearias.</CardDescription>
+                            <CardTitle className="text-slate-100">Configurações de Pagamento</CardTitle>
+                            <CardDescription className="text-slate-400">Gerencie as chaves das APIs de pagamento.</CardDescription>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <Label className="text-slate-400 text-xs uppercase font-bold">Public Key</Label>
-                            <Input
-                                value={settings?.stripe_config?.public_key || ''}
-                                onChange={(e) => setSettings({ ...settings, stripe_config: { ...settings.stripe_config, public_key: e.target.value } })}
-                                placeholder="pk_live_..."
-                                className="bg-slate-950 border-slate-800 text-slate-100"
-                            />
+                    {/* Asaas Section */}
+                    <div className="space-y-4 border-b border-slate-800 pb-8">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-8 h-8 rounded-lg bg-blue-900/50 flex items-center justify-center text-blue-400">
+                                <span className="font-bold text-xs">AS</span>
+                            </div>
+                            <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">Asaas (Principal)</h3>
                         </div>
-                        <div className="space-y-2">
-                            <Label className="text-slate-400 text-xs uppercase font-bold">Secret Key</Label>
-                            <Input
-                                type="password"
-                                value={settings?.stripe_config?.secret_key || ''}
-                                onChange={(e) => setSettings({ ...settings, stripe_config: { ...settings.stripe_config, secret_key: e.target.value } })}
-                                placeholder="sk_live_..."
-                                className="bg-slate-950 border-slate-800 text-slate-100"
-                            />
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-slate-400 text-xs uppercase font-bold">Ambiente</Label>
+                                <select
+                                    value={settings?.asaas_config?.environment || 'sandbox'}
+                                    onChange={(e) => setSettings({ ...settings, asaas_config: { ...settings.asaas_config, environment: e.target.value } })}
+                                    className="w-full bg-slate-950 border-slate-800 text-slate-100 rounded-md p-2 text-sm"
+                                >
+                                    <option value="sandbox">Sandbox (Testes)</option>
+                                    <option value="production">Produção</option>
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-slate-400 text-xs uppercase font-bold">API Key</Label>
+                                <Input
+                                    value={settings?.asaas_config?.api_key || ''}
+                                    onChange={(e) => setSettings({ ...settings, asaas_config: { ...settings.asaas_config, api_key: e.target.value } })}
+                                    placeholder="$aact_..."
+                                    className="bg-slate-950 border-slate-800 text-slate-100"
+                                />
+                            </div>
+                            <div className="md:col-span-2 space-y-2">
+                                <Label className="text-slate-400 text-xs uppercase font-bold">Wallet ID</Label>
+                                <Input
+                                    value={settings?.asaas_config?.wallet_id || ''}
+                                    onChange={(e) => setSettings({ ...settings, asaas_config: { ...settings.asaas_config, wallet_id: e.target.value } })}
+                                    className="bg-slate-950 border-slate-800 text-slate-100"
+                                />
+                            </div>
                         </div>
-                        <div className="md:col-span-2 space-y-2">
-                            <Label className="text-slate-400 text-xs uppercase font-bold">Webhook Secret</Label>
-                            <Input
-                                value={settings?.stripe_config?.webhook_secret || ''}
-                                onChange={(e) => setSettings({ ...settings, stripe_config: { ...settings.stripe_config, webhook_secret: e.target.value } })}
-                                placeholder="whsec_..."
-                                className="bg-slate-950 border-slate-800 text-slate-100"
-                            />
+                        <div className="flex justify-end pt-2">
+                            <Button
+                                onClick={() => handleSave('asaas_config', settings.asaas_config)}
+                                disabled={saving === 'asaas_config'}
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                            >
+                                {saving === 'asaas_config' ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                                Salvar Asaas
+                            </Button>
                         </div>
                     </div>
-                    <div className="flex justify-end border-t border-slate-800 pt-6">
-                        <Button
-                            onClick={() => handleSave('stripe_config', settings.stripe_config)}
-                            disabled={saving === 'stripe_config'}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
-                        >
-                            {saving === 'stripe_config' ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                            Salvar Stripe
-                        </Button>
+
+                    {/* Stripe Section (Legacy/Backup) */}
+                    <div className="space-y-4 pt-4 opacity-50 hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400">
+                                <CreditCard size={14} />
+                            </div>
+                            <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">Stripe (Legado / Backup)</h3>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label className="text-slate-400 text-xs uppercase font-bold">Public Key</Label>
+                                <Input
+                                    value={settings?.stripe_config?.public_key || ''}
+                                    onChange={(e) => setSettings({ ...settings, stripe_config: { ...settings.stripe_config, public_key: e.target.value } })}
+                                    placeholder="pk_live_..."
+                                    className="bg-slate-950 border-slate-800 text-slate-100"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-slate-400 text-xs uppercase font-bold">Secret Key</Label>
+                                <Input
+                                    type="password"
+                                    value={settings?.stripe_config?.secret_key || ''}
+                                    onChange={(e) => setSettings({ ...settings, stripe_config: { ...settings.stripe_config, secret_key: e.target.value } })}
+                                    placeholder="sk_live_..."
+                                    className="bg-slate-950 border-slate-800 text-slate-100"
+                                />
+                            </div>
+                            <div className="md:col-span-2 space-y-2">
+                                <Label className="text-slate-400 text-xs uppercase font-bold">Webhook Secret</Label>
+                                <Input
+                                    value={settings?.stripe_config?.webhook_secret || ''}
+                                    onChange={(e) => setSettings({ ...settings, stripe_config: { ...settings.stripe_config, webhook_secret: e.target.value } })}
+                                    placeholder="whsec_..."
+                                    className="bg-slate-950 border-slate-800 text-slate-100"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-end border-t border-slate-800 pt-6">
+                            <Button
+                                onClick={() => handleSave('stripe_config', settings.stripe_config)}
+                                disabled={saving === 'stripe_config'}
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                            >
+                                {saving === 'stripe_config' ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                                Salvar Stripe
+                            </Button>
+                        </div>
                     </div>
+
                 </CardContent>
             </Card>
 
@@ -282,6 +344,16 @@ export default function SystemSettingsPage() {
                             </button>
                         </div>
                         <code className="block text-xs text-slate-400 font-mono">https://api.791barber.com/api/webhooks/stripe</code>
+                    </div>
+
+                    <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-2 border-l-4 border-l-blue-600">
+                        <div className="flex justify-between items-center">
+                            <Label className="text-blue-500 text-[10px] font-black uppercase tracking-widest">Asaas Webhook URL (Novo)</Label>
+                            <button onClick={() => copyToClipboard('https://api.791barber.com/api/webhooks/asaas', 'aw')} className="text-slate-500 hover:text-slate-200">
+                                {copied === 'aw' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                            </button>
+                        </div>
+                        <code className="block text-xs text-slate-400 font-mono">https://api.791barber.com/api/webhooks/asaas</code>
                     </div>
 
                     <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
