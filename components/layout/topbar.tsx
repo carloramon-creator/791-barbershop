@@ -43,9 +43,9 @@ export function Topbar() {
                                     const diffTime = Math.abs(now.getTime() - created.getTime());
                                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                                    if (diffDays <= 7 && tenant.subscription_status !== 'active') {
+                                    if (diffDays <= 10 && tenant.subscription_status !== 'active') {
                                         isTimeTrial = true;
-                                        daysLeft = 8 - diffDays; // 8 para incluir o dia atual
+                                        daysLeft = 11 - diffDays; // 11 para incluir o dia atual e completar 10
                                     }
                                 }
 
