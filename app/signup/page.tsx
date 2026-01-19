@@ -265,10 +265,14 @@ export default function SignupPage() {
                     )}
 
                     {step === 5 && (
-                        loading = { loading }
+                        <Step5
+                            formData={formData}
+                            services={services}
+                            products={products}
+                            loading={loading}
                             onSubmit={handleSubmit}
-                    onBack={handleBack}
-                    onOpenDoc={setOpenDoc}
+                            onBack={handleBack}
+                            onOpenDoc={setOpenDoc}
                         />
                     )}
                 </div>
