@@ -212,7 +212,8 @@ export async function POST(req: Request) {
                             enabled: true,
                         }
                     }
-                }
+                },
+                payment_method_collection: 'always'
             })
         };
 
