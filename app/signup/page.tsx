@@ -10,6 +10,13 @@ import { getDefaultServices, getDefaultProducts, type BusinessType } from '@/lib
 import { cn, formatPhone, isValidCNPJ, isValidCPF, formatIdentification } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { supabaseClient } from '@/lib/supabase-client';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from "@/components/ui/dialog";
 
 type ServiceMethod = 'queue' | 'appointments';
 
@@ -18,6 +25,7 @@ export default function SignupPage() {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [openDoc, setOpenDoc] = useState<'terms' | 'privacy' | 'contract' | null>(null);
 
     // Form data
     const [formData, setFormData] = useState({
@@ -257,16 +265,31 @@ export default function SignupPage() {
                     )}
 
                     {step === 5 && (
-                        <Step5
-                            formData={formData}
-                            services={services}
-                            products={products}
-                            loading={loading}
+                        loading = { loading }
                             onSubmit={handleSubmit}
-                            onBack={handleBack}
+                    onBack={handleBack}
+                    onOpenDoc={setOpenDoc}
                         />
                     )}
                 </div>
+
+                {/* Legal Modal */}
+                <Dialog open={!!openDoc} onOpenChange={(open) => !open && setOpenDoc(null)}>
+                    <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-800 text-slate-100">
+                        <DialogHeader>
+                            <DialogTitle className="text-2xl font-black uppercase tracking-tighter text-blue-500">
+                                {openDoc === 'terms' && 'Termos de Uso'}
+                                {openDoc === 'privacy' && 'Política de Privacidade'}
+                                {openDoc === 'contract' && 'Contrato de Assinatura'}
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="mt-4">
+                            {openDoc === 'terms' && <TermsContent />}
+                            {openDoc === 'privacy' && <PrivacyContent />}
+                            {openDoc === 'contract' && <ContractContent />}
+                        </div>
+                    </DialogContent>
+                </Dialog>
 
                 {/* Login Link */}
                 <div className="text-center mt-6">
@@ -627,8 +650,13 @@ function Step4({ products, setProducts, onNext, onBack, onSkip }: any) {
 }
 
 // STEP 5: Complete
-function Step5({ formData, services, products, loading, onSubmit, onBack }: any) {
+function Step5({ formData, services, products, loading, onSubmit, onBack, onOpenDoc }: any) {
     const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+    const handleLinkClick = (e: React.MouseEvent, type: 'terms' | 'privacy' | 'contract') => {
+        e.preventDefault();
+        onOpenDoc(type);
+    };
 
     return (
         <div className="space-y-6 text-center animate-in fade-in zoom-in-95 duration-500">
@@ -692,7 +720,7 @@ function Step5({ formData, services, products, loading, onSubmit, onBack }: any)
                         </svg>
                     </div>
                     <span className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">
-                        Li e aceito os <a href="/juridico/termos" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Termos de Uso</a>, <a href="/juridico/privacidade" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Política de Privacidade</a> e o <a href="/juridico/contrato" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Contrato de Assinatura</a>.
+                        Li e aceito os <button onClick={(e) => handleLinkClick(e, 'terms')} className="text-blue-400 hover:underline">Termos de Uso</button>, <button onClick={(e) => handleLinkClick(e, 'privacy')} className="text-blue-400 hover:underline">Política de Privacidade</button> e o <button onClick={(e) => handleLinkClick(e, 'contract')} className="text-blue-400 hover:underline">Contrato de Assinatura</button>.
                     </span>
                 </label>
             </div>
@@ -723,6 +751,126 @@ function Step5({ formData, services, products, loading, onSubmit, onBack }: any)
                         </>
                     )}
                 </Button>
+            </div>
+        </div>
+    );
+}
+
+function TermsContent() {
+    return (
+        <div className="text-slate-300 space-y-6 leading-relaxed text-sm text-justify pr-2">
+            <section className="space-y-2">
+                <p><strong>1. ACEITAÇÃO DOS TERMOS</strong></p>
+                <p>Ao utilizar o sistema <strong>791 Barber</strong>, de titularidade da <strong>791 SOLUÇÕES EMPRESARIAIS LTDA</strong>, inscrita no CNPJ sob o nº <strong>61.887.941/0001-83</strong>, o usuário declara ter lido, compreendido e aceitado integralmente as condições deste documento.</p>
+                <p>O uso do sistema implica adesão automática a estes Termos de Uso e à Política de Privacidade correspondente.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>2. USO DO SISTEMA</strong></p>
+                <p>O 791 Barber destina-se exclusivamente ao gerenciamento de barbearias e salões de beleza, incluindo funcionalidades de agendamento, controle financeiro, cadastro de clientes e relatórios.</p>
+                <p>O usuário é responsável por manter a confidencialidade de suas credenciais de acesso. O compartilhamento de credenciais é expressamente proibido.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>3. PLANOS E PAGAMENTOS</strong></p>
+                <p>O acesso ao sistema é concedido mediante assinatura nos planos disponibilizados. O pagamento é processado por meio das plataformas integradas ao sistema.</p>
+                <p>A ausência de pagamento ou atraso poderá resultar na suspensão automática do acesso até a regularização.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>4. RESPONSABILIDADES</strong></p>
+                <p>O usuário é integralmente responsável pelas informações inseridas no sistema. A 791 Soluções não se responsabiliza por dados inseridos incorretamente ou danos indiretos decorrentes do uso inadequado.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>6. CANCELAMENTO</strong></p>
+                <p>O usuário pode solicitar o cancelamento da assinatura a qualquer momento pelo painel ou suporte. O cancelamento não gera direito a reembolso de períodos já pagos.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>7. PRIVACIDADE E DADOS (LGPD)</strong></p>
+                <p>A coleta e armazenamento de dados seguem a Lei Geral de Proteção de Dados (LGPD). As informações são usadas para fins operacionais e melhoria do sistema.</p>
+            </section>
+
+            <p className="pt-6 text-[10px] text-slate-500 font-bold uppercase tracking-widest">Última atualização: 18 de janeiro de 2026.</p>
+        </div>
+    );
+}
+
+function PrivacyContent() {
+    return (
+        <div className="text-slate-300 space-y-6 leading-relaxed text-sm text-justify pr-2">
+            <section className="space-y-2">
+                <p><strong>1. DISPOSIÇÕES GERAIS</strong></p>
+                <p>Esta Política descreve como a <strong>791 SOLUÇÕES EMPRESARIAIS LTDA</strong> coleta e protege os dados pessoais dos usuários, em conformidade com a LGPD (Lei nº 13.709/2018).</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>2. DADOS COLETADOS</strong></p>
+                <p>Coletamos dados do estabelecimento, usuários do sistema e clientes (nome, e-mail, telefone, histórico de agendamentos) para fins operacionais e de segurança.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>3. FINALIDADES</strong></p>
+                <p>Os dados permitem o funcionamento do 791 Barber, execução de contratos, envio de comunicações operacionais e cumprimento de obrigações legais.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>5. COMPARTILHAMENTO</strong></p>
+                <p>Os dados podem ser compartilhados com provedores de tecnologia estritamente para operação do sistema. Não vendemos dados pessoais a terceiros.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>8. DIREITOS DOS TITULARES</strong></p>
+                <p>O titular pode confirmar a existência de tratamento, corrigir dados, solicitar anonimização ou exclusão, conforme garantido pela LGPD.</p>
+            </section>
+
+            <p className="pt-6 text-[10px] text-slate-500 font-bold uppercase tracking-widest">Última atualização: 18 de janeiro de 2026.</p>
+        </div>
+    );
+}
+
+function ContractContent() {
+    return (
+        <div className="text-slate-300 space-y-6 leading-relaxed text-sm text-justify pr-2">
+            <div className="text-center space-y-1 mb-6">
+                <h2 className="text-base font-black text-slate-100 uppercase">CONTRATO DE LICENÇA DE USO DE SOFTWARE (SaaS)</h2>
+            </div>
+
+            <section className="space-y-2 text-xs">
+                <p><strong>CONTRATADA:</strong> 791 SOLUÇÕES EMPRESARIAIS LTDA, CNPJ nº 61.887.941/0001-83.</p>
+                <p><strong>CONTRATANTE:</strong> Identificada no ato de cadastro (o "CLIENTE").</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>1. OBJETO</strong></p>
+                <p>Licença de uso não exclusiva e revogável do software 791 Barber para gerenciamento operacional de barbearias e salões na modalidade SaaS.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>2. PLANOS E ADD-ONS</strong></p>
+                <p>A escolha do plano determine as funcionalidades e limites. O CLIENTE poderá contratar módulos extras (Add-ons) que serão somados ao valor da fatura atual.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>3. VIGÊNCIA E RENOVAÇÃO</strong></p>
+                <p>Renovação automática ao final de cada ciclo, salvo cancelamento prévio de 5 dias úteis. A CONTRATADA pode reajustar valores mediante aviso de 30 dias.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>4. PAGAMENTO</strong></p>
+                <p>O faturamento ocorre automaticamente. A suspensão do acesso ocorre após 10 dias úteis de atraso.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>10. SLA E SUPORTE</strong></p>
+                <p>Disponibilidade de 99,5%. Suporte via e-mail e WhatsApp em horário comercial.</p>
+            </section>
+
+            <div className="pt-8 border-t border-slate-800 text-center">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                    Aceito eletronicamente via onboarding 791 Barber.
+                </p>
             </div>
         </div>
     );
