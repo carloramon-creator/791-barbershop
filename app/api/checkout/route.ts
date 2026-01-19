@@ -199,21 +199,22 @@ export async function POST(req: Request) {
             }),
             // Habilitar parcelamento para pagamentos (não recorrentes)
             ...(!isSubscription && {
+                payment_method_types: ['card'],
                 payment_intent_data: {
                     metadata: {
                         tenant_id: tenant.id,
                         [isAddon ? 'addon' : 'plan']: itemSlug,
                         interval: String(interval)
-                    }
-                },
-                payment_method_options: {
-                    card: {
-                        installments: {
-                            enabled: true,
+                    },
+                    payment_method_options: {
+                        card: {
+                            installments: {
+                                enabled: true,
+                            }
                         }
                     }
                 }
-            })
+            } as any)
         };
 
         if (discounts.length > 0) {
