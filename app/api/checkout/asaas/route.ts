@@ -20,10 +20,15 @@ export async function POST(req: Request) {
             addon: addonSlug,
             coupon,
             interval = 1,
-            paymentMethod = 'CREDIT_CARD' // CREDIT_CARD, PIX, BOLETO
+            paymentMethod = 'CREDIT_CARD', // CREDIT_CARD, PIX, BOLETO
+            installments = 1
         } = await req.json();
 
         // 1. Buscar Preço Dinâmico e Descontos
+        let baseAmount = 0;
+        // ... (lines 26-166 are preserved/skipped, I need to match context carefully or use chunks correctly. Since I am replacing the logic around reading body AND the logic around setting installments, I should probably do two chunks or one large one if contiguous. The body read is at the top, the installment logic is at bottom.
+        // Let's do two chunks to be safe and precise.
+
         let baseAmount = 0;
         let itemName = '';
         let isAddon = false;
@@ -165,9 +170,23 @@ export async function POST(req: Request) {
         };
 
         // Configurar parcelamento para cartão
-        if (paymentMethod === 'CREDIT_CARD' && interval > 1) {
-            paymentData.installmentCount = Math.min(interval, 12);
-            paymentData.installmentValue = finalAmount / paymentData.installmentCount;
+        // Se o plano for > 1 mês (Semestral/Anual), permitimos parcelar.
+        // Se for mensal, forçamos 1x (conforme solicitado para não confundir).
+        if (paymentMethod === 'CREDIT_CARD') {
+            let finalInstallments = 1;
+
+            if (interval > 1) {
+                // Se interval > 1 (ex: 6 ou 12), aceitamos o que vem do front, limitado a 12 ou ao intervalo?
+                // Geralmente anual pode ser em 12x. Semestral em 6x.
+                // Vamos dar flexibilidade até 12x, mas o front já limita.
+                finalInstallments = Math.min(installments, 12);
+                if (finalInstallments < 1) finalInstallments = 1;
+            }
+
+            if (finalInstallments > 1) {
+                paymentData.installmentCount = finalInstallments;
+                paymentData.installmentValue = finalAmount / finalInstallments;
+            }
         }
 
         const payment = await asaas.createPayment(paymentData);
