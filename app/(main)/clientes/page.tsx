@@ -158,7 +158,7 @@ export default function ClientsPage() {
     const handleShareLink = (client: Client) => {
         if (!tenant) return;
         const slugOrId = tenant.slug || tenant.id;
-        const baseUrl = 'https://791barber.com';
+        const baseUrl = process.env.NEXT_PUBLIC_CLIENT_URL || 'https://app.791barber.com';
         const personalizedUrl = `${baseUrl}/${slugOrId}?c=${client.id}`;
 
         const message = `Olá ${client.name}! Use nosso aplicativo para agendar um horário rapidamente: ${personalizedUrl}`;
