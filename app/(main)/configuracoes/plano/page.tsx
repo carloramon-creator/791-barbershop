@@ -71,6 +71,7 @@ export default function PlanPage() {
     const [tenantCreatedAt, setTenantCreatedAt] = useState<string | null>(null);
     const [tenantObject, setTenantObject] = useState<any>(null);
     const [canceling, setCanceling] = useState(false);
+    const [selectedInterval, setSelectedInterval] = useState<number>(1);
 
     const tabs = [
         { name: 'Geral', href: '/configuracoes/barbearia', icon: Building2 },
@@ -255,7 +256,8 @@ export default function PlanPage() {
                     body: JSON.stringify({
                         plan: selectedPlan,
                         addon: selectedAddon?.slug,
-                        coupon: couponCode
+                        coupon: couponCode,
+                        interval: selectedInterval
                     }),
                 });
 
@@ -278,7 +280,7 @@ export default function PlanPage() {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${session.access_token}`
                     },
-                    body: JSON.stringify({ plan: selectedPlan, coupon: couponCode, tempId }),
+                    body: JSON.stringify({ plan: selectedPlan, coupon: couponCode, tempId, interval: selectedInterval }),
                 });
 
                 const data = await res.json();
@@ -310,7 +312,7 @@ export default function PlanPage() {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${session.access_token}`
                     },
-                    body: JSON.stringify({ plan: selectedPlan, coupon: couponCode, tempId }),
+                    body: JSON.stringify({ plan: selectedPlan, coupon: couponCode, tempId, interval: selectedInterval }),
                 });
 
                 const data = await res.json();
@@ -576,6 +578,35 @@ export default function PlanPage() {
                             <p className="text-slate-500 font-medium">Migre agora e libere todo o potencial da sua barbearia.</p>
                         </div>
 
+                        {/* SELETOR DE PERÍODO */}
+                        <div className="flex justify-center mt-8">
+                            <div className="bg-slate-900 border border-slate-800 p-1 rounded-2xl flex gap-1 shadow-2xl">
+                                {[
+                                    { id: 1, label: 'Mensal', discount: 0 },
+                                    { id: 6, label: 'Semestral', discount: 10 },
+                                    { id: 12, label: 'Anual', discount: 20 },
+                                ].map((period) => (
+                                    <button
+                                        key={period.id}
+                                        onClick={() => setSelectedInterval(period.id)}
+                                        className={cn(
+                                            "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative overflow-hidden",
+                                            selectedInterval === period.id
+                                                ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40"
+                                                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                                        )}
+                                    >
+                                        {period.label}
+                                        {period.discount > 0 && (
+                                            <span className="ml-2 bg-emerald-500 text-[8px] px-1.5 py-0.5 rounded-full text-white animate-pulse">
+                                                -{period.discount}%
+                                            </span>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             {dynamicPlans.filter(p => p.slug !== 'trial').map((plan) => (
                                 <Card
@@ -599,9 +630,27 @@ export default function PlanPage() {
 
                                         <CardHeader className="p-0 mb-6">
                                             <CardTitle className="text-3xl font-black text-slate-100 tracking-tight mb-2">{plan.name}</CardTitle>
-                                            <div className="flex items-baseline gap-1">
-                                                <span className="text-4xl font-black text-slate-100">R$ {Number(plan.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                                <span className="text-slate-500 font-bold text-sm tracking-widest uppercase">/mês</span>
+                                            <div className="space-y-1">
+                                                {(() => {
+                                                    const basePrice = plan.price || 0;
+                                                    const discount = selectedInterval === 6 ? 10 : selectedInterval === 12 ? 20 : 0;
+                                                    const totalPrice = (basePrice * selectedInterval) * (1 - (discount / 100));
+                                                    const monthlyEquivalent = totalPrice / selectedInterval;
+
+                                                    return (
+                                                        <>
+                                                            <div className="flex items-baseline gap-1">
+                                                                <span className="text-3xl font-black text-slate-100">R$ {monthlyEquivalent.toFixed(2).replace('.', ',')}</span>
+                                                                <span className="text-xs text-slate-500 font-bold lowercase">/mês</span>
+                                                            </div>
+                                                            {selectedInterval > 1 && (
+                                                                <div className="text-[10px] font-black text-emerald-500 uppercase tracking-wider">
+                                                                    Total: R$ {totalPrice.toFixed(2).replace('.', ',')} ({selectedInterval} meses)
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    );
+                                                })()}
                                             </div>
                                             {plan.description && (
                                                 <p className="mt-4 text-xs font-bold text-slate-500 leading-relaxed min-h-[40px]">
@@ -674,7 +723,15 @@ export default function PlanPage() {
                                     ) : (
                                         <div className="flex flex-col gap-1">
                                             <span>
-                                                Plano <span className="text-blue-600 capitalize">{selectedPlan}</span> — R$ {(dynamicPlans.find(p => p.slug === selectedPlan)?.price || 0).toFixed(2).replace('.', ',')}/mês
+                                                Plano <span className="text-blue-600 capitalize">{selectedPlan}</span> —
+                                                {(() => {
+                                                    const plan = dynamicPlans.find(p => p.slug === selectedPlan);
+                                                    if (!plan) return '';
+                                                    const basePrice = plan.price || 0;
+                                                    const discount = selectedInterval === 6 ? 10 : selectedInterval === 12 ? 20 : 0;
+                                                    const totalPrice = (basePrice * selectedInterval) * (1 - (discount / 100));
+                                                    return ` R$ ${totalPrice.toFixed(2).replace('.', ',')} (${selectedInterval} ${selectedInterval === 1 ? 'mês' : 'meses'})`;
+                                                })()}
                                             </span>
                                             {/* VISUALIZAÇÃO DO DESCONTO 10% (Apenas se cadastrado há menos de 5 dias) */}
                                             {(() => {

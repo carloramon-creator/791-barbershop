@@ -200,6 +200,27 @@ export default function PlansPage() {
                                                 />
                                             </div>
                                         </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] text-slate-500 uppercase font-bold">Desc. Semestral (%)</Label>
+                                                <Input
+                                                    type="number"
+                                                    value={editingPlan.discount_semiannual || 0}
+                                                    onChange={(e) => setEditingPlan({ ...editingPlan, discount_semiannual: Number(e.target.value) })}
+                                                    className="bg-slate-950 border-slate-800 text-amber-500 font-mono h-11"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] text-slate-500 uppercase font-bold">Desc. Anual (%)</Label>
+                                                <Input
+                                                    type="number"
+                                                    value={editingPlan.discount_annual || 0}
+                                                    onChange={(e) => setEditingPlan({ ...editingPlan, discount_annual: Number(e.target.value) })}
+                                                    className="bg-slate-950 border-slate-800 text-amber-500 font-mono h-11"
+                                                />
+                                            </div>
+                                        </div>
                                         <div className="space-y-2">
                                             <Label className="text-[10px] text-slate-500 uppercase font-bold">Resumo / Descrição</Label>
                                             <Input

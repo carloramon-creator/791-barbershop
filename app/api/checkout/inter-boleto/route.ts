@@ -16,12 +16,13 @@ export async function POST(req: Request) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Não autenticado' }, { status: 401 }));
         }
 
-        const { plan: planSlug, addon: addonSlug, coupon, tempId } = await req.json();
+        const { plan: planSlug, addon: addonSlug, coupon, tempId, interval = 1 } = await req.json();
 
-        // 1. Buscar Preço Dinâmico
-        let amount = 0;
+        // 1. Buscar Preço Dinâmico e Descontos
+        let baseAmount = 0;
         let itemName = '';
         let isAddon = false;
+        let discountPercent = 0;
 
         if (addonSlug) {
             const { data: addon } = await supabaseAdmin
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
 
             if (!addon) return addCorsHeaders(req, NextResponse.json({ error: 'Add-on inválido' }, { status: 400 }));
 
-            amount = Number(addon.price);
+            baseAmount = Number(addon.price);
             itemName = addon.name;
             isAddon = true;
         } else {
@@ -44,24 +45,38 @@ export async function POST(req: Request) {
 
             if (!planData) return addCorsHeaders(req, NextResponse.json({ error: 'Plano inválido' }, { status: 400 }));
 
-            amount = Number(planData.price);
+            baseAmount = Number(planData.price);
             itemName = planData.name;
+
+            // Definir desconto baseado no intervalo
+            if (interval === 6) {
+                discountPercent = Number(planData.discount_semiannual || 10);
+            } else if (interval === 12) {
+                discountPercent = Number(planData.discount_annual || 20);
+            }
+        }
+
+        // Calcular valor total baseado no período
+        let totalAmount = baseAmount * interval;
+        if (discountPercent > 0) {
+            totalAmount = totalAmount * (1 - (discountPercent / 100));
         }
 
         // --- LÓGICA DE PRO-RATA (INTER) ---
-        // Se for um Add-on sendo adicionado a um plano existente no meio do mês
-        if (isAddon && tenant.plan && tenant.plan !== 'trial') {
+        // Se for um Add-on MENSAL sendo adicionado a um plano existente no meio do mês
+        let finalAmount = totalAmount;
+        if (interval === 1 && isAddon && tenant.plan && tenant.plan !== 'trial') {
             const now = new Date();
             const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
             const remainingDays = lastDayOfMonth - now.getDate() + 1;
 
             // Pro-rata: (Preço / Dias no Mês) * Dias Restantes
-            amount = (amount / lastDayOfMonth) * remainingDays;
-            if (amount < 1) amount = 1; // Mínimo R$ 1,00 para evitar erros bancários
+            finalAmount = (baseAmount / lastDayOfMonth) * remainingDays;
+            if (finalAmount < 1) finalAmount = 1; // Mínimo R$ 1,00 para evitar erros bancários
         }
 
         // 2. Processar Cupom
-        let discount = 0;
+        let discountFromCoupon = 0;
         let couponApplied = null;
 
         if (coupon && coupon.trim() !== '') {
@@ -76,30 +91,29 @@ export async function POST(req: Request) {
             if (couponData) {
                 couponApplied = code;
                 if (couponData.discount_percent) {
-                    discount = (amount * Number(couponData.discount_percent)) / 100;
+                    discountFromCoupon = (finalAmount * Number(couponData.discount_percent)) / 100;
                 } else if (couponData.discount_value) {
-                    discount = Number(couponData.discount_value);
+                    discountFromCoupon = Number(couponData.discount_value);
                 }
             }
         }
 
-        // Se não enviou cupom (ou inválido), verifica se deve aplicar desconto automático de Trial
-        if (discount === 0) {
+        // 3. Desconto automático de Trial (apenas se for primeira assinatura mensal)
+        if (discountFromCoupon === 0 && interval === 1) {
             const isTrial = tenant.plan === 'trial' || tenant.subscription_status === 'trialing' || !tenant.stripe_subscription_id;
-
             const tenantCreated = new Date(tenant.created_at || new Date());
             const now = new Date();
             const diffDays = Math.ceil(Math.abs(now.getTime() - tenantCreated.getTime()) / (1000 * 60 * 60 * 24));
             const isNewAccount = diffDays <= 5;
 
             if (isTrial && !isAddon && isNewAccount) {
-                console.log(`[SAAS BOLETO] Aplicando desconto de boas-vindas (10%) para Trial (${diffDays} dias de cadastro)`);
-                discount = (amount * 10) / 100; // 10%
+                discountFromCoupon = (finalAmount * 10) / 100; // 10%
                 couponApplied = 'TRIAL_WELCOME_10';
             }
         }
 
-        amount = Math.max(0, amount - discount);
+        finalAmount = Math.max(0, finalAmount - discountFromCoupon);
+        const amount = finalAmount;
         const currentDate = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + 3);
@@ -239,7 +253,8 @@ export async function POST(req: Request) {
                     linha_digitavel: linhaDigitavel,
                     method: 'boleto_inter',
                     [isAddon ? 'addon' : 'plan']: addonSlug || planSlug,
-                    is_addon: isAddon
+                    is_addon: isAddon,
+                    interval: interval
                 }
             });
 

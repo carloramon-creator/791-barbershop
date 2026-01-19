@@ -16,7 +16,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { plan: planSlug, addon: addonSlug, coupon } = body as { plan?: string; addon?: string; coupon?: string };
+        const { plan: planSlug, addon: addonSlug, coupon, interval = 1 } = body as { plan?: string; addon?: string; coupon?: string; interval?: number };
 
         if (!planSlug && !addonSlug) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Plano ou Add-on não especificado' }, { status: 400 }));
@@ -39,12 +39,13 @@ export async function POST(req: Request) {
             typescript: true,
         });
 
-        // 1. Buscar Preço Dinâmico
+        // 1. Buscar Preço Dinâmico e Descontos
         let itemName = '';
         let itemPrice = 0;
         let isAddon = false;
         let itemMetadata: any = {};
         let itemSlug = '';
+        let discountPercent = 0;
 
         if (addonSlug) {
             const { data: addon } = await supabaseAdmin
@@ -60,6 +61,7 @@ export async function POST(req: Request) {
             isAddon = true;
             itemMetadata = { addon: addonSlug };
             itemSlug = addonSlug;
+            // Add-ons não tem desconto por período conforme solicitado
         } else {
             const { data: plan } = await supabaseAdmin
                 .from('system_plans')
@@ -73,32 +75,40 @@ export async function POST(req: Request) {
             itemPrice = Number(plan.price);
             itemMetadata = { plan: planSlug };
             itemSlug = planSlug || '';
-        }
 
-        // --- LÓGICA DE PRO-RATA (APENAS PARA INTER OU ADICIONAIS) ---
-        // Se for INTER, calculamos o valor proporcional se já tiver um plano ativo
-        // Se for CARD, o Stripe lida com isso se atualizarmos a assinatura.
-
-        let finalAmount = itemPrice;
-        const isInter = req.url.includes('inter-pix') || req.url.includes('inter-boleto'); // Nota: esse arquivo é o checkout geral, mas se for chamado por outros, o body pode indicar. 
-        // No fluxo atual, o PlanPage chama /api/checkout para CARD e outros endpoints para INTER.
-        // Mas vamos deixar a lógica de cálculo aqui caso queiramos centralizar.
-
-        // Exemplo de Pro-rata simples:
-        const now = new Date();
-        const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        const remainingDays = lastDayOfMonth - now.getDate() + 1;
-
-        // Se for um Add-on sendo adicionado a um plano existente no meio do mês
-        if (isAddon && tenant.plan && tenant.plan !== 'trial') {
-            // Se for Inter, cobramos apenas os dias restantes
-            if (isInter) {
-                finalAmount = (itemPrice / lastDayOfMonth) * remainingDays;
-                if (finalAmount < 1) finalAmount = 1; // Mínimo R$ 1,00
+            // Definir desconto baseado no intervalo
+            if (interval === 6) {
+                discountPercent = Number(plan.discount_semiannual || 10);
+            } else if (interval === 12) {
+                discountPercent = Number(plan.discount_annual || 20);
             }
         }
 
-        // 2. Customer Stripe (Auto-Heal if missing in Stripe but exists in DB)
+        // Calcular valor total baseado no período
+        // Unit amount no Stripe (recorrente) é o valor MENSAL.
+        // Se for modo Payment (parcelado), é o valor TOTAL.
+        let totalAmount = itemPrice * interval;
+        if (discountPercent > 0) {
+            totalAmount = totalAmount * (1 - (discountPercent / 100));
+        }
+
+        // --- LÓGICA DE PRO-RATA (APENAS PARA INTER OU ADICIONAIS MENSAL) ---
+        // Se for mensal, mantemos a lógica de pro-rata atual
+        let finalAmount = totalAmount;
+        const isInter = req.url.includes('inter-pix') || req.url.includes('inter-boleto');
+
+        if (interval === 1 && isAddon && tenant.plan && tenant.plan !== 'trial') {
+            const now = new Date();
+            const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            const remainingDays = lastDayOfMonth - now.getDate() + 1;
+
+            if (isInter) {
+                finalAmount = (itemPrice / lastDayOfMonth) * remainingDays;
+                if (finalAmount < 1) finalAmount = 1;
+            }
+        }
+
+        // 2. Customer Stripe
         let customerId = tenant.stripe_customer_id;
 
         if (customerId) {
@@ -108,12 +118,10 @@ export async function POST(req: Request) {
                     customerId = null;
                 }
             } catch (err: any) {
-                // Se o erro for 404 (Not Found), limpamos o ID para criar um novo
                 if (err.status === 404 || err.code === 'resource_missing') {
-                    console.warn(`[CHECKOUT] Customer ${customerId} não existe no Stripe. Limpando localmente...`);
                     customerId = null;
                 } else {
-                    throw err; // Outros erros (conexão, etc) devem quebrar o fluxo
+                    throw err;
                 }
             }
         }
@@ -128,158 +136,29 @@ export async function POST(req: Request) {
             await supabaseAdmin.from('tenants').update({ stripe_customer_id: customerId }).eq('id', tenant.id);
         }
 
-        // 2.5 Verificar Assinatura Ativa para Upgrade/Add-on (CARD ONLY)
-        const { data: subscriptionData } = await supabaseAdmin
-            .from('tenants')
-            .select('stripe_subscription_id')
-            .eq('id', tenant.id)
-            .single();
-
-        const activeSubId = subscriptionData?.stripe_subscription_id;
-
-        if (activeSubId && !isInter) {
-            // Se já tem assinatura, vamos criar um item nela em vez de nova sessão?
-            // Para simplicidade de UX (página de sucesso, cartão etc), vamos usar a Checkout Session
-            // mas configurar para "subscription_update" se o Stripe suportar fácil, 
-            // ou apenas avisar o Stripe via metadata para o Webhook mesclar.
-            // Ramon disse: "Soma para a próxima fatura". 
-        }
-
-        // 3. Criar Desconto Proporcional (Coupon) se necessário
+        // 3. Processar Coupon (Lógica existente simplificada)
         let stripeCouponId: string | undefined = undefined;
+        const discounts: any[] = [];
 
-        if (finalAmount < itemPrice) {
+        if (coupon) {
             try {
-                const discountAmount = Math.round((itemPrice - finalAmount) * 100);
-                if (discountAmount > 0) {
-                    const coupon = await stripeClient.coupons.create({
-                        amount_off: discountAmount,
-                        currency: 'brl',
-                        duration: 'once',
-                        name: `Pro-rata ${itemName}`,
-                    });
-                    stripeCouponId = coupon.id;
+                const promoCodes = await stripeClient.promotionCodes.list({ code: coupon, active: true, limit: 1 });
+                if (promoCodes.data.length > 0) {
+                    discounts.push({ promotion_code: promoCodes.data[0].id });
+                } else {
+                    const { data: dbCoupon } = await supabaseAdmin.from('system_coupons').select('*').eq('code', coupon.toUpperCase()).single();
+                    if (dbCoupon && dbCoupon.is_active) {
+                        discounts.push({ coupon: dbCoupon.code });
+                    }
                 }
-            } catch (err) {
-                console.error('Erro ao criar cupom de pro-rata:', err);
+            } catch (e) {
+                console.warn(`Cupom inválido: ${coupon}`);
             }
         }
 
         // 4. Criar Checkout Session Dinâmica
         const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || '';
-
-        const discounts: any[] = [];
-        if (stripeCouponId) {
-            discounts.push({ coupon: stripeCouponId });
-        }
-        if (coupon) {
-            try {
-                // Tentar encontrar como Promotion Code (código amigável do usuário, ex: 'NATAL10')
-                const promoCodes = await stripeClient.promotionCodes.list({
-                    code: coupon,
-                    active: true,
-                    limit: 1,
-                });
-
-                if (promoCodes.data.length > 0) {
-                    // É um Promotion Code válido
-                    discounts.push({ promotion_code: promoCodes.data[0].id });
-                } else {
-                    // Tenta validar se é um Coupon ID direto válido
-                    try {
-                        const directCoupon = await stripeClient.coupons.retrieve(coupon);
-                        if (directCoupon && directCoupon.valid) {
-                            discounts.push({ coupon: directCoupon.id });
-                        }
-                    } catch (e) {
-                        // Não é promoção nem cupom válido => Ignora (Soft Fail)
-                        console.warn(`Cupom inválido fornecido: ${coupon}`);
-                    }
-                }
-            } catch (error) {
-                console.error('Erro ao validar cupom no Stripe:', error);
-            }
-
-            // Fallback: Verificar DB local e tentar sincronizar (Auto-Heal)
-            if (discounts.length === 0) {
-                try {
-                    const { data: dbCoupon } = await supabaseAdmin
-                        .from('system_coupons')
-                        .select('*')
-                        .eq('code', coupon.toUpperCase())
-                        .single();
-
-                    if (dbCoupon && dbCoupon.is_active) {
-                        console.log(`[CHECKOUT] Cupom encontrado no DB mas não no Stripe. Tentando sincronizar: ${coupon}`);
-
-                        try {
-                            const redeemBy = dbCoupon.expires_at ? Math.floor(new Date(dbCoupon.expires_at).getTime() / 1000) : undefined;
-
-                            // Criação on-the-fly no Stripe
-                            await stripeClient.coupons.create({
-                                id: dbCoupon.code,
-                                percent_off: dbCoupon.discount_percent || undefined,
-                                duration: 'once',
-                                name: `Cupom 791: ${dbCoupon.code}`,
-                                redeem_by: redeemBy
-                            });
-                            discounts.push({ coupon: dbCoupon.code });
-                        } catch (stripeErr: any) {
-                            if (stripeErr.message && stripeErr.message.includes('already exists')) {
-                                // Se já existe, força o uso do ID
-                                discounts.push({ coupon: dbCoupon.code });
-                            } else {
-                                console.warn('[CHECKOUT] Erro ao auto-sincronizar cupom:', stripeErr);
-                            }
-                        }
-                    }
-                } catch (dbErr) {
-                    console.warn('[CHECKOUT] Erro no fallback de cupom DB:', dbErr);
-                }
-            }
-        } else {
-            // Se não enviou cupom, verifica se deve aplicar desconto automático de Trial
-            const isTrial = tenant.plan === 'trial' || tenant.subscription_status === 'trialing' || !tenant.stripe_subscription_id;
-
-            // Lógica:
-            // 1. Se o plano explicitamente é 'trial'.
-            // 2. Se o status no stripe é 'trialing'.
-            // 3. Se NÃO TEM stripe_subscription_id (primeira assinatura).
-            // 4. "Esse desconto é para novas barbearias que assinarem o saas antes de 5 dias após o cadastro".
-
-            const tenantCreated = new Date(tenant.created_at || new Date());
-            const now = new Date();
-            const diffDays = Math.ceil(Math.abs(now.getTime() - tenantCreated.getTime()) / (1000 * 60 * 60 * 24));
-            const isNewAccount = diffDays <= 5;
-
-            if (isTrial && !isAddon && isNewAccount) {
-                try {
-                    // Nome fixo para o cupom de boas-vindas
-                    const welcomeCouponCode = 'TRIAL_WELCOME_10';
-
-                    // Tenta criar (idempotente se usarmos o ID) ou recuperar
-                    try {
-                        await stripeClient.coupons.create({
-                            id: welcomeCouponCode,
-                            percent_off: 10,
-                            duration: 'once',
-                            name: 'Desconto de Boas-vindas (10%)',
-                        });
-                    } catch (e: any) {
-                        // Se já existe, tudo bem
-                        if (!e.message?.includes('already exists')) {
-                            console.warn('Erro ao criar cupom de welcome:', e);
-                        }
-                    }
-
-                    discounts.push({ coupon: welcomeCouponCode });
-                    console.log(`[CHECKOUT] Aplicando desconto de boas-vindas para ${tenant.name}`);
-
-                } catch (err) {
-                    console.error('[CHECKOUT] Erro ao configurar desconto automático:', err);
-                }
-            }
-        }
+        const isSubscription = interval === 1;
 
         const sessionConfig: Stripe.Checkout.SessionCreateParams = {
             customer: customerId,
@@ -290,29 +169,51 @@ export async function POST(req: Request) {
                     price_data: {
                         currency: 'brl',
                         product_data: {
-                            name: `791 Barber - ${itemName}`,
-                            description: isAddon ? 'Habilitação de Módulo Extra' : 'Assinatura Mensal da Plataforma',
+                            name: `791 Barber - ${itemName} (${interval} ${interval === 1 ? 'mês' : 'meses'})`,
+                            description: isAddon ? 'Habilitação de Módulo Extra' : `Assinatura ${interval === 12 ? 'Anual' : interval === 6 ? 'Semestral' : 'Mensal'}`,
                         },
-                        unit_amount: Math.round(itemPrice * 100), // Preço Cheio para recorrência
-                        recurring: { interval: 'month' },
+                        unit_amount: Math.round(isSubscription ? itemPrice * 100 : finalAmount * 100),
+                        ...(isSubscription && { recurring: { interval: 'month' } }),
                     },
                     quantity: 1,
                 },
             ],
-            mode: 'subscription',
+            mode: isSubscription ? 'subscription' : 'payment',
             success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${origin}/checkout/cancel`,
             metadata: {
                 tenant_id: tenant.id,
                 [isAddon ? 'addon' : 'plan']: itemSlug,
-                is_addon: isAddon ? 'true' : 'false'
+                is_addon: isAddon ? 'true' : 'false',
+                interval: String(interval),
+                total_amount: String(finalAmount)
             },
-            subscription_data: {
-                metadata: {
-                    tenant_id: tenant.id,
-                    [isAddon ? 'addon' : 'plan']: itemSlug,
+            ...(isSubscription && {
+                subscription_data: {
+                    metadata: {
+                        tenant_id: tenant.id,
+                        [isAddon ? 'addon' : 'plan']: itemSlug,
+                        interval: '1'
+                    }
                 }
-            }
+            }),
+            // Habilitar parcelamento para pagamentos (não recorrentes)
+            ...(!isSubscription && {
+                payment_intent_data: {
+                    metadata: {
+                        tenant_id: tenant.id,
+                        [isAddon ? 'addon' : 'plan']: itemSlug,
+                        interval: String(interval)
+                    }
+                },
+                payment_method_options: {
+                    card: {
+                        installments: {
+                            enabled: true,
+                        }
+                    }
+                }
+            })
         };
 
         if (discounts.length > 0) {
