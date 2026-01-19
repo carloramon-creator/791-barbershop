@@ -37,7 +37,6 @@ export default function SignupPage() {
     const [products, setProducts] = useState<any[]>([]);
 
     const [checkingEmail, setCheckingEmail] = useState(false);
-    const [emailSent, setEmailSent] = useState(false);
 
     // Load default data on mount or type change
     useEffect(() => {
@@ -171,19 +170,21 @@ export default function SignupPage() {
                 throw new Error(data.error || 'Erro ao criar conta');
             }
 
-            // 2. Trigger Email Confirmation
-            await supabaseClient.auth.signOut(); // Ensure clean state
-            await supabaseClient.auth.resend({
-                type: 'signup',
+            // 2. Auto-login on client side
+            const { error: loginError } = await supabaseClient.auth.signInWithPassword({
                 email: formData.email,
-                options: {
-                    emailRedirectTo: `${window.location.origin}/dashboard`
-                }
+                password: formData.password,
             });
 
-            // 3. Show Verification Screen
-            setEmailSent(true);
-            setLoading(false);
+            if (loginError) {
+                // If login fails but account created, redirect to login page with message
+                console.error("Auto-login failed:", loginError);
+                router.push('/login?signup_success=true');
+                return;
+            }
+
+            // 3. Redirect to dashboard
+            router.push('/dashboard');
         } catch (err: any) {
             setError(err.message);
             setLoading(false);
@@ -255,7 +256,7 @@ export default function SignupPage() {
                         />
                     )}
 
-                    {step === 5 && !emailSent && (
+                    {step === 5 && (
                         <Step5
                             formData={formData}
                             services={services}
@@ -264,10 +265,6 @@ export default function SignupPage() {
                             onSubmit={handleSubmit}
                             onBack={handleBack}
                         />
-                    )}
-
-                    {step === 5 && emailSent && (
-                        <Step6EmailVerification />
                     )}
                 </div>
 
@@ -726,40 +723,6 @@ function Step5({ formData, services, products, loading, onSubmit, onBack }: any)
                         </>
                     )}
                 </Button>
-            </div>
-        </div>
-    );
-}
-
-function Step6EmailVerification() {
-    return (
-        <div className="space-y-6 text-center animate-in fade-in zoom-in-95 duration-500">
-            <div className="text-6xl mb-4">📧</div>
-
-            <div>
-                <h3 className="text-2xl font-black text-slate-100 mb-2">
-                    Verifique seu email
-                </h3>
-                <p className="text-slate-400">
-                    Enviamos um link de confirmação para o seu email.
-                </p>
-                <p className="text-slate-500 text-sm mt-2">
-                    Clique no link para ativar sua conta e acessar o sistema.
-                </p>
-            </div>
-
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-6 space-y-4">
-                <p className="text-sm text-blue-300">
-                    <strong>Não recebeu?</strong> Verifique sua caixa de spam ou lixo eletrônico.
-                </p>
-            </div>
-
-            <div className="pt-6">
-                <Link href="/login">
-                    <Button className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold border border-slate-700">
-                        Voltar para Login
-                    </Button>
-                </Link>
             </div>
         </div>
     );

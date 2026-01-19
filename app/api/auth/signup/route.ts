@@ -27,7 +27,7 @@ export async function POST(req: Request) {
         const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email: email,
             password: password,
-            email_confirm: false, // Exigir confirmação de email
+            email_confirm: false,
             user_metadata: { name }
         });
 
@@ -39,6 +39,20 @@ export async function POST(req: Request) {
             );
             return addCorsHeaders(req, response);
         }
+
+        // Enviar email de confirmação
+        /* 
+           Nota: A função admin.createUser não envia email automaticamente.
+           Vamos disparar o email usando resend do client ou do próprio admin se disponível.
+           Como estamos no server, usamos o admin para garantir, mas a função resend funciona para usuários existentes não confirmados.
+        */
+        await supabaseAdmin.auth.resend({
+            type: 'signup',
+            email: email,
+            options: {
+                emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
+            }
+        });
 
         const userId = authUser.user.id;
         console.log('[API SIGNUP] Usuário criado:', userId);
