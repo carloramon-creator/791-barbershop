@@ -41,16 +41,15 @@ export async function POST(req: Request) {
         }
 
         // Enviar email de confirmação
-        /* 
-           Nota: A função admin.createUser não envia email automaticamente.
-           Vamos disparar o email usando resend do client ou do próprio admin se disponível.
-           Como estamos no server, usamos o admin para garantir, mas a função resend funciona para usuários existentes não confirmados.
-        */
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://791barber.com';
+        const redirectUrl = `${baseUrl}/auth/callback`;
+        console.log('[API SIGNUP] Redirect URL:', redirectUrl);
+
         await supabaseAdmin.auth.resend({
             type: 'signup',
             email: email,
             options: {
-                emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
+                emailRedirectTo: redirectUrl
             }
         });
 
@@ -194,33 +193,36 @@ export async function POST(req: Request) {
             console.log('[API SIGNUP] Categories criadas:', categories?.length);
         }
 
-        // Re-fetch categories if not returned or to be sure
-        const { data: finalCategories } = await supabaseAdmin
-            .from('product_categories')
-            .select('*')
-            .eq('tenant_id', tenant.id);
-
         // 8. Insert products (if any)
-        if (products && products.length > 0 && finalCategories && finalCategories.length > 0) {
-            const productsWithCategories = products.map((p: any) => {
-                const category = finalCategories?.find((c: any) => c.name === p.category);
-                return {
-                    tenant_id: tenant.id,
-                    name: p.name,
-                    price: parseFloat(p.price) || 0,
-                    category_id: category?.id || null,
-                };
-            });
+        if (products && products.length > 0) {
+            // Re-fetch categories to ensure we have the IDs even if the insert return was flaky
+            const { data: finalCategories } = await supabaseAdmin
+                .from('product_categories')
+                .select('id, name')
+                .eq('tenant_id', tenant.id);
 
-            const { error: productsError } = await supabaseAdmin
-                .from('products')
-                .insert(productsWithCategories);
+            if (finalCategories && finalCategories.length > 0) {
+                const productsWithCategories = products.map((p: any) => {
+                    const category = finalCategories.find((c: any) => c.name === p.category);
+                    return {
+                        tenant_id: tenant.id,
+                        name: p.name,
+                        price: parseFloat(p.price) || 0,
+                        category_id: category?.id || null,
+                    };
+                });
 
-            if (productsError) {
-                console.error('[API SIGNUP] Products error:', productsError);
-                // Continue anyway
+                const { error: productsError } = await supabaseAdmin
+                    .from('products')
+                    .insert(productsWithCategories);
+
+                if (productsError) {
+                    console.error('[API SIGNUP] Products error:', productsError);
+                } else {
+                    console.log('[API SIGNUP] Products criados:', products.length);
+                }
             } else {
-                console.log('[API SIGNUP] Products criados:', products.length);
+                console.warn('[API SIGNUP] No categories found for product mapping');
             }
         }
 

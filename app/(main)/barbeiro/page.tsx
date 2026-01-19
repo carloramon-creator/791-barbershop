@@ -88,14 +88,22 @@ export default function BarberPage() {
                     setCurrentBarber(updated);
                     setQueue(updated.queue);
                 }
-            } else if (allQueues.length > 0) {
-                if (authLoading && !user) return;
+            }
 
-                const myQueue = allQueues.find((b: BarberQueueStatus) => b.user_id === user?.id) || allQueues[0];
+            // Sempre tenta identificar "meu barbeiro" para o toggle, mesmo se idOverride falhou ou se mudamos visão
+            if (user?.id) {
+                const myQueue = allQueues.find((b: BarberQueueStatus) => b.user_id === user.id);
                 if (myQueue) {
-                    setSelectedBarberId(myQueue.barber_id);
-                    setCurrentBarber(myQueue);
-                    setQueue(myQueue.queue);
+                    // Se não tiver um barbeiro selecionado explicitamente, usamos o meu
+                    if (!selectedBarberId && !idOverride && !isUnifiedView) {
+                        setSelectedBarberId(myQueue.barber_id);
+                        setCurrentBarber(myQueue);
+                        setQueue(myQueue.queue);
+                    } else if (selectedBarberId === myQueue.barber_id) {
+                        // Se meu barbeiro é o selecionado, atualiza
+                        setCurrentBarber(myQueue);
+                        setQueue(myQueue.queue);
+                    }
                 }
             }
         } catch (error) {

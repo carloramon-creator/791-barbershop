@@ -6,7 +6,7 @@ dotenv.config({ path: '.env.local' });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const frontendUrl = process.env.NEXT_PUBLIC_OWNER_URL || 'https://frontend-owner-production.up.railway.app';
+const frontendUrl = process.env.NEXT_PUBLIC_OWNER_URL || 'https://791barber.com';
 
 if (!supabaseUrl || !supabaseServiceKey) process.exit(1);
 

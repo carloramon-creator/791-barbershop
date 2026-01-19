@@ -59,7 +59,7 @@ export async function GET(req: Request) {
             ? process.env.NEXT_PUBLIC_APP_URL
             : host
                 ? `${protocol}://${host}`
-                : 'https://791-barbershop-production.up.railway.app';
+                : 'https://791barber.com';
 
         const webhookUrl = `${baseUrl}/api/webhooks/inter`;
 

@@ -440,7 +440,7 @@ export default function BarbershopSettingsPage() {
                                     className="bg-slate-950 border-slate-800 text-blue-400 font-mono h-11"
                                 />
                                 <p className="text-[10px] text-slate-500">
-                                    Seu link será: 791barber.com/{slug || 'nome-da-barbearia'}
+                                    Seu link será: {process.env.NEXT_PUBLIC_CLIENT_URL?.replace('https://', '') || 'app.791barber.com'}/{slug || 'nome-da-barbearia'}
                                 </p>
                                 {!slug && isEditing && (
                                     <p className="text-[10px] text-amber-500 font-medium">
@@ -551,7 +551,7 @@ export default function BarbershopSettingsPage() {
                                             <div className="bg-white p-4 rounded-2xl shadow-2xl">
                                                 <QRCodeSVG
                                                     id="qr-code-to-print"
-                                                    value={`https://791barber.com/${slug}`}
+                                                    value={`${process.env.NEXT_PUBLIC_CLIENT_URL || 'https://app.791barber.com'}/${slug}`}
                                                     size={160}
                                                     includeMargin={true}
                                                     level="H"
@@ -570,7 +570,8 @@ export default function BarbershopSettingsPage() {
                                                         className="border-slate-700 hover:bg-slate-800 gap-2"
                                                         onClick={() => {
                                                             if (!slug) return alert('Por favor, defina um "Slug URL" acima antes de copiar.');
-                                                            const url = `https://791barber.com/${slug}`;
+                                                            const baseUrl = process.env.NEXT_PUBLIC_CLIENT_URL || 'https://app.791barber.com';
+                                                            const url = `${baseUrl}/${slug}`;
                                                             navigator.clipboard.writeText(url);
                                                             alert('Link copiado!');
                                                         }}
@@ -583,7 +584,8 @@ export default function BarbershopSettingsPage() {
                                                         onClick={() => {
                                                             const printWindow = window.open('', '_blank');
                                                             if (!printWindow) return;
-                                                            const url = `https://791barber.com/${slug}`;
+                                                            const baseUrl = process.env.NEXT_PUBLIC_CLIENT_URL || 'https://app.791barber.com';
+                                                            const url = `${baseUrl}/${slug}`;
                                                             printWindow.document.write(`
                                                                 <html>
                                                                     <head>

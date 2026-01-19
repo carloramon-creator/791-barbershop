@@ -2,12 +2,11 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant, checkRolePermission } from '@/lib/server-utils';
 
-const envUrl = 'https://791-barbershop-production.up.railway.app';
-
 // Função auxiliar para garantir o URL correto de redirecionamento
 const getRedirectUrl = () => {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://791barber.com';
   // Redirecionar para ativar-conta para o usuário definir sua senha
-  return `${envUrl}/ativar-conta`;
+  return `${baseUrl}/ativar-conta`;
 };
 
 export async function GET(req: Request) {
@@ -162,8 +161,8 @@ export async function POST(req: Request) {
           const token = urlObj.searchParams.get('token');
           const type = urlObj.searchParams.get('type') || 'invite';
 
-          // FORÇANDO A URL CORRETA PARA IGNORAR VARIÁVEL DE AMBIENTE DO RAILWAY
-          const baseUrl = 'https://791-barbershop-production.up.railway.app';
+          // USAR VARIÁVEL DE AMBIENTE OU FALLBACK SEGURO
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://791barber.com';
           // Transformar em link da nossa aplicação
           inviteLink = `${baseUrl}/ativar-conta?token=${token}&type=${type}`;
         } catch (e) {
