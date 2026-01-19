@@ -205,12 +205,12 @@ export async function POST(req: Request) {
                         tenant_id: tenant.id,
                         [isAddon ? 'addon' : 'plan']: itemSlug,
                         interval: String(interval)
-                    },
-                    payment_method_options: {
-                        card: {
-                            installments: {
-                                enabled: true,
-                            }
+                    }
+                },
+                payment_method_options: {
+                    card: {
+                        installments: {
+                            enabled: true,
                         }
                     }
                 }
