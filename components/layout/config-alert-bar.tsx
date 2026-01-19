@@ -1,88 +1,57 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useAuth } from '@/lib/auth-provider';
-import { Api } from '@/lib/api';
-import { AlertTriangle, ChevronRight, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AlertCircle, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
+import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 
-export function ConfigAlertBar() {
-    const { tenant, loading: authLoading } = useAuth();
-    const [missingItems, setMissingItems] = useState<string[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [visible, setVisible] = useState(true);
+export function ExpirationAlert() {
+    const { tenant } = useAuth();
+    const [isVisible, setIsVisible] = useState(false);
+    const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
 
     useEffect(() => {
-        const checkConfig = async () => {
-            if (!tenant || authLoading) return;
+        if (tenant?.subscription_current_period_end) {
+            const end = new Date(tenant.subscription_current_period_end);
+            const now = new Date();
+            const diffTime = end.getTime() - now.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-            const items: string[] = [];
+            setDaysRemaining(diffDays);
 
-            // 1. Check basic tenant fields
-            if (!tenant.logo_url) items.push('Logo da barbearia');
-            if (!tenant.street || !tenant.city) items.push('Endereço completo');
-            if (!tenant.phone) items.push('Telefone / WhatsApp');
-
-            // 2. Check Financial Data (Pix or Bank)
-            const hasPix = !!tenant.pix_key;
-            const hasBank = !!(tenant.bank_agency && tenant.bank_account);
-            if (!hasPix && !hasBank) items.push('Dados Bancários ou Pix');
-
-            // 3. Fetch services and products to check counts
-            try {
-                const [services, products] = await Promise.all([
-                    Api.getServices(),
-                    Api.getProducts()
-                ]);
-
-                if (services.length === 0) items.push('Cadastrar serviços');
-                if (products.length === 0) items.push('Cadastrar produtos');
-
-            } catch (error) {
-                console.error("Failed to check configuration counts", error);
+            // Mostrar alert se faltar 7 dias ou menos
+            if (diffDays <= 7) {
+                setIsVisible(true);
             }
+        }
+    }, [tenant]);
 
-            setMissingItems(items);
-            setLoading(false);
-        };
+    if (!isVisible || daysRemaining === null) return null;
 
-        checkConfig();
-    }, [tenant, authLoading]);
-
-    if (!visible || loading || missingItems.length === 0) return null;
+    const isExpired = daysRemaining <= 0;
 
     return (
-        <div className="bg-amber-500/10 border-b border-amber-500/20 text-amber-500 px-4 py-3 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-[300px]">
-                <div className="bg-amber-500/20 p-2 rounded-full">
-                    <AlertTriangle className="h-4 w-4" />
-                </div>
-                <div>
-                    <p className="text-sm font-semibold">Configuração Incompleta</p>
-                    <p className="text-xs opacity-80">
-                        {missingItems.length === 1
-                            ? `Falta preencher: ${missingItems[0]}`
-                            : `Faltam ${missingItems.length} itens: ${missingItems.slice(0, 3).join(', ')}${missingItems.length > 3 ? '...' : ''}`
-                        }
-                    </p>
-                </div>
+        <div className={cn(
+            "w-full py-2 px-4 flex items-center justify-center gap-4 transition-all animate-in slide-in-from-top duration-500",
+            isExpired ? "bg-red-600 text-white" : "bg-amber-500 text-slate-950"
+        )}>
+            <div className="flex items-center gap-2 text-xs md:text-sm font-black uppercase tracking-tight">
+                <AlertCircle size={16} className={cn(isExpired ? "text-white" : "text-slate-900")} />
+                {isExpired ? (
+                    <span>Sua assinatura expirou! Regularize agora para evitar o bloqueio total do sistema.</span>
+                ) : (
+                    <span>Atenção: Seu plano vence em {daysRemaining} {daysRemaining === 1 ? 'dia' : 'dias'}. Garanta a continuidade do seu acesso!</span>
+                )}
             </div>
-
-            <div className="flex items-center gap-2">
-                <Link href="/configuracoes/barbearia">
-                    <Button variant="ghost" size="sm" className="text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 text-xs font-bold gap-1">
-                        Completar Perfil
-                        <ChevronRight className="h-3 w-3" />
-                    </Button>
-                </Link>
-                <button
-                    onClick={() => setVisible(false)}
-                    className="p-1 hover:bg-amber-500/10 rounded-md transition-colors"
-                >
-                    <X className="h-4 w-4" />
-                </button>
-            </div>
+            <Link href="/configuracoes/plano">
+                <div className={cn(
+                    "flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg",
+                    isExpired ? "bg-white text-red-600 shadow-red-900/20" : "bg-slate-950 text-amber-500 shadow-amber-900/20"
+                )}>
+                    Renovar Agora <ArrowRight size={12} />
+                </div>
+            </Link>
         </div>
     );
 }

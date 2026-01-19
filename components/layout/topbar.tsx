@@ -72,16 +72,25 @@ export function Topbar() {
                                         </Link>
                                     );
                                 }
-                                else {
-                                    return (
+                                const planName = tenant.plan === 'basic' ? 'Básico' : tenant.plan === 'complete' ? 'Completo' : tenant.plan === 'premium' ? 'Premium' : tenant.plan;
+                                const expirationDate = tenant.subscription_current_period_end ? new Date(tenant.subscription_current_period_end).toLocaleDateString('pt-BR') : null;
+
+                                return (
+                                    <div className="flex items-center gap-3">
                                         <div className="flex items-center gap-2 text-blue-400">
                                             <CreditCard size={14} />
-                                            <span>
-                                                Plano {tenant.plan === 'basic' ? 'Básico' : tenant.plan === 'complete' ? 'Completo' : tenant.plan === 'premium' ? 'Premium' : tenant.plan}
+                                            <span className="font-bold">
+                                                Plano {planName}
                                             </span>
                                         </div>
-                                    );
-                                }
+                                        {expirationDate && (
+                                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-[10px] text-slate-400 font-bold uppercase tracking-tight">
+                                                <Clock size={10} />
+                                                Vence em: {expirationDate}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
                             })()}
                         </div>
                     )}

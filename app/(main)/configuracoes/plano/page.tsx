@@ -452,7 +452,23 @@ export default function PlanPage() {
                                                     {dynamicPlans.find(p => p.slug === currentPlan)?.name || currentPlan}
                                                 </h3>
                                                 <p className="text-xl font-black text-blue-500">
-                                                    R$ {(dynamicPlans.find(p => p.slug === currentPlan)?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
+                                                    {tenantObject?.subscription_current_period_end ? (
+                                                        <>
+                                                            Vence em: {new Date(tenantObject.subscription_current_period_end).toLocaleDateString('pt-BR')}
+                                                            {(() => {
+                                                                const end = new Date(tenantObject.subscription_current_period_end);
+                                                                const now = new Date();
+                                                                const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                                                                return (
+                                                                    <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1">
+                                                                        {diff > 0 ? `Faltam ${diff} dias` : 'Plano Expirado'}
+                                                                    </span>
+                                                                );
+                                                            })()}
+                                                        </>
+                                                    ) : (
+                                                        <>R$ {(dynamicPlans.find(p => p.slug === currentPlan)?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês</>
+                                                    )}
                                                 </p>
                                             </div>
                                         </div>
