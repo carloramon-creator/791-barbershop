@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 import { InterAPIV3 } from '@/lib/inter-api-v3';
 import { supabaseAdmin } from '@/lib/supabase-server';
@@ -48,9 +49,18 @@ export async function GET(req: Request) {
             accountNumber: dbConfig?.account_number || dbConfig?.accountNumber
         });
 
-        // IMPORTANT: Use production URL to ensure Inter calls the right place
-        // Temporariamente forçando o domínio do Railway até a migração DNS ser concluída
-        const baseUrl = 'https://791-barbershop-production.up.railway.app';
+        // 1. Detect dynamic base URL
+        const headerList = await headers();
+        const host = headerList.get('host') || '';
+        const protocol = host.includes('localhost') ? 'http' : 'https';
+
+        // Prioritize NEXT_PUBLIC_APP_URL, then current host, then fallback to production
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+            ? process.env.NEXT_PUBLIC_APP_URL
+            : host
+                ? `${protocol}://${host}`
+                : 'https://791-barbershop-production.up.railway.app';
+
         const webhookUrl = `${baseUrl}/api/webhooks/inter`;
 
         console.log('[SETUP] Registering Webhook:', webhookUrl);
