@@ -547,7 +547,10 @@ export default function PlanPage() {
                                 ].map((period) => (
                                     <button
                                         key={period.id}
-                                        onClick={() => setSelectedInterval(period.id)}
+                                        onClick={() => {
+                                            setSelectedInterval(period.id);
+                                            setInstallments(1); // Resetar parcelas ao mudar ciclo
+                                        }}
                                         className={cn(
                                             "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative overflow-hidden",
                                             selectedInterval === period.id
@@ -758,8 +761,8 @@ export default function PlanPage() {
                                         </button>
                                     </div>
 
-                                    {/* SELETOR DE PARCELAS (Só aparece para cartão e se valor > 0) */}
-                                    {paymentMethod === 'card' && (
+                                    {/* SELETOR DE PARCELAS (Só aparece para cartão e se o intervalo permitir > 1 mês) */}
+                                    {paymentMethod === 'card' && !selectedAddon && selectedInterval > 1 && (
                                         <div className="space-y-2 pt-2 animate-in fade-in slide-in-from-top-2">
                                             <Label className="text-xs text-slate-500 uppercase tracking-wider">Parcelamento</Label>
                                             <select
@@ -767,18 +770,16 @@ export default function PlanPage() {
                                                 onChange={(e) => setInstallments(Number(e.target.value))}
                                                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-100 focus:border-amber-500 outline-none transition-all"
                                             >
-                                                {Array.from({ length: 12 }, (_, i) => i + 1).map((i) => {
-                                                    // Se for Anual/Semestral, permitir até o nº de meses do plano? Ou sempre 12x?
-                                                    // O Asaas permite 12x. Vamos limitar ao intervalo ou 12x?
-                                                    // O ideal é permitir parcelar o plano anual em 12x.
-                                                    // Só validar se a parcela mínima (> R$ 5) permite.
+                                                {Array.from({ length: selectedInterval }, (_, i) => i + 1).map((i) => {
+                                                    // Limita o parcelamento ao número de meses do plano (ex: Semestral = max 6x, Anual = max 12x)
                                                     return (
                                                         <option key={i} value={i}>
                                                             {i}x de R$ {
                                                                 // Simulação básica da parcela
                                                                 (() => {
                                                                     const plan = dynamicPlans.find(p => p.slug === selectedPlan);
-                                                                    const basePrice = selectedAddon ? selectedAddon.price : (plan?.price || 0);
+                                                                    const basePrice = plan?.price || 0;
+                                                                    // Recalcula o total com desconto
                                                                     const discount = selectedInterval === 6 ? 10 : selectedInterval === 12 ? 20 : 0;
                                                                     const total = (basePrice * selectedInterval) * (1 - (discount / 100));
                                                                     return (total / i).toFixed(2).replace('.', ',');
