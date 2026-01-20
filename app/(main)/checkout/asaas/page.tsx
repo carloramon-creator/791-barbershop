@@ -66,17 +66,17 @@ export default function AsaasCheckoutPage() {
             </header>
 
             {/* Iframe Container */}
-            <main className="flex-1 flex flex-col items-center justify-center p-2 md:p-4 overflow-hidden">
+            <main className="flex-1 w-full bg-slate-900 flex flex-col items-center justify-center overflow-hidden">
                 {loading && (
-                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-slate-900/50 backdrop-blur-sm">
+                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-slate-900/80 backdrop-blur-sm">
                         <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-                        <p className="text-slate-300 font-bold uppercase tracking-widest text-xs">Carregando checkout seguro...</p>
+                        <p className="text-slate-300 font-black uppercase tracking-widest text-[10px]">Protegendo sua transação...</p>
                     </div>
                 )}
 
                 <iframe
                     src={finalUrl}
-                    className={`w-full max-w-5xl flex-1 bg-white rounded-2xl shadow-2xl border border-slate-700 transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}
+                    className={`w-full h-full bg-white border-none transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}
                     title="Checkout Asaas"
                     onLoad={() => setLoading(false)}
                 />

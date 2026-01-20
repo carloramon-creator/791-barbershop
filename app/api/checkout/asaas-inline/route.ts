@@ -150,10 +150,9 @@ export async function POST(req: Request) {
             billingTypes = ['CREDIT_CARD'];
             if (recurrent) {
                 chargeTypes = ['RECURRENT'];
-            } else if (interval > 1 && installments > 1) {
-                chargeTypes = ['INSTALLMENT'];
             } else {
-                chargeTypes = ['DETACHED'];
+                // O Asaas exige DETACHED junto com INSTALLMENT para checkout de cartão não-recorrente
+                chargeTypes = ['DETACHED', 'INSTALLMENT'];
             }
         } else if (paymentMethod === 'PIX') {
             billingTypes = ['PIX'];
@@ -164,7 +163,7 @@ export async function POST(req: Request) {
         } else {
             // Permitir todos os métodos
             billingTypes = ['CREDIT_CARD', 'PIX', 'BOLETO'];
-            chargeTypes = recurrent ? ['RECURRENT'] : ['DETACHED'];
+            chargeTypes = recurrent ? ['RECURRENT'] : ['DETACHED', 'INSTALLMENT'];
         }
 
         // 7. Criar checkout inline
