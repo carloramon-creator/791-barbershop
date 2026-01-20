@@ -20,9 +20,9 @@ export async function POST(req: Request) {
             addon: addonSlug,
             coupon,
             interval = 1,
-            paymentMethod = 'CREDIT_CARD', // CREDIT_CARD, PIX, BOLETO
+            paymentMethod = 'CREDIT_CARD',
             installments = 1,
-            recurrent = false // Se true, cria assinatura recorrente
+            recurrent = false
         } = await req.json();
 
         // 1. Buscar Preço Dinâmico e Descontos
@@ -111,7 +111,6 @@ export async function POST(req: Request) {
         }
 
         finalAmount = Math.max(0, finalAmount - discountFromCoupon);
-        // Garantir 2 casas decimais para o Asaas não rejeitar o valor
         finalAmount = Number(finalAmount.toFixed(2));
 
         // 4. Configurar Asaas
@@ -142,33 +141,12 @@ export async function POST(req: Request) {
             }, { status: 400 }));
         }
 
-        // 6. Determinar billingTypes e chargeTypes conforme documentação Asaas
-        // Para checkout inline, sempre permitimos múltiplos métodos e o usuário escolhe na tela
-        const billingTypes = ['CREDIT_CARD', 'PIX', 'BOLETO'];
-
-        // chargeTypes determina o tipo de cobrança:
-        // - DETACHED: Pagamento à vista (usado para Pix, Boleto e Cartão à vista)
-        // - INSTALLMENT: Parcelamento (apenas para cartão de crédito)
-        // - RECURRENT: Assinatura recorrente
-        let chargeTypes: string[] = [];
-
-        if (recurrent) {
-            // Assinatura recorrente
-            chargeTypes = ['RECURRENT'];
-        } else {
-            // Pagamento único - permite tanto à vista quanto parcelado
-            chargeTypes = ['DETACHED', 'INSTALLMENT'];
-        }
-
-        // 7. Criar checkout inline
+        // 6. Criar checkout - FORMATO SIMPLIFICADO PARA TESTE
         const origin = req.headers.get('origin') || 'https://791barber.com';
 
-        // Garantir que a cidade seja um número (IBGE)
-        const cityCode = tenant.city_code ? parseInt(String(tenant.city_code)) : 4205407;
-
-        const checkoutData: any = {
-            billingTypes,
-            chargeTypes,
+        const checkoutData = {
+            billingTypes: ['CREDIT_CARD', 'PIX'],
+            chargeTypes: ['DETACHED'],
             minutesToExpire: 60,
             callback: {
                 successUrl: `${origin}/checkout/success`,
@@ -186,31 +164,9 @@ export async function POST(req: Request) {
                 cpfCnpj: cpfCnpj,
                 email: user.email || '',
                 phone: (tenant.phone || '').replace(/\D/g, ''),
-                address: tenant.street || tenant.address_street || '',
-                addressNumber: tenant.number || 'S/N',
-                complement: tenant.complement || '',
-                postalCode: (tenant.address_zip || tenant.cep || '').replace(/\D/g, ''),
-                province: tenant.neighborhood || tenant.address_neighborhood || '',
-                city: isNaN(cityCode) ? 4205407 : cityCode
+                postalCode: (tenant.address_zip || tenant.cep || '').replace(/\D/g, '')
             }
         };
-
-        // Adicionar configurações específicas
-        if (chargeTypes.includes('INSTALLMENT') && installments > 1) {
-            checkoutData.installment = {
-                maxInstallmentCount: Math.min(installments, 12)
-            };
-        }
-
-        if (chargeTypes.includes('RECURRENT')) {
-            const nextDueDate = new Date();
-            nextDueDate.setMonth(nextDueDate.getMonth() + 1);
-
-            checkoutData.subscription = {
-                cycle: interval === 1 ? 'MONTHLY' : interval === 6 ? 'SEMIANNUALLY' : 'YEARLY',
-                nextDueDate: nextDueDate.toISOString().split('T')[0]
-            };
-        }
 
         console.log('[ASAAS INLINE] Criando checkout:', JSON.stringify(checkoutData, null, 2));
 
@@ -218,7 +174,7 @@ export async function POST(req: Request) {
 
         console.log('[ASAAS INLINE] Checkout criado:', checkout.id);
 
-        // 8. Salvar no banco
+        // 7. Salvar no banco
         await supabaseAdmin
             .from('finance')
             .insert({
@@ -240,7 +196,7 @@ export async function POST(req: Request) {
                 }
             });
 
-        // 9. Retornar checkout ID e URL (Formato específico para IFRAME)
+        // 8. Retornar checkout ID e URL
         const checkoutBaseUrl = environment === 'production'
             ? 'https://asaas.com/checkoutSession/show'
             : 'https://sandbox.asaas.com/checkoutSession/show';
@@ -252,9 +208,9 @@ export async function POST(req: Request) {
             amount: finalAmount
         }));
 
-
     } catch (error: any) {
         console.error('[ASAAS INLINE CHECKOUT ERROR]', error);
+        console.error('[ASAAS ERROR DETAILS]', error.response?.data);
 
         const errorMessage = error.response?.data?.errors?.[0]?.description ||
             error.response?.data?.error ||
@@ -262,7 +218,8 @@ export async function POST(req: Request) {
             'Erro ao processar pagamento';
 
         return addCorsHeaders(req, NextResponse.json({
-            error: errorMessage
+            error: errorMessage,
+            details: error.response?.data
         }, { status: error.response?.status || 500 }));
     }
 }
