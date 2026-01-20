@@ -25,13 +25,15 @@ import { PLAN_CONFIG } from '@/lib/constants';
 import Image from 'next/image';
 import { getBusinessTexts } from '@/lib/business-dictionary';
 import { getBusinessTheme } from '@/lib/business-theme';
-import { SupportModal } from '@/components/modals/support-modal';
 
-export function Sidebar() {
+interface SidebarProps {
+    onOpenSupport?: () => void;
+}
+
+export function Sidebar({ onOpenSupport }: SidebarProps = {}) {
     const pathname = usePathname();
     const { role, tenant, signOut, isSystemAdmin, user } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
-    const [isSupportOpen, setIsSupportOpen] = useState(false);
     const planConfig = PLAN_CONFIG[(tenant?.plan as keyof typeof PLAN_CONFIG) || 'basic'];
 
     const texts = getBusinessTexts(tenant?.business_type);
@@ -172,20 +174,13 @@ export function Sidebar() {
 
                 <div className="px-6 mb-4">
                     <button
-                        onClick={() => setIsSupportOpen(true)}
+                        onClick={onOpenSupport}
                         className="flex items-center gap-2 text-[10px] font-bold text-slate-500 hover:text-slate-300 transition-colors uppercase tracking-wider group"
                     >
                         <Sparkles size={12} className="text-amber-500 group-hover:text-amber-400" />
                         Reportar Erro / Sugestão
                     </button>
                 </div>
-
-                <SupportModal
-                    isOpen={isSupportOpen}
-                    onClose={() => setIsSupportOpen(false)}
-                    tenantName={tenant?.name}
-                    userEmail={user?.email}
-                />
 
                 <div className="p-6 mt-auto border-t border-slate-800">
                     <Button

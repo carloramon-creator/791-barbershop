@@ -142,19 +142,21 @@ export async function POST(req: Request) {
             }, { status: 400 }));
         }
 
-        // 6. Determinar billingTypes e chargeTypes
-        let billingTypes: string[] = [];
-        if (paymentMethod === 'CREDIT_CARD') billingTypes = ['CREDIT_CARD'];
-        else if (paymentMethod === 'PIX') billingTypes = ['PIX'];
-        else if (paymentMethod === 'BOLETO') billingTypes = ['BOLETO'];
-        else billingTypes = ['CREDIT_CARD', 'PIX', 'BOLETO'];
+        // 6. Determinar billingTypes e chargeTypes conforme documentação Asaas
+        // Para checkout inline, sempre permitimos múltiplos métodos e o usuário escolhe na tela
+        const billingTypes = ['CREDIT_CARD', 'PIX', 'BOLETO'];
 
-        // Só permite parcelamento ou recorrência se for Cartão de Crédito
-        // Se for Pix ou Boleto, forçamos DETACHED para evitar erro de obrigatoriedade de cartão
-        let chargeTypes = ['DETACHED'];
+        // chargeTypes determina o tipo de cobrança:
+        // - DETACHED: Pagamento à vista (usado para Pix, Boleto e Cartão à vista)
+        // - INSTALLMENT: Parcelamento (apenas para cartão de crédito)
+        // - RECURRENT: Assinatura recorrente
+        let chargeTypes: string[] = [];
+
         if (recurrent) {
+            // Assinatura recorrente
             chargeTypes = ['RECURRENT'];
-        } else if (paymentMethod === 'CREDIT_CARD' || paymentMethod === 'ALL') {
+        } else {
+            // Pagamento único - permite tanto à vista quanto parcelado
             chargeTypes = ['DETACHED', 'INSTALLMENT'];
         }
 
