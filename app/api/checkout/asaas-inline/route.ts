@@ -246,15 +246,10 @@ export async function POST(req: Request) {
                 }
             });
 
-        // 9. Retornar checkout ID e URL (URL dinâmica sandbox vs produção)
-        const checkoutBaseUrl = environment === 'production'
-            ? 'https://asaas.com/checkoutSession/show'
-            : 'https://sandbox.asaas.com/checkoutSession/show';
-
         return addCorsHeaders(req, NextResponse.json({
             success: true,
             checkoutId: checkout.id,
-            checkoutUrl: `${checkoutBaseUrl}?id=${checkout.id}`,
+            checkoutUrl: checkout.url, // Usar a URL oficial retornada pelo Asaas
             amount: finalAmount
         }));
 

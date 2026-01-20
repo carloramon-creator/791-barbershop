@@ -169,13 +169,14 @@ export function Sidebar() {
                 </nav>
 
                 <div className="px-6 mb-2">
-                    <button
-                        onClick={() => window.location.href = `mailto:contato@791solucoes.com.br?subject=Feedback/Erro (${tenant?.name || '791 Barber'}) - 791 Barber`}
-                        className="flex items-center gap-2 text-[10px] font-bold text-slate-500 hover:text-slate-300 transition-colors uppercase tracking-wider group bg-transparent border-none p-0"
+                    <a
+                        href={`mailto:contato@791solucoes.com.br?subject=Feedback/Erro (${tenant?.name || '791 Barber'}) - 791 Barber`}
+                        target="_top"
+                        className="flex items-center gap-2 text-[10px] font-bold text-slate-500 hover:text-slate-300 transition-colors uppercase tracking-wider group"
                     >
                         <Sparkles size={12} className="text-amber-500 group-hover:text-amber-400" />
                         Reportar Erro / Sugestão
-                    </button>
+                    </a>
                 </div>
 
                 <div className="p-6 mt-auto border-t border-slate-800">
