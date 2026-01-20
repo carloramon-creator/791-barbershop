@@ -149,7 +149,19 @@ export class AsaasClient {
         return response.data;
     }
 
+    // Checkout Inline
+    async createCheckout(checkoutData: any) {
+        const response = await this.client.post('/checkouts', checkoutData);
+        return response.data;
+    }
+
+    async getCheckout(checkoutId: string) {
+        const response = await this.client.get(`/checkouts/${checkoutId}`);
+        return response.data;
+    }
+
     // Webhook verification
+
     verifyWebhook(payload: any, signature: string, secret: string): boolean {
         // Asaas doesn't use signature verification by default
         // You can implement custom verification if needed
