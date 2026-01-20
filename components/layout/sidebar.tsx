@@ -25,11 +25,13 @@ import { PLAN_CONFIG } from '@/lib/constants';
 import Image from 'next/image';
 import { getBusinessTexts } from '@/lib/business-dictionary';
 import { getBusinessTheme } from '@/lib/business-theme';
+import { SupportModal } from '@/components/modals/support-modal';
 
 export function Sidebar() {
     const pathname = usePathname();
-    const { role, tenant, signOut, isSystemAdmin } = useAuth();
+    const { role, tenant, signOut, isSystemAdmin, user } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
+    const [isSupportOpen, setIsSupportOpen] = useState(false);
     const planConfig = PLAN_CONFIG[(tenant?.plan as keyof typeof PLAN_CONFIG) || 'basic'];
 
     const texts = getBusinessTexts(tenant?.business_type);
@@ -169,16 +171,23 @@ export function Sidebar() {
                 </nav>
 
                 <div className="p-3 mx-3 mb-1 bg-slate-800/50 rounded-xl border border-slate-800">
-                    <a
-                        href={`mailto:contato@791solucoes.com.br?subject=Feedback/Erro (${tenant?.name || '791 Barber'}) - 791 Barber`}
-                        className="flex items-center gap-2 text-[10px] font-bold text-slate-400 hover:text-slate-100 transition-colors uppercase tracking-wider group"
+                    <button
+                        onClick={() => setIsSupportOpen(true)}
+                        className="w-full flex items-center gap-2 text-[10px] font-bold text-slate-400 hover:text-slate-100 transition-colors uppercase tracking-wider group"
                     >
                         <div className="p-1.5 bg-slate-800 rounded-lg group-hover:bg-slate-700 transition-colors">
                             <Sparkles size={12} className="text-amber-500" />
                         </div>
                         Reportar Erro / Sugestão
-                    </a>
+                    </button>
                 </div>
+
+                <SupportModal
+                    isOpen={isSupportOpen}
+                    onClose={() => setIsSupportOpen(false)}
+                    tenantName={tenant?.name}
+                    userEmail={user?.email}
+                />
 
                 <div className="p-6 mt-auto border-t border-slate-800">
                     <Button

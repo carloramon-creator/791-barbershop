@@ -143,8 +143,13 @@ export async function POST(req: Request) {
         }
 
         // 6. Determinar billingTypes e chargeTypes
-        // Para Checkout Inline, é mais estável permitir todos e deixar o usuário escolher na tela do Asaas
-        let billingTypes = ['CREDIT_CARD', 'PIX', 'BOLETO'];
+        // Para Checkout Inline, usamos o método selecionado ou todos se não especificado
+        let billingTypes: string[] = [];
+        if (paymentMethod === 'CREDIT_CARD') billingTypes = ['CREDIT_CARD'];
+        else if (paymentMethod === 'PIX') billingTypes = ['PIX'];
+        else if (paymentMethod === 'BOLETO') billingTypes = ['BOLETO'];
+        else billingTypes = ['CREDIT_CARD', 'PIX', 'BOLETO'];
+
         let chargeTypes = recurrent ? ['RECURRENT'] : ['DETACHED', 'INSTALLMENT'];
 
         // 7. Criar checkout inline
