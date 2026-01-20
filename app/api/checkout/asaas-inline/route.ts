@@ -143,14 +143,20 @@ export async function POST(req: Request) {
         }
 
         // 6. Determinar billingTypes e chargeTypes
-        // Para Checkout Inline, usamos o método selecionado ou todos se não especificado
         let billingTypes: string[] = [];
         if (paymentMethod === 'CREDIT_CARD') billingTypes = ['CREDIT_CARD'];
         else if (paymentMethod === 'PIX') billingTypes = ['PIX'];
         else if (paymentMethod === 'BOLETO') billingTypes = ['BOLETO'];
         else billingTypes = ['CREDIT_CARD', 'PIX', 'BOLETO'];
 
-        let chargeTypes = recurrent ? ['RECURRENT'] : ['DETACHED', 'INSTALLMENT'];
+        // Só permite parcelamento ou recorrência se for Cartão de Crédito
+        // Se for Pix ou Boleto, forçamos DETACHED para evitar erro de obrigatoriedade de cartão
+        let chargeTypes = ['DETACHED'];
+        if (recurrent) {
+            chargeTypes = ['RECURRENT'];
+        } else if (paymentMethod === 'CREDIT_CARD' || paymentMethod === 'ALL') {
+            chargeTypes = ['DETACHED', 'INSTALLMENT'];
+        }
 
         // 7. Criar checkout inline
         const origin = req.headers.get('origin') || 'https://791barber.com';
