@@ -261,7 +261,8 @@ export default function PlanPage() {
             if (data.checkoutId) {
                 // Novo Fluxo: Checkout Inline do Asaas
                 // Redireciona para nossa página interna que contém o iframe
-                router.push(`/checkout/asaas?checkoutId=${data.checkoutId}`);
+                const url = `/checkout/asaas?checkoutId=${data.checkoutId}&checkoutUrl=${encodeURIComponent(data.checkoutUrl)}`;
+                router.push(url);
             } else {
                 throw new Error('Erro ao gerar link de pagamento. Tente novamente.');
             }

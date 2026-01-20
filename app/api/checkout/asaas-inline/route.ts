@@ -111,6 +111,8 @@ export async function POST(req: Request) {
         }
 
         finalAmount = Math.max(0, finalAmount - discountFromCoupon);
+        // Garantir 2 casas decimais para o Asaas não rejeitar o valor
+        finalAmount = Number(finalAmount.toFixed(2));
 
         // 4. Configurar Asaas
         const { data: settingsData } = await supabaseAdmin
@@ -168,6 +170,9 @@ export async function POST(req: Request) {
         // 7. Criar checkout inline
         const origin = req.headers.get('origin') || 'https://791barber.com';
 
+        // Garantir que a cidade seja um número (IBGE)
+        const cityCode = tenant.city_code ? parseInt(String(tenant.city_code)) : 4205407;
+
         const checkoutData: any = {
             billingTypes,
             chargeTypes,
@@ -193,7 +198,7 @@ export async function POST(req: Request) {
                 complement: tenant.complement || '',
                 postalCode: (tenant.address_zip || tenant.cep || '').replace(/\D/g, ''),
                 province: tenant.neighborhood || tenant.address_neighborhood || '',
-                city: tenant.city_code || 4205407 // São José/SC por padrão
+                city: isNaN(cityCode) ? 4205407 : cityCode
             }
         };
 
@@ -242,13 +247,18 @@ export async function POST(req: Request) {
                 }
             });
 
-        // 9. Retornar checkout ID e URL
+        // 9. Retornar checkout ID e URL (URL dinâmica sandbox vs produção)
+        const checkoutBaseUrl = environment === 'production'
+            ? 'https://asaas.com/checkoutSession/show'
+            : 'https://sandbox.asaas.com/checkoutSession/show';
+
         return addCorsHeaders(req, NextResponse.json({
             success: true,
             checkoutId: checkout.id,
-            checkoutUrl: `https://asaas.com/checkoutSession/show?id=${checkout.id}`,
+            checkoutUrl: `${checkoutBaseUrl}?id=${checkout.id}`,
             amount: finalAmount
         }));
+
 
     } catch (error: any) {
         console.error('[ASAAS INLINE CHECKOUT ERROR]', error);
