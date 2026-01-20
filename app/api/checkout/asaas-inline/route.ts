@@ -143,28 +143,9 @@ export async function POST(req: Request) {
         }
 
         // 6. Determinar billingTypes e chargeTypes
-        let billingTypes: string[] = [];
-        let chargeTypes: string[] = [];
-
-        if (paymentMethod === 'CREDIT_CARD') {
-            billingTypes = ['CREDIT_CARD'];
-            if (recurrent) {
-                chargeTypes = ['RECURRENT'];
-            } else {
-                // O Asaas exige DETACHED junto com INSTALLMENT para checkout de cartão não-recorrente
-                chargeTypes = ['DETACHED', 'INSTALLMENT'];
-            }
-        } else if (paymentMethod === 'PIX') {
-            billingTypes = ['PIX'];
-            chargeTypes = recurrent ? ['RECURRENT'] : ['DETACHED'];
-        } else if (paymentMethod === 'BOLETO') {
-            billingTypes = ['BOLETO'];
-            chargeTypes = recurrent ? ['RECURRENT'] : ['DETACHED'];
-        } else {
-            // Permitir todos os métodos
-            billingTypes = ['CREDIT_CARD', 'PIX', 'BOLETO'];
-            chargeTypes = recurrent ? ['RECURRENT'] : ['DETACHED', 'INSTALLMENT'];
-        }
+        // Para Checkout Inline, é mais estável permitir todos e deixar o usuário escolher na tela do Asaas
+        let billingTypes = ['CREDIT_CARD', 'PIX', 'BOLETO'];
+        let chargeTypes = recurrent ? ['RECURRENT'] : ['DETACHED', 'INSTALLMENT'];
 
         // 7. Criar checkout inline
         const origin = req.headers.get('origin') || 'https://791barber.com';
@@ -246,10 +227,15 @@ export async function POST(req: Request) {
                 }
             });
 
+        // 9. Retornar checkout ID e URL (Formato específico para IFRAME)
+        const checkoutBaseUrl = environment === 'production'
+            ? 'https://asaas.com/checkoutSession/show'
+            : 'https://sandbox.asaas.com/checkoutSession/show';
+
         return addCorsHeaders(req, NextResponse.json({
             success: true,
             checkoutId: checkout.id,
-            checkoutUrl: checkout.url, // Usar a URL oficial retornada pelo Asaas
+            checkoutUrl: `${checkoutBaseUrl}?id=${checkout.id}`,
             amount: finalAmount
         }));
 
