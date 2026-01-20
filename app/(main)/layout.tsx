@@ -29,7 +29,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             // 2. WhiteList (sempre livre)
             isWhiteListed =
                 pathname.startsWith('/checkout') ||
-                pathname === '/configuracoes/plano';
+                pathname === '/configuracoes/plano' ||
+                pathname === '/configuracoes/barbearia';
 
             if (!isWhiteListed) {
                 // 3. Status Irreversíveis no mês (apenas se vencido)

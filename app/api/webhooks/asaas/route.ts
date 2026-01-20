@@ -7,34 +7,80 @@ export async function POST(req: Request) {
         const event = body.event;
         const payment = body.payment;
 
-        console.log('[ASAAS WEBHOOK]', event, payment?.id);
+        // Log completo do webhook para debug
+        console.log('[ASAAS WEBHOOK] Evento recebido:', {
+            event,
+            paymentId: payment?.id,
+            status: payment?.status,
+            value: payment?.value,
+            billingType: payment?.billingType,
+            customer: payment?.customer,
+            externalReference: payment?.externalReference,
+            fullPayload: JSON.stringify(body)
+        });
 
         if (!payment) {
+            console.log('[ASAAS WEBHOOK] Sem dados de pagamento no webhook');
             return NextResponse.json({ received: true });
         }
 
-        // Buscar tenant pelo external reference ou payment ID
-        const { data: financeRecord } = await supabaseAdmin
+        // Buscar registro financeiro pelo payment ID
+        const { data: financeRecord, error: financeError } = await supabaseAdmin
             .from('finance')
             .select('*')
             .eq('metadata->>asaas_payment_id', payment.id)
             .single();
 
-        if (!financeRecord) {
-            console.log('[ASAAS WEBHOOK] Finance record not found for payment:', payment.id);
-            return NextResponse.json({ received: true });
+        if (financeError || !financeRecord) {
+            console.log('[ASAAS WEBHOOK] Registro financeiro não encontrado:', {
+                paymentId: payment.id,
+                error: financeError?.message
+            });
+            // Retorna 200 para evitar retentativas
+            return NextResponse.json({ received: true, message: 'Finance record not found' });
         }
 
         const tenantId = financeRecord.tenant_id;
+
+        // Validar se o tenant existe
+        const { data: tenant, error: tenantError } = await supabaseAdmin
+            .from('tenants')
+            .select('id, name, plan')
+            .eq('id', tenantId)
+            .single();
+
+        if (tenantError || !tenant) {
+            console.error('[ASAAS WEBHOOK] Tenant não encontrado:', {
+                tenantId,
+                error: tenantError?.message
+            });
+            // Retorna 200 para evitar retentativas
+            return NextResponse.json({ received: true, message: 'Tenant not found' });
+        }
+
+        console.log('[ASAAS WEBHOOK] Processando para tenant:', {
+            tenantId,
+            tenantName: tenant.name,
+            currentPlan: tenant.plan
+        });
 
         // Processar eventos
         switch (event) {
             case 'PAYMENT_CONFIRMED':
             case 'PAYMENT_RECEIVED':
+                console.log('[ASAAS WEBHOOK] Pagamento confirmado! Ativando plano...');
+
                 // Marcar como pago
                 await supabaseAdmin
                     .from('finance')
-                    .update({ is_paid: true })
+                    .update({ 
+                        is_paid: true,
+                        metadata: {
+                            ...financeRecord.metadata,
+                            payment_confirmed_at: new Date().toISOString(),
+                            asaas_status: payment.status
+                        }
+                    })
                     .eq('id', financeRecord.id);
 
                 // Ativar plano
@@ -49,7 +95,7 @@ export async function POST(req: Request) {
                     const newEndDate = new Date(now);
                     newEndDate.setMonth(newEndDate.getMonth() + interval);
 
-                    await supabaseAdmin
+                    const { error: updateError } = await supabaseAdmin
                         .from('tenants')
                         .update({
                             plan: planSlug,
@@ -58,64 +104,87 @@ export async function POST(req: Request) {
                         })
                         .eq('id', tenantId);
 
-                    console.log('[ASAAS WEBHOOK] Plan activated:', planSlug, 'for tenant:', tenantId);
+                    if (updateError) {
+                        console.error('[ASAAS WEBHOOK] Erro ao ativar plano:', updateError);
+                    } else {
+                        console.log('[ASAAS WEBHOOK] ✅ Plano ativado com sucesso:', {
+                            tenantId,
+                            plan: planSlug,
+                            interval,
+                            expiresAt: newEndDate.toISOString()
+                        });
+                    }
                 }
 
                 if (addonSlug) {
                     // Ativar addon
-                    const { data: tenant } = await supabaseAdmin
+                    const { data: tenantData } = await supabaseAdmin
                         .from('tenants')
                         .select('active_addons')
                         .eq('id', tenantId)
                         .single();
 
-                    const activeAddons = tenant?.active_addons || [];
+                    const activeAddons = tenantData?.active_addons || [];
                     if (!activeAddons.includes(addonSlug)) {
                         activeAddons.push(addonSlug);
-                        await supabaseAdmin
+                        const { error: addonError } = await supabaseAdmin
                             .from('tenants')
                             .update({ active_addons: activeAddons })
                             .eq('id', tenantId);
-                    }
 
-                    console.log('[ASAAS WEBHOOK] Addon activated:', addonSlug, 'for tenant:', tenantId);
+                        if (addonError) {
+                            console.error('[ASAAS WEBHOOK] Erro ao ativar addon:', addonError);
+                        } else {
+                            console.log('[ASAAS WEBHOOK] ✅ Addon ativado:', {
+                                tenantId,
+                                addon: addonSlug
+                            });
+                        }
+                    }
                 }
                 break;
 
             case 'PAYMENT_OVERDUE':
-                // Marcar como vencido
+                console.log('[ASAAS WEBHOOK] Pagamento vencido');
+                
                 await supabaseAdmin
                     .from('finance')
                     .update({
                         metadata: {
                             ...financeRecord.metadata,
-                            status: 'overdue'
+                            status: 'overdue',
+                            overdue_at: new Date().toISOString()
                         }
                     })
                     .eq('id', financeRecord.id);
-
-                console.log('[ASAAS WEBHOOK] Payment overdue:', payment.id);
                 break;
 
             case 'PAYMENT_DELETED':
             case 'PAYMENT_REFUNDED':
-                // Desativar plano se necessário
+                console.log('[ASAAS WEBHOOK] Pagamento cancelado/reembolsado');
+                
                 await supabaseAdmin
                     .from('tenants')
                     .update({ subscription_status: 'canceled' })
                     .eq('id', tenantId);
-
-                console.log('[ASAAS WEBHOOK] Payment canceled/refunded:', payment.id);
                 break;
 
             default:
-                console.log('[ASAAS WEBHOOK] Unhandled event:', event);
+                console.log('[ASAAS WEBHOOK] Evento não tratado:', event);
         }
 
-        return NextResponse.json({ received: true });
+        return NextResponse.json({ received: true, processed: true });
 
     } catch (error: any) {
-        console.error('[ASAAS WEBHOOK ERROR]', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('[ASAAS WEBHOOK ERROR] Erro crítico:', {
+            message: error.message,
+            stack: error.stack
+        });
+        
+        // Sempre retorna 200 para evitar retentativas infinitas
+        return NextResponse.json({ 
+            received: true, 
+            error: error.message 
+        }, { status: 200 });
     }
 }

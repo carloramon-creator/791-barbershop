@@ -132,6 +132,23 @@ export class AsaasClient {
         return response.data;
     }
 
+    // Invoice Customization
+    async customizeInvoice(config: {
+        logoUrl?: string;
+        primaryColor?: string;
+        infoColor?: string;
+        font?: string;
+        observations?: string;
+    }) {
+        const response = await this.client.post('/myAccount/paymentCheckoutConfig', config);
+        return response.data;
+    }
+
+    async getInvoiceCustomization() {
+        const response = await this.client.get('/myAccount/paymentCheckoutConfig');
+        return response.data;
+    }
+
     // Webhook verification
     verifyWebhook(payload: any, signature: string, secret: string): boolean {
         // Asaas doesn't use signature verification by default

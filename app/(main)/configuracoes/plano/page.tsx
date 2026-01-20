@@ -72,6 +72,8 @@ export default function PlanPage() {
     const [tenantObject, setTenantObject] = useState<any>(null);
     const [canceling, setCanceling] = useState(false);
     const [selectedInterval, setSelectedInterval] = useState<number>(1);
+    const [checkingAsaasPayment, setCheckingAsaasPayment] = useState(false);
+
 
     const tabs = [
         { name: 'Geral', href: '/configuracoes/barbearia', icon: Building2 },
@@ -105,6 +107,75 @@ export default function PlanPage() {
         };
         init();
     }, []);
+
+    // Monitorar pagamento pendente do Asaas
+    useEffect(() => {
+        const checkPendingAsaasPayment = async () => {
+            const pendingStr = localStorage.getItem('asaas_pending_payment');
+            if (!pendingStr) {
+                setCheckingAsaasPayment(false);
+                return;
+            }
+
+            try {
+                setCheckingAsaasPayment(true);
+                const pending = JSON.parse(pendingStr);
+                const { paymentId, timestamp } = pending;
+
+                // Verificar se não é muito antigo (máximo 30 minutos)
+                const thirtyMinutes = 30 * 60 * 1000;
+                if (Date.now() - timestamp > thirtyMinutes) {
+                    localStorage.removeItem('asaas_pending_payment');
+                    setCheckingAsaasPayment(false);
+                    return;
+                }
+
+                console.log('[ASAAS] Verificando pagamento pendente:', paymentId);
+
+                // Verificar status do pagamento
+                const res = await fetch(`/api/asaas/check-payment?paymentId=${paymentId}`);
+                if (!res.ok) {
+                    console.error('[ASAAS] Erro ao verificar pagamento');
+                    return;
+                }
+
+                const data = await res.json();
+                console.log('[ASAAS] Status do pagamento:', data.payment.status);
+
+                if (data.payment.isPaid || data.payment.localRecord.isPaid) {
+                    // Pagamento confirmado!
+                    localStorage.removeItem('asaas_pending_payment');
+                    setCheckingAsaasPayment(false);
+
+                    // Mostrar mensagem de sucesso
+                    alert('✅ Pagamento confirmado! Seu plano foi ativado com sucesso.');
+
+                    // Atualizar dados
+                    await fetchCurrentPlan();
+                    await fetchInvoices();
+                } else if (data.payment.status === 'PENDING') {
+                    // Ainda pendente, continuar monitorando
+                    console.log('[ASAAS] Pagamento ainda pendente, continuando monitoramento...');
+                }
+            } catch (error) {
+                console.error('[ASAAS] Erro ao verificar pagamento pendente:', error);
+            }
+        };
+
+        // Verificar imediatamente ao carregar a página
+        checkPendingAsaasPayment();
+
+        // Continuar verificando a cada 5 segundos se houver pagamento pendente
+        const interval = setInterval(() => {
+            const pendingStr = localStorage.getItem('asaas_pending_payment');
+            if (pendingStr) {
+                checkPendingAsaasPayment();
+            }
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, []);
+
 
     async function fetchCurrentPlan(shouldSetLoading = true) {
         try {
@@ -255,8 +326,18 @@ export default function PlanPage() {
             if (!res.ok) throw new Error(data.error || 'Erro ao processar pagamento');
 
             if (data.checkoutUrl) {
-                // Cartão de Crédito -> Redireciona para checkout Asaas
+                // Cartão de Crédito -> Salvar paymentId e abrir checkout
+                // O Asaas não suporta returnUrl, então salvamos o ID e monitoramos
+                localStorage.setItem('asaas_pending_payment', JSON.stringify({
+                    paymentId: data.paymentId,
+                    timestamp: Date.now(),
+                    plan: selectedPlan,
+                    addon: selectedAddon?.slug
+                }));
+
+                // Redirecionar para página de checkout do Asaas
                 window.location.href = data.checkoutUrl;
+
             } else if (data.pixQrCode) {
                 // Pix
                 setPixData({
@@ -320,7 +401,22 @@ export default function PlanPage() {
 
     return (
         <div className="space-y-6">
+            {checkingAsaasPayment && (
+                <div className="bg-blue-500/10 border border-blue-500/20 p-6 rounded-2xl space-y-4 animate-pulse">
+                    <div className="flex items-start gap-4">
+                        <Activity className="w-8 h-8 text-blue-500 flex-shrink-0 mt-1 animate-spin" />
+                        <div>
+                            <h3 className="text-lg font-black uppercase tracking-tight text-blue-500">Verificando Pagamento</h3>
+                            <p className="text-blue-400 font-medium leading-relaxed">
+                                Estamos verificando o status do seu pagamento no Asaas. Aguarde alguns instantes...
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {isExpired && (
+
                 <div className="bg-red-500/10 border border-red-500/20 p-6 rounded-2xl space-y-4">
                     <div className="flex items-start gap-4">
                         <AlertCircle className="w-8 h-8 text-red-500 flex-shrink-0 mt-1" />
