@@ -260,8 +260,9 @@ export default function PlanPage() {
 
             if (data.checkoutId) {
                 // Novo Fluxo: Checkout Inline do Asaas
-                // Redireciona para nossa página interna que contém o iframe
-                const url = `/checkout/asaas?checkoutId=${data.checkoutId}&checkoutUrl=${encodeURIComponent(data.checkoutUrl)}`;
+                // Redireciona para nossa página interna que contém o iframe (nova rota simplificada)
+                const checkoutUrlParam = data.checkoutUrl ? `&checkoutUrl=${encodeURIComponent(data.checkoutUrl)}` : '';
+                const url = `/checkout-asaas?checkoutId=${data.checkoutId}${checkoutUrlParam}`;
                 router.push(url);
             } else {
                 throw new Error('Erro ao gerar link de pagamento. Tente novamente.');
@@ -323,7 +324,7 @@ export default function PlanPage() {
 
                     <div className="flex flex-wrap items-center gap-3 pl-0 md:pl-12">
                         <a
-                            href={`mailto:contato@791solucoes.com.br?subject=Erro de Pagamento - ${tenantObject?.name || '791 Barber'}`}
+                            href="mailto:contato@791solucoes.com.br?subject=Suporte%20791%20Barber"
                             className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold uppercase transition-colors"
                         >
                             <ExternalLink size={14} /> Reportar Erro (Email)
