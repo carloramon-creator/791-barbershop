@@ -215,18 +215,18 @@ export default function SupportPage() {
 
             {/* Modal de Detalhes JUMBO */}
             <Dialog open={!!selectedTicket} onOpenChange={(open) => !open && setSelectedTicket(null)}>
-                <DialogContent className="max-w-7xl h-[85vh] bg-slate-900 border-slate-800 text-slate-100 flex flex-col p-0 overflow-hidden shadow-2xl">
+                <DialogContent className="sm:max-w-7xl w-[95vw] h-[90vh] bg-slate-900 border-slate-800 text-slate-100 flex flex-col p-0 overflow-hidden shadow-2xl">
                     <div className="p-8 border-b border-slate-800 bg-slate-950">
                         <DialogHeader>
-                            <div className="flex items-center gap-4 mb-3">
+                            <div className="flex items-center gap-4 mb-1">
                                 <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800">
                                     {selectedTicket && getTypeIcon(selectedTicket.type)}
                                 </div>
                                 <div>
-                                    <DialogTitle className="text-3xl font-black uppercase tracking-tighter leading-none">
-                                        CHAMADO: {selectedTicket && getTypeLabel(selectedTicket.type)}
+                                    <DialogTitle className="text-xl font-black uppercase tracking-tight leading-none">
+                                        {selectedTicket && getTypeLabel(selectedTicket.type)}
                                     </DialogTitle>
-                                    <DialogDescription className="text-slate-400 text-lg font-medium mt-2">
+                                    <DialogDescription className="text-slate-400 text-sm font-medium mt-1">
                                         Enviado por <span className="text-blue-400 font-bold">{selectedTicket?.tenants?.name}</span> ({selectedTicket?.user?.nickname || selectedTicket?.user?.name}) em {selectedTicket && format(new Date(selectedTicket.created_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
                                     </DialogDescription>
                                 </div>

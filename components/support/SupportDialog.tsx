@@ -39,7 +39,7 @@ export function SupportDialog({ open, onOpenChange }: SupportDialogProps) {
         try {
             setLoadingHistory(true);
             const data = await Api.getMySupportTickets();
-            setHistory(data);
+            setHistory(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Failed to load history', error);
         } finally {
@@ -197,43 +197,52 @@ export function SupportDialog({ open, onOpenChange }: SupportDialogProps) {
                                         </div>
                                     ) : (
                                         <div className="divide-y divide-slate-800">
-                                            {history.map((ticket) => (
-                                                <div key={ticket.id} className="p-4 bg-slate-900/50 hover:bg-slate-800/50 transition-colors">
-                                                    <div className="flex items-start justify-between mb-2">
-                                                        <div className="flex flex-col">
-                                                            <div className="flex items-center gap-2">
-                                                                {categories.find(c => c.id === ticket.type)?.icon({ size: 14, className: categories.find(c => c.id === ticket.type)?.color })}
-                                                                <span className="text-[10px] font-bold uppercase text-slate-400">
-                                                                    {categories.find(c => c.id === ticket.type)?.label}
+                                            {history.map((ticket) => {
+                                                const category = categories.find(c => c.id === ticket.type) || {
+                                                    label: 'CHAMADO',
+                                                    icon: HelpCircle,
+                                                    color: 'text-slate-400'
+                                                };
+                                                const Icon = category.icon;
+
+                                                return (
+                                                    <div key={ticket.id} className="p-4 bg-slate-900/50 hover:bg-slate-800/50 transition-colors">
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <div className="flex flex-col">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Icon size={14} className={category.color} />
+                                                                    <span className="text-[10px] font-bold uppercase text-slate-400">
+                                                                        {category.label}
+                                                                    </span>
+                                                                </div>
+                                                                <span className="text-[9px] text-slate-500 font-bold uppercase mt-1">
+                                                                    Enviado por: {ticket.user?.nickname || ticket.user?.name || 'Usuário'}
                                                                 </span>
                                                             </div>
-                                                            <span className="text-[9px] text-slate-500 font-bold uppercase mt-1">
-                                                                Enviado por: {ticket.user?.nickname || ticket.user?.name || 'Usuário'}
-                                                            </span>
+                                                            <div className="flex flex-col items-end gap-1">
+                                                                <span className="text-[10px] text-slate-500 font-medium">
+                                                                    {format(new Date(ticket.created_at), "dd 'de' MMM, HH:mm", { locale: ptBR })}
+                                                                </span>
+                                                                <Badge className={cn(
+                                                                    "text-[8px] uppercase font-black px-1.5 py-0 h-4 border",
+                                                                    ticket.status === 'open' ? "bg-blue-500/10 text-blue-500 border-blue-500/20" :
+                                                                        ticket.status === 'progress' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
+                                                                            "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                                                )}>
+                                                                    {ticket.status === 'open' ? 'Aberto' : ticket.status === 'progress' ? 'Em Análise' : 'Concluído'}
+                                                                </Badge>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex flex-col items-end gap-1">
-                                                            <span className="text-[10px] text-slate-500 font-medium">
-                                                                {format(new Date(ticket.created_at), "dd 'de' MMM, HH:mm", { locale: ptBR })}
-                                                            </span>
-                                                            <Badge className={cn(
-                                                                "text-[8px] uppercase font-black px-1.5 py-0 h-4 border",
-                                                                ticket.status === 'open' ? "bg-blue-500/10 text-blue-500 border-blue-500/20" :
-                                                                    ticket.status === 'progress' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
-                                                                        "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                                            )}>
-                                                                {ticket.status === 'open' ? 'Aberto' : ticket.status === 'progress' ? 'Em Análise' : 'Concluído'}
-                                                            </Badge>
-                                                        </div>
+                                                        <p className="text-xs text-slate-200 line-clamp-2 mb-2">{ticket.message}</p>
+                                                        {ticket.admin_notes && (
+                                                            <div className="mt-3 p-3 bg-blue-600/10 border border-blue-500/20 rounded-lg">
+                                                                <p className="text-[10px] font-black text-blue-400 uppercase mb-1">Resposta do Suporte:</p>
+                                                                <p className="text-xs text-blue-100 italic">{ticket.admin_notes}</p>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    <p className="text-xs text-slate-200 line-clamp-2 mb-2">{ticket.message}</p>
-                                                    {ticket.admin_notes && (
-                                                        <div className="mt-3 p-3 bg-blue-600/10 border border-blue-500/20 rounded-lg">
-                                                            <p className="text-[10px] font-black text-blue-400 uppercase mb-1">Resposta do Suporte:</p>
-                                                            <p className="text-xs text-blue-100 italic">{ticket.admin_notes}</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     )}
                                 </div>
