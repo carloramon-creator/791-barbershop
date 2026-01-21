@@ -36,7 +36,6 @@ import {
 import { AlertCircle } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import AsaasCheckoutModal from '@/components/asaas/AsaasCheckoutModal';
-
 import { supabaseClient } from '@/lib/supabase-client';
 
 // Use NEXT_PUBLIC_BACKEND_URL if set, else fallback.
@@ -330,6 +329,21 @@ export default function PlanPage() {
 
             if (data.checkoutUrl) {
                 // Abrir modal com checkout integrado (Cartão ou Boleto)
+
+                // Se tiver dados extras do boleto (Rich UI)
+                if (data.boletoData) {
+                    setBoletoData({
+                        nossoNumero: '',
+                        codigoBarras: data.boletoData.barCode,
+                        linhaDigitavel: data.boletoData.identificationField,
+                        pdfUrl: data.boletoData.bankSlipUrl,
+                        amount: data.boletoData.value,
+                        dueDate: data.boletoData.dueDate
+                    } as any);
+                } else {
+                    setBoletoData(null);
+                }
+
                 setCheckoutUrl(data.checkoutUrl);
                 setShowCheckoutModal(true);
                 setOpenDialog(false); // Fechar dialog de seleção
@@ -1339,9 +1353,17 @@ export default function PlanPage() {
                 <AsaasCheckoutModal
                     checkoutUrl={checkoutUrl}
                     isOpen={showCheckoutModal}
+                    boletoData={boletoData ? {
+                        identificationField: boletoData.linhaDigitavel,
+                        barCode: boletoData.codigoBarras,
+                        value: boletoData.amount || 0,
+                        dueDate: (boletoData as any).dueDate,
+                        bankSlipUrl: boletoData.pdfUrl
+                    } : null}
                     onClose={() => {
                         setShowCheckoutModal(false);
                         setCheckoutUrl(null);
+                        setBoletoData(null);
                         // Atualizar dados após fechar modal
                         fetchCurrentPlan();
                         fetchInvoices();

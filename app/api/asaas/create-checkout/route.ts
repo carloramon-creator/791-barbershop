@@ -117,6 +117,7 @@ export async function POST(req: Request) {
         let checkoutId = null;
         let checkoutUrl = '';
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://791barber.com';
+        let boletoData = null;
 
         if (paymentMethod === 'BOLETO') {
             // === Lógica para BOLETO (API Direta) ===
@@ -126,6 +127,8 @@ export async function POST(req: Request) {
             if (!customer) {
                 customer = await asaas.createCustomer(customerData);
             }
+
+            let paymentIdToFetch = null;
 
             // 4.2 Criar Assinatura ou Cobrança
             if (interval === 1 && !isAddon) {
@@ -141,25 +144,16 @@ export async function POST(req: Request) {
 
                 const subscription = await asaas.createSubscription(subscriptionPayload);
 
-                // Buscar primeira cobrança gerada pela assinatura para pegar o boleto
-                // Asaas gera a cobrança assincronamente, damos um pequeno delay e buscamos
+                // Buscar primeira cobrança gerada pela assinatura
                 await new Promise(resolve => setTimeout(resolve, 1500));
-
-                // Buscar pagamentos desta assinatura usando método público
                 const paymentsResponse = await asaas.getPaymentsBySubscription(subscription.id, 1);
-
-                // getPaymentsBySubscription retorna o corpo da resposta, que contém { data, ... }
                 const firstPayment = paymentsResponse.data?.[0];
 
                 if (firstPayment) {
+                    paymentIdToFetch = firstPayment.id;
                     checkoutId = firstPayment.id;
-                    // Preferir PDF do boleto (bankSlipUrl) se disponível, senão invoiceUrl
                     checkoutUrl = firstPayment.bankSlipUrl || firstPayment.invoiceUrl;
-                } else {
-                    // Fallback seguro (redireciona para lista se não achar pagamento)
-                    checkoutUrl = `${baseUrl}/configuracoes/financeiro`;
                 }
-
             } else {
                 // Boleto Único (Semestral/Anual)
                 const paymentPayload: any = {
@@ -173,9 +167,30 @@ export async function POST(req: Request) {
                 };
 
                 const payment = await asaas.createPayment(paymentPayload);
+                paymentIdToFetch = payment.id;
                 checkoutId = payment.id;
-                // Preferir PDF do boleto
                 checkoutUrl = payment.bankSlipUrl || payment.invoiceUrl;
+            }
+
+            // 4.3 Buscar Linha Digitável e Código de Barras
+            if (paymentIdToFetch) {
+                try {
+                    // Buscar dados completos do pagamento para ter certeza da data de vencimento e valor final
+                    const fullPayment = await asaas.getPayment(paymentIdToFetch);
+                    // Buscar linha digitável
+                    const barCodeData = await asaas.getBoletoBarCode(paymentIdToFetch);
+
+                    boletoData = {
+                        identificationField: barCodeData?.identificationField, // Linha digitável
+                        barCode: barCodeData?.barCode,
+                        value: fullPayment.value,
+                        dueDate: fullPayment.dueDate,
+                        bankSlipUrl: fullPayment.bankSlipUrl || fullPayment.invoiceUrl
+                    };
+                } catch (err) {
+                    console.error('Erro ao buscar código de barras do boleto:', err);
+                    // Não falha o request, apenas vai sem os dados extras
+                }
             }
 
         } else {
@@ -254,6 +269,7 @@ export async function POST(req: Request) {
             success: true,
             checkoutId: checkoutId,
             checkoutUrl: checkoutUrl,
+            boletoData: boletoData,
             amount: totalAmount
         }));
 
