@@ -29,7 +29,9 @@ export async function getCurrentUserAndTenant() {
 
         // 2. Tentar ler o token manualmente dos cookies (fallback para SSR)
         if (!userAuthId) {
+            console.log(`[AUTH] Checking ${allCookies.length} cookies...`);
             for (const c of allCookies) {
+                // Supabase SSR cookies costumam ter nomes específicos ou serem JWTs longos
                 if (!c.value || c.value.length < 50) continue;
 
                 try {
@@ -39,7 +41,8 @@ export async function getCurrentUserAndTenant() {
                     if (val.startsWith('[')) {
                         token = JSON.parse(val)[0];
                     } else if (val.startsWith('{')) {
-                        token = JSON.parse(val).access_token || JSON.parse(val).token;
+                        const parsed = JSON.parse(val);
+                        token = parsed.access_token || parsed.token || parsed[0];
                     } else {
                         token = val.replace(/^"|"$/g, '');
                     }
@@ -47,6 +50,7 @@ export async function getCurrentUserAndTenant() {
                     if (token && token.split('.').length === 3) {
                         const { data: { user: adminUser }, error: adminError } = await supabaseAdmin.auth.getUser(token);
                         if (adminUser && !adminError) {
+                            console.log(`[AUTH] Sessão identificada via cookie: ${c.name}`);
                             userAuthId = adminUser.id;
                             userObj = adminUser;
                             break;

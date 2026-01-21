@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCurrentUserAndTenant } from '@/lib/server-utils';
+import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
 
 export async function GET(req: Request) {
     try {
@@ -7,25 +7,44 @@ export async function GET(req: Request) {
         const tenantId = searchParams.get('tenant_id');
         const stop = searchParams.get('stop');
 
-        console.log('[IMPERSONATE-DEBUG] Iniciando...');
+        const ua = req.headers.get('user-agent');
+        const cookieHeader = req.headers.get('cookie');
+        console.log(`[IMPERSONATE-DEBUG] UA: ${ua}`);
+        console.log(`[IMPERSONATE-DEBUG] Cookie header length: ${cookieHeader?.length || 0}`);
 
-        // Verifica se quem está tentando é admin
-        const { isSystemAdmin, user } = await getCurrentUserAndTenant();
-        console.log(`[IMPERSONATE-DEBUG] Usuário identificado: ${user?.email}, é Admin? ${isSystemAdmin}`);
-
-        if (!isSystemAdmin) {
-            return NextResponse.json({ error: 'Acesso negado: Somente administradores' }, { status: 403 });
+        // 1. Validar Sessão de Admin
+        let authResult;
+        try {
+            authResult = await getCurrentUserAndTenant();
+        } catch (e: any) {
+            console.error(`[IMPERSONATE-DEBUG] Falha na detecção de sessão: ${e.message}`);
+            return addCorsHeaders(req, NextResponse.json({
+                error: 'Sessão expirada no servidor de API.',
+                details: e.message,
+                hint: 'Por favor, faça logout e entre novamente.'
+            }, { status: 401 }));
         }
 
+        const { isSystemAdmin, user } = authResult;
+        console.log(`[IMPERSONATE-DEBUG] Usuário identified: ${user?.email}, isSystemAdmin: ${isSystemAdmin}`);
+
+        if (!isSystemAdmin) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'Acesso negado: Somente administradores' }, { status: 403 }));
+        }
+
+        // 2. Parar Impersonate
         if (stop === 'true') {
             const resp = NextResponse.redirect(new URL('/geral/barbearias', req.url));
             resp.cookies.delete('impersonate_tenant_id');
-            return resp;
+            return addCorsHeaders(req, resp);
         }
 
         if (!tenantId) {
-            return NextResponse.json({ error: 'Tenant ID não informado' }, { status: 400 });
+            return addCorsHeaders(req, NextResponse.json({ error: 'Tenant ID não informado' }, { status: 400 }));
         }
+
+        // 3. Iniciar Impersonate (Setar Cookie e Redirecionar)
+        console.log(`[IMPERSONATE-DEBUG] Setando tenant: ${tenantId}`);
 
         // Redireciona para o dashboard com o cookie setado
         const response = NextResponse.redirect(new URL('/dashboard', req.url));
@@ -34,13 +53,13 @@ export async function GET(req: Request) {
             path: '/',
             maxAge: 60 * 60 * 24, // 1 dia
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: true, // Sempre secure em produção/staging
             sameSite: 'lax',
         });
 
-        return response;
+        return addCorsHeaders(req, response);
     } catch (error: any) {
         console.error('[IMPERSONATE ERROR]', error.message);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return addCorsHeaders(req, NextResponse.json({ error: error.message }, { status: 500 }));
     }
 }

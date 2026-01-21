@@ -13,7 +13,8 @@ import {
     Activity,
     CreditCard,
     Calendar,
-    Clock
+    Clock,
+    Sparkles
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
@@ -28,24 +29,18 @@ export default function AdminDashboard() {
     useEffect(() => {
         const load = async () => {
             setLoading(true);
-
-            // Fetch Tenants
             try {
-                const tenantsData = await Api.getSystemTenants();
+                const [tenantsData, globalStats] = await Promise.all([
+                    Api.getSystemTenants(),
+                    Api.getSystemStats()
+                ]);
                 setTenants(tenantsData || []);
-            } catch (e) {
-                console.error('Error loading tenants:', e);
-            }
-
-            // Fetch Global Stats
-            try {
-                const globalStats = await Api.getSystemStats();
                 setStatsData(globalStats);
             } catch (e) {
-                console.error('Error loading stats:', e);
+                console.error('Error loading admin data:', e);
+            } finally {
+                setLoading(false);
             }
-
-            setLoading(false);
         };
         load();
     }, []);
@@ -57,211 +52,243 @@ export default function AdminDashboard() {
         {
             label: `Receita SaaS (${period === 'day' ? 'Hoje' : period === 'week' ? 'Semana' : 'Mês'})`,
             value: formatCurrency(statsData?.revenue?.[period] || 0),
-            detail: 'Assinaturas (Stripe/Inter)',
+            detail: 'Assinaturas Confirmadas',
             icon: TrendingUp,
-            color: 'blue'
+            color: 'from-blue-600 to-indigo-600',
+            bg: 'bg-blue-600/10'
         },
         {
             label: 'Assinaturas Ativas',
             value: statsData?.subscriptions?.active || 0,
-            detail: `Inativas: ${statsData?.subscriptions?.inactive || 0}`,
+            detail: `Total: ${tenants.length} Barbearias`,
             icon: CreditCard,
-            color: 'emerald'
+            color: 'from-emerald-600 to-teal-600',
+            bg: 'bg-emerald-600/10'
         },
         {
-            label: 'Total de Barbearias',
-            value: tenants.length,
-            detail: `${statsData?.subscriptions?.trials || 0} em período de teste`,
-            icon: Store,
-            color: 'amber'
+            label: 'Período de Teste',
+            value: statsData?.subscriptions?.trials || 0,
+            detail: 'Conversão potencial',
+            icon: Sparkles,
+            color: 'from-amber-500 to-orange-600',
+            bg: 'bg-amber-500/10'
         },
         {
-            label: 'Usuários Ativos (30d)',
-            value: statsData?.users?.total_active || 0,
-            detail: `Total: ${statsData?.users?.total_registered || 0}`,
+            label: 'Usuários Totais',
+            value: statsData?.users?.total_registered || 0,
+            detail: 'Ecossistema 791',
             icon: Users,
-            color: 'purple'
+            color: 'from-purple-600 to-pink-600',
+            bg: 'bg-purple-600/10'
         },
     ];
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center p-20">
-                <Activity className="w-8 h-8 text-blue-500 animate-spin" />
+            <div className="flex flex-col items-center justify-center p-40 space-y-4">
+                <div className="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
+                <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Acessando Central de Comando...</p>
             </div>
         );
     }
 
     return (
-        <div className="space-y-8 pb-20">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="space-y-10 pb-20 animate-in fade-in duration-700">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-100 tracking-tighter uppercase">Painel de Controle SaaS</h1>
-                    <p className="text-slate-500 font-medium">Métricas globais e faturamento da plataforma 791 Barber.</p>
-                </div>
-                <div className="flex gap-2">
-                    <div className="flex bg-slate-900 border border-slate-800 rounded-xl p-1">
-                        {(['day', 'week', 'month'] as const).map((p) => (
-                            <button
-                                key={p}
-                                onClick={() => setPeriod(p)}
-                                className={cn(
-                                    "px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
-                                    period === p ? "bg-blue-600 text-white shadow-lg" : "text-slate-500 hover:text-slate-300"
-                                )}
-                            >
-                                {p === 'day' ? 'Hoje' : p === 'week' ? 'Semana' : 'Mês'}
-                            </button>
-                        ))}
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="px-2 py-0.5 bg-blue-600/10 text-blue-500 text-[10px] font-black uppercase tracking-widest rounded">Super Admin</span>
+                        <div className="w-1 h-1 bg-slate-700 rounded-full" />
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Live Platform Data</span>
                     </div>
+                    <h1 className="text-4xl font-black text-white tracking-tighter uppercase leading-none">Command Center</h1>
+                    <p className="text-slate-500 font-medium mt-2">Visão consolidada de crescimento, faturamento e saúde da plataforma 791 Barber.</p>
+                </div>
+                <div className="flex gap-2 bg-slate-900/50 backdrop-blur-md border border-slate-800 p-1 rounded-xl">
+                    {(['day', 'week', 'month'] as const).map((p) => (
+                        <button
+                            key={p}
+                            onClick={() => setPeriod(p)}
+                            className={cn(
+                                "px-5 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
+                                period === p ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40" : "text-slate-500 hover:text-slate-300"
+                            )}
+                        >
+                            {p === 'day' ? 'Hoje' : p === 'week' ? 'Semana' : 'Mês'}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {/* Main Metrics Grid */}
+            {/* Metrics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {mainMetrics.map((stat) => (
-                    <Card key={stat.label} className="bg-slate-900 border-slate-800 shadow-xl overflow-hidden group">
-                        <CardContent className="p-6">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className={cn(
-                                    "p-3 rounded-2xl transition-transform group-hover:scale-110 shadow-lg",
-                                    stat.color === 'blue' && "bg-blue-600/20 text-blue-500 shadow-blue-500/10",
-                                    stat.color === 'purple' && "bg-purple-600/20 text-purple-500 shadow-purple-500/10",
-                                    stat.color === 'emerald' && "bg-emerald-600/20 text-emerald-500 shadow-emerald-500/10",
-                                    stat.color === 'amber' && "bg-amber-600/20 text-amber-500 shadow-amber-500/10",
-                                )}>
-                                    <stat.icon size={24} />
+                    <Card key={stat.label} className="bg-slate-900/40 backdrop-blur-sm border-slate-800/50 shadow-2xl relative overflow-hidden group">
+                        <div className={cn("absolute top-0 right-0 w-32 h-32 bg-gradient-to-br opacity-5 -mr-16 -mt-16 rounded-full blur-3xl transition-opacity group-hover:opacity-10", stat.color)} />
+                        <CardContent className="p-8">
+                            <div className="flex justify-between items-start mb-6">
+                                <div className={cn("p-3.5 rounded-2xl shadow-xl transition-all group-hover:scale-110", stat.bg)}>
+                                    <stat.icon size={22} className={cn("bg-clip-text", stat.color.includes('blue') ? 'text-blue-500' : stat.color.includes('emerald') ? 'text-emerald-500' : stat.color.includes('amber') ? 'text-amber-500' : 'text-purple-500')} />
                                 </div>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">{stat.label}</p>
-                                <h3 className="text-2xl font-black text-slate-100">{stat.value}</h3>
-                                <p className="text-[10px] text-slate-600 font-semibold">{stat.detail}</p>
+                                <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest leading-none">{stat.label}</p>
+                                <h3 className="text-3xl font-black text-white tracking-tight">{stat.value}</h3>
+                                <p className="text-[10px] text-slate-600 font-bold uppercase tracking-tight flex items-center gap-1.5">
+                                    <Activity size={10} className="text-slate-700" /> {stat.detail}
+                                </p>
                             </div>
                         </CardContent>
                     </Card>
                 ))}
             </div>
 
-            {/* Granular Revenue & Subs */}
+            {/* Secondary Intel */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2 bg-slate-900 border-slate-800 shadow-xl">
-                    <CardHeader className="border-b border-slate-800/50 pb-6">
+                <Card className="lg:col-span-2 bg-slate-900/60 border-slate-800 shadow-2xl overflow-hidden">
+                    <CardHeader className="p-8 border-b border-white/5">
                         <div className="flex justify-between items-center">
                             <div>
-                                <CardTitle className="text-slate-100">Faturamento SaaS Detalhado</CardTitle>
-                                <p className="text-xs text-slate-500 font-medium">Performance de assinaturas no período.</p>
+                                <CardTitle className="text-xl font-black text-white uppercase tracking-tighter">Fluxo Dinâmico de Caixa</CardTitle>
+                                <p className="text-xs text-slate-500 font-medium">Performance de faturamento recorrente.</p>
                             </div>
-                            <TrendingUp className="text-blue-500" size={24} />
+                            <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-blue-500">
+                                <TrendingUp size={24} />
+                            </div>
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-800">
-                            <div className="p-8 space-y-2">
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/5">
+                            <div className="p-10 transition-colors hover:bg-white/5 group">
+                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 mb-2">
                                     <Calendar size={12} className="text-blue-500" /> Esta Semana
                                 </p>
-                                <p className="text-2xl font-black text-slate-100">{formatCurrency(statsData?.revenue?.week || 0)}</p>
+                                <p className="text-3xl font-black text-white group-hover:text-blue-400 transition-colors">{formatCurrency(statsData?.revenue?.week || 0)}</p>
                             </div>
-                            <div className="p-8 space-y-2">
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                            <div className="p-10 transition-colors hover:bg-white/5 group">
+                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 mb-2">
                                     <Clock size={12} className="text-purple-500" /> Última Quinzena
                                 </p>
-                                <p className="text-2xl font-black text-slate-100">{formatCurrency(statsData?.revenue?.fortnight || 0)}</p>
+                                <p className="text-3xl font-black text-white group-hover:text-purple-400 transition-colors">{formatCurrency(statsData?.revenue?.fortnight || 0)}</p>
                             </div>
-                            <div className="p-8 space-y-2">
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                    <TrendingUp size={12} className="text-emerald-500" /> Este Mês
+                            <div className="p-10 transition-colors hover:bg-white/5 group">
+                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                    <Activity size={12} className="text-emerald-500" /> Este Mês
                                 </p>
-                                <p className="text-2xl font-black text-slate-100">{formatCurrency(statsData?.revenue?.month || 0)}</p>
+                                <p className="text-3xl font-black text-white group-hover:text-emerald-400 transition-colors">{formatCurrency(statsData?.revenue?.month || 0)}</p>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="bg-slate-900 border-slate-800 shadow-xl overflow-hidden">
-                    <CardHeader className="border-b border-slate-800/50">
-                        <CardTitle className="text-slate-100">Assinaturas</CardTitle>
+                <Card className="bg-slate-900/60 border-slate-800 shadow-2xl overflow-hidden relative">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500" />
+                    <CardHeader className="p-8 border-b border-white/5">
+                        <CardTitle className="text-lg font-black text-white uppercase tracking-tighter">Status Global de Contas</CardTitle>
                     </CardHeader>
-                    <CardContent className="p-6">
-                        <div className="space-y-6">
+                    <CardContent className="p-8">
+                        <div className="space-y-8">
                             <div className="flex justify-between items-end">
-                                <div>
-                                    <p className="text-sm font-black text-emerald-500">{statsData?.subscriptions?.active || 0}</p>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase">Ativas</p>
+                                <div className="space-y-1">
+                                    <p className="text-2xl font-black text-emerald-500 leading-none">{statsData?.subscriptions?.active || 0}</p>
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Adimplentes</p>
                                 </div>
-                                <div>
-                                    <p className="text-sm font-black text-red-500">{statsData?.subscriptions?.inactive || 0}</p>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase">Inativas</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-black text-blue-500">{statsData?.subscriptions?.trials || 0}</p>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase">Tests</p>
+                                <div className="space-y-1 text-right">
+                                    <p className="text-2xl font-black text-red-500 leading-none">{statsData?.subscriptions?.inactive || 0}</p>
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Cancelados</p>
                                 </div>
                             </div>
 
-                            <div className="w-full h-3 bg-slate-950 rounded-full flex overflow-hidden">
-                                <div className="h-full bg-emerald-500" style={{ width: `${(statsData?.subscriptions?.active / (statsData?.subscriptions?.active + statsData?.subscriptions?.inactive + statsData?.subscriptions?.trials || 1)) * 100}%` }} />
-                                <div className="h-full bg-blue-500" style={{ width: `${(statsData?.subscriptions?.trials / (statsData?.subscriptions?.active + statsData?.subscriptions?.inactive + statsData?.subscriptions?.trials || 1)) * 100}%` }} />
-                                <div className="h-full bg-red-500" style={{ width: `${(statsData?.subscriptions?.inactive / (statsData?.subscriptions?.active + statsData?.subscriptions?.inactive + statsData?.subscriptions?.trials || 1)) * 100}%` }} />
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-[9px] font-black uppercase text-slate-500">
+                                    <span>Saúde da Base</span>
+                                    <span className="text-emerald-500">{Math.round(((statsData?.subscriptions?.active || 0) / (statsData?.subscriptions?.active + statsData?.subscriptions?.inactive || 1)) * 100)}% Saudável</span>
+                                </div>
+                                <div className="w-full h-3 bg-slate-950 rounded-full flex overflow-hidden ring-1 ring-white/5">
+                                    <div className="h-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all duration-1000" style={{ width: `${(statsData?.subscriptions?.active / (statsData?.subscriptions?.active + statsData?.subscriptions?.inactive + statsData?.subscriptions?.trials || 1)) * 100}%` }} />
+                                    <div className="h-full bg-blue-500 opacity-60" style={{ width: `${(statsData?.subscriptions?.trials / (statsData?.subscriptions?.active + statsData?.subscriptions?.inactive + statsData?.subscriptions?.trials || 1)) * 100}%` }} />
+                                    <div className="h-full bg-red-500 opacity-40" style={{ width: `${(statsData?.subscriptions?.inactive / (statsData?.subscriptions?.active + statsData?.subscriptions?.inactive + statsData?.subscriptions?.trials || 1)) * 100}%` }} />
+                                </div>
                             </div>
 
-                            <p className="text-[10px] text-slate-500 text-center font-medium">Distribuição de clientes na plataforma.</p>
+                            <div className="flex items-center gap-4 pt-2 border-t border-white/5 mt-4">
+                                <div className="flex -space-x-2">
+                                    {[1, 2, 3].map(i => (
+                                        <div key={i} className="w-6 h-6 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center text-[8px] font-bold text-slate-600 uppercase">
+                                            {i}
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-tight">Novos licenciados nas últimas 48h</p>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Tenants List Preview */}
-            <Card className="bg-slate-900 border-slate-800 shadow-xl">
-                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-800/50 pb-6">
+            {/* Performance Ranking Preview */}
+            <Card className="bg-slate-900 border-slate-800 shadow-2xl relative overflow-hidden group">
+                <CardHeader className="p-8 flex flex-row items-center justify-between border-b border-white/5">
                     <div>
-                        <CardTitle className="text-slate-100">Barbearias e Performance</CardTitle>
-                        <CardDescription className="text-slate-400">Dados individuais por licenciamento.</CardDescription>
+                        <CardTitle className="text-xl font-black text-white uppercase tracking-tighter">Top Licenciados & Performance</CardTitle>
+                        <p className="text-xs text-slate-500 font-medium">Rank de engajamento e faturamento bruto.</p>
                     </div>
-                    <Link href="/geral/barbearias" className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2">
-                        Ver Barbearias <ChevronRight size={14} />
+                    <Link href="/geral/barbearias" className="px-5 py-2.5 bg-blue-600/10 hover:bg-blue-600 text-blue-500 hover:text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 border border-blue-600/20 group-hover:border-blue-600/50 shadow-lg">
+                        Base Completa <ArrowUpRight size={14} />
                     </Link>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto no-scrollbar">
                         <table className="w-full text-left">
                             <thead>
-                                <tr className="border-b border-slate-800 bg-slate-800/20">
-                                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">Barbearia</th>
-                                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest text-center">Status</th>
-                                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest text-center">Atendimentos</th>
-                                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest text-right">Proprietário</th>
+                                <tr className="border-b border-white/5 bg-slate-950/40">
+                                    <th className="px-8 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">Empresa</th>
+                                    <th className="px-8 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest text-center">Status Recorrência</th>
+                                    <th className="px-8 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest text-center">Interações</th>
+                                    <th className="px-8 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest text-right">Owner</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                {tenants.slice(0, 10).map((tenant) => (
-                                    <tr key={tenant.id} className="border-b border-slate-800 hover:bg-slate-800/30 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-xl bg-slate-800 p-1 flex items-center justify-center overflow-hidden border border-slate-700">
-                                                    {tenant.logo_url ? <img src={tenant.logo_url} className="w-full h-full object-cover rounded-lg" /> : <Store size={16} className="text-slate-600" />}
+                            <tbody className="divide-y divide-white/5">
+                                {tenants.slice(0, 8).map((tenant) => (
+                                    <tr key={tenant.id} className="hover:bg-white/[0.02] transition-colors group/row">
+                                        <td className="px-8 py-5">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-2xl bg-slate-950 p-1 flex items-center justify-center overflow-hidden border border-white/5 shadow-inner transition-transform group-hover/row:scale-105">
+                                                    {tenant.logo_url ? <img src={tenant.logo_url} className="w-full h-full object-cover rounded-xl" /> : <Store size={20} className="text-slate-700" />}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-bold text-slate-100">{tenant.name}</p>
-                                                    <p className="text-[10px] text-slate-500 font-medium uppercase">{tenant.city}, {tenant.state}</p>
+                                                    <p className="text-sm font-black text-white tracking-tight">{tenant.name}</p>
+                                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">{tenant.city} • {tenant.state}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <span className={cn(
-                                                "text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-tighter",
-                                                tenant.subscription_status === 'active' || !tenant.subscription_status ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
-                                            )}>
-                                                {tenant.subscription_status || 'Ativa'}
-                                            </span>
+                                        <td className="px-8 py-5 text-center">
+                                            <div className="flex flex-col items-center">
+                                                <span className={cn(
+                                                    "text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest border",
+                                                    (tenant.subscription_status === 'active' || !tenant.subscription_status)
+                                                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+                                                        : tenant.subscription_status === 'trialing'
+                                                            ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                                                            : "bg-red-500/10 text-red-500 border-red-500/20"
+                                                )}>
+                                                    {tenant.subscription_status || 'Ativa'}
+                                                </span>
+                                                <p className="text-[8px] text-slate-600 font-bold uppercase mt-1.5 opacity-60">Plano {tenant.plan || 'Basic'}</p>
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <p className="text-sm font-black text-slate-200">{tenant.stats?.total_attendances || 0}</p>
+                                        <td className="px-8 py-5 text-center">
+                                            <div className="flex flex-col items-center gap-1">
+                                                <p className="text-sm font-black text-white">{tenant.stats?.total_attendances || 0}</p>
+                                                <div className="w-12 h-1 bg-slate-800 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-blue-500" style={{ width: `${Math.min(100, (tenant.stats?.total_attendances || 0) / 10)}%` }} />
+                                                </div>
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <p className="text-xs font-bold text-slate-400">{tenant.owner?.[0]?.name || 'N/A'}</p>
-                                            <p className="text-[10px] text-slate-600 font-medium">{tenant.owner?.[0]?.email || ''}</p>
+                                        <td className="px-8 py-5 text-right">
+                                            <p className="text-xs font-black text-slate-300">{tenant.owner?.[0]?.name || '---'}</p>
+                                            <p className="text-[10px] text-slate-500 font-bold tracking-tight lowercase">{tenant.owner?.[0]?.email || ''}</p>
                                         </td>
                                     </tr>
                                 ))}
