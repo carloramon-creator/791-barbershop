@@ -14,7 +14,8 @@ export async function GET(req: Request) {
             .from('tenants')
             .select(`
                 *,
-                users(*)
+                users(*),
+                barbers(status)
             `);
 
         if (tenantsError) throw tenantsError;
