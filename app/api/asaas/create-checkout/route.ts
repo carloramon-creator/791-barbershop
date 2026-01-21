@@ -295,12 +295,20 @@ export async function POST(req: Request) {
                     nextDueDate: nextDueDate.toISOString().split('T')[0]
                 };
             } else if (interval > 1 || installments > 1) {
-                // Simplificação: apenas permitimos o parcelamento no checkout do Asaas
-                // O Asaas vai mostrar as opções de parcelamento baseadas no maxInstallmentCount
-                chargeTypes = ['DETACHED', 'INSTALLMENT'];
-                installmentConfig = {
-                    maxInstallmentCount: interval > 1 ? interval : 12 // Até 12x ou o total de meses
-                };
+                // Configuração de parcelas: Mensal (1x), Semestral (6x), Anual (10x)
+                chargeTypes = ['DETACHED'];
+                let maxInstallments = 1;
+
+                if (interval === 6) maxInstallments = 6;
+                else if (interval === 12) maxInstallments = 10;
+                else if (installments > 1) maxInstallments = installments; // Fallback para Add-ons
+
+                if (maxInstallments > 1) {
+                    chargeTypes.push('INSTALLMENT');
+                    installmentConfig = {
+                        maxInstallmentCount: maxInstallments
+                    };
+                }
             }
 
             const checkoutPayload: any = {

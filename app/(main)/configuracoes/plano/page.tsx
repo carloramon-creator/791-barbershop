@@ -307,10 +307,12 @@ export default function PlanPage() {
             };
 
             let endpoint = '/api/asaas/create-checkout';
-            if (paymentMethod === 'pix') {
-                endpoint = '/api/checkout/inter-pix';
-            } else if (paymentMethod === 'boleto-inter') {
-                endpoint = '/api/checkout/inter-boleto';
+            if (paymentMethod === 'pix' || paymentMethod === 'boleto-inter') {
+                setPendingData({
+                    pending: true,
+                    message: paymentMethod === 'pix' ? 'Gerando seu PIX no Banco Inter...' : 'Gerando seu Boleto no Banco Inter...'
+                });
+                endpoint = paymentMethod === 'pix' ? '/api/checkout/inter-pix' : '/api/checkout/inter-boleto';
             }
 
             const payload = {
