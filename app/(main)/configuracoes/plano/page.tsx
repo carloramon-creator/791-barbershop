@@ -56,7 +56,7 @@ export default function PlanPage() {
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
     const [selectedAddon, setSelectedAddon] = useState<any>(null);
     const [saving, setSaving] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix' | 'boleto-inter' | 'boleto-result'>('card');
+    const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix' | 'boleto-inter' | 'boleto-result' | 'pix-result'>('card');
     const [couponCode, setCouponCode] = useState('');
     const [pixData, setPixData] = useState<{ pixPayload: string; amount: number; expiresAt: string; pdfUrl?: string } | null>(null);
     const [boletoData, setBoletoData] = useState<{ nossoNumero: string; codigoBarras: string; linhaDigitavel: string; pdfUrl: string; amount?: number } | null>(null);
