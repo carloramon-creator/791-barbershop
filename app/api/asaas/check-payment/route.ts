@@ -60,7 +60,54 @@ export async function GET(req: Request) {
             .select('*')
             .eq('metadata->>asaas_checkout_id', paymentId)
             .eq('tenant_id', tenant.id)
-            .single();
+            .maybeSingle();
+
+        // Se estiver pago no Asaas mas não no nosso banco, sincroniza AGORA
+        if (isPaid && financeRecord && !financeRecord.is_paid) {
+            console.log('[POLLING ASAAS] 🔥 Pagamento detectado via Polling (Frontend Check)! Atualizando...');
+
+            // 1. Marcar fatura como paga
+            await supabaseAdmin.from('finance').update({
+                is_paid: true,
+                metadata: {
+                    ...financeRecord.metadata,
+                    payment_confirmed_at: new Date().toISOString(),
+                    asaas_status: payment.status,
+                    sync_type: 'polling_check'
+                }
+            }).eq('id', financeRecord.id);
+
+            const metadata = financeRecord.metadata as any;
+            const planSlug = metadata.plan;
+            const addonSlug = metadata.addon;
+            const interval = metadata.interval || 1;
+
+            if (planSlug) {
+                const now = new Date();
+                const newEndDate = new Date(now);
+                newEndDate.setMonth(newEndDate.getMonth() + interval);
+
+                await supabaseAdmin.from('tenants').update({
+                    plan: planSlug,
+                    subscription_status: 'active',
+                    subscription_current_period_end: newEndDate.toISOString(),
+                }).eq('id', tenant.id);
+            }
+
+            if (addonSlug) {
+                const { data: tData } = await supabaseAdmin
+                    .from('tenants')
+                    .select('active_addons')
+                    .eq('id', tenant.id)
+                    .single();
+
+                const activeAddons = tData?.active_addons || [];
+                if (!activeAddons.includes(addonSlug)) {
+                    activeAddons.push(addonSlug);
+                    await supabaseAdmin.from('tenants').update({ active_addons: activeAddons }).eq('id', tenant.id);
+                }
+            }
+        }
 
         return addCorsHeaders(req, NextResponse.json({
             success: true,
@@ -73,7 +120,7 @@ export async function GET(req: Request) {
                 isPaid,
                 localRecord: {
                     exists: !!financeRecord,
-                    isPaid: financeRecord?.is_paid || false
+                    isPaid: isPaid || (financeRecord?.is_paid || false)
                 }
             }
         }));

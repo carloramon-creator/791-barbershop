@@ -133,23 +133,67 @@ export async function GET(req: Request) {
                         // Se descobriu que está PAGO agora, libera o tenant
                         if (isPaid && !charge.is_paid) {
                             console.log(`[POLLING] 🔥 Pagamento detectado via Polling! Liberando tenant...`);
-                            const description = charge.description || '';
-                            let plan = 'basic';
-                            if (description.toLowerCase().includes('premium')) plan = 'premium';
-                            else if (description.toLowerCase().includes('completo')) plan = 'complete';
 
-                            const periodEnd = new Date();
-                            periodEnd.setDate(periodEnd.getDate() + 31);
+                            const metadata = charge.metadata as any;
+                            const planSlug = metadata.plan;
+                            const addonSlug = metadata.addon;
+                            const interval = metadata.interval || 1;
 
-                            if (charge.metadata.tenant_id) {
-                                await supabaseAdmin.from('tenants').update({
-                                    plan: plan,
-                                    subscription_status: 'active',
-                                    subscription_current_period_end: periodEnd.toISOString()
-                                }).eq('id', charge.metadata.tenant_id);
+                            // 1. Atualizar Plano se houver
+                            if (planSlug) {
+                                const now = new Date();
+                                const periodEnd = new Date(now);
+                                periodEnd.setMonth(periodEnd.getMonth() + interval);
+
+                                console.log(`[POLLING] Atualizando plano: ${planSlug}, expira em: ${periodEnd.toISOString()}`);
+
+                                if (charge.metadata.tenant_id) {
+                                    await supabaseAdmin.from('tenants').update({
+                                        plan: planSlug,
+                                        subscription_status: 'active',
+                                        subscription_current_period_end: periodEnd.toISOString()
+                                    }).eq('id', charge.metadata.tenant_id);
+                                }
                             }
 
-                            // Garante atualização final
+                            // 2. Atualizar Addons se houver
+                            if (addonSlug && charge.metadata.tenant_id) {
+                                console.log(`[POLLING] Ativando addon: ${addonSlug}`);
+                                const { data: tData } = await supabaseAdmin
+                                    .from('tenants')
+                                    .select('active_addons')
+                                    .eq('id', charge.metadata.tenant_id)
+                                    .single();
+
+                                const activeAddons = tData?.active_addons || [];
+                                if (!activeAddons.includes(addonSlug)) {
+                                    activeAddons.push(addonSlug);
+                                    await supabaseAdmin.from('tenants').update({
+                                        active_addons: activeAddons
+                                    }).eq('id', charge.metadata.tenant_id);
+                                }
+                            }
+
+                            // Fallback se não tiver metadata (legado)
+                            if (!planSlug && !addonSlug) {
+                                const description = charge.description || '';
+                                let plan = 'basic';
+                                if (description.toLowerCase().includes('premium')) plan = 'premium';
+                                else if (description.toLowerCase().includes('completo')) plan = 'complete';
+
+                                const periodEnd = new Date();
+                                periodEnd.setDate(periodEnd.getDate() + 31);
+
+                                if (charge.metadata.tenant_id) {
+                                    await supabaseAdmin.from('tenants').update({
+                                        plan: plan,
+                                        subscription_status: 'active',
+                                        subscription_current_period_end: periodEnd.toISOString()
+                                    }).eq('id', charge.metadata.tenant_id);
+                                }
+                            }
+
+                            // Garante atualização final da fatura
                             await supabaseAdmin.from('finance').update({ is_paid: true }).eq('id', charge.id);
                         }
                     }

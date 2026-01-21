@@ -518,293 +518,311 @@ export default function PlanPage() {
                 </div>
             ) : (
                 <>
-                    {/* LAYOUT LADO A LADO: PLANO ATUAL + ADD-ONS */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                        {/* COLUNA ESQUERDA: PLANO ATUAL */}
-                        <div className="lg:col-span-4 space-y-6">
-                            <Card className="bg-slate-900 border-slate-800 shadow-xl overflow-hidden ring-1 ring-white/5">
-                                <CardHeader className="py-4 px-5 border-b border-slate-800/50 bg-slate-950/30">
-                                    <CardTitle className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                                        <CreditCard size={14} className="text-blue-500" /> Plano Atual
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-6">
-                                    <div className="space-y-6">
-                                        <div className="flex items-start gap-4">
-                                            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center font-black text-white text-2xl shadow-xl shadow-blue-900/40 transform -rotate-3 group-hover:rotate-0 transition-transform">
-                                                {currentPlan.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div>
-                                                <h3 className="text-3xl font-black text-slate-100 capitalize tracking-tight leading-none mb-2">
-                                                    {dynamicPlans.find(p => p.slug === currentPlan)?.name || currentPlan}
-                                                </h3>
-                                                <p className="text-xl font-black text-blue-500">
-                                                    {tenantObject?.subscription_current_period_end ? (
-                                                        <>
-                                                            Vence em: {new Date(tenantObject.subscription_current_period_end).toLocaleDateString('pt-BR')}
-                                                            {(() => {
-                                                                const end = new Date(tenantObject.subscription_current_period_end);
-                                                                const now = new Date();
-                                                                const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-                                                                return (
-                                                                    <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1">
-                                                                        {diff > 0 ? `Faltam ${diff} dias` : 'Plano Expirado'}
-                                                                    </span>
-                                                                );
-                                                            })()}
-                                                        </>
-                                                    ) : (
-                                                        <>R$ {(dynamicPlans.find(p => p.slug === currentPlan)?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês</>
-                                                    )}
-                                                </p>
-                                            </div>
-                                        </div>
+                    {/* --- LÓGICA DE REORDENAMENTO --- */}
+                    {(() => {
+                        const isTrialOrPending = currentPlan === 'trial' || isExpired || ['past_due', 'unpaid', 'pending_payment'].includes(subscriptionStatus || '');
 
-                                        <div className="pt-4 border-t border-slate-800/50 flex flex-col gap-3">
-                                            <span className={cn(
-                                                "w-fit px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border shadow-sm",
-                                                subscriptionStatus === 'canceled'
-                                                    ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                                                    : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                                            )}>
-                                                {subscriptionStatus === 'canceled' ? 'Cancelamento Pendente' : 'Escalável & Ativo'}
-                                            </span>
-                                            {stripeSubscriptionId && subscriptionStatus !== 'canceled' && (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 text-[10px] text-red-500/60 hover:text-red-500 hover:bg-red-500/10 font-black uppercase tracking-widest p-0 justify-start"
-                                                    onClick={handleCancelSubscription}
-                                                    disabled={canceling}
-                                                >
-                                                    {canceling ? 'Processando...' : '✖ Cancelar Assinatura'}
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-
-                        {/* COLUNA DIREITA: TURBINAR PACOTE */}
-                        <div className="lg:col-span-8 space-y-6">
-                            <div>
-                                <h2 className="text-2xl font-black text-slate-100 uppercase tracking-tight flex items-center gap-3">
-                                    <Zap className="text-amber-400 fill-amber-400" size={24} /> Turbinar Pacote
-                                </h2>
-                                <p className="text-slate-500 text-sm font-medium mt-1">Recursos específicos para sua necessidade.</p>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {dynamicAddons
-                                    .filter(addon => {
-                                        // Premium: TUDO INCLUSO (não mostrar turbinar)
-                                        if (currentPlan === 'premium' || currentPlan === 'complete') {
-                                            // Se for Complete, temos que ver se o usuário quer esconder ou mostrar?
-                                            // Ele disse "no plano completo... deveria aparecer os módulos".
-                                            // Então 'complete' NÃO DEVE ter return false direto se não tiver tudo.
-                                            // Vou manter false apenas para 'premium' conforme a queixa da foto 5.
-                                        }
-                                        if (currentPlan === 'premium') return false;
-
-                                        const currentPlanData = dynamicPlans.find(p => p.slug === currentPlan);
-                                        if (!currentPlanData) return true;
-
-                                        const addonName = addon.name.toLowerCase().replace('módulo ', '').trim();
-
-                                        const features = (currentPlanData.features || []).map((f: any) => String(f).toLowerCase());
-
-                                        const hasFeature = features.some((f: string) => {
-                                            // Ignorar features negativas (ex: "Sem Estoque")
-                                            if (f.includes('sem ') || f.includes('não ') || f.includes('no ')) return false;
-
-                                            return f.includes(addonName) || f.includes(addon.slug);
-                                        });
-
-                                        return !hasFeature;
-                                    })
-                                    .map((addon) => {
-                                        const isActive = activeAddons.includes(addon.slug);
-                                        return (
-                                            <Card key={addon.id} className={cn(
-                                                "bg-slate-900/40 border-slate-800 transition-all hover:border-slate-700 relative overflow-hidden group shadow-sm backdrop-blur-sm",
-                                                isActive && "border-emerald-500/50 bg-emerald-500/5"
-                                            )}>
-                                                {isActive && (
-                                                    <div className="absolute top-2 right-2">
-                                                        <CheckCircle2 className="text-emerald-500" size={16} />
-                                                    </div>
-                                                )}
-                                                <CardContent className="p-5">
-                                                    <div className="mb-4">
-                                                        <h3 className="text-sm font-black text-slate-100 uppercase tracking-tight mb-1">{addon.name}</h3>
-                                                        <p className="text-[11px] text-slate-500 font-medium leading-normal h-8 line-clamp-2">{addon.description}</p>
-                                                    </div>
-
-                                                    <div className="flex items-center justify-between pt-4 border-t border-slate-800/50">
-                                                        <div className="flex flex-col">
-                                                            <span className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">Investimento</span>
-                                                            <p className="text-sm font-black text-amber-500">
-                                                                R$ {Number(addon.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}<span className="text-[9px] text-slate-600 ml-1 lowercase">/mês</span>
-                                                            </p>
-                                                        </div>
-                                                        <Button
-                                                            size="sm"
-                                                            variant={isActive ? "outline" : "default"}
-                                                            disabled={isActive || saving}
-                                                            onClick={() => {
-                                                                setSelectedAddon(addon);
-                                                                setSelectedPlan(null);
-                                                                setPaymentMethod('card');
-                                                                setOpenDialog(true);
-                                                            }}
-                                                            className={cn(
-                                                                "h-9 text-[10px] font-black uppercase tracking-widest px-4 shadow-lg active:scale-95 transition-all",
-                                                                isActive ? "border-emerald-500/50 text-emerald-500 bg-transparent" : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20"
-                                                            )}
-                                                        >
-                                                            {isActive ? 'Ativo' : 'Adicionar'}
-                                                        </Button>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        );
-                                    })}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* SEÇÃO DE MIGRAÇÃO DE PLANO */}
-                    <div className="space-y-8 pt-16 mt-16 border-t border-slate-800/50">
-                        <div className="text-center space-y-2">
-                            <h2 className="text-3xl md:text-4xl font-black text-slate-100 uppercase tracking-tighter">Escolha seu Próximo Nível</h2>
-                            <p className="text-slate-500 font-medium">Migre agora e libere todo o potencial da sua barbearia.</p>
-                        </div>
-
-                        {/* SELETOR DE PERÍODO */}
-                        <div className="flex justify-center mt-8">
-                            <div className="bg-slate-900 border border-slate-800 p-1 rounded-2xl flex gap-1 shadow-2xl">
-                                {[
-                                    { id: 1, label: 'Mensal', discount: 0 },
-                                    { id: 6, label: 'Semestral', discount: 10 },
-                                    { id: 12, label: 'Anual', discount: 20 },
-                                ].map((period) => (
-                                    <button
-                                        key={period.id}
-                                        onClick={() => {
-                                            setSelectedInterval(period.id);
-                                            setInstallments(1); // Resetar parcelas ao mudar ciclo
-                                        }}
-                                        className={cn(
-                                            "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative overflow-hidden",
-                                            selectedInterval === period.id
-                                                ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40"
-                                                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-                                        )}
-                                    >
-                                        {period.label}
-                                        {period.discount > 0 && (
-                                            <span className="ml-2 bg-emerald-500 text-[8px] px-1.5 py-0.5 rounded-full text-white animate-pulse">
-                                                -{period.discount}%
-                                            </span>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            {dynamicPlans.filter(p => p.slug !== 'trial').map((plan) => (
-                                <Card
-                                    key={plan.id}
-                                    className={cn(
-                                        'bg-slate-900 border-slate-800 cursor-pointer transition-all hover:border-slate-600 rounded-3xl p-1 relative overflow-hidden group shadow-2xl',
-                                        currentPlan === plan.slug && 'border-blue-500 ring-4 ring-blue-500/10'
-                                    )}
-                                >
-                                    <div className="p-6">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <span className="px-3 py-1 bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-[0.2em] rounded-lg border border-blue-500/20">
-                                                {plan.slug}
-                                            </span>
-                                            {currentPlan === plan.slug && (
-                                                <span className="flex items-center gap-1 text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-lg">
-                                                    <CheckCircle2 size={12} /> Plano Ativo
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        <CardHeader className="p-0 mb-6">
-                                            <CardTitle className="text-3xl font-black text-slate-100 tracking-tight mb-2">{plan.name}</CardTitle>
-                                            <div className="space-y-1">
-                                                {(() => {
-                                                    const basePrice = plan.price || 0;
-                                                    const discount = selectedInterval === 6 ? 10 : selectedInterval === 12 ? 20 : 0;
-                                                    const totalPrice = (basePrice * selectedInterval) * (1 - (discount / 100));
-                                                    const monthlyEquivalent = totalPrice / selectedInterval;
-
-                                                    return (
-                                                        <>
-                                                            <div className="flex items-baseline gap-1">
-                                                                <span className="text-3xl font-black text-slate-100">R$ {monthlyEquivalent.toFixed(2).replace('.', ',')}</span>
-                                                                <span className="text-xs text-slate-500 font-bold lowercase">/mês</span>
-                                                            </div>
-                                                            {selectedInterval > 1 && (
-                                                                <div className="text-[10px] font-black text-emerald-500 uppercase tracking-wider">
-                                                                    Total: R$ {totalPrice.toFixed(2).replace('.', ',')} ({selectedInterval} meses)
-                                                                </div>
-                                                            )}
-                                                        </>
-                                                    );
-                                                })()}
-                                            </div>
-                                            {plan.description && (
-                                                <p className="mt-4 text-xs font-bold text-slate-500 leading-relaxed min-h-[40px]">
-                                                    {plan.description}
-                                                </p>
-                                            )}
+                        const CurrentPlanSection = (
+                            <div key="current-plan" className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                                {/* COLUNA ESQUERDA: PLANO ATUAL */}
+                                <div className="lg:col-span-4 space-y-6">
+                                    <Card className="bg-slate-900 border-slate-800 shadow-xl overflow-hidden ring-1 ring-white/5">
+                                        <CardHeader className="py-4 px-5 border-b border-slate-800/50 bg-slate-950/30">
+                                            <CardTitle className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                                                <CreditCard size={14} className="text-blue-500" /> Plano Atual
+                                            </CardTitle>
                                         </CardHeader>
+                                        <CardContent className="p-6">
+                                            <div className="space-y-6">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center font-black text-white text-2xl shadow-xl shadow-blue-900/40 transform -rotate-3 group-hover:rotate-0 transition-transform">
+                                                        {currentPlan.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-3xl font-black text-slate-100 capitalize tracking-tight leading-none mb-2">
+                                                            {dynamicPlans.find(p => p.slug === currentPlan)?.name || currentPlan}
+                                                        </h3>
+                                                        <p className="text-xl font-black text-blue-500">
+                                                            {tenantObject?.subscription_current_period_end ? (
+                                                                <>
+                                                                    Vence em: {new Date(tenantObject.subscription_current_period_end).toLocaleDateString('pt-BR')}
+                                                                    {(() => {
+                                                                        const end = new Date(tenantObject.subscription_current_period_end);
+                                                                        const now = new Date();
+                                                                        const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                                                                        return (
+                                                                            <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1">
+                                                                                {diff > 0 ? `Faltam ${diff} dias` : 'Plano Expirado'}
+                                                                            </span>
+                                                                        );
+                                                                    })()}
+                                                                </>
+                                                            ) : (
+                                                                <>R$ {(dynamicPlans.find(p => p.slug === currentPlan)?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês</>
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                </div>
 
-                                        <CardContent className="p-0 space-y-8">
-                                            <div className="space-y-4 pt-6 border-t border-slate-800">
-                                                <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">O que está incluso:</p>
-                                                <div className="space-y-3">
-                                                    {plan.features?.map((feature: any, i: number) => (
-                                                        <div key={i} className="flex items-start gap-3 group/item">
-                                                            <div className="mt-0.5 w-4 h-4 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
-                                                                <Check className="w-2.5 h-2.5 text-amber-500" />
-                                                            </div>
-                                                            <span className="text-xs font-bold text-slate-400 group-hover/item:text-slate-200 transition-colors leading-tight">
-                                                                {feature}
-                                                            </span>
-                                                        </div>
-                                                    ))}
+                                                <div className="pt-4 border-t border-slate-800/50 flex flex-col gap-3">
+                                                    <span className={cn(
+                                                        "w-fit px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border shadow-sm",
+                                                        subscriptionStatus === 'canceled'
+                                                            ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                                                            : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                                    )}>
+                                                        {subscriptionStatus === 'canceled' ? 'Cancelamento Pendente' : 'Escalável & Ativo'}
+                                                    </span>
+                                                    {stripeSubscriptionId && subscriptionStatus !== 'canceled' && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-8 text-[10px] text-red-500/60 hover:text-red-500 hover:bg-red-500/10 font-black uppercase tracking-widest p-0 justify-start"
+                                                            onClick={handleCancelSubscription}
+                                                            disabled={canceling}
+                                                        >
+                                                            {canceling ? 'Processando...' : '✖ Cancelar Assinatura'}
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </div>
-
-                                            <Button
-                                                className={cn(
-                                                    'w-full py-7 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl',
-                                                    currentPlan === plan.slug && subscriptionStatus === 'active'
-                                                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                                                        : 'bg-blue-600 hover:bg-white hover:text-blue-600 text-white shadow-blue-600/20 active:scale-95'
-                                                )}
-                                                disabled={currentPlan === plan.slug && subscriptionStatus === 'active'}
-                                                onClick={() => {
-                                                    setSelectedPlan(plan.slug);
-                                                    setSelectedAddon(null);
-                                                    setPaymentMethod('card');
-                                                    setOpenDialog(true);
-                                                }}
-                                            >
-                                                {currentPlan === plan.slug && subscriptionStatus === 'active' ? 'Plano Ativo' : 'Assinar Agora'}
-                                            </Button>
                                         </CardContent>
+                                    </Card>
+                                </div>
+
+                                {/* COLUNA DIREITA: TURBINAR PACOTE */}
+                                <div className="lg:col-span-8 space-y-6">
+                                    <div>
+                                        <h2 className="text-2xl font-black text-slate-100 uppercase tracking-tight flex items-center gap-3">
+                                            <Zap className="text-amber-400 fill-amber-400" size={24} /> Turbinar Pacote
+                                        </h2>
+                                        <p className="text-slate-500 text-sm font-medium mt-1">Recursos específicos para sua necessidade.</p>
                                     </div>
-                                </Card>
-                            ))}
-                        </div>
-                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {dynamicAddons
+                                            .filter(addon => {
+                                                // Premium: TUDO INCLUSO (não mostrar turbinar)
+                                                if (currentPlan === 'premium') return false;
+
+                                                const currentPlanData = dynamicPlans.find(p => p.slug === currentPlan);
+                                                if (!currentPlanData) return true;
+
+                                                const addonName = addon.name.toLowerCase().replace('módulo ', '').trim();
+
+                                                const features = (currentPlanData.features || []).map((f: any) => String(f).toLowerCase());
+
+                                                const hasFeature = features.some((f: string) => {
+                                                    // Ignorar features negativas (ex: "Sem Estoque")
+                                                    if (f.includes('sem ') || f.includes('não ') || f.includes('no ')) return false;
+
+                                                    return f.includes(addonName) || f.includes(addon.slug);
+                                                });
+
+                                                return !hasFeature;
+                                            })
+                                            .map((addon) => {
+                                                const isActive = activeAddons.includes(addon.slug);
+                                                return (
+                                                    <Card key={addon.id} className={cn(
+                                                        "bg-slate-900/40 border-slate-800 transition-all hover:border-slate-700 relative overflow-hidden group shadow-sm backdrop-blur-sm",
+                                                        isActive && "border-emerald-500/50 bg-emerald-500/5"
+                                                    )}>
+                                                        {isActive && (
+                                                            <div className="absolute top-2 right-2">
+                                                                <CheckCircle2 className="text-emerald-500" size={16} />
+                                                            </div>
+                                                        )}
+                                                        <CardContent className="p-5">
+                                                            <div className="mb-4">
+                                                                <h3 className="text-sm font-black text-slate-100 uppercase tracking-tight mb-1">{addon.name}</h3>
+                                                                <p className="text-[11px] text-slate-500 font-medium leading-normal h-8 line-clamp-2">{addon.description}</p>
+                                                            </div>
+
+                                                            <div className="flex items-center justify-between pt-4 border-t border-slate-800/50">
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">Investimento</span>
+                                                                    <p className="text-sm font-black text-amber-500">
+                                                                        R$ {Number(addon.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}<span className="text-[9px] text-slate-600 ml-1 lowercase">/mês</span>
+                                                                    </p>
+                                                                </div>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant={isActive ? "outline" : "default"}
+                                                                    disabled={isActive || saving}
+                                                                    onClick={() => {
+                                                                        setSelectedAddon(addon);
+                                                                        setSelectedPlan(null);
+                                                                        setPaymentMethod('card');
+                                                                        setOpenDialog(true);
+                                                                    }}
+                                                                    className={cn(
+                                                                        "h-9 text-[10px] font-black uppercase tracking-widest px-4 shadow-lg active:scale-95 transition-all",
+                                                                        isActive ? "border-emerald-500/50 text-emerald-500 bg-transparent" : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20"
+                                                                    )}
+                                                                >
+                                                                    {isActive ? 'Ativo' : 'Adicionar'}
+                                                                </Button>
+                                                            </div>
+                                                        </CardContent>
+                                                    </Card>
+                                                );
+                                            })}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+
+                        const PlanSelectionSection = (
+                            <div key="plan-selection" className={cn("space-y-8", isTrialOrPending ? "mb-16" : "pt-16 mt-16 border-t border-slate-800/50")}>
+                                <div className="text-center space-y-2">
+                                    <h2 className="text-3xl md:text-4xl font-black text-slate-100 uppercase tracking-tighter">Escolha seu Próximo Nível</h2>
+                                    <p className="text-slate-500 font-medium">Migre agora e libere todo o potencial da sua barbearia.</p>
+                                </div>
+
+                                {/* SELETOR DE PERÍODO */}
+                                <div className="flex justify-center mt-8">
+                                    <div className="bg-slate-900 border border-slate-800 p-1 rounded-2xl flex gap-1 shadow-2xl">
+                                        {[
+                                            { id: 1, label: 'Mensal', discount: 0 },
+                                            { id: 6, label: 'Semestral', discount: 10 },
+                                            { id: 12, label: 'Anual', discount: 20 },
+                                        ].map((period) => (
+                                            <button
+                                                key={period.id}
+                                                onClick={() => {
+                                                    setSelectedInterval(period.id);
+                                                    setInstallments(1); // Resetar parcelas ao mudar ciclo
+                                                }}
+                                                className={cn(
+                                                    "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative overflow-hidden",
+                                                    selectedInterval === period.id
+                                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40"
+                                                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                                                )}
+                                            >
+                                                {period.label}
+                                                {period.discount > 0 && (
+                                                    <span className="ml-2 bg-emerald-500 text-[8px] px-1.5 py-0.5 rounded-full text-white animate-pulse">
+                                                        -{period.discount}%
+                                                    </span>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                    {dynamicPlans.filter(p => p.slug !== 'trial').map((plan) => (
+                                        <Card
+                                            key={plan.id}
+                                            className={cn(
+                                                'bg-slate-900 border-slate-800 cursor-pointer transition-all hover:border-slate-600 rounded-3xl p-1 relative overflow-hidden group shadow-2xl',
+                                                currentPlan === plan.slug && 'border-blue-500 ring-4 ring-blue-500/10'
+                                            )}
+                                        >
+                                            <div className="p-6">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <span className="px-3 py-1 bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-[0.2em] rounded-lg border border-blue-500/20">
+                                                        {plan.slug}
+                                                    </span>
+                                                    {currentPlan === plan.slug && (
+                                                        <span className="flex items-center gap-1 text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-lg">
+                                                            <CheckCircle2 size={12} /> Plano Ativo
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <CardHeader className="p-0 mb-6">
+                                                    <CardTitle className="text-3xl font-black text-slate-100 tracking-tight mb-2">{plan.name}</CardTitle>
+                                                    <div className="space-y-1">
+                                                        {(() => {
+                                                            const basePrice = plan.price || 0;
+                                                            const discount = selectedInterval === 6 ? 10 : selectedInterval === 12 ? 20 : 0;
+                                                            const totalPrice = (basePrice * selectedInterval) * (1 - (discount / 100));
+                                                            const monthlyEquivalent = totalPrice / selectedInterval;
+
+                                                            return (
+                                                                <>
+                                                                    <div className="flex items-baseline gap-1">
+                                                                        <span className="text-3xl font-black text-slate-100">R$ {monthlyEquivalent.toFixed(2).replace('.', ',')}</span>
+                                                                        <span className="text-xs text-slate-500 font-bold lowercase">/mês</span>
+                                                                    </div>
+                                                                    {selectedInterval > 1 && (
+                                                                        <div className="text-[10px] font-black text-emerald-500 uppercase tracking-wider">
+                                                                            Total: R$ {totalPrice.toFixed(2).replace('.', ',')} ({selectedInterval} meses)
+                                                                        </div>
+                                                                    )}
+                                                                </>
+                                                            );
+                                                        })()}
+                                                    </div>
+                                                    {plan.description && (
+                                                        <p className="mt-4 text-xs font-bold text-slate-500 leading-relaxed min-h-[40px]">
+                                                            {plan.description}
+                                                        </p>
+                                                    )}
+                                                </CardHeader>
+
+                                                <CardContent className="p-0 space-y-8">
+                                                    <div className="space-y-4 pt-6 border-t border-slate-800">
+                                                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">O que está incluso:</p>
+                                                        <div className="space-y-3">
+                                                            {plan.features?.map((feature: any, i: number) => (
+                                                                <div key={i} className="flex items-start gap-3 group/item">
+                                                                    <div className="mt-0.5 w-4 h-4 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+                                                                        <Check className="w-2.5 h-2.5 text-amber-500" />
+                                                                    </div>
+                                                                    <span className="text-xs font-bold text-slate-400 group-hover/item:text-slate-200 transition-colors leading-tight">
+                                                                        {feature}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    <Button
+                                                        className={cn(
+                                                            'w-full py-7 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl',
+                                                            currentPlan === plan.slug && subscriptionStatus === 'active'
+                                                                ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                                                                : 'bg-blue-600 hover:bg-white hover:text-blue-600 text-white shadow-blue-600/20 active:scale-95'
+                                                        )}
+                                                        disabled={currentPlan === plan.slug && subscriptionStatus === 'active'}
+                                                        onClick={() => {
+                                                            setSelectedPlan(plan.slug);
+                                                            setSelectedAddon(null);
+                                                            setPaymentMethod('card');
+                                                            setOpenDialog(true);
+                                                        }}
+                                                    >
+                                                        {currentPlan === plan.slug && subscriptionStatus === 'active' ? 'Plano Ativo' : 'Assinar Agora'}
+                                                    </Button>
+                                                </CardContent>
+                                            </div>
+                                        </Card>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+
+                        if (isTrialOrPending) {
+                            return (
+                                <>
+                                    {PlanSelectionSection}
+                                    {CurrentPlanSection}
+                                </>
+                            );
+                        }
+
+                        return (
+                            <>
+                                {CurrentPlanSection}
+                                {PlanSelectionSection}
+                            </>
+                        );
+                    })()}
+
                     {/* O loading agora fecha mais abaixo, englobando tudo */}
 
                     <Dialog open={openDialog} onOpenChange={(open) => {
