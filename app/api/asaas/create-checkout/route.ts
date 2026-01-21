@@ -153,16 +153,15 @@ export async function POST(req: Request) {
 
                 if (firstPayment) {
                     checkoutId = firstPayment.id;
-                    checkoutUrl = firstPayment.invoiceUrl; // URL da Fatura (melhor que bankSlipUrl pois tem opção de boleto e pix)
+                    // Preferir PDF do boleto (bankSlipUrl) se disponível, senão invoiceUrl
+                    checkoutUrl = firstPayment.bankSlipUrl || firstPayment.invoiceUrl;
                 } else {
-                    // Fallback seguro se ainda não gerou (muito raro)
-                    // Redireciona para lista de faturas do sistema
+                    // Fallback seguro (redireciona para lista se não achar pagamento)
                     checkoutUrl = `${baseUrl}/configuracoes/financeiro`;
                 }
 
             } else {
                 // Boleto Único (Semestral/Anual)
-                // Se for parcelado no boleto, Asaas suporta installmentCount? Sim.
                 const paymentPayload: any = {
                     customer: customer.id,
                     billingType: 'BOLETO',
@@ -175,6 +174,7 @@ export async function POST(req: Request) {
 
                 const payment = await asaas.createPayment(paymentPayload);
                 checkoutId = payment.id;
+                // Preferir PDF do boleto
                 checkoutUrl = payment.bankSlipUrl || payment.invoiceUrl;
             }
 

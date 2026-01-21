@@ -53,10 +53,17 @@ export default function AsaasCheckoutModal({ checkoutUrl, isOpen, onClose }: Asa
                         /* Modo Iframe (Cartão) */
                         <>
                             {isLoading && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
+                                <div className="absolute inset-0 flex items-center justify-center bg-white z-10 transition-opacity duration-500">
                                     <div className="text-center space-y-4">
                                         <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                                        <p className="text-slate-600 font-medium">Carregando checkout...</p>
+                                        <p className="text-slate-600 font-medium">Carregando checkout seguro...</p>
+                                        {/* Botão de emergência se demorar muito */}
+                                        <button
+                                            onClick={() => window.open(checkoutUrl, '_blank')}
+                                            className="text-xs text-blue-500 hover:underline mt-2"
+                                        >
+                                            Não carregou? Clique aqui para abrir em nova janela
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -65,7 +72,9 @@ export default function AsaasCheckoutModal({ checkoutUrl, isOpen, onClose }: Asa
                                 className="w-full h-full border-0"
                                 onLoad={() => setIsLoading(false)}
                                 title="Checkout Asaas"
-                                allow="payment"
+                                allow="payment; clipboard-write"
+                            // Removido sandbox restrito para garantir compatibilidade total, ou usar:
+                            // sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-top-navigation"
                             />
                         </>
                     ) : (
