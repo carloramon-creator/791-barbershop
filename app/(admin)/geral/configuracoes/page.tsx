@@ -179,6 +179,52 @@ export default function SystemSettingsPage() {
                             </div>
                         </div>
 
+                        {/* Commercial Info Sub-section */}
+                        <div className="mt-6 pt-6 border-t border-slate-800/50">
+                            <div className="flex items-center gap-2 mb-4">
+                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Dados no Boleto (Cabeçalho)</h4>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-slate-400 text-xs uppercase font-bold">Email Público</Label>
+                                    <Input
+                                        value={settings?.asaas_branding?.commercialInfo?.email || ''}
+                                        onChange={(e) => setSettings({ ...settings, asaas_branding: { ...settings.asaas_branding, commercialInfo: { ...settings.asaas_branding?.commercialInfo, email: e.target.value } } })}
+                                        placeholder="contato@suaempresa.com"
+                                        className="bg-slate-950 border-slate-800 text-slate-100"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-slate-400 text-xs uppercase font-bold">Telefone Público</Label>
+                                    <Input
+                                        value={settings?.asaas_branding?.commercialInfo?.phone || ''}
+                                        onChange={(e) => setSettings({ ...settings, asaas_branding: { ...settings.asaas_branding, commercialInfo: { ...settings.asaas_branding?.commercialInfo, phone: e.target.value } } })}
+                                        placeholder="(00) 0000-0000"
+                                        className="bg-slate-950 border-slate-800 text-slate-100"
+                                    />
+                                    <p className="text-[10px] text-slate-500">Deixe em branco se quiser ocultar (pode não funcionar em todos os layouts).</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-slate-400 text-xs uppercase font-bold">Celular / WhatsApp</Label>
+                                    <Input
+                                        value={settings?.asaas_branding?.commercialInfo?.mobilePhone || ''}
+                                        onChange={(e) => setSettings({ ...settings, asaas_branding: { ...settings.asaas_branding, commercialInfo: { ...settings.asaas_branding?.commercialInfo, mobilePhone: e.target.value } } })}
+                                        placeholder="(00) 90000-0000"
+                                        className="bg-slate-950 border-slate-800 text-slate-100"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-slate-400 text-xs uppercase font-bold">Site</Label>
+                                    <Input
+                                        value={settings?.asaas_branding?.commercialInfo?.site || ''}
+                                        onChange={(e) => setSettings({ ...settings, asaas_branding: { ...settings.asaas_branding, commercialInfo: { ...settings.asaas_branding?.commercialInfo, site: e.target.value } } })}
+                                        placeholder="www.suaempresa.com"
+                                        className="bg-slate-950 border-slate-800 text-slate-100"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="flex justify-end pt-2">
                             <Button
                                 onClick={async () => {

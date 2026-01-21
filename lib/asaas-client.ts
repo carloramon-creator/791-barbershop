@@ -210,6 +210,22 @@ export class AsaasClient {
         return response.data;
     }
 
+    // Commercial Info Management
+    async getCommercialInfo() {
+        const response = await this.client.get('/myAccount/commercialInfo');
+        return response.data;
+    }
+
+    async updateCommercialInfo(info: {
+        email?: string;
+        site?: string;
+        phone?: string;
+        mobilePhone?: string;
+    }) {
+        const response = await this.client.put('/myAccount/commercialInfo', info);
+        return response.data;
+    }
+
     // Webhook verification
     verifyWebhook(payload: any, signature: string, secret: string): boolean {
         // Asaas doesn't use signature verification by default

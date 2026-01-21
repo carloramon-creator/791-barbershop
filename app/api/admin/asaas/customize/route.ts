@@ -26,15 +26,27 @@ export async function POST(req: Request) {
 
         const asaas = new AsaasClient({ apiKey, environment });
 
-        // 2. Chamar Asaas
-        const result = await asaas.customizeInvoice({
-            logoUrl: payload.logoUrl,
-            primaryColor: payload.primaryColor,
-            infoColor: payload.infoColor,
-            observations: 'Obrigado pela preferência.'
-        });
+        // 2. Chamar Asaas (Visual)
+        if (payload.logoUrl || payload.primaryColor || payload.infoColor) {
+            await asaas.customizeInvoice({
+                logoUrl: payload.logoUrl,
+                primaryColor: payload.primaryColor,
+                infoColor: payload.infoColor,
+                observations: 'Obrigado pela preferência.'
+            });
+        }
 
-        // 3. Salvar nas configurações locais também para persistência visual
+        // 3. Chamar Asaas (Dados Comerciais - Email, Telefone, Site)
+        if (payload.commercialInfo) {
+            await asaas.updateCommercialInfo({
+                email: payload.commercialInfo.email,
+                phone: payload.commercialInfo.phone,
+                mobilePhone: payload.commercialInfo.mobilePhone,
+                site: payload.commercialInfo.site
+            });
+        }
+
+        // 4. Salvar nas configurações locais
         await supabaseAdmin
             .from('system_settings')
             .upsert({
@@ -42,7 +54,7 @@ export async function POST(req: Request) {
                 value: payload
             });
 
-        return NextResponse.json({ success: true, data: result });
+        return NextResponse.json({ success: true });
     } catch (error: any) {
         console.error('[ASAAS BRANDING ERROR]', error?.response?.data || error);
         return NextResponse.json({
