@@ -141,7 +141,7 @@ export async function POST(req: Request) {
             }, { status: 400 }));
         }
 
-        // 6. Criar checkout - FORMATO SIMPLIFICADO PARA TESTE
+        // 6. Criar checkout - FORMATO COMPLETO COM TODOS OS CAMPOS OBRIGATÓRIOS
         const origin = req.headers.get('origin') || 'https://791barber.com';
 
         const checkoutData = {
@@ -164,7 +164,10 @@ export async function POST(req: Request) {
                 cpfCnpj: cpfCnpj,
                 email: user.email || '',
                 phone: (tenant.phone || '').replace(/\D/g, ''),
-                postalCode: (tenant.address_zip || tenant.cep || '').replace(/\D/g, '')
+                postalCode: (tenant.address_zip || tenant.cep || '').replace(/\D/g, ''),
+                address: tenant.street || tenant.address_street || 'Rua Principal',
+                addressNumber: tenant.number || 'S/N',
+                province: tenant.neighborhood || tenant.address_neighborhood || 'Centro'
             }
         };
 
