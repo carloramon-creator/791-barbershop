@@ -24,19 +24,50 @@ export async function POST(req: Request) {
             return NextResponse.json({ received: true });
         }
 
-        // Buscar registro financeiro pelo payment ID
-        const { data: financeRecord, error: financeError } = await supabaseAdmin
-            .from('finance')
-            .select('*')
-            .eq('metadata->>asaas_payment_id', payment.id)
-            .single();
+        // Buscar registro financeiro
+        // 1. Tentar pelo externalReference (mais confiável)
+        let financeRecord = null;
+        let financeError = null;
 
-        if (financeError || !financeRecord) {
+        if (payment.externalReference) {
+            const { data, error } = await supabaseAdmin
+                .from('finance')
+                .select('*')
+                .eq('metadata->>external_reference', payment.externalReference)
+                .single();
+            financeRecord = data;
+            financeError = error;
+        }
+
+        // 2. Fallback: Tentar pelo ID do pagamento Asaas (para Pix/Boleto direto)
+        if (!financeRecord) {
+            const { data, error } = await supabaseAdmin
+                .from('finance')
+                .select('*')
+                .eq('metadata->>asaas_checkout_id', payment.id) // Tenta ID direto (common for Boleto/Pix)
+                .single();
+            financeRecord = data;
+            if (!financeError) financeError = error;
+        }
+
+        // 3. Fallback: Tentar pelo Subscription ID
+        if (!financeRecord && payment.subscription) {
+            // Se o pagamento pertence a uma assinatura, o asaas_checkout_id pode ser o ID da assinatura ou o ID do primeiro pagamento
+            // Vamos tentar achar pelo asaas_checkout_id sendo o Subscription ID
+            const { data, error } = await supabaseAdmin
+                .from('finance')
+                .select('*')
+                .eq('metadata->>asaas_checkout_id', payment.subscription)
+                .single();
+            financeRecord = data;
+        }
+
+        if (!financeRecord) {
             console.log('[ASAAS WEBHOOK] Registro financeiro não encontrado:', {
                 paymentId: payment.id,
-                error: financeError?.message
+                subscriptionId: payment.subscription,
+                externalReference: payment.externalReference
             });
-            // Retorna 200 para evitar retentativas
             return NextResponse.json({ received: true, message: 'Finance record not found' });
         }
 
@@ -73,7 +104,7 @@ export async function POST(req: Request) {
                 // Marcar como pago
                 await supabaseAdmin
                     .from('finance')
-                    .update({ 
+                    .update({
                         is_paid: true,
                         metadata: {
                             ...financeRecord.metadata,
@@ -146,7 +177,7 @@ export async function POST(req: Request) {
 
             case 'PAYMENT_OVERDUE':
                 console.log('[ASAAS WEBHOOK] Pagamento vencido');
-                
+
                 await supabaseAdmin
                     .from('finance')
                     .update({
@@ -162,7 +193,7 @@ export async function POST(req: Request) {
             case 'PAYMENT_DELETED':
             case 'PAYMENT_REFUNDED':
                 console.log('[ASAAS WEBHOOK] Pagamento cancelado/reembolsado');
-                
+
                 await supabaseAdmin
                     .from('tenants')
                     .update({ subscription_status: 'canceled' })
@@ -180,11 +211,11 @@ export async function POST(req: Request) {
             message: error.message,
             stack: error.stack
         });
-        
+
         // Sempre retorna 200 para evitar retentativas infinitas
-        return NextResponse.json({ 
-            received: true, 
-            error: error.message 
+        return NextResponse.json({
+            received: true,
+            error: error.message
         }, { status: 200 });
     }
 }

@@ -117,6 +117,10 @@ export async function POST(req: Request) {
         let checkoutId = null;
         let checkoutUrl = '';
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://791barber.com';
+
+        // Generate a unique reference for matching in Webhook
+        const externalReference = crypto.randomUUID();
+
         // Check environment from Asaas config
         const isSandbox = environment === 'sandbox';
         // Base URL for checkout session depends on environment
@@ -147,7 +151,8 @@ export async function POST(req: Request) {
                     value: totalAmount,
                     nextDueDate: new Date().toISOString().split('T')[0], // Hoje
                     cycle: 'MONTHLY',
-                    description: itemDescription
+                    description: itemDescription,
+                    externalReference: externalReference
                 };
 
                 const subscription = await asaas.createSubscription(subscriptionPayload);
@@ -171,7 +176,8 @@ export async function POST(req: Request) {
                     dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +3 dias
                     description: itemDescription,
                     installmentCount: (installments > 1) ? installments : undefined,
-                    installmentValue: (installments > 1) ? Number((totalAmount / installments).toFixed(2)) : undefined
+                    installmentValue: (installments > 1) ? Number((totalAmount / installments).toFixed(2)) : undefined,
+                    externalReference: externalReference
                 };
 
                 const payment = await asaas.createPayment(paymentPayload);
@@ -218,7 +224,8 @@ export async function POST(req: Request) {
                 billingType: 'PIX',
                 value: totalAmount,
                 dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +1 dia
-                description: itemDescription
+                description: itemDescription,
+                externalReference: externalReference
             };
 
             const payment = await asaas.createPayment(paymentPayload);
@@ -270,6 +277,7 @@ export async function POST(req: Request) {
                 billingTypes: ['CREDIT_CARD'],
                 chargeTypes: chargeTypes,
                 minutesToExpire: 30,
+                externalReference: externalReference, // Try root level for Checkout
                 callback: {
                     successUrl: `${baseUrl}/asaas/checkout/success`,
                     cancelUrl: `${baseUrl}/asaas/checkout/cancel`,
@@ -305,6 +313,7 @@ export async function POST(req: Request) {
                     metadata: {
                         is_saas_payment: true,
                         asaas_checkout_id: checkoutId,
+                        external_reference: externalReference,
                         payment_method: paymentMethod,
                         [isAddon ? 'addon' : 'plan']: addonSlug || planSlug,
                         is_addon: isAddon,
