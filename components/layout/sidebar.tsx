@@ -29,7 +29,7 @@ import { SupportDialog } from '@/components/support/SupportDialog';
 
 export function Sidebar() {
     const pathname = usePathname();
-    const { role, tenant, signOut, isSystemAdmin } = useAuth();
+    const { role, tenant, signOut, isSystemAdmin, isImpersonating } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [showSupport, setShowSupport] = useState(false);
     const planConfig = PLAN_CONFIG[(tenant?.plan as keyof typeof PLAN_CONFIG) || 'basic'];
@@ -143,6 +143,23 @@ export function Sidebar() {
                             </>
                         )}
                     </div>
+
+                    {/* Exit Impersonate Banner */}
+                    {isImpersonating && (
+                        <div className="mt-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 animate-in fade-in slide-in-from-top-2">
+                            <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                <ShieldCheck size={12} /> Modo Suporte Ativo
+                            </p>
+                            <button
+                                onClick={() => {
+                                    window.location.href = '/api/system/impersonate?stop=true';
+                                }}
+                                className="w-full py-2 bg-amber-500 text-slate-900 text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-amber-400 transition-colors shadow-lg shadow-amber-900/20"
+                            >
+                                Sair do Acesso Oculto
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto no-scrollbar">
