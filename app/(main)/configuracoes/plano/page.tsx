@@ -112,15 +112,15 @@ export default function PlanPage() {
 
     // Monitorar pagamento pendente do Asaas
     useEffect(() => {
-        const checkPendingAsaasPayment = async () => {
+        const checkPendingAsaasPayment = async (silent = false) => {
             const pendingStr = localStorage.getItem('asaas_pending_payment');
             if (!pendingStr) {
-                setCheckingAsaasPayment(false);
+                if (!silent) setCheckingAsaasPayment(false);
                 return;
             }
 
             try {
-                setCheckingAsaasPayment(true);
+                if (!silent) setCheckingAsaasPayment(true);
                 const pending = JSON.parse(pendingStr);
                 const { paymentId, checkoutId, timestamp } = pending;
 
@@ -131,7 +131,7 @@ export default function PlanPage() {
                     return;
                 }
 
-                console.log('[ASAAS] Verificando pagamento pendente:', paymentId || checkoutId);
+                console.log(`[ASAAS] Verificando pagamento pendente (${silent ? 'SILENT' : 'FULL'}):`, paymentId || checkoutId);
 
                 // Verificar status do pagamento
                 const query = paymentId ? `paymentId=${paymentId}` : `checkoutId=${checkoutId}`;
@@ -153,28 +153,29 @@ export default function PlanPage() {
                     await fetchCurrentPlan();
                     await fetchInvoices();
                 } else {
-                    // Ainda pendente ou erro, removemos do localStorage para não travar na próxima recarga
-                    // mas poderíamos manter se quisermos que continue tentando. 
-                    // Por segurança p/ não travar a UI, vamos apenas liberar.
+                    // Ainda pendente. Se for o primeiro check (full), avisamos que estamos monitorando
                     console.log('[ASAAS] Pagamento ainda não consta como pago.');
+
+                    // Se já passou algum tempo e ainda não confirmou, paramos de "travar" a tela e deixamos só o log
+                    // mas mantemos no localStorage para o interval continuar (silenciosamente)
                 }
             } catch (error) {
                 console.error('[ASAAS] Erro ao verificar pagamento pendente:', error);
             } finally {
-                setCheckingAsaasPayment(false);
+                if (!silent) setCheckingAsaasPayment(false);
             }
         };
 
-        // Verificar imediatamente ao carregar a página
-        checkPendingAsaasPayment();
+        // Verificar imediatamente (com overlay) ao carregar a página
+        checkPendingAsaasPayment(false);
 
-        // Continuar verificando a cada 5 segundos se houver pagamento pendente
+        // Continuar verificando a cada 10 segundos (silenciosamente) se houver pagamento pendente
         const interval = setInterval(() => {
             const pendingStr = localStorage.getItem('asaas_pending_payment');
             if (pendingStr) {
-                checkPendingAsaasPayment();
+                checkPendingAsaasPayment(true);
             }
-        }, 5000);
+        }, 10000);
 
         return () => clearInterval(interval);
     }, []);
