@@ -74,7 +74,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
         const { id: tenantId } = await params;
 
-        console.log(`[SYSTEM] Admin ${currentUser.id} initializing full deletion for tenant ${tenantId}`);
+        console.log(`[SYSTEM] Admin ${currentUser.id} initializing robust deletion for tenant ${tenantId}`);
 
         // 1. Buscar todos os usuários vinculados ao tenant
         const { data: usersToDelete, error: fetchUsersError } = await supabaseAdmin
@@ -83,40 +83,56 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
             .eq('tenant_id', tenantId);
 
         if (fetchUsersError) {
-            console.error('[SYSTEM] Erro ao buscar usuários para exclusão:', fetchUsersError);
+            console.error('[SYSTEM] Erro ao buscar usuários:', fetchUsersError);
         }
 
-        // 2. Excluir usuários do Supabase Auth (CRÍTICO)
+        // 2. Limpeza profunda por usuário
         if (usersToDelete && usersToDelete.length > 0) {
-            console.log(`[SYSTEM] Removendo ${usersToDelete.length} usuários do Auth para o tenant ${tenantId}`);
-            for (const user of usersToDelete) {
+            console.log(`[SYSTEM] Iniciando limpeza de ${usersToDelete.length} usuários para o tenant ${tenantId}`);
+
+            for (const u of usersToDelete) {
                 try {
-                    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
+                    console.log(`[SYSTEM] Removendo dependências do banco para user ${u.id} (${u.email})`);
+
+                    // a. Remover da tabela de barbeiros (se existir)
+                    await supabaseAdmin.from('barbers').delete().eq('user_id', u.id).eq('tenant_id', tenantId);
+
+                    // b. Remover da tabela de usuários (nossa customizada)
+                    await supabaseAdmin.from('users').delete().eq('id', u.id).eq('tenant_id', tenantId);
+
+                    // c. Remover do Supabase Auth (Obrigatório para liberar o e-mail)
+                    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(u.id);
                     if (authError) {
-                        console.error(`[SYSTEM] Falha ao deletar usuário ${user.email} (${user.id}) no Auth:`, authError.message);
+                        console.error(`[SYSTEM] Erro ao deletar no Auth: ${authError.message}`);
+                    } else {
+                        console.log(`[SYSTEM] Usuário ${u.email} removido do Auth com sucesso.`);
                     }
-                } catch (e: any) {
-                    console.error(`[SYSTEM] Erro crítico ao processar deleção de Auth para ${user.id}:`, e.message);
+                } catch (err: any) {
+                    console.error(`[SYSTEM] Falha crítica ao limpar usuário ${u.id}:`, err.message);
                 }
             }
         }
 
-        // 3. Excluir o registro do tenant (o banco deve lidar com CASCADE para o restante das tabelas)
-        const { error } = await supabaseAdmin
+        // 3. Excluir o registro do tenant
+        console.log(`[SYSTEM] Excluindo registro do tenant ${tenantId} do banco de dados`);
+        const { error: tenantDeleteError } = await supabaseAdmin
             .from('tenants')
             .delete()
             .eq('id', tenantId);
 
-        if (error) {
-            console.error('[SYSTEM] Erro ao excluir tenant do banco:', error);
-            throw error;
+        if (tenantDeleteError) {
+            console.error('[SYSTEM] Erro ao excluir tenant:', tenantDeleteError);
+            throw tenantDeleteError;
         }
 
-        console.log(`[SYSTEM] Tenant ${tenantId} e seus usuários foram excluídos com sucesso.`);
+        console.log(`[SYSTEM] ✅ Tenant ${tenantId} excluído com sucesso.`);
 
-        return addCorsHeaders(req, NextResponse.json({ success: true, usersRemoved: usersToDelete?.length || 0 }));
+        return addCorsHeaders(req, NextResponse.json({
+            success: true,
+            usersRemoved: usersToDelete?.length || 0
+        }));
     } catch (error: any) {
-        console.error('[SYSTEM] Failed to delete tenant:', error);
+        console.error('[SYSTEM] Falha geral na exclusão do tenant:', error);
         return addCorsHeaders(req, NextResponse.json({ error: error.message }, { status: 500 }));
     }
 }

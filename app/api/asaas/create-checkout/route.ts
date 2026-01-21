@@ -128,14 +128,16 @@ export async function POST(req: Request) {
         const postalCode = (tenant.address_zip || tenant.cep || '').replace(/\D/g, '');
         const province = tenant.neighborhood || tenant.address_neighborhood || '';
 
-        // Validação básica para evitar erro 400 do Asaas
-        if (!cpfCnpj || cpfCnpj.length < 11) {
-            return addCorsHeaders(req, NextResponse.json({ error: 'Erro: CPF/CNPJ inválido ou incompleto. Verifique nas configurações da barbearia.' }, { status: 400 }));
-        }
-
         if (!phone || !address || !number || !postalCode || !province) {
+            const missing = [];
+            if (!phone) missing.push('Telefone');
+            if (!address) missing.push('Rua');
+            if (!number) missing.push('Número');
+            if (!postalCode) missing.push('CEP');
+            if (!province) missing.push('Bairro');
+
             return addCorsHeaders(req, NextResponse.json({
-                error: 'Dados incompletos: O Asaas exige endereço completo e telefone (Rua, Número, Bairro, CEP e Telefone) nas configurações para processar o checkout.'
+                error: `Dados incompletos: O Asaas exige endereço completo e telefone nas configurações da barbearia. Faltando: ${missing.join(', ')}`
             }, { status: 400 }));
         }
 
@@ -145,12 +147,15 @@ export async function POST(req: Request) {
             email: user.email || '',
             phone: phone,
             mobilePhone: phone,
+            phoneNumber: phone, // Sugerido pelo erro do Asaas V3
             address: address,
             addressNumber: number,
-            complement: tenant.complement || undefined,
+            complement: tenant.complement || '',
             postalCode: postalCode,
             province: province,
         };
+
+        console.log('[ASAAS] Payload customerData:', customerData);
 
         // 4. Lógica de Cobrança (Híbrida)
         let checkoutId = null;
