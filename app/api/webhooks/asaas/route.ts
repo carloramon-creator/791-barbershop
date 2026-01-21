@@ -41,13 +41,13 @@ export async function POST(req: Request) {
 
         // 2. Fallback: Tentar pelo ID do pagamento Asaas (para Pix/Boleto direto)
         if (!financeRecord) {
+            console.log('[ASAAS WEBHOOK] 🔍 Buscando por ID direto:', payment.id);
             const { data, error } = await supabaseAdmin
                 .from('finance')
                 .select('*')
-                .eq('metadata->>asaas_checkout_id', payment.id) // Tenta ID direto (common for Boleto/Pix)
-                .single();
+                .eq('metadata->>asaas_checkout_id', payment.id)
+                .maybeSingle();
             financeRecord = data;
-            if (!financeError) financeError = error;
         }
 
         // 3. Fallback: Tentar pelo Subscription ID

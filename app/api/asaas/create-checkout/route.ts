@@ -151,6 +151,13 @@ export async function POST(req: Request) {
 
         // Check environment from Asaas config
         const isSandbox = environment === 'sandbox';
+
+        console.log(`[ASAAS] Criando Checkout (${environment}):`, {
+            method: paymentMethod,
+            amount: totalAmount,
+            externalReference,
+            isSandbox
+        });
         // Base URL for checkout session depends on environment
         const asaasCheckoutBaseUrl = isSandbox
             ? 'https://sandbox.asaas.com/checkoutSession/show'
@@ -314,8 +321,8 @@ export async function POST(req: Request) {
             const checkoutPayload: any = {
                 billingTypes: ['CREDIT_CARD'],
                 chargeTypes: chargeTypes,
-                minutesToExpire: 30,
-                externalReference: externalReference, // Try root level for Checkout
+                // minutesToExpire: 30, // Removed to avoid validation issues in some charge types
+                externalReference: externalReference,
                 callback: {
                     successUrl: `${baseUrl}/asaas/checkout/success`,
                     cancelUrl: `${baseUrl}/asaas/checkout/cancel`,
