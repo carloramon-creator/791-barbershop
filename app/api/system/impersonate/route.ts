@@ -39,9 +39,27 @@ export async function GET(req: NextRequest) {
         }
 
         // 2. Parar Impersonate
-        const protocol = req.headers.get('x-forwarded-proto') || 'https';
-        const host = req.headers.get('host') || req.nextUrl.host;
-        const publicOrigin = `${protocol}://${host}`;
+        const referer = req.headers.get('referer');
+        let publicOrigin = req.nextUrl.origin;
+
+        if (referer && !referer.includes('localhost')) {
+            try {
+                publicOrigin = new URL(referer).origin;
+            } catch (e) {
+                console.error('[IMPERSONATE-DEBUG] Falha ao parsear referer:', e);
+            }
+        }
+
+        // Caso ainda seja localhost ou 127.0.0.1, tentar os headers de proxy
+        if (publicOrigin.includes('localhost') || publicOrigin.includes('127.0.0.1')) {
+            const protocol = req.headers.get('x-forwarded-proto') || 'https';
+            const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
+            if (host && !host.includes('localhost')) {
+                publicOrigin = `${protocol}://${host}`;
+            }
+        }
+
+        console.log(`[IMPERSONATE-DEBUG] Origin determinada: ${publicOrigin}`);
 
         if (stop === 'true') {
             const resp = NextResponse.redirect(new URL('/geral/barbearias', publicOrigin));
