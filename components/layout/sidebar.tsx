@@ -25,11 +25,13 @@ import { PLAN_CONFIG } from '@/lib/constants';
 import Image from 'next/image';
 import { getBusinessTexts } from '@/lib/business-dictionary';
 import { getBusinessTheme } from '@/lib/business-theme';
+import { SupportDialog } from '@/components/support/SupportDialog';
 
 export function Sidebar() {
     const pathname = usePathname();
     const { role, tenant, signOut, isSystemAdmin } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
+    const [showSupport, setShowSupport] = useState(false);
     const planConfig = PLAN_CONFIG[(tenant?.plan as keyof typeof PLAN_CONFIG) || 'basic'];
 
     const texts = getBusinessTexts(tenant?.business_type);
@@ -169,13 +171,13 @@ export function Sidebar() {
                 </nav>
 
                 <div className="px-6 mb-2">
-                    <a
-                        href={`mailto:contato@791solucoes.com.br?subject=Feedback/Erro (${tenant?.name || '791 Barber'}) - 791 Barber`}
-                        className="flex items-center gap-2 text-[10px] font-bold text-slate-500 hover:text-slate-300 transition-colors uppercase tracking-wider group"
+                    <button
+                        onClick={() => setShowSupport(true)}
+                        className="flex items-center gap-2 text-[10px] font-bold text-slate-500 hover:text-slate-300 transition-colors uppercase tracking-wider group w-full text-left"
                     >
                         <Sparkles size={12} className="text-amber-500 group-hover:text-amber-400" />
                         Reportar Erro / Sugestão
-                    </a>
+                    </button>
                 </div>
 
                 <div className="p-6 mt-auto border-t border-slate-800">
@@ -189,6 +191,8 @@ export function Sidebar() {
                     </Button>
                 </div>
             </div >
+
+            <SupportDialog open={showSupport} onOpenChange={setShowSupport} />
         </>
     );
 }

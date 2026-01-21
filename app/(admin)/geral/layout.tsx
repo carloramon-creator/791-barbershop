@@ -11,7 +11,8 @@ import {
     Users,
     LogOut,
     ShieldCheck,
-    Package
+    Package,
+    HelpCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -44,6 +45,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { name: 'Cupons', href: '/geral/cupons', icon: Ticket },
         { name: 'Configurações API', href: '/geral/configuracoes', icon: Settings },
         { name: 'Configuração Fiscal', href: '/geral/configuracoes/nfs-e', icon: ShieldCheck },
+        { name: 'Mensagens de Suporte', href: '/geral/suporte', icon: HelpCircle },
         { name: 'Administradores', href: '/geral/usuarios', icon: ShieldCheck },
     ];
 

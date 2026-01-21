@@ -205,4 +205,9 @@ export const Api = {
     createClient: (payload: Record<string, unknown>) => apiFetch('/api/clients', { method: 'POST', body: JSON.stringify(payload) }),
     updateClient: (id: string, payload: Record<string, unknown>) => apiFetch(`/api/clients?id=${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
     deleteClient: (id: string) => apiFetch(`/api/clients?id=${id}`, { method: 'DELETE' }),
+
+    // Support (Admin)
+    getSupportTickets: () => apiFetch('/api/admin/support/tickets'),
+    updateSupportTicket: (id: string, payload: Record<string, unknown>) =>
+        apiFetch('/api/admin/support/tickets', { method: 'PATCH', body: JSON.stringify({ id, ...payload }) }),
 };
