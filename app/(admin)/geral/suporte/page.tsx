@@ -215,7 +215,7 @@ export default function SupportPage() {
 
             {/* Modal de Detalhes JUMBO */}
             <Dialog open={!!selectedTicket} onOpenChange={(open) => !open && setSelectedTicket(null)}>
-                <DialogContent className="sm:!max-w-7xl !w-[95vw] !h-[85vh] bg-slate-900 border-slate-800 text-slate-100 flex flex-col p-0 overflow-hidden shadow-2xl">
+                <DialogContent className="sm:!max-w-7xl !w-[95vw] !h-auto max-h-[90vh] bg-slate-900 border-slate-800 text-slate-100 flex flex-col p-0 overflow-hidden shadow-2xl">
                     <div className="p-6 border-b border-slate-800 bg-slate-950">
                         <DialogHeader>
                             <div className="flex items-center gap-4 mb-1">
@@ -223,10 +223,10 @@ export default function SupportPage() {
                                     {selectedTicket && getTypeIcon(selectedTicket.type)}
                                 </div>
                                 <div>
-                                    <DialogTitle className="text-xl font-black uppercase tracking-tight leading-none">
+                                    <DialogTitle className="text-base font-black uppercase tracking-tight leading-none">
                                         {selectedTicket && getTypeLabel(selectedTicket.type)}
                                     </DialogTitle>
-                                    <DialogDescription className="text-slate-400 text-sm font-medium mt-1">
+                                    <DialogDescription className="text-slate-400 text-[11px] font-medium mt-1">
                                         Enviado por <span className="text-blue-400 font-bold">{selectedTicket?.tenants?.name}</span> ({selectedTicket?.user?.nickname || selectedTicket?.user?.name}) em {selectedTicket && format(new Date(selectedTicket.created_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
                                     </DialogDescription>
                                 </div>
@@ -234,8 +234,8 @@ export default function SupportPage() {
                         </DialogHeader>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar bg-slate-900/40">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-slate-900/40">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {/* Coluna Esquerda: Conteúdo */}
                             <div className="space-y-8">
                                 <div className="space-y-3">
@@ -243,7 +243,7 @@ export default function SupportPage() {
                                         <MessageCircle className="w-4 h-4 text-blue-500" />
                                         <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Mensagem do Cliente</label>
                                     </div>
-                                    <div className="p-6 bg-slate-950 border border-slate-800 rounded-2xl min-h-[200px] text-sm leading-relaxed text-slate-300 shadow-inner whitespace-pre-wrap">
+                                    <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl min-h-[150px] text-xs leading-relaxed text-slate-300 shadow-inner whitespace-pre-wrap">
                                         {selectedTicket?.message}
                                     </div>
                                 </div>
@@ -289,7 +289,7 @@ export default function SupportPage() {
                                         <Badge variant="outline" className="text-[10px] uppercase font-bold text-blue-500 border-blue-500/20">O cliente verá esta nota</Badge>
                                     </div>
                                     <Textarea
-                                        className="bg-slate-950 border-slate-800 text-sm font-medium min-h-[250px] rounded-2xl p-6 resize-none focus:ring-2 focus:ring-blue-600/50 shadow-inner custom-scrollbar"
+                                        className="bg-slate-950 border-slate-800 text-xs font-medium min-h-[200px] rounded-xl p-6 resize-none focus:ring-2 focus:ring-blue-600/50 shadow-inner custom-scrollbar"
                                         placeholder="Digite aqui a resposta que o cliente verá no painel dele..."
                                         value={adminNotes}
                                         onChange={(e) => setAdminNotes(e.target.value)}

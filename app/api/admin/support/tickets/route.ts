@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
+import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function GET() {
     try {
+        // SEGURANÇA: Apenas Super Admin (Ramon) pode acessar esta rota
+        const { isSystemAdmin } = await getCurrentUserAndTenant();
+        if (!isSystemAdmin) {
+            return NextResponse.json({ error: 'Acesso negado. Apenas administradores do sistema.' }, { status: 403 });
+        }
+
         const { data, error } = await supabaseAdmin
             .from('support_tickets')
             .select(`
@@ -50,6 +57,12 @@ export async function GET() {
 
 export async function PATCH(req: Request) {
     try {
+        // SEGURANÇA: Apenas Super Admin (Ramon) pode alterar status de chamados
+        const { isSystemAdmin } = await getCurrentUserAndTenant();
+        if (!isSystemAdmin) {
+            return NextResponse.json({ error: 'Acesso negado. Apenas administradores do sistema.' }, { status: 403 });
+        }
+
         const { id, status, admin_notes } = await req.json();
 
         if (!id) {
