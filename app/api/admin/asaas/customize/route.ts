@@ -58,8 +58,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true });
     } catch (error: any) {
         console.error('[ASAAS BRANDING ERROR]', error?.response?.data || error);
-        return NextResponse.json({
-            error: error?.response?.data?.errors?.[0]?.description || error.message
-        }, { status: 400 });
+        const errorMsg = error?.response?.data?.errors?.[0]?.description || error.message || 'Erro desconhecido';
+        return NextResponse.json({ error: errorMsg }, { status: 500 });
     }
 }
