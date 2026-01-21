@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { X, ExternalLink } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface AsaasCheckoutModalProps {
@@ -14,16 +14,10 @@ export default function AsaasCheckoutModal({ checkoutUrl, isOpen, onClose }: Asa
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Escutar mensagens do iframe (se o Asaas enviar)
         const handleMessage = (event: MessageEvent) => {
-            // Verificar origem por segurança
             if (event.origin !== 'https://asaas.com' && event.origin !== 'https://sandbox.asaas.com') {
                 return;
             }
-
-            console.log('[ASAAS CHECKOUT] Mensagem recebida:', event.data);
-
-            // Se receber mensagem de sucesso, fechar modal
             if (event.data?.type === 'checkout_success' || event.data?.status === 'success') {
                 onClose();
             }
@@ -33,28 +27,43 @@ export default function AsaasCheckoutModal({ checkoutUrl, isOpen, onClose }: Asa
         return () => window.removeEventListener('message', handleMessage);
     }, [onClose]);
 
+    // Detectar se é um PDF (provavelmente Boleto)
+    const isPdf = checkoutUrl.toLowerCase().includes('.pdf') || checkoutUrl.includes('bankSlip');
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-4xl w-full h-[90vh] p-0 bg-white">
-                {/* Header com botão fechar */}
+            <DialogContent className="max-w-4xl w-full h-[90vh] p-0 bg-white overflow-hidden">
+                {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b bg-slate-50">
-                    <h2 className="text-lg font-bold text-slate-900">Finalizar Pagamento</h2>
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-slate-200 rounded-lg transition-colors"
-                        aria-label="Fechar"
-                    >
-                        <X className="w-5 h-5 text-slate-600" />
-                    </button>
+                    <h2 className="text-lg font-bold text-slate-900">
+                        {isPdf ? 'Visualizar Boleto' : 'Finalizar Pagamento'}
+                    </h2>
+                    <div className="flex items-center gap-2">
+                        <a
+                            href={checkoutUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                        >
+                            <ExternalLink className="w-4 h-4" />
+                            Abrir em nova aba
+                        </a>
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-slate-200 rounded-lg transition-colors"
+                        >
+                            <X className="w-5 h-5 text-slate-600" />
+                        </button>
+                    </div>
                 </div>
 
-                {/* Iframe do checkout */}
-                <div className="relative w-full h-full">
+                {/* Iframe */}
+                <div className="relative w-full h-full pb-16"> {/* Padding bottom para não cortar */}
                     {isLoading && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-white">
+                        <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
                             <div className="text-center space-y-4">
                                 <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                                <p className="text-slate-600 font-medium">Carregando checkout...</p>
+                                <p className="text-slate-600 font-medium">Carregando...</p>
                             </div>
                         </div>
                     )}
