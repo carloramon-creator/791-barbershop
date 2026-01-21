@@ -100,12 +100,6 @@ export default function AsaasCheckoutModal({ checkoutUrl, isOpen, onClose, bolet
                             </>
                         )}
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
                 </div>
 
                 {/* Content */}

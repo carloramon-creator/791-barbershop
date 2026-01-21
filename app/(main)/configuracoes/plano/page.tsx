@@ -306,6 +306,13 @@ export default function PlanPage() {
                 'boleto-inter': 'BOLETO'
             };
 
+            let endpoint = '/api/asaas/create-checkout';
+            if (paymentMethod === 'pix') {
+                endpoint = '/api/checkout/inter-pix';
+            } else if (paymentMethod === 'boleto-inter') {
+                endpoint = '/api/checkout/inter-boleto';
+            }
+
             const payload = {
                 plan: selectedPlan,
                 addon: selectedAddon?.slug,
@@ -315,7 +322,7 @@ export default function PlanPage() {
                 installments: paymentMethod === 'card' ? installments : 1
             };
 
-            const res = await fetch(`${API_URL}/api/asaas/create-checkout`, {
+            const res = await fetch(`${API_URL}${endpoint}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -327,55 +334,61 @@ export default function PlanPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Erro ao processar pagamento');
 
-            if (data.checkoutUrl) {
-                // Abrir modal com checkout integrado (Cartão ou Boleto)
-
-                // Se tiver dados extras do boleto (Rich UI)
-                if (data.boletoData) {
-                    setBoletoData({
-                        nossoNumero: '',
-                        codigoBarras: data.boletoData.barCode,
-                        linhaDigitavel: data.boletoData.identificationField,
-                        pdfUrl: data.boletoData.bankSlipUrl,
-                        amount: data.boletoData.value,
-                        dueDate: data.boletoData.dueDate
-                    } as any);
-                } else {
-                    setBoletoData(null);
-                }
-
-                if (data.pixData) {
-                    setPixData({
-                        pixPayload: data.pixData.payload,
-                        amount: data.amount,
-                        expiresAt: data.pixData.expirationDate,
-                        encodedImage: data.pixData.encodedImage
-                    } as any);
-                } else {
-                    setPixData(null);
-                }
-
+            if (data.checkoutUrl && paymentMethod === 'card') {
+                // Abrir modal com checkout integrado (Asaas - Cartão)
                 setCheckoutUrl(data.checkoutUrl);
                 setShowCheckoutModal(true);
-                setOpenDialog(false); // Fechar dialog de seleção
-
-            } else if (data.pixQrCode) {
-                // Fallback legado (não deve cair aqui se route estiver atualizado)
-                setPixData({
-                    pixPayload: data.pixCopyPaste,
-                    amount: data.amount,
-                    expiresAt: data.expiresAt
-                } as any);
+                setOpenDialog(false);
+            } else if (data.seu_numero || data.pending) {
+                // Resposta do Banco Inter (Pix ou Boleto)
+                if (paymentMethod === 'pix') {
+                    setPendingData({
+                        pending: true,
+                        message: data.message || 'Gerando seu PIX no Banco Inter...',
+                        seu_numero: data.seu_numero
+                    });
+                    setPixData(null);
+                    setOpenDialog(true);
+                } else if (paymentMethod === 'boleto-inter') {
+                    if (data.pdfUrl && data.linhaDigitavel) {
+                        setBoletoData({
+                            linhaDigitavel: data.linhaDigitavel,
+                            codigoBarras: data.codigoBarras,
+                            pdfUrl: data.pdfUrl,
+                            amount: data.amount,
+                            nossoNumero: data.nossoNumero || ''
+                        } as any);
+                        setPaymentMethod('boleto-result');
+                    } else {
+                        setPendingData({
+                            pending: true,
+                            message: 'Registrando boleto no Banco Inter...',
+                            seu_numero: data.seu_numero
+                        });
+                        setOpenDialog(true);
+                    }
+                }
                 fetchInvoices();
-            } else if (data.boletoUrl) {
-                // Boleto
+
+            } else if (data.pixQrCode || data.pixData) {
+                // Fallback Asaas Pix
+                setPixData({
+                    pixPayload: data.pixCopyPaste || data.pixData?.payload,
+                    amount: data.amount,
+                    expiresAt: data.expiresAt || data.pixData?.expirationDate,
+                    encodedImage: data.pixData?.encodedImage
+                } as any);
+                setOpenDialog(true);
+                fetchInvoices();
+            } else if (data.boletoUrl || data.boletoData) {
+                // Fallback Asaas Boleto
                 setBoletoData({
-                    nossoNumero: '', // Não usado no front
-                    codigoBarras: data.barCode,
-                    linhaDigitavel: data.barCode,
-                    pdfUrl: data.boletoUrl,
-                    amount: data.amount
-                });
+                    nossoNumero: '',
+                    codigoBarras: data.barCode || data.boletoData?.barCode,
+                    linhaDigitavel: data.barCode || data.boletoData?.identificationField,
+                    pdfUrl: data.boletoUrl || data.boletoData?.bankSlipUrl,
+                    amount: data.amount || data.boletoData?.value
+                } as any);
                 setPaymentMethod('boleto-result');
                 fetchInvoices();
             } else {

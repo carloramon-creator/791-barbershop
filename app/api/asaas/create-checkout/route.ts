@@ -266,10 +266,10 @@ export async function POST(req: Request) {
                     cycle: 'MONTHLY',
                     nextDueDate: nextDueDate.toISOString().split('T')[0]
                 };
-            } else if (interval > 1) {
+            } else if (interval > 1 || installments > 1) {
                 chargeTypes = ['DETACHED', 'INSTALLMENT'];
                 installmentConfig = {
-                    maxInstallmentCount: Math.min(installments, interval)
+                    maxInstallmentCount: installments
                 };
             }
 
