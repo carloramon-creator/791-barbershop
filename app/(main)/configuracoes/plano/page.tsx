@@ -900,37 +900,7 @@ export default function PlanPage() {
                                         </button>
                                     </div>
 
-                                    {/* SELETOR DE PARCELAS (Só aparece para cartão e se o intervalo permitir > 1 mês) */}
-                                    {paymentMethod === 'card' && !selectedAddon && selectedInterval > 1 && (
-                                        <div className="space-y-2 pt-2 animate-in fade-in slide-in-from-top-2">
-                                            <Label className="text-xs text-slate-500 uppercase tracking-wider">Parcelamento</Label>
-                                            <select
-                                                value={installments}
-                                                onChange={(e) => setInstallments(Number(e.target.value))}
-                                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-100 focus:border-amber-500 outline-none transition-all"
-                                            >
-                                                {Array.from({ length: selectedInterval }, (_, i) => i + 1).map((i) => {
-                                                    // Limita o parcelamento ao número de meses do plano (ex: Semestral = max 6x, Anual = max 12x)
-                                                    return (
-                                                        <option key={i} value={i}>
-                                                            {i}x de R$ {
-                                                                // Simulação básica da parcela
-                                                                (() => {
-                                                                    const plan = dynamicPlans.find(p => p.slug === selectedPlan);
-                                                                    const basePrice = plan?.price || 0;
-                                                                    // Recalcula o total com desconto
-                                                                    const discount = selectedInterval === 6 ? 10 : selectedInterval === 12 ? 20 : 0;
-                                                                    const total = (basePrice * selectedInterval) * (1 - (discount / 100));
-                                                                    return (total / i).toFixed(2).replace('.', ',');
-                                                                })()
-                                                            }
-                                                            {i === 1 ? ' (À vista)' : ' sem juros'}
-                                                        </option>
-                                                    );
-                                                })}
-                                            </select>
-                                        </div>
-                                    )}
+                                    {/* SELETOR DE PARCELAS REMOVIDO A PEDIDO DO USUÁRIO - O CLIENTE ESCOLHE NO ASAAS */}
 
                                     <div className="space-y-2 pt-2">
                                         <Label className="text-xs text-slate-500 uppercase tracking-wider">Possui um cupom?</Label>

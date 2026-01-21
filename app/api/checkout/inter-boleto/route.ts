@@ -276,7 +276,8 @@ export async function POST(req: Request) {
             linhaDigitavel: linhaDigitavel,
             pixCopiaECola: pixCopiaECola,
             amount: amount,
-            pdfUrl: pdfUrl
+            pdfUrl: pdfUrl,
+            seu_numero: seuNumero
         }));
 
     } catch (error: any) {

@@ -20,7 +20,8 @@ export async function POST(req: Request) {
             addon: addonSlug,
             interval = 1,
             paymentMethod = 'CREDIT_CARD', // CREDIT_CARD ou BOLETO
-            installments = 1
+            installments = 1,
+            coupon
         } = await req.json();
 
         // 1. Configurar Asaas
@@ -90,6 +91,33 @@ export async function POST(req: Request) {
         if (discountPercent > 0) {
             totalAmount = totalAmount * (1 - (discountPercent / 100));
         }
+
+        // 2.5 Processar Cupom (SaaS Checkout)
+        let discountFromCoupon = 0;
+        let couponApplied = null;
+
+        if (coupon && coupon.trim() !== '') {
+            const code = String(coupon).trim().toUpperCase();
+            const { data: couponData } = await supabaseAdmin
+                .from('system_coupons')
+                .select('*')
+                .eq('code', code)
+                .eq('is_active', true)
+                .single();
+
+            if (couponData) {
+                couponApplied = code;
+                if (couponData.discount_percent) {
+                    discountFromCoupon = (totalAmount * Number(couponData.discount_percent)) / 100;
+                } else if (couponData.discount_value) {
+                    discountFromCoupon = Number(couponData.discount_value);
+                }
+            } else {
+                return addCorsHeaders(req, NextResponse.json({ error: 'Cupom inválido ou expirado' }, { status: 400 }));
+            }
+        }
+
+        totalAmount = Math.max(0, totalAmount - discountFromCoupon);
         totalAmount = Number(totalAmount.toFixed(2));
 
         // 3. Preparar dados do cliente
@@ -267,10 +295,11 @@ export async function POST(req: Request) {
                     nextDueDate: nextDueDate.toISOString().split('T')[0]
                 };
             } else if (interval > 1 || installments > 1) {
-                chargeTypes = ['DETACHED', 'INSTALLMENT']; // Both required by Asaas for integrated checkout with installments
+                // Simplificação: apenas permitimos o parcelamento no checkout do Asaas
+                // O Asaas vai mostrar as opções de parcelamento baseadas no maxInstallmentCount
+                chargeTypes = ['DETACHED', 'INSTALLMENT'];
                 installmentConfig = {
-                    installmentCount: installments,
-                    maxInstallmentCount: installments
+                    maxInstallmentCount: interval > 1 ? interval : 12 // Até 12x ou o total de meses
                 };
             }
 
