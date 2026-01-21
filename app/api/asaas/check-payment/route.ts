@@ -58,7 +58,7 @@ export async function GET(req: Request) {
         const { data: financeRecord } = await supabaseAdmin
             .from('finance')
             .select('*')
-            .eq('metadata->>asaas_payment_id', paymentId)
+            .eq('metadata->>asaas_checkout_id', paymentId)
             .eq('tenant_id', tenant.id)
             .single();
 

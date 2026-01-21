@@ -353,6 +353,7 @@ export default function PlanPage() {
                             pdfUrl: data.pdfUrl
                         } as any);
                         setPaymentMethod('pix-result');
+                        setPendingData(null);
                     } else {
                         setPendingData({
                             pending: true,
@@ -371,6 +372,7 @@ export default function PlanPage() {
                             nossoNumero: data.nossoNumero || ''
                         } as any);
                         setPaymentMethod('boleto-result');
+                        setPendingData(null);
                     } else {
                         setPendingData({
                             pending: true,
@@ -381,7 +383,6 @@ export default function PlanPage() {
                     }
                 }
                 fetchInvoices();
-
             } else if (data.pixQrCode || data.pixData) {
                 // Fallback Asaas Pix
                 setPixData({
