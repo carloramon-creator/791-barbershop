@@ -525,7 +525,7 @@ export default function AppointmentsPage() {
                                                 >
                                                     <div className="flex justify-between items-start gap-4 mb-4">
                                                         <h4 className={cn(
-                                                            "font-bold text-xl leading-snug break-words pr-2",
+                                                            "font-bold text-lg leading-snug break-words pr-2",
                                                             isSelected ? "text-white" : "text-slate-300 group-hover:text-white"
                                                         )}>
                                                             {service.name}
@@ -539,12 +539,12 @@ export default function AppointmentsPage() {
                                                     </div>
 
                                                     <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-800/50 group-hover:border-slate-700 transition-colors gap-2">
-                                                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap bg-slate-950/30 px-2 py-1 rounded-md">
+                                                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap bg-slate-950/30 px-2 py-1 rounded-md">
                                                             <Clock size={14} className="text-slate-400" />
                                                             {service.duration_minutes || 30} min
                                                         </div>
                                                         <div className={cn(
-                                                            "font-mono font-black text-2xl whitespace-nowrap",
+                                                            "font-mono font-black text-xl whitespace-nowrap",
                                                             isSelected ? "text-blue-400" : "text-slate-400 group-hover:text-slate-200"
                                                         )}>
                                                             {formatCurrency(service.price)}
