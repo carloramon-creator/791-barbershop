@@ -27,11 +27,11 @@ export async function POST(req: Request) {
         const asaas = new AsaasClient({ apiKey, environment });
 
         // 2. Chamar Asaas (Visual)
-        if (payload.logoUrl || payload.primaryColor || payload.infoColor) {
+        if (payload.logoUrl || payload.primaryColor || payload.infoColor || payload.secondaryColor) {
             await asaas.customizeInvoice({
                 logoUrl: payload.logoUrl,
                 primaryColor: payload.primaryColor,
-                infoColor: payload.infoColor,
+                secondaryColor: payload.secondaryColor || payload.infoColor, // Support both for now or migrate
                 observations: 'Obrigado pela preferência.'
             });
         }

@@ -197,8 +197,8 @@ export class AsaasClient {
     async customizeInvoice(config: {
         logoUrl?: string;
         primaryColor?: string;
-        infoColor?: string;
-        font?: string;
+        secondaryColor?: string;
+        fontColor?: string;
         observations?: string;
     }) {
         const response = await this.client.post('/myAccount/paymentCheckoutConfig', config);
