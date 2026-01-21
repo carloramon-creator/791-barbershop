@@ -145,12 +145,11 @@ export async function POST(req: Request) {
                 // Asaas gera a cobrança assincronamente, damos um pequeno delay e buscamos
                 await new Promise(resolve => setTimeout(resolve, 1500));
 
-                // Buscar pagamentos desta assinatura
-                const paymentsResponse = await asaas.client.get(`/payments`, {
-                    params: { subscription: subscription.id, limit: 1 }
-                });
+                // Buscar pagamentos desta assinatura usando método público
+                const paymentsResponse = await asaas.getPaymentsBySubscription(subscription.id, 1);
 
-                const firstPayment = paymentsResponse.data.data?.[0];
+                // getPaymentsBySubscription retorna o corpo da resposta, que contém { data, ... }
+                const firstPayment = paymentsResponse.data?.[0];
 
                 if (firstPayment) {
                     checkoutId = firstPayment.id;
