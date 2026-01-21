@@ -66,7 +66,9 @@ const getTutorialContent = (texts: any, tenant: any) => [
             '/tutorials/config-geral-1.png',
             '/tutorials/config-geral-2.png',
             '/tutorials/config-geral-3.png',
-            '/tutorials/config-geral-4.png'
+            '/tutorials/config-geral-4.png',
+            '/tutorials/config-geral-step5.png',
+            '/tutorials/config-geral-step6.png'
         ],
         description: `Aqui você define a identidade da sua ${texts.businessName}. É o primeiro passo para o sucesso da sua operação.`,
         steps: [
@@ -93,12 +95,12 @@ const getTutorialContent = (texts: any, tenant: any) => [
             {
                 title: 'Divulgação e QR Code',
                 content: 'Aproveite o QR Code gerado automaticamente. Clique em "Imprimir QR Code" para colocar na sua recepção ou vitrine, facilitando o agendamento rápido pelos clientes.',
-                imageIndex: 2
+                imageIndex: 4
             },
             {
                 title: 'Horário de Funcionamento',
                 content: 'Defina os dias de abertura, horários de início e fim. Você também pode configurar o Intervalo de Almoço, a Tolerância de Atraso e o tempo de antecedência do Lembrete de WhatsApp.',
-                imageIndex: 2
+                imageIndex: 5
             },
             {
                 title: 'Endereço Simplificado',
@@ -125,7 +127,12 @@ const getTutorialContent = (texts: any, tenant: any) => [
         images: [
             '/tutorials/config-usuarios-1.png',
             '/tutorials/config-usuarios-2.png',
-            '/tutorials/config-usuarios-3.png'
+            '/tutorials/config-usuarios-3.png',
+            '/tutorials/config-usuarios-step5.png',
+            '/tutorials/config-usuarios-step6.png',
+            '/tutorials/config-usuarios-step7.png',
+            '/tutorials/config-usuarios-step8.png',
+            '/tutorials/config-usuarios-step9.png'
         ],
         description: 'Gerencie sua equipe, defina comissões e controle quem pode acessar o sistema.',
         steps: [
@@ -152,7 +159,27 @@ const getTutorialContent = (texts: any, tenant: any) => [
             {
                 title: 'Identificação Fiscal',
                 content: 'O campo CNPJ MEI é obrigatório para profissionais que precisam emitir Notas Fiscais (NFS-e) pelo sistema.',
-                imageIndex: 2
+                imageIndex: 3
+            },
+            {
+                title: 'Menu de Ações',
+                content: 'Ao clicar nos três pontos (...) em qualquer usuário, você abre o menu de ações rápidas para editar dados, gerenciar arquivos ou inativar o acesso.',
+                imageIndex: 4
+            },
+            {
+                title: 'Gestão de Documentos',
+                content: 'Mantenha todos os documentos dos seus colaboradores organizados (como RG, CPF ou Contratos assinados) através do menu "Arquivos / Upload".',
+                imageIndex: 5
+            },
+            {
+                title: 'Contrato de Parceria',
+                content: 'Gere automaticamente contratos de prestação de serviços baseados na "Lei do Salão Parceiro" para formalizar a relação com seus profissionais em segundos.',
+                imageIndex: 6
+            },
+            {
+                title: 'Ativação de Conta',
+                content: 'Gere um link direto de convite para que o novo colaborador cadastre sua própria senha e acesse o sistema imediatamente via WhatsApp ou E-mail.',
+                imageIndex: 7
             }
         ],
         tip: 'Mantenha os e-mails sempre atualizados para que os colaboradores recebam o link de ativação e consigam acessar suas agendas individuais.'
@@ -282,11 +309,11 @@ const getTutorialContent = (texts: any, tenant: any) => [
         title: '5 - Gestão de Clientes',
         icon: UserCheck,
         images: [
-            '/tutorials/clientes-1.png',
-            '/tutorials/clientes-2.png',
-            '/tutorials/clientes-1.png', // Placeholder para Busca
-            '/tutorials/clientes-3.png', // Link App
-            '/tutorials/clientes-1.png'  // Placeholder para Fidelização
+            '/tutorials/clientes-step1.png',
+            '/tutorials/clientes-step2.png',
+            '/tutorials/clientes-step3.png',
+            '/tutorials/clientes-step4.png',
+            '/tutorials/clientes-step5.png'
         ],
         description: 'Mantenha sua base de contatos organizada, acompanhe o histórico de cada cliente e facilite o agendamento recorrente.',
         steps: [
@@ -325,9 +352,9 @@ const getTutorialContent = (texts: any, tenant: any) => [
         images: [
             '/tutorials/profissionais-1.png',
             '/tutorials/profissionais-2.png',
-            '/tutorials/profissionais-3.png',
+            '/tutorials/profissionais-step3.png',
             '/tutorials/profissionais-4.png',
-            '/tutorials/profissionais-5.png',
+            '/tutorials/profissionais-step5.png',
             '/tutorials/profissionais-6.png'
         ],
         description: `Gerencie sua equipe, configure o perfil público dos ${texts.professionals} e realize o fechamento de caixa individual com relatórios detalhados.`,
@@ -378,7 +405,9 @@ const getTutorialContent = (texts: any, tenant: any) => [
             '/tutorials/fila-6.png',
             '/tutorials/fila-7.png',
             '/tutorials/fila-8.png',
-            '/tutorials/fila-9.png'
+            '/tutorials/fila-9.png',
+            '/tutorials/fila-step4.png',
+            '/tutorials/fila-step9.png'
         ],
         description: 'Gerencie o fluxo de clientes que chegam para atendimento imediato, controle a sala de espera e realize vendas rápidas.',
         steps: [
@@ -400,7 +429,7 @@ const getTutorialContent = (texts: any, tenant: any) => [
             {
                 title: 'Atendimento em Curso',
                 content: 'Uma vez iniciado, você verá o cronômetro de tempo decorrido e a foto do cliente sendo atendido.',
-                imageIndex: 4
+                imageIndex: 9
             },
             {
                 title: 'Registrando a Venda',
@@ -425,7 +454,7 @@ const getTutorialContent = (texts: any, tenant: any) => [
             {
                 title: 'Finalização',
                 content: 'Após confirmar o recebimento, o atendimento é concluído e o profissional fica livre para o próximo da fila.',
-                imageIndex: 8
+                imageIndex: 10
             }
         ],
         tip: 'Usar o "Atendimento Direto" permite registrar vendas rápidas para clientes que não passaram pela lista de espera.'
