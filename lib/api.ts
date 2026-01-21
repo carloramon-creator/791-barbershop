@@ -181,6 +181,16 @@ export const Api = {
         apiFetch(`/api/system/tenants/${id}`, { method: 'PATCH', body: JSON.stringify(updates) }),
     deleteSystemTenant: (id: string) => apiFetch(`/api/system/tenants/${id}`, { method: 'DELETE' }),
 
+    // Holding Finance
+    getSystemFinanceRecords: (params?: Record<string, string>) => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        return apiFetch(`/api/system/finance${query}`);
+    },
+    createSystemFinanceRecord: (payload: Record<string, unknown>) =>
+        apiFetch('/api/system/finance', { method: 'POST', body: JSON.stringify(payload) }),
+    deleteSystemFinanceRecord: (id: string) =>
+        apiFetch(`/api/system/finance?id=${id}`, { method: 'DELETE' }),
+
     getSystemPlans: () => apiFetch('/api/system/plans'),
     createSystemPlan: (payload: Record<string, unknown>) => apiFetch('/api/system/plans', { method: 'POST', body: JSON.stringify(payload) }),
     updateSystemPlan: (payload: Record<string, unknown>) => apiFetch('/api/system/plans', { method: 'PATCH', body: JSON.stringify(payload) }),

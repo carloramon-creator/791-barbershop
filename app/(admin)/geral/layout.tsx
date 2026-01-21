@@ -12,7 +12,8 @@ import {
     LogOut,
     ShieldCheck,
     Package,
-    HelpCircle
+    HelpCircle,
+    CreditCard
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -40,6 +41,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const navItems = [
         { name: 'Dashboard', href: '/geral', icon: LayoutDashboard },
+        { name: 'Financeiro Holding', href: '/geral/financeiro', icon: CreditCard },
         { name: 'Barbearias', href: '/geral/barbearias', icon: Store },
         { name: 'Planos & Extras', href: '/geral/planos', icon: Package },
         { name: 'Cupons', href: '/geral/cupons', icon: Ticket },
