@@ -25,6 +25,17 @@ export async function GET() {
         return NextResponse.json(data);
     } catch (error: any) {
         console.error('[ADMIN SUPPORT GET ERROR]', error);
+
+        // Fallback: Tenta buscar sem os JOINS caso o banco esteja desalinhado
+        if (error.message?.includes('relationship')) {
+            console.warn('[ADMIN_SUPPORT_GET] Fallback to direct select without joins');
+            const { data: fallbackData } = await supabaseAdmin
+                .from('support_tickets')
+                .select('*')
+                .order('created_at', { ascending: false });
+            return NextResponse.json(fallbackData || []);
+        }
+
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
