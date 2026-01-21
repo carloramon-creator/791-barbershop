@@ -42,10 +42,13 @@ import { ptBR } from 'date-fns/locale';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 
+import { NewTransactionDialog } from '@/components/admin/finance/NewTransactionDialog';
+
 export default function HoldingFinanceDashboard() {
     const [records, setRecords] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState({ businessUnit: 'all', period: 'month' });
+    const [isNewTransactionOpen, setIsNewTransactionOpen] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -109,6 +112,12 @@ export default function HoldingFinanceDashboard() {
 
     return (
         <div className="space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <NewTransactionDialog
+                open={isNewTransactionOpen}
+                onOpenChange={setIsNewTransactionOpen}
+                onSuccess={loadData}
+            />
+
             {/* Header / Filtros */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
@@ -132,7 +141,10 @@ export default function HoldingFinanceDashboard() {
                         <option value="beauty">791 Beauty</option>
                     </select>
 
-                    <button className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-blue-900/40 translate-y-0 active:scale-95">
+                    <button
+                        onClick={() => setIsNewTransactionOpen(true)}
+                        className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-blue-900/40 translate-y-0 active:scale-95"
+                    >
                         <Plus size={14} /> Novo Lançamento
                     </button>
                 </div>

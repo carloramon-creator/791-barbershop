@@ -1,8 +1,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://mfbiwvhxztejuzcasclv.supabase.co';
-const supabaseServiceKey = 'sb_secret_CO1qjgf7SMQ4QQRzugzbGg_U5uVpcwS';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://mfbiwvhxztejuzcasclv.supabase.co';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function inspectSchema() {
