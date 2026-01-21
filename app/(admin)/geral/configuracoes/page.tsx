@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Api } from '@/lib/api';
+import { supabaseClient } from '@/lib/supabase-client';
 import {
     Settings,
     CreditCard,
@@ -23,6 +24,38 @@ export default function SystemSettingsPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState<string | null>(null);
     const [copied, setCopied] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false);
+
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+
+        try {
+            setUploading(true);
+            const file = e.target.files[0];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `asaas-logo-${Date.now()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            // Upload directly to Supabase Storage
+            const { error: uploadError } = await supabaseClient.storage
+                .from('logos') // Reusing the logos bucket
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            // Get Public URL
+            const { data } = supabaseClient.storage
+                .from('logos')
+                .getPublicUrl(filePath);
+
+            // Update state
+            setSettings({ ...settings, asaas_branding: { ...settings?.asaas_branding, logoUrl: data.publicUrl } });
+        } catch (err: any) {
+            alert('Erro ao fazer upload: ' + err.message);
+        } finally {
+            setUploading(false);
+        }
+    };
 
     const loadSettings = async () => {
         try {
@@ -143,15 +176,44 @@ export default function SystemSettingsPage() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-slate-400 text-xs uppercase font-bold">Logo URL (Público)</Label>
-                                <Input
-                                    value={settings?.asaas_branding?.logoUrl || ''}
-                                    onChange={(e) => setSettings({ ...settings, asaas_branding: { ...settings.asaas_branding, logoUrl: e.target.value } })}
-                                    placeholder="https://sua-empresa.com/logo.png"
-                                    className="bg-slate-950 border-slate-800 text-slate-100"
-                                />
-                                <p className="text-[10px] text-slate-500">A URL deve ser pública e segura (HTTPS).</p>
+                            <div className="space-y-4">
+                                <Label className="text-slate-400 text-xs uppercase font-bold">Logo (Imagem)</Label>
+                                <div className="flex items-start gap-4">
+                                    <div className="w-20 h-20 rounded border border-slate-700 bg-slate-800 flex items-center justify-center overflow-hidden shrink-0 relative">
+                                        {settings?.asaas_branding?.logoUrl ? (
+                                            <img src={settings.asaas_branding.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                                        ) : (
+                                            <div className="text-slate-500 text-[10px] text-center p-1">Sem Logo</div>
+                                        )}
+                                        {uploading && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="animate-spin text-white w-5 h-5" /></div>}
+                                    </div>
+                                    <div className="flex-1 space-y-2">
+                                        <div className="relative">
+                                            <Button
+                                                variant="outline"
+                                                className="w-full relative border-slate-700 text-xs"
+                                                disabled={uploading}
+                                            >
+                                                {uploading ? 'Enviando...' : 'Fazer Upload'}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleLogoUpload}
+                                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                                />
+                                            </Button>
+                                        </div>
+                                        <div className="relative">
+                                            <Input
+                                                value={settings?.asaas_branding?.logoUrl || ''}
+                                                onChange={(e) => setSettings({ ...settings, asaas_branding: { ...settings.asaas_branding, logoUrl: e.target.value } })}
+                                                placeholder="Ou cole a URL..."
+                                                className="bg-slate-950 border-slate-800 text-slate-100 text-[10px] h-8"
+                                            />
+                                        </div>
+                                        <p className="text-[10px] text-slate-500">JPG ou PNG. Fundo transparente recomendado.</p>
+                                    </div>
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-slate-400 text-xs uppercase font-bold">Cor Principal (Hex)</Label>
