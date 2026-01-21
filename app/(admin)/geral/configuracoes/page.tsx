@@ -543,7 +543,7 @@ export default function SystemSettingsPage() {
 
                     <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-2 border-l-4 border-l-blue-600">
                         <div className="flex justify-between items-center">
-                            <Label className="text-blue-500 text-[10px] font-black uppercase tracking-widest">Asaas Webhook URL (Novo)</Label>
+                            <Label className="text-blue-500 text-[10px] font-black uppercase tracking-widest">Asaas Webhook URL (OFICIAL)</Label>
                             <button onClick={() => copyToClipboard('https://api.791barber.com/api/webhooks/asaas', 'aw')} className="text-slate-500 hover:text-slate-200">
                                 {copied === 'aw' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                             </button>
@@ -553,7 +553,7 @@ export default function SystemSettingsPage() {
 
                     <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
                         <div className="flex justify-between items-center">
-                            <Label className="text-amber-500 text-[10px] font-black uppercase tracking-widest">Inter Webhook URL</Label>
+                            <Label className="text-amber-500 text-[10px] font-black uppercase tracking-widest">Inter Webhook URL (OFICIAL)</Label>
                             <button onClick={() => copyToClipboard('https://api.791barber.com/api/webhooks/inter', 'iw')} className="text-slate-500 hover:text-slate-200">
                                 {copied === 'iw' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                             </button>

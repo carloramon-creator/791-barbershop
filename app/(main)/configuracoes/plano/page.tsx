@@ -267,8 +267,10 @@ export default function PlanPage() {
                             console.log('[POLLING] Cobrança encontrada e pronta!');
                             if (data.type === 'pix') {
                                 setPixData(data.payload);
+                                setPaymentMethod('pix-result');
                             } else {
                                 setBoletoData(data.payload);
+                                setPaymentMethod('boleto-result');
                             }
                             setPendingData(null);
                             fetchInvoices(); // Atualiza o histórico assim que pronto!

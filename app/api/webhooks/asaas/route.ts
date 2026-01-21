@@ -63,12 +63,17 @@ export async function POST(req: Request) {
         }
 
         if (!financeRecord) {
-            console.log('[ASAAS WEBHOOK] Registro financeiro não encontrado:', {
+            console.log('[ASAAS WEBHOOK] ❌ Registro financeiro NÃO encontrado:', {
                 paymentId: payment.id,
                 subscriptionId: payment.subscription,
-                externalReference: payment.externalReference
+                externalReference: payment.externalReference,
+                searchKeys: ['metadata->>external_reference', 'metadata->>asaas_checkout_id']
             });
-            return NextResponse.json({ received: true, message: 'Finance record not found' });
+            return NextResponse.json({
+                received: true,
+                message: 'Finance record not found',
+                details: { extRef: payment.externalReference, payId: payment.id }
+            });
         }
 
         const tenantId = financeRecord.tenant_id;
