@@ -38,6 +38,9 @@ export async function POST(req: Request) {
         const payload = await req.json();
         const { type, message, context } = payload;
 
+        console.log('[SUPPORT_POST] User:', user.id, 'Tenant:', tenantId);
+        console.log('[SUPPORT_POST] Payload Type:', type);
+
         if (!type || !message) {
             return NextResponse.json({ error: 'Tipo e mensagem são obrigatórios' }, { status: 400 });
         }
@@ -62,6 +65,7 @@ export async function POST(req: Request) {
             throw error;
         }
 
+        console.log('[SUPPORT_POST] Success creating ticket');
         return NextResponse.json({ success: true });
     } catch (error: any) {
         console.error('[API SUPPORT ERROR]', error);

@@ -103,10 +103,12 @@ export default function SupportPage() {
         }
     };
 
-    const filteredTickets = tickets.filter(t =>
-        t.message.toLowerCase().includes(search.toLowerCase()) ||
-        t.tenants?.name.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredTickets = (tickets || []).filter(t => {
+        const msg = (t.message || '').toLowerCase();
+        const tenantName = (t.tenants?.name || '').toLowerCase();
+        const searchTerm = (search || '').toLowerCase();
+        return msg.includes(searchTerm) || tenantName.includes(searchTerm);
+    });
 
     return (
         <div className="space-y-6 -mx-8 -mt-8 p-8">

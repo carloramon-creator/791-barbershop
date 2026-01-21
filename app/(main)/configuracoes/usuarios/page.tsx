@@ -204,21 +204,28 @@ export default function UsersPage() {
 
       if (editingUserId) {
         const result = await Api.updateUser(payload);
+        console.log('[CLIENT_UPDATE_USER_RESULT]', result);
 
         if (inviteRoles.includes('barber')) {
           let bId = result.barber?.id || currentBarberId;
+          console.log('[CLIENT_BARBER_ID_FOUND]', bId, 'currentBarberId:', currentBarberId);
 
           // Fallback seguro: buscar ID do barbeiro se não estiver disponível
           if (!bId) {
-            const { data: bData } = await supabaseClient
+            console.log('[CLIENT_FETCHING_BARBER_FALLBACK] User ID:', result.id);
+            const { data: bData, error: bErr } = await supabaseClient
               .from('barbers')
               .select('id')
               .eq('user_id', result.id)
               .single();
+
+            if (bErr) console.error('[CLIENT_FALLBACK_ERROR]', bErr);
             bId = bData?.id;
+            console.log('[CLIENT_FALLBACK_RESULT]', bId);
           }
 
           if (bId) {
+            console.log('[CLIENT_LINKING_SERVICES] Barber:', bId, 'Services:', selectedServiceIds);
             await Api.updateBarberServices(bId, selectedServiceIds);
           } else {
             console.error('Barber profile not found for user', result.id);

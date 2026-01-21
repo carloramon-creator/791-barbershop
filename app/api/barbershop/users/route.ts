@@ -111,7 +111,8 @@ export async function POST(req: Request) {
 
       // Sincronizar com a tabela de barbeiros se a role barber estiver presente
       if (finalRoles.includes('barber')) {
-        const { data: barberData } = await supabaseAdmin.from('barbers').upsert({
+        console.log('[SYNC_BARBER_POST] Sincronizando barbeiro para user:', userId);
+        const { data: barberData, error: barberError } = await supabaseAdmin.from('barbers').upsert({
           tenant_id: tenant.id,
           user_id: userId,
           name: name || targetEmail.split('@')[0],
@@ -122,8 +123,15 @@ export async function POST(req: Request) {
           is_active: true
         }, { onConflict: 'tenant_id,user_id' }).select().single();
 
+        if (barberError) {
+          console.error('[SYNC_BARBER_POST_ERROR]', barberError);
+        }
+
         if (barberData) {
+          console.log('[SYNC_BARBER_POST_SUCCESS] Barber ID:', barberData.id);
           (finalUserRecord as any).barber = barberData;
+        } else {
+          console.warn('[SYNC_BARBER_POST_WARNING] No barber data returned');
         }
       }
     } else {
@@ -218,7 +226,8 @@ export async function PUT(req: Request) {
     // Sincronizar com a tabela de barbeiros
     const currentRoles = data.roles || [];
     if (currentRoles.includes('barber')) {
-      const { data: barberData } = await supabaseAdmin.from('barbers').upsert({
+      console.log('[SYNC_BARBER_PUT] Sincronizando barbeiro para user:', body.id);
+      const { data: barberData, error: barberError } = await supabaseAdmin.from('barbers').upsert({
         tenant_id: tenant.id,
         user_id: body.id,
         name: data.name,
@@ -229,8 +238,15 @@ export async function PUT(req: Request) {
         is_active: true
       }, { onConflict: 'tenant_id,user_id' }).select().single();
 
+      if (barberError) {
+        console.error('[SYNC_BARBER_PUT_ERROR]', barberError);
+      }
+
       if (barberData) {
+        console.log('[SYNC_BARBER_PUT_SUCCESS] Barber ID:', barberData.id);
         (data as any).barber = barberData;
+      } else {
+        console.warn('[SYNC_BARBER_PUT_WARNING] No barber data returned');
       }
     } else {
       // Se não for mais barbeiro, desativar na tabela de barbeiros

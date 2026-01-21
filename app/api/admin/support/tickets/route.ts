@@ -16,6 +16,12 @@ export async function GET() {
 
         if (error) throw error;
 
+        console.log('[ADMIN_SUPPORT_GET] Found tickets:', data?.length || 0);
+        if (data && data.length > 0) {
+            console.log('[ADMIN_SUPPORT_GET] Sample Ticket Tenant:', data[0].tenants?.name);
+            console.log('[ADMIN_SUPPORT_GET] Sample Ticket User:', data[0].user?.nickname || data[0].user?.name);
+        }
+
         return NextResponse.json(data);
     } catch (error: any) {
         console.error('[ADMIN SUPPORT GET ERROR]', error);
