@@ -152,43 +152,13 @@ export class AsaasClient {
     }
 
     // Checkout API
-    async createCheckout(payload: {
-        billingTypes: ('CREDIT_CARD' | 'BOLETO' | 'PIX')[];
-        chargeTypes: ('DETACHED' | 'RECURRENT' | 'INSTALLMENT')[];
-        minutesToExpire?: number;
-        callback: {
-            successUrl: string;
-            cancelUrl: string;
-            expiredUrl: string;
-        };
-        items: Array<{
-            name: string;
-            description: string;
-            quantity: number;
-            value: number;
-        }>;
-        customerData?: {
-            name: string;
-            cpfCnpj: string;
-            email: string;
-            phone?: string;
-            address?: string;
-            addressNumber?: string;
-            complement?: string;
-            postalCode?: string;
-            province?: string;
-            city?: number;
-        };
-        subscription?: {
-            cycle: 'MONTHLY' | 'QUARTERLY' | 'SEMIANNUALLY' | 'YEARLY';
-            nextDueDate: string;
-            endDate?: string;
-        };
-        installment?: {
-            maxInstallmentCount: number;
-        };
-    }) {
+    async createCheckout(payload: any) {
         const response = await this.client.post('/checkouts', payload);
+        return response.data;
+    }
+
+    async getCheckout(checkoutId: string) {
+        const response = await this.client.get(`/checkouts/${checkoutId}`);
         return response.data;
     }
 

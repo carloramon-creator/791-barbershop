@@ -122,7 +122,7 @@ export default function PlanPage() {
             try {
                 setCheckingAsaasPayment(true);
                 const pending = JSON.parse(pendingStr);
-                const { paymentId, timestamp } = pending;
+                const { paymentId, checkoutId, timestamp } = pending;
 
                 // Verificar se não é muito antigo (máximo 30 minutos)
                 const thirtyMinutes = 30 * 60 * 1000;
@@ -132,10 +132,11 @@ export default function PlanPage() {
                     return;
                 }
 
-                console.log('[ASAAS] Verificando pagamento pendente:', paymentId);
+                console.log('[ASAAS] Verificando pagamento pendente:', paymentId || checkoutId);
 
                 // Verificar status do pagamento
-                const res = await fetch(`/api/asaas/check-payment?paymentId=${paymentId}`);
+                const query = paymentId ? `paymentId=${paymentId}` : `checkoutId=${checkoutId}`;
+                const res = await fetch(`/api/asaas/check-payment?${query}`);
                 if (!res.ok) {
                     console.error('[ASAAS] Erro ao verificar pagamento');
                     return;
@@ -340,6 +341,14 @@ export default function PlanPage() {
             if (!res.ok) throw new Error(data.error || 'Erro ao processar pagamento');
 
             if (data.checkoutUrl && paymentMethod === 'card') {
+                // Salvar no localStorage para polling ao voltar para a página
+                if (data.checkoutId) {
+                    localStorage.setItem('asaas_pending_payment', JSON.stringify({
+                        checkoutId: data.checkoutId,
+                        timestamp: Date.now()
+                    }));
+                }
+
                 // Abrir modal com checkout integrado (Asaas - Cartão)
                 setCheckoutUrl(data.checkoutUrl);
                 setShowCheckoutModal(true);

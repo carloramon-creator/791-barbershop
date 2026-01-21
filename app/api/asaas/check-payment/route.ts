@@ -16,10 +16,11 @@ export async function GET(req: Request) {
         }
 
         const { searchParams } = new URL(req.url);
-        const paymentId = searchParams.get('paymentId');
+        let paymentId = searchParams.get('paymentId');
+        const checkoutId = searchParams.get('checkoutId');
 
-        if (!paymentId) {
-            return addCorsHeaders(req, NextResponse.json({ error: 'paymentId é obrigatório' }, { status: 400 }));
+        if (!paymentId && !checkoutId) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'paymentId ou checkoutId é obrigatório' }, { status: 400 }));
         }
 
         // Buscar configuração do Asaas
@@ -41,8 +42,29 @@ export async function GET(req: Request) {
 
         const asaas = new AsaasClient({ apiKey, environment: environment as 'sandbox' | 'production' });
 
+        let payment = null;
+
+        // Se tiver checkoutId, precisamos descobrir o paymentId
+        if (checkoutId && !paymentId) {
+            console.log('[CHECK ASAAS] Buscando por Checkout ID:', checkoutId);
+            const checkout = await asaas.getCheckout(checkoutId);
+            // Dependendo do tipo, o ID pode estar em lugares diferentes
+            paymentId = checkout.paymentId || checkout.payment?.id || checkout.subscriptionId;
+
+            if (!paymentId) {
+                return addCorsHeaders(req, NextResponse.json({
+                    success: true,
+                    payment: {
+                        status: 'PENDING_PAYMENT',
+                        isPaid: false,
+                        message: 'Checkout ainda não possui pagamento processado'
+                    }
+                }));
+            }
+        }
+
         // Consultar status do pagamento no Asaas
-        const payment = await asaas.getPayment(paymentId);
+        payment = await asaas.getPayment(paymentId!);
 
         console.log('[CHECK ASAAS PAYMENT]', {
             paymentId,
@@ -55,12 +77,27 @@ export async function GET(req: Request) {
         const isPaid = payment.status === 'CONFIRMED' || payment.status === 'RECEIVED';
 
         // Buscar registro local
-        const { data: financeRecord } = await supabaseAdmin
-            .from('finance')
-            .select('*')
-            .eq('metadata->>asaas_checkout_id', paymentId)
-            .eq('tenant_id', tenant.id)
-            .maybeSingle();
+        // Tenta pelo checkoutId OU pelo paymentId
+        let financeRecord = null;
+        if (checkoutId) {
+            const { data } = await supabaseAdmin
+                .from('finance')
+                .select('*')
+                .eq('metadata->>asaas_checkout_id', checkoutId)
+                .eq('tenant_id', tenant.id)
+                .maybeSingle();
+            financeRecord = data;
+        }
+
+        if (!financeRecord) {
+            const { data } = await supabaseAdmin
+                .from('finance')
+                .select('*')
+                .eq('metadata->>asaas_checkout_id', paymentId)
+                .eq('tenant_id', tenant.id)
+                .maybeSingle();
+            financeRecord = data;
+        }
 
         // Se estiver pago no Asaas mas não no nosso banco, sincroniza AGORA
         if (isPaid && financeRecord && !financeRecord.is_paid) {
@@ -73,7 +110,8 @@ export async function GET(req: Request) {
                     ...financeRecord.metadata,
                     payment_confirmed_at: new Date().toISOString(),
                     asaas_status: payment.status,
-                    sync_type: 'polling_check'
+                    sync_type: 'polling_check',
+                    real_payment_id: paymentId
                 }
             }).eq('id', financeRecord.id);
 
