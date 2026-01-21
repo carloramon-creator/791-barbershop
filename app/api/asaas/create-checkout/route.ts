@@ -160,6 +160,7 @@ export async function POST(req: Request) {
         // 4. Lógica de Cobrança (Híbrida)
         let checkoutId = null;
         let checkoutUrl = '';
+        let checkout: any = null;
 
         // Determinar baseUrl de forma robusta para evitar localhost em produção
         const referer = req.headers.get('referer');
@@ -335,7 +336,8 @@ export async function POST(req: Request) {
                 nextDueDate.setMonth(nextDueDate.getMonth() + 1);
                 subscriptionConfig = {
                     cycle: 'MONTHLY',
-                    nextDueDate: nextDueDate.toISOString().split('T')[0]
+                    nextDueDate: nextDueDate.toISOString().split('T')[0],
+                    description: itemDescription
                 };
             } else if (interval > 1 || installments > 1) {
                 // Configuração de parcelas: Mensal (1x), Semestral (6x), Anual (10x)
@@ -375,13 +377,15 @@ export async function POST(req: Request) {
                 installment: installmentConfig
             };
 
-            const checkout = await asaas.createCheckout(checkoutPayload);
+            checkout = await asaas.createCheckout(checkoutPayload);
             checkoutId = checkout.id;
             checkoutUrl = `${asaasCheckoutBaseUrl}?id=${checkout.id}`;
         }
 
         // 5. Salvar registro
         if (checkoutId) {
+            // Se for recorrência, o checkout.id é o ID da assinatura ou do primeiro pagamento?
+            // Testes indicam que salvando o checkout.id e buscando como fallback resolve.
             await supabaseAdmin
                 .from('finance')
                 .insert({
@@ -394,6 +398,7 @@ export async function POST(req: Request) {
                     metadata: {
                         is_saas_payment: true,
                         asaas_checkout_id: checkoutId,
+                        asaas_subscription_id: (checkout as any).subscriptionId || (checkout as any).subscription || null,
                         external_reference: externalReference,
                         payment_method: paymentMethod,
                         [isAddon ? 'addon' : 'plan']: addonSlug || planSlug,
