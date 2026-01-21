@@ -120,11 +120,22 @@ export async function POST(req: Request) {
         totalAmount = Math.max(0, totalAmount - discountFromCoupon);
         totalAmount = Number(totalAmount.toFixed(2));
 
-        // 3. Preparar dados do cliente
+        // 3. Preparar dados do cliente e Validar Campos Obrigatórios (Checkout V3 exige endereço/tel)
         const cpfCnpj = (tenant.cnpj || tenant.cpf || tenant.document || '').replace(/\D/g, '');
+        const phone = (tenant.phone || '').replace(/\D/g, '');
+        const address = tenant.street || tenant.address_street || '';
+        const number = tenant.number || '';
+        const postalCode = (tenant.address_zip || tenant.cep || '').replace(/\D/g, '');
+        const province = tenant.neighborhood || tenant.address_neighborhood || '';
+
+        // Validação básica para evitar erro 400 do Asaas
         if (!cpfCnpj || cpfCnpj.length < 11) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'Erro: CPF/CNPJ inválido ou incompleto. Verifique nas configurações da barbearia.' }, { status: 400 }));
+        }
+
+        if (!phone || !address || !number || !postalCode || !province) {
             return addCorsHeaders(req, NextResponse.json({
-                error: 'CPF/CNPJ necessário. Configure nas informações da barbearia.'
+                error: 'Dados incompletos: O Asaas exige endereço completo e telefone (Rua, Número, Bairro, CEP e Telefone) nas configurações para processar o checkout.'
             }, { status: 400 }));
         }
 
@@ -132,13 +143,13 @@ export async function POST(req: Request) {
             name: tenant.name || 'Cliente',
             cpfCnpj: cpfCnpj,
             email: user.email || '',
-            phone: tenant.phone?.replace(/\D/g, '') || undefined,
-            mobilePhone: tenant.phone?.replace(/\D/g, '') || undefined,
-            address: tenant.street || tenant.address_street || undefined,
-            addressNumber: tenant.number || undefined,
+            phone: phone,
+            mobilePhone: phone,
+            address: address,
+            addressNumber: number,
             complement: tenant.complement || undefined,
-            postalCode: (tenant.address_zip || tenant.cep || '').replace(/\D/g, '') || undefined,
-            province: tenant.neighborhood || tenant.address_neighborhood || undefined,
+            postalCode: postalCode,
+            province: province,
         };
 
         // 4. Lógica de Cobrança (Híbrida)

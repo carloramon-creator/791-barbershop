@@ -41,15 +41,15 @@ async function testAsaas() {
             const testPayload = {
                 billingTypes: ['CREDIT_CARD'],
                 chargeTypes: ['DETACHED'],
-                minutesToExpire: 15,
-                items: [{ name: 'Teste Diagnóstico', quantity: 1, value: 10.00 }],
+                items: [{ name: 'Teste Antigravity', quantity: 1, value: 15.50 }],
                 customerData: {
-                    name: 'Cliente Teste',
-                    cpfCnpj: '00000000000',
-                    email: 'teste@asaas.com'
+                    name: 'Cliente Teste Diagnostic',
+                    cpfCnpj: '24970144000104', // CNPJ válido (gerado)
+                    email: 'diagnostic@teste.com'
                 },
                 callback: {
-                    successUrl: 'http://localhost:3000/success',
+                    successUrl: 'https://791barber.com/success',
+                    cancelUrl: 'https://791barber.com/cancel',
                     autoRedirect: true
                 }
             };
@@ -57,9 +57,13 @@ async function testAsaas() {
             console.log(' ✅ Checkout criado com sucesso!');
             console.log('ID:', checkout.id);
             console.log('URL:', checkout.url);
-            console.log('Full Response:', JSON.stringify(checkout, null, 2));
         } catch (err: any) {
-            console.error('❌ Erro ao criar Checkout:', err.response?.data || err.message);
+            console.error('❌ Erro ao criar Checkout (Resposta Completa):');
+            if (err.response?.data) {
+                console.log(JSON.stringify(err.response.data, null, 2));
+            } else {
+                console.log(err.message);
+            }
         }
 
     } catch (e: any) {
