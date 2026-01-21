@@ -27,7 +27,7 @@ DROP POLICY IF EXISTS "Users can view their own tickets" ON support_tickets;
 CREATE POLICY "Users can view their own tickets" ON support_tickets
     FOR SELECT TO authenticated
     USING (auth.uid() = user_id OR EXISTS (
-        SELECT 1 FROM tenants t WHERE t.id = support_tickets.tenant_id AND t.owner_id = auth.uid()
+        SELECT 1 FROM users u WHERE u.tenant_id = support_tickets.tenant_id AND u.id = auth.uid() AND u.role = 'owner'
     ));
 
 DROP POLICY IF EXISTS "Users can create tickets" ON support_tickets;
