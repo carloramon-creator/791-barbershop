@@ -128,7 +128,6 @@ export default function PlanPage() {
                 const thirtyMinutes = 30 * 60 * 1000;
                 if (Date.now() - timestamp > thirtyMinutes) {
                     localStorage.removeItem('asaas_pending_payment');
-                    setCheckingAsaasPayment(false);
                     return;
                 }
 
@@ -143,25 +142,26 @@ export default function PlanPage() {
                 }
 
                 const data = await res.json();
-                console.log('[ASAAS] Status do pagamento:', data.payment.status);
+                console.log('[ASAAS] Status do pagamento:', data.payment?.status);
 
-                if (data.payment.isPaid || data.payment.localRecord.isPaid) {
+                if (data.payment?.isPaid || data.payment?.localRecord?.isPaid) {
                     // Pagamento confirmado!
                     localStorage.removeItem('asaas_pending_payment');
-                    setCheckingAsaasPayment(false);
-
                     // Mostrar mensagem de sucesso
                     alert('✅ Pagamento confirmado! Seu plano foi ativado com sucesso.');
-
                     // Atualizar dados
                     await fetchCurrentPlan();
                     await fetchInvoices();
-                } else if (data.payment.status === 'PENDING') {
-                    // Ainda pendente, continuar monitorando
-                    console.log('[ASAAS] Pagamento ainda pendente, continuando monitoramento...');
+                } else {
+                    // Ainda pendente ou erro, removemos do localStorage para não travar na próxima recarga
+                    // mas poderíamos manter se quisermos que continue tentando. 
+                    // Por segurança p/ não travar a UI, vamos apenas liberar.
+                    console.log('[ASAAS] Pagamento ainda não consta como pago.');
                 }
             } catch (error) {
                 console.error('[ASAAS] Erro ao verificar pagamento pendente:', error);
+            } finally {
+                setCheckingAsaasPayment(false);
             }
         };
 
