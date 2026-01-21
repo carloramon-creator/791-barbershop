@@ -108,7 +108,7 @@ export default function SupportPage() {
     );
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 -mx-8 -mt-8 p-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-slate-100 uppercase tracking-tighter">Mensagens de Suporte</h1>
