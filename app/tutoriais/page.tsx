@@ -173,7 +173,7 @@ const getTutorialContent = (texts: any, tenant: any) => [
             },
             {
                 title: 'Contrato de Parceria',
-                content: 'Gere automaticamente contratos de prestação de serviços baseados na "Lei do Salão Parceiro" para formalizar a relação com seus profissionais em segundos.',
+                content: 'Gere automaticamente contratos de prestação de serviços, editáveis, baseados na "Lei do Salão Parceiro" para formalizar a relação com seus profissionais em segundos.',
                 imageIndex: 6
             },
             {
