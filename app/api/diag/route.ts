@@ -5,28 +5,32 @@ export async function GET() {
     try {
         const { data: tables } = await supabaseAdmin.rpc('get_tables_list'); // If accessible
 
-        // Let's just try to select 1 from support_tickets
-        const { data: ticketCount, error: ticketError } = await supabaseAdmin
+        const { data: supportTickets, error: supportError } = await supabaseAdmin
             .from('support_tickets')
-            .select('id')
-            .limit(1);
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(5);
 
-        const { data: barberCount, error: barberError } = await supabaseAdmin
+        const { data: barbersList, error: barbersError } = await supabaseAdmin
             .from('barbers')
-            .select('id')
-            .limit(1);
+            .select('id, user_id, tenant_id, name')
+            .limit(5);
 
         return NextResponse.json({
-            support_tickets: {
-                exists: !ticketError,
-                error: ticketError?.message,
-                sample: ticketCount
+            status: 'ok',
+            database: {
+                support_tickets: {
+                    count: supportTickets?.length || 0,
+                    error: supportError?.message,
+                    items: supportTickets
+                },
+                barbers: {
+                    count: barbersList?.length || 0,
+                    error: barbersError?.message,
+                    items: barbersList
+                }
             },
-            barbers: {
-                exists: !barberError,
-                error: barberError?.message,
-                sample: barberCount
-            }
+            server_time: new Date().toISOString()
         });
     } catch (error: any) {
         return NextResponse.json({ error: error.message });

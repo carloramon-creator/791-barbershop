@@ -24,19 +24,27 @@ export async function GET() {
 
         return NextResponse.json(data);
     } catch (error: any) {
-        console.error('[ADMIN SUPPORT GET ERROR]', error);
+        console.error('[ADMIN SUPPORT GET ERROR] Full Error:', error);
 
-        // Fallback: Tenta buscar sem os JOINS caso o banco esteja desalinhado
-        if (error.message?.includes('relationship')) {
-            console.warn('[ADMIN_SUPPORT_GET] Fallback to direct select without joins');
-            const { data: fallbackData } = await supabaseAdmin
+        // Fallback TOTAL: Se qualquer coisa falhar (Join, Cache, Permissão, etc.), tenta busca bruta
+        try {
+            console.warn('[ADMIN_SUPPORT_GET] Fallback mode: Fetching raw tickets');
+            const { data: rawData, error: rawError } = await supabaseAdmin
                 .from('support_tickets')
                 .select('*')
                 .order('created_at', { ascending: false });
-            return NextResponse.json(fallbackData || []);
-        }
 
-        return NextResponse.json({ error: error.message }, { status: 500 });
+            if (rawError) throw rawError;
+
+            console.log('[ADMIN_SUPPORT_GET] Fallback successful. Found raw:', rawData?.length || 0);
+            return NextResponse.json(rawData || []);
+        } catch (fallbackError: any) {
+            console.error('[ADMIN_SUPPORT_GET] CRITICAL: Fallback failed:', fallbackError);
+            return NextResponse.json({
+                error: error.message,
+                fallbackError: fallbackError.message
+            }, { status: 500 });
+        }
     }
 }
 
