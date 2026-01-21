@@ -1,18 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-provider';
 import { Sidebar } from '@/components/layout/sidebar';
 import { ExpirationAlert } from '@/components/layout/config-alert-bar';
 import { Topbar } from '@/components/layout/topbar';
-import { SupportModal } from '@/components/modals/support-modal';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-    const { session, loading, tenant, user } = useAuth();
+    const { session, loading, tenant } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
-    const [isSupportOpen, setIsSupportOpen] = useState(false);
 
     // -- LÓGICA DE BLOQUEIO --
     let isBlocked = false;
@@ -85,7 +83,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
     return (
         <div className="flex h-screen bg-slate-950 light:bg-slate-50 overflow-hidden">
-            <Sidebar onOpenSupport={() => setIsSupportOpen(true)} />
+            <Sidebar />
             <div className="flex-1 flex flex-col overflow-hidden">
                 <Topbar />
                 <ExpirationAlert />
@@ -98,12 +96,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     </footer>
                 </main>
             </div>
-            <SupportModal
-                isOpen={isSupportOpen}
-                onClose={() => setIsSupportOpen(false)}
-                tenantName={tenant?.name}
-                userEmail={user?.email}
-            />
         </div>
     );
 }

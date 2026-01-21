@@ -132,7 +132,49 @@ export class AsaasClient {
         return response.data;
     }
 
+    // Checkout API
+    async createCheckout(payload: {
+        billingTypes: ('CREDIT_CARD' | 'BOLETO' | 'PIX')[];
+        chargeTypes: ('DETACHED' | 'RECURRENT' | 'INSTALLMENT')[];
+        minutesToExpire?: number;
+        callback: {
+            successUrl: string;
+            cancelUrl: string;
+            expiredUrl: string;
+        };
+        items: Array<{
+            name: string;
+            description: string;
+            quantity: number;
+            value: number;
+        }>;
+        customerData?: {
+            name: string;
+            cpfCnpj: string;
+            email: string;
+            phone?: string;
+            address?: string;
+            addressNumber?: string;
+            complement?: string;
+            postalCode?: string;
+            province?: string;
+            city?: number;
+        };
+        subscription?: {
+            cycle: 'MONTHLY' | 'QUARTERLY' | 'SEMIANNUALLY' | 'YEARLY';
+            nextDueDate: string;
+            endDate?: string;
+        };
+        installment?: {
+            maxInstallmentCount: number;
+        };
+    }) {
+        const response = await this.client.post('/checkouts', payload);
+        return response.data;
+    }
+
     // Invoice Customization
+
     async customizeInvoice(config: {
         logoUrl?: string;
         primaryColor?: string;
@@ -149,19 +191,7 @@ export class AsaasClient {
         return response.data;
     }
 
-    // Checkout Inline
-    async createCheckout(checkoutData: any) {
-        const response = await this.client.post('/checkouts', checkoutData);
-        return response.data;
-    }
-
-    async getCheckout(checkoutId: string) {
-        const response = await this.client.get(`/checkouts/${checkoutId}`);
-        return response.data;
-    }
-
     // Webhook verification
-
     verifyWebhook(payload: any, signature: string, secret: string): boolean {
         // Asaas doesn't use signature verification by default
         // You can implement custom verification if needed

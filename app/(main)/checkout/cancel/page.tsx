@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { XCircle, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { XCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -10,49 +10,37 @@ export default function CheckoutCancelPage() {
 
     return (
         <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-[25%] -left-[10%] w-[50%] h-[50%] bg-red-500/5 blur-[120px] rounded-full" />
-            </div>
-
-            <Card className="max-w-md w-full bg-slate-900/50 backdrop-blur-xl border-slate-800 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-red-500" />
-
-                <CardHeader className="text-center pt-8">
-                    <div className="mx-auto w-20 h-20 bg-red-500/10 rounded-3xl flex items-center justify-center mb-6 border border-red-500/20 rotate-3 transform group hover:rotate-0 transition-transform">
+            <Card className="max-w-md w-full bg-slate-900 border-slate-800">
+                <CardHeader className="text-center">
+                    <div className="mx-auto w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4">
                         <XCircle className="w-10 h-10 text-red-500" />
                     </div>
-                    <CardTitle className="text-3xl font-black text-slate-100 tracking-tighter uppercase mb-2 leading-none">Pagamento Cancelado</CardTitle>
-                    <CardDescription className="text-slate-400 font-bold leading-relaxed">
-                        Detectamos que o processo de pagamento foi interrompido ou cancelado manualment pelo usuário.
+                    <CardTitle className="text-2xl text-slate-100">Pagamento Cancelado</CardTitle>
+                    <CardDescription className="text-slate-400">
+                        Você cancelou o processo de pagamento.
                     </CardDescription>
                 </CardHeader>
-
-                <CardContent className="space-y-8 pb-8 text-center border-t border-slate-800 pt-8">
-                    <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
-                        Nenhuma cobrança foi realizada. Se você teve algum problema técnico ou dúvida sobre os planos, fale com nosso suporte.
+                <CardContent className="space-y-6">
+                    <p className="text-sm text-slate-300 text-center">
+                        Não se preocupe! Nenhuma cobrança foi realizada.
+                        <br />
+                        Você pode tentar novamente quando quiser.
                     </p>
 
                     <div className="space-y-3">
                         <Button
-                            className="w-full py-7 bg-white hover:bg-slate-200 text-slate-950 font-black uppercase tracking-widest text-xs transition-all rounded-2xl shadow-xl shadow-white/5 active:scale-95"
+                            className="w-full bg-blue-600 hover:bg-blue-700"
                             onClick={() => router.push('/configuracoes/plano')}
                         >
-                            Tentar Novamente
+                            Voltar para Planos
                         </Button>
                         <Button
-                            variant="ghost"
-                            className="w-full text-slate-500 hover:text-slate-200 font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2"
-                            onClick={() => router.push('/')}
+                            variant="outline"
+                            className="w-full border-slate-700 text-slate-300 hover:bg-slate-800"
+                            onClick={() => router.push('/dashboard')}
                         >
-                            <ArrowLeft size={12} /> Voltar para o Dashboard
+                            Ir para Dashboard
                         </Button>
-                    </div>
-
-                    <div className="flex items-center justify-center gap-2 pt-4">
-                        <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full">
-                            <AlertTriangle className="w-3 h-3 text-amber-500" />
-                            <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest">Precisa de Ajuda?</span>
-                        </div>
                     </div>
                 </CardContent>
             </Card>

@@ -26,13 +26,9 @@ import Image from 'next/image';
 import { getBusinessTexts } from '@/lib/business-dictionary';
 import { getBusinessTheme } from '@/lib/business-theme';
 
-interface SidebarProps {
-    onOpenSupport?: () => void;
-}
-
-export function Sidebar({ onOpenSupport }: SidebarProps = {}) {
+export function Sidebar() {
     const pathname = usePathname();
-    const { role, tenant, signOut, isSystemAdmin, user } = useAuth();
+    const { role, tenant, signOut, isSystemAdmin } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const planConfig = PLAN_CONFIG[(tenant?.plan as keyof typeof PLAN_CONFIG) || 'basic'];
 
@@ -172,14 +168,14 @@ export function Sidebar({ onOpenSupport }: SidebarProps = {}) {
                     ))}
                 </nav>
 
-                <div className="px-6 mb-4">
-                    <button
-                        onClick={onOpenSupport}
+                <div className="px-6 mb-2">
+                    <a
+                        href={`mailto:contato@791solucoes.com.br?subject=Feedback/Erro (${tenant?.name || '791 Barber'}) - 791 Barber`}
                         className="flex items-center gap-2 text-[10px] font-bold text-slate-500 hover:text-slate-300 transition-colors uppercase tracking-wider group"
                     >
                         <Sparkles size={12} className="text-amber-500 group-hover:text-amber-400" />
                         Reportar Erro / Sugestão
-                    </button>
+                    </a>
                 </div>
 
                 <div className="p-6 mt-auto border-t border-slate-800">

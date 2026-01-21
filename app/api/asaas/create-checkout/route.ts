@@ -18,14 +18,12 @@ export async function POST(req: Request) {
         const {
             plan: planSlug,
             addon: addonSlug,
-            coupon,
             interval = 1,
-            paymentMethod = 'CREDIT_CARD',
-            installments = 1,
-            recurrent = false
+            paymentMethod = 'CREDIT_CARD', // CREDIT_CARD ou BOLETO
+            installments = 1
         } = await req.json();
 
-        // 1. Buscar Preço Dinâmico e Descontos
+        // 1. Buscar Preço Dinâmico
         let baseAmount = 0;
         let itemName = '';
         let itemDescription = '';
@@ -42,8 +40,8 @@ export async function POST(req: Request) {
             if (!addon) return addCorsHeaders(req, NextResponse.json({ error: 'Add-on inválido' }, { status: 400 }));
 
             baseAmount = Number(addon.price);
-            itemName = addon.name;
-            itemDescription = addon.description || `Módulo ${addon.name}`;
+            itemName = `791 Barber - ${addon.name}`;
+            itemDescription = addon.description || `Módulo adicional: ${addon.name}`;
             isAddon = true;
         } else {
             const { data: planData } = await supabaseAdmin
@@ -55,13 +53,16 @@ export async function POST(req: Request) {
             if (!planData) return addCorsHeaders(req, NextResponse.json({ error: 'Plano inválido' }, { status: 400 }));
 
             baseAmount = Number(planData.price);
-            itemName = `Plano ${planData.name}`;
-            itemDescription = planData.description || `Acesso completo ao 791 Barber - ${planData.name}`;
+            itemName = `791 Barber - Plano ${planData.name}`;
 
             if (interval === 6) {
                 discountPercent = Number(planData.discount_semiannual || 10);
+                itemDescription = `Assinatura semestral do plano ${planData.name} com ${discountPercent}% de desconto`;
             } else if (interval === 12) {
                 discountPercent = Number(planData.discount_annual || 20);
+                itemDescription = `Assinatura anual do plano ${planData.name} com ${discountPercent}% de desconto`;
+            } else {
+                itemDescription = `Assinatura mensal do plano ${planData.name}`;
             }
         }
 
@@ -71,49 +72,7 @@ export async function POST(req: Request) {
             totalAmount = totalAmount * (1 - (discountPercent / 100));
         }
 
-        let finalAmount = totalAmount;
-
-        // 2. Processar Cupom
-        let discountFromCoupon = 0;
-        let couponApplied = null;
-
-        if (coupon && coupon.trim() !== '') {
-            const code = String(coupon).trim().toUpperCase();
-            const { data: couponData } = await supabaseAdmin
-                .from('system_coupons')
-                .select('*')
-                .eq('code', code)
-                .eq('is_active', true)
-                .single();
-
-            if (couponData) {
-                couponApplied = code;
-                if (couponData.discount_percent) {
-                    discountFromCoupon = (finalAmount * Number(couponData.discount_percent)) / 100;
-                } else if (couponData.discount_value) {
-                    discountFromCoupon = Number(couponData.discount_value);
-                }
-            }
-        }
-
-        // 3. Desconto automático de Trial
-        if (discountFromCoupon === 0 && interval === 1 && !isAddon) {
-            const isTrial = tenant.plan === 'trial' || !tenant.stripe_subscription_id;
-            const tenantCreated = new Date(tenant.created_at || new Date());
-            const now = new Date();
-            const diffDays = Math.ceil(Math.abs(now.getTime() - tenantCreated.getTime()) / (1000 * 60 * 60 * 24));
-            const isNewAccount = diffDays <= 5;
-
-            if (isTrial && isNewAccount) {
-                discountFromCoupon = (finalAmount * 10) / 100;
-                couponApplied = 'TRIAL_WELCOME_10';
-            }
-        }
-
-        finalAmount = Math.max(0, finalAmount - discountFromCoupon);
-        finalAmount = Number(finalAmount.toFixed(2));
-
-        // 4. Configurar Asaas
+        // 2. Configurar Asaas
         const { data: settingsData } = await supabaseAdmin
             .from('system_settings')
             .select('value')
@@ -132,58 +91,73 @@ export async function POST(req: Request) {
 
         const asaas = new AsaasClient({ apiKey, environment: environment as 'sandbox' | 'production' });
 
-        // 5. Preparar dados do cliente
+        // 3. Preparar dados do cliente
         const cpfCnpj = (tenant.cnpj || tenant.cpf || tenant.document || '').replace(/\D/g, '');
-
         if (!cpfCnpj || cpfCnpj.length < 11) {
             return addCorsHeaders(req, NextResponse.json({
                 error: 'CPF/CNPJ necessário. Configure nas informações da barbearia.'
             }, { status: 400 }));
         }
 
-        // 6. Criar checkout - FORMATO COMPLETO COM TODOS OS CAMPOS OBRIGATÓRIOS
-        const origin = req.headers.get('origin') || 'https://791barber.com';
+        // 4. Montar payload do checkout
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://791barber.com';
 
-        const checkoutData = {
-            billingTypes: ['CREDIT_CARD', 'PIX'],
-            chargeTypes: ['DETACHED'],
-            minutesToExpire: 60,
+        const checkoutPayload: any = {
+            billingTypes: [paymentMethod],
+            chargeTypes: interval === 1 && !isAddon ? ['RECURRENT'] : ['INSTALLMENT'],
+            minutesToExpire: 30,
             callback: {
-                successUrl: `${origin}/checkout/success`,
-                cancelUrl: `${origin}/checkout/cancel`,
-                expiredUrl: `${origin}/checkout/expired`
+                successUrl: `${baseUrl}/asaas/checkout/success`,
+                cancelUrl: `${baseUrl}/asaas/checkout/cancel`,
+                expiredUrl: `${baseUrl}/asaas/checkout/expired`
             },
             items: [{
                 name: itemName,
                 description: itemDescription,
                 quantity: 1,
-                value: finalAmount
+                value: totalAmount
             }],
             customerData: {
                 name: tenant.name || 'Cliente',
                 cpfCnpj: cpfCnpj,
                 email: user.email || '',
-                phone: (tenant.phone || '').replace(/\D/g, ''),
-                postalCode: (tenant.address_zip || tenant.cep || '').replace(/\D/g, ''),
-                address: tenant.street || tenant.address_street || 'Rua Principal',
-                addressNumber: tenant.number || 'S/N',
-                province: tenant.neighborhood || tenant.address_neighborhood || 'Centro'
+                phone: tenant.phone?.replace(/\D/g, '') || undefined,
+                address: tenant.street || tenant.address_street || undefined,
+                addressNumber: tenant.number || undefined,
+                complement: tenant.complement || undefined,
+                postalCode: (tenant.address_zip || tenant.cep || '').replace(/\D/g, '') || undefined,
+                province: tenant.neighborhood || tenant.address_neighborhood || undefined,
             }
         };
 
-        console.log('[ASAAS INLINE] Criando checkout:', JSON.stringify(checkoutData, null, 2));
+        // Configurar assinatura recorrente (mensal)
+        if (interval === 1 && !isAddon) {
+            const nextDueDate = new Date();
+            nextDueDate.setMonth(nextDueDate.getMonth() + 1);
 
-        const checkout = await asaas.createCheckout(checkoutData);
+            checkoutPayload.subscription = {
+                cycle: 'MONTHLY',
+                nextDueDate: nextDueDate.toISOString().split('T')[0]
+            };
+        }
 
-        console.log('[ASAAS INLINE] Checkout criado:', checkout.id);
+        // Configurar parcelamento (semestral/anual)
+        if (interval > 1 && paymentMethod === 'CREDIT_CARD') {
+            checkoutPayload.installment = {
+                maxInstallmentCount: Math.min(installments, interval)
+            };
+        }
 
-        // 7. Salvar no banco
+        // 5. Criar checkout
+        const checkout = await asaas.createCheckout(checkoutPayload);
+
+        // 6. Salvar no banco para rastreamento
         await supabaseAdmin
             .from('finance')
             .insert({
                 tenant_id: tenant.id,
                 type: 'expense',
-                value: finalAmount,
+                value: totalAmount,
                 description: `SaaS - ${itemName}`,
                 date: new Date().toISOString().split('T')[0],
                 is_paid: false,
@@ -194,35 +168,30 @@ export async function POST(req: Request) {
                     [isAddon ? 'addon' : 'plan']: addonSlug || planSlug,
                     is_addon: isAddon,
                     interval: interval,
-                    installments: installments,
-                    recurrent: recurrent
+                    installments: paymentMethod === 'CREDIT_CARD' ? installments : 1
                 }
             });
 
-        // 8. Retornar checkout ID e URL
-        const checkoutBaseUrl = environment === 'production'
-            ? 'https://asaas.com/checkoutSession/show'
-            : 'https://sandbox.asaas.com/checkoutSession/show';
+        // 7. Retornar dados do checkout
+        const checkoutUrl = `https://asaas.com/checkoutSession/show?id=${checkout.id}`;
 
         return addCorsHeaders(req, NextResponse.json({
             success: true,
             checkoutId: checkout.id,
-            checkoutUrl: `${checkoutBaseUrl}?id=${checkout.id}`,
-            amount: finalAmount
+            checkoutUrl: checkoutUrl,
+            amount: totalAmount
         }));
 
     } catch (error: any) {
-        console.error('[ASAAS INLINE CHECKOUT ERROR]', error);
-        console.error('[ASAAS ERROR DETAILS]', error.response?.data);
+        console.error('[ASAAS CREATE CHECKOUT ERROR]', error);
 
         const errorMessage = error.response?.data?.errors?.[0]?.description ||
             error.response?.data?.error ||
             error.message ||
-            'Erro ao processar pagamento';
+            'Erro ao criar checkout';
 
         return addCorsHeaders(req, NextResponse.json({
-            error: errorMessage,
-            details: error.response?.data
+            error: errorMessage
         }, { status: error.response?.status || 500 }));
     }
 }

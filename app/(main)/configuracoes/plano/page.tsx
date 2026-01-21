@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/dialog';
 import { AlertCircle } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
+import AsaasCheckoutModal from '@/components/asaas/AsaasCheckoutModal';
 
 import { supabaseClient } from '@/lib/supabase-client';
 
@@ -72,7 +73,9 @@ export default function PlanPage() {
     const [tenantObject, setTenantObject] = useState<any>(null);
     const [canceling, setCanceling] = useState(false);
     const [selectedInterval, setSelectedInterval] = useState<number>(1);
-
+    const [checkingAsaasPayment, setCheckingAsaasPayment] = useState(false);
+    const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+    const [showCheckoutModal, setShowCheckoutModal] = useState(false);
 
 
     const tabs = [
@@ -108,6 +111,73 @@ export default function PlanPage() {
         init();
     }, []);
 
+    // Monitorar pagamento pendente do Asaas
+    useEffect(() => {
+        const checkPendingAsaasPayment = async () => {
+            const pendingStr = localStorage.getItem('asaas_pending_payment');
+            if (!pendingStr) {
+                setCheckingAsaasPayment(false);
+                return;
+            }
+
+            try {
+                setCheckingAsaasPayment(true);
+                const pending = JSON.parse(pendingStr);
+                const { paymentId, timestamp } = pending;
+
+                // Verificar se não é muito antigo (máximo 30 minutos)
+                const thirtyMinutes = 30 * 60 * 1000;
+                if (Date.now() - timestamp > thirtyMinutes) {
+                    localStorage.removeItem('asaas_pending_payment');
+                    setCheckingAsaasPayment(false);
+                    return;
+                }
+
+                console.log('[ASAAS] Verificando pagamento pendente:', paymentId);
+
+                // Verificar status do pagamento
+                const res = await fetch(`/api/asaas/check-payment?paymentId=${paymentId}`);
+                if (!res.ok) {
+                    console.error('[ASAAS] Erro ao verificar pagamento');
+                    return;
+                }
+
+                const data = await res.json();
+                console.log('[ASAAS] Status do pagamento:', data.payment.status);
+
+                if (data.payment.isPaid || data.payment.localRecord.isPaid) {
+                    // Pagamento confirmado!
+                    localStorage.removeItem('asaas_pending_payment');
+                    setCheckingAsaasPayment(false);
+
+                    // Mostrar mensagem de sucesso
+                    alert('✅ Pagamento confirmado! Seu plano foi ativado com sucesso.');
+
+                    // Atualizar dados
+                    await fetchCurrentPlan();
+                    await fetchInvoices();
+                } else if (data.payment.status === 'PENDING') {
+                    // Ainda pendente, continuar monitorando
+                    console.log('[ASAAS] Pagamento ainda pendente, continuando monitoramento...');
+                }
+            } catch (error) {
+                console.error('[ASAAS] Erro ao verificar pagamento pendente:', error);
+            }
+        };
+
+        // Verificar imediatamente ao carregar a página
+        checkPendingAsaasPayment();
+
+        // Continuar verificando a cada 5 segundos se houver pagamento pendente
+        const interval = setInterval(() => {
+            const pendingStr = localStorage.getItem('asaas_pending_payment');
+            if (pendingStr) {
+                checkPendingAsaasPayment();
+            }
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, []);
 
 
     async function fetchCurrentPlan(shouldSetLoading = true) {
@@ -246,7 +316,7 @@ export default function PlanPage() {
                 installments: paymentMethod === 'card' ? installments : 1
             };
 
-            const res = await fetch('/api/checkout/asaas-inline', {
+            const res = await fetch(`${API_URL}/api/asaas/create-checkout`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -258,14 +328,34 @@ export default function PlanPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Erro ao processar pagamento');
 
-            if (data.checkoutId) {
-                // Novo Fluxo: Checkout Inline do Asaas
-                // Redireciona para nossa página interna que contém o iframe (nova rota simplificada)
-                const checkoutUrlParam = data.checkoutUrl ? `&checkoutUrl=${encodeURIComponent(data.checkoutUrl)}` : '';
-                const url = `/checkout-asaas?checkoutId=${data.checkoutId}${checkoutUrlParam}`;
-                router.push(url);
+            if (data.checkoutUrl) {
+                // Abrir modal com checkout integrado (Cartão ou Boleto)
+                setCheckoutUrl(data.checkoutUrl);
+                setShowCheckoutModal(true);
+                setOpenDialog(false); // Fechar dialog de seleção
+
+            } else if (data.pixQrCode) {
+                // Pix
+                setPixData({
+                    pixPayload: data.pixCopyPaste,
+                    amount: data.amount,
+                    expiresAt: data.expiresAt,
+                    pdfUrl: undefined // Asaas não retorna PDF de Pix na criação
+                });
+                fetchInvoices();
+            } else if (data.boletoUrl) {
+                // Boleto
+                setBoletoData({
+                    nossoNumero: '', // Não usado no front
+                    codigoBarras: data.barCode,
+                    linhaDigitavel: data.barCode,
+                    pdfUrl: data.boletoUrl,
+                    amount: data.amount
+                });
+                setPaymentMethod('boleto-result');
+                fetchInvoices();
             } else {
-                throw new Error('Erro ao gerar link de pagamento. Tente novamente.');
+                throw new Error('Retorno desconhecido do gateway');
             }
 
         } catch (err: any) {
@@ -307,7 +397,19 @@ export default function PlanPage() {
 
     return (
         <div className="space-y-6">
-
+            {checkingAsaasPayment && (
+                <div className="bg-blue-500/10 border border-blue-500/20 p-6 rounded-2xl space-y-4 animate-pulse">
+                    <div className="flex items-start gap-4">
+                        <Activity className="w-8 h-8 text-blue-500 flex-shrink-0 mt-1 animate-spin" />
+                        <div>
+                            <h3 className="text-lg font-black uppercase tracking-tight text-blue-500">Verificando Pagamento</h3>
+                            <p className="text-blue-400 font-medium leading-relaxed">
+                                Estamos verificando o status do seu pagamento no Asaas. Aguarde alguns instantes...
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {isExpired && (
 
@@ -324,7 +426,7 @@ export default function PlanPage() {
 
                     <div className="flex flex-wrap items-center gap-3 pl-0 md:pl-12">
                         <a
-                            href="mailto:contato@791solucoes.com.br?subject=Suporte%20791%20Barber"
+                            href={`mailto:contato@791solucoes.com.br?subject=Erro de Pagamento - ${tenantObject?.name || '791 Barber'}`}
                             className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold uppercase transition-colors"
                         >
                             <ExternalLink size={14} /> Reportar Erro (Email)
@@ -1230,6 +1332,21 @@ export default function PlanPage() {
                         </div>
                     </div>
                 </>
+            )}
+
+            {/* Modal de Checkout Integrado do Asaas */}
+            {checkoutUrl && (
+                <AsaasCheckoutModal
+                    checkoutUrl={checkoutUrl}
+                    isOpen={showCheckoutModal}
+                    onClose={() => {
+                        setShowCheckoutModal(false);
+                        setCheckoutUrl(null);
+                        // Atualizar dados após fechar modal
+                        fetchCurrentPlan();
+                        fetchInvoices();
+                    }}
+                />
             )}
         </div>
     );
