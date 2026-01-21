@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, AlertCircle, Lightbulb, Wallet, HelpCircle, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-provider';
+import { Api } from '@/lib/api';
 import { useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -32,11 +33,8 @@ export function SupportDialog({ open, onOpenChange }: SupportDialogProps) {
     const loadHistory = async () => {
         try {
             setLoadingHistory(true);
-            const res = await fetch('/api/support/ticket');
-            if (res.ok) {
-                const data = await res.json();
-                setHistory(data);
-            }
+            const data = await Api.getMySupportTickets();
+            setHistory(data);
         } catch (error) {
             console.error('Failed to load history', error);
         } finally {
@@ -56,27 +54,20 @@ export function SupportDialog({ open, onOpenChange }: SupportDialogProps) {
         try {
             setLoading(true);
 
-            // Get OS/Browser info
             const userAgent = navigator.userAgent;
             const currentUrl = window.location.href;
 
-            const res = await fetch('/api/support/ticket', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type,
-                    message,
-                    context: {
-                        userAgent,
-                        currentUrl,
-                        tenantId: tenant?.id,
-                        userId: user?.id,
-                        userName: user?.email // or name if available
-                    }
-                })
+            await Api.createSupportTicket({
+                type,
+                message,
+                context: {
+                    userAgent,
+                    currentUrl,
+                    tenantId: tenant?.id,
+                    userId: user?.id,
+                    userName: user?.email // or name if available
+                }
             });
-
-            if (!res.ok) throw new Error('Failed to send ticket');
 
             setSuccess(true);
             setTimeout(() => {
@@ -103,7 +94,7 @@ export function SupportDialog({ open, onOpenChange }: SupportDialogProps) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md bg-slate-900 border-slate-800 p-0 overflow-hidden shadow-2xl">
+            <DialogContent className="max-w-3xl bg-slate-900 border-slate-800 p-0 overflow-hidden shadow-2xl">
                 {success ? (
                     <div className="flex flex-col items-center justify-center p-12 text-center space-y-4 animate-in fade-in zoom-in duration-300">
                         <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-2">

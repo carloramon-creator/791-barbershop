@@ -210,4 +210,9 @@ export const Api = {
     getSupportTickets: () => apiFetch('/api/admin/support/tickets'),
     updateSupportTicket: (id: string, payload: Record<string, unknown>) =>
         apiFetch('/api/admin/support/tickets', { method: 'PATCH', body: JSON.stringify({ id, ...payload }) }),
+
+    // Support (Client/User)
+    getMySupportTickets: () => apiFetch('/api/support/ticket'),
+    createSupportTicket: (payload: Record<string, unknown>) =>
+        apiFetch('/api/support/ticket', { method: 'POST', body: JSON.stringify(payload) }),
 };

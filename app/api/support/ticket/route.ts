@@ -4,15 +4,27 @@ import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function GET() {
     try {
-        const { user } = await getCurrentUserAndTenant();
+        const { user, tenantId, role } = await getCurrentUserAndTenant();
 
-        const { data, error } = await supabaseAdmin
+        console.log(`[SUPPORT GET] Fetching history for user ${user.id} (${user.email}), role: ${role}, tenant: ${tenantId}`);
+
+        let query = supabaseAdmin
             .from('support_tickets')
             .select('*')
-            .eq('user_id', user.id)
             .order('created_at', { ascending: false });
 
+        // Se for dono, vê tudo da barbearia. Se não, vê só o que ele abriu.
+        if (role === 'owner') {
+            query = query.eq('tenant_id', tenantId);
+        } else {
+            query = query.eq('user_id', user.id);
+        }
+
+        const { data, error } = await query;
+
         if (error) throw error;
+
+        console.log(`[SUPPORT GET] Found ${data?.length || 0} tickets`);
 
         return NextResponse.json(data);
     } catch (error: any) {

@@ -208,7 +208,7 @@ export default function SupportPage() {
 
             {/* Modal de Detalhes */}
             <Dialog open={!!selectedTicket} onOpenChange={(open) => !open && setSelectedTicket(null)}>
-                <DialogContent className="max-w-2xl bg-slate-900 border-slate-800 text-slate-100">
+                <DialogContent className="max-w-5xl bg-slate-900 border-slate-800 text-slate-100">
                     <DialogHeader>
                         <div className="flex items-center gap-3 mb-2">
                             {selectedTicket && getTypeIcon(selectedTicket.type)}
