@@ -339,15 +339,24 @@ export default function PlanPage() {
                 setCheckoutUrl(data.checkoutUrl);
                 setShowCheckoutModal(true);
                 setOpenDialog(false);
-            } else if (data.seu_numero || data.pending) {
+            } else if (data.seu_numero || data.pending || data.pixPayload || data.pdfUrl) {
                 // Resposta do Banco Inter (Pix ou Boleto)
                 if (paymentMethod === 'pix') {
-                    setPendingData({
-                        pending: true,
-                        message: data.message || 'Gerando seu PIX no Banco Inter...',
-                        seu_numero: data.seu_numero
-                    });
-                    setPixData(null);
+                    if (data.pixPayload) {
+                        setPixData({
+                            pixPayload: data.pixPayload,
+                            amount: data.amount,
+                            expiresAt: data.expiresAt,
+                            pdfUrl: data.pdfUrl
+                        } as any);
+                        setPaymentMethod('pix-result');
+                    } else {
+                        setPendingData({
+                            pending: true,
+                            message: data.message || 'Gerando seu PIX no Banco Inter...',
+                            seu_numero: data.seu_numero
+                        });
+                    }
                     setOpenDialog(true);
                 } else if (paymentMethod === 'boleto-inter') {
                     if (data.pdfUrl && data.linhaDigitavel) {

@@ -183,7 +183,10 @@ export async function POST(req: Request) {
         // 7. Insert product categories
         const { data: categories, error: categoriesError } = await supabaseAdmin
             .from('product_categories')
-            .insert(DEFAULT_CATEGORIES.map(c => ({ ...c, tenant_id: tenant.id })))
+            .insert(DEFAULT_CATEGORIES.map(c => ({
+                tenant_id: tenant.id,
+                name: c.name
+            })))
             .select();
 
         if (categoriesError) {
@@ -195,34 +198,32 @@ export async function POST(req: Request) {
 
         // 8. Insert products (if any)
         if (products && products.length > 0) {
-            // Re-fetch categories to ensure we have the IDs even if the insert return was flaky
+            // Re-fetch categories to ensure we have the IDs
             const { data: finalCategories } = await supabaseAdmin
                 .from('product_categories')
                 .select('id, name')
                 .eq('tenant_id', tenant.id);
 
-            if (finalCategories && finalCategories.length > 0) {
-                const productsWithCategories = products.map((p: any) => {
-                    const category = finalCategories.find((c: any) => c.name === p.category);
-                    return {
-                        tenant_id: tenant.id,
-                        name: p.name,
-                        price: parseFloat(p.price) || 0,
-                        category_id: category?.id || null,
-                    };
-                });
+            const categoriesMap = (finalCategories || []).reduce((acc: any, cat: any) => {
+                acc[cat.name] = cat.id;
+                return acc;
+            }, {});
 
-                const { error: productsError } = await supabaseAdmin
-                    .from('products')
-                    .insert(productsWithCategories);
+            const productsWithCategories = products.map((p: any) => ({
+                tenant_id: tenant.id,
+                name: p.name,
+                price: parseFloat(p.price) || 0,
+                category_id: categoriesMap[p.category] || categoriesMap['Bebidas'] || null,
+            }));
 
-                if (productsError) {
-                    console.error('[API SIGNUP] Products error:', productsError);
-                } else {
-                    console.log('[API SIGNUP] Products criados:', products.length);
-                }
+            const { error: productsError } = await supabaseAdmin
+                .from('products')
+                .insert(productsWithCategories);
+
+            if (productsError) {
+                console.error('[API SIGNUP] Products error:', productsError);
             } else {
-                console.warn('[API SIGNUP] No categories found for product mapping');
+                console.log('[API SIGNUP] Products criados:', products.length);
             }
         }
 

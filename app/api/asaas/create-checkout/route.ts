@@ -267,8 +267,9 @@ export async function POST(req: Request) {
                     nextDueDate: nextDueDate.toISOString().split('T')[0]
                 };
             } else if (interval > 1 || installments > 1) {
-                chargeTypes = ['DETACHED', 'INSTALLMENT'];
+                chargeTypes = ['INSTALLMENT']; // Force installment choice if annual/semiannual
                 installmentConfig = {
+                    installmentCount: installments, // Try to pre-fill/force
                     maxInstallmentCount: installments
                 };
             }
