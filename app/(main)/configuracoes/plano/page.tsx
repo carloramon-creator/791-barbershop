@@ -344,18 +344,28 @@ export default function PlanPage() {
                     setBoletoData(null);
                 }
 
+                if (data.pixData) {
+                    setPixData({
+                        pixPayload: data.pixData.payload,
+                        amount: data.amount,
+                        expiresAt: data.pixData.expirationDate,
+                        encodedImage: data.pixData.encodedImage
+                    } as any);
+                } else {
+                    setPixData(null);
+                }
+
                 setCheckoutUrl(data.checkoutUrl);
                 setShowCheckoutModal(true);
                 setOpenDialog(false); // Fechar dialog de seleção
 
             } else if (data.pixQrCode) {
-                // Pix
+                // Fallback legado (não deve cair aqui se route estiver atualizado)
                 setPixData({
                     pixPayload: data.pixCopyPaste,
                     amount: data.amount,
-                    expiresAt: data.expiresAt,
-                    pdfUrl: undefined // Asaas não retorna PDF de Pix na criação
-                });
+                    expiresAt: data.expiresAt
+                } as any);
                 fetchInvoices();
             } else if (data.boletoUrl) {
                 // Boleto
@@ -1360,10 +1370,16 @@ export default function PlanPage() {
                         dueDate: (boletoData as any).dueDate,
                         bankSlipUrl: boletoData.pdfUrl
                     } : null}
+                    pixData={pixData ? {
+                        encodedImage: (pixData as any).encodedImage,
+                        payload: pixData.pixPayload,
+                        expirationDate: pixData.expiresAt
+                    } : null}
                     onClose={() => {
                         setShowCheckoutModal(false);
                         setCheckoutUrl(null);
                         setBoletoData(null);
+                        setPixData(null);
                         // Atualizar dados após fechar modal
                         fetchCurrentPlan();
                         fetchInvoices();

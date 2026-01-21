@@ -117,7 +117,15 @@ export async function POST(req: Request) {
         let checkoutId = null;
         let checkoutUrl = '';
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://791barber.com';
+        // Check environment from Asaas config
+        const isSandbox = environment === 'sandbox';
+        // Base URL for checkout session depends on environment
+        const asaasCheckoutBaseUrl = isSandbox
+            ? 'https://sandbox.asaas.com/checkoutSession/show'
+            : 'https://www.asaas.com/checkoutSession/show';
+
         let boletoData = null;
+        let pixData = null;
 
         if (paymentMethod === 'BOLETO') {
             // === Lógica para BOLETO (API Direta) ===
@@ -162,8 +170,8 @@ export async function POST(req: Request) {
                     value: totalAmount,
                     dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +3 dias
                     description: itemDescription,
-                    installmentCount: interval > 1 ? interval : undefined,
-                    installmentValue: interval > 1 ? Number((totalAmount / interval).toFixed(2)) : undefined
+                    installmentCount: (installments > 1) ? installments : undefined,
+                    installmentValue: (installments > 1) ? Number((totalAmount / installments).toFixed(2)) : undefined
                 };
 
                 const payment = await asaas.createPayment(paymentPayload);
@@ -190,6 +198,46 @@ export async function POST(req: Request) {
                 } catch (err) {
                     console.error('Erro ao buscar código de barras do boleto:', err);
                     // Não falha o request, apenas vai sem os dados extras
+                }
+            }
+
+        } else if (paymentMethod === 'PIX') {
+            // === Lógica para PIX (API Direta) ===
+
+            // 4.1 Buscar ou criar cliente no Asaas
+            let customer = await asaas.getCustomerByEmail(customerData.email);
+            if (!customer) {
+                customer = await asaas.createCustomer(customerData);
+            }
+
+            let paymentIdToFetch = null;
+
+            // 4.2 Criar Cobrança Pix
+            const paymentPayload: any = {
+                customer: customer.id,
+                billingType: 'PIX',
+                value: totalAmount,
+                dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +1 dia
+                description: itemDescription
+            };
+
+            const payment = await asaas.createPayment(paymentPayload);
+            paymentIdToFetch = payment.id;
+            checkoutId = payment.id;
+            // Pix não tem checkoutUrl direto da mesma forma, mas pode ter invoiceUrl
+            checkoutUrl = payment.invoiceUrl;
+
+            // 4.3 Buscar QRCode Pix
+            if (paymentIdToFetch) {
+                try {
+                    const pixQrCode = await asaas.getPixQrCode(paymentIdToFetch);
+                    pixData = {
+                        encodedImage: pixQrCode.encodedImage,
+                        payload: pixQrCode.payload,
+                        expirationDate: pixQrCode.expirationDate
+                    };
+                } catch (err) {
+                    console.error('Erro ao buscar QRCode Pix:', err);
                 }
             }
 
@@ -240,7 +288,7 @@ export async function POST(req: Request) {
 
             const checkout = await asaas.createCheckout(checkoutPayload);
             checkoutId = checkout.id;
-            checkoutUrl = `https://asaas.com/checkoutSession/show?id=${checkout.id}`;
+            checkoutUrl = `${asaasCheckoutBaseUrl}?id=${checkout.id}`;
         }
 
         // 5. Salvar registro
@@ -270,6 +318,7 @@ export async function POST(req: Request) {
             checkoutId: checkoutId,
             checkoutUrl: checkoutUrl,
             boletoData: boletoData,
+            pixData: pixData,
             amount: totalAmount
         }));
 
