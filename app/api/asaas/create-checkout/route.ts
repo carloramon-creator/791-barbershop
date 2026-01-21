@@ -102,9 +102,40 @@ export async function POST(req: Request) {
         // 4. Montar payload do checkout
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://791barber.com';
 
+        // Truncar nome do item para 30 caracteres (limite do Asaas informado pelo usuário)
+        const safeItemName = itemName.length > 30 ? itemName.substring(0, 27) + '...' : itemName;
+
+        // Determinar chargeTypes e configurações adicionais
+        let chargeTypes = ['DETACHED']; // Padrão seguro para Pix e Boleto
+        let subscriptionConfig = undefined;
+        let installmentConfig = undefined;
+
+        if (paymentMethod === 'CREDIT_CARD') {
+            if (interval === 1 && !isAddon) {
+                // Mensal no Cartão = Assinatura
+                chargeTypes = ['RECURRENT'];
+
+                const nextDueDate = new Date();
+                nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+
+                subscriptionConfig = {
+                    cycle: 'MONTHLY',
+                    nextDueDate: nextDueDate.toISOString().split('T')[0]
+                };
+            } else if (interval > 1) {
+                // Semestral/Anual no Cartão = Parcelado
+                // Asaas exige DETACHED junto com INSTALLMENT para cartão parcelado
+                chargeTypes = ['DETACHED', 'INSTALLMENT'];
+
+                installmentConfig = {
+                    maxInstallmentCount: Math.min(installments, interval)
+                };
+            }
+        }
+
         const checkoutPayload: any = {
             billingTypes: [paymentMethod],
-            chargeTypes: interval === 1 && !isAddon ? ['RECURRENT'] : ['INSTALLMENT'],
+            chargeTypes: chargeTypes,
             minutesToExpire: 30,
             callback: {
                 successUrl: `${baseUrl}/asaas/checkout/success`,
@@ -112,7 +143,7 @@ export async function POST(req: Request) {
                 expiredUrl: `${baseUrl}/asaas/checkout/expired`
             },
             items: [{
-                name: itemName,
+                name: safeItemName,
                 description: itemDescription,
                 quantity: 1,
                 value: totalAmount
@@ -130,22 +161,12 @@ export async function POST(req: Request) {
             }
         };
 
-        // Configurar assinatura recorrente (mensal)
-        if (interval === 1 && !isAddon) {
-            const nextDueDate = new Date();
-            nextDueDate.setMonth(nextDueDate.getMonth() + 1);
-
-            checkoutPayload.subscription = {
-                cycle: 'MONTHLY',
-                nextDueDate: nextDueDate.toISOString().split('T')[0]
-            };
+        if (subscriptionConfig) {
+            checkoutPayload.subscription = subscriptionConfig;
         }
 
-        // Configurar parcelamento (semestral/anual)
-        if (interval > 1 && paymentMethod === 'CREDIT_CARD') {
-            checkoutPayload.installment = {
-                maxInstallmentCount: Math.min(installments, interval)
-            };
+        if (installmentConfig) {
+            checkoutPayload.installment = installmentConfig;
         }
 
         // 5. Criar checkout
