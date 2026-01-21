@@ -133,6 +133,81 @@ export default function SystemSettingsPage() {
                         </div>
                     </div>
 
+                    {/* Asaas Branding Section */}
+                    <div className="space-y-4 border-b border-slate-800 pb-8 pt-4">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-8 h-8 rounded-lg bg-blue-900/50 flex items-center justify-center text-blue-400">
+                                <span className="font-bold text-xs">🎨</span>
+                            </div>
+                            <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">Identidade Visual (Boletos/Pix)</h3>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-slate-400 text-xs uppercase font-bold">Logo URL (Público)</Label>
+                                <Input
+                                    value={settings?.asaas_branding?.logoUrl || ''}
+                                    onChange={(e) => setSettings({ ...settings, asaas_branding: { ...settings.asaas_branding, logoUrl: e.target.value } })}
+                                    placeholder="https://sua-empresa.com/logo.png"
+                                    className="bg-slate-950 border-slate-800 text-slate-100"
+                                />
+                                <p className="text-[10px] text-slate-500">A URL deve ser pública e segura (HTTPS).</p>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-slate-400 text-xs uppercase font-bold">Cor Principal (Hex)</Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        value={settings?.asaas_branding?.primaryColor || ''}
+                                        onChange={(e) => setSettings({ ...settings, asaas_branding: { ...settings.asaas_branding, primaryColor: e.target.value } })}
+                                        placeholder="#000000"
+                                        className="bg-slate-950 border-slate-800 text-slate-100"
+                                    />
+                                    <div className="w-10 h-10 rounded border border-slate-700 shrink-0" style={{ backgroundColor: settings?.asaas_branding?.primaryColor || 'transparent' }}></div>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-slate-400 text-xs uppercase font-bold">Cor Secundária/Texto (Hex)</Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        value={settings?.asaas_branding?.infoColor || ''}
+                                        onChange={(e) => setSettings({ ...settings, asaas_branding: { ...settings.asaas_branding, infoColor: e.target.value } })}
+                                        placeholder="#000000"
+                                        className="bg-slate-950 border-slate-800 text-slate-100"
+                                    />
+                                    <div className="w-10 h-10 rounded border border-slate-700 shrink-0" style={{ backgroundColor: settings?.asaas_branding?.infoColor || 'transparent' }}></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end pt-2">
+                            <Button
+                                onClick={async () => {
+                                    try {
+                                        setSaving('asaas_branding');
+                                        const res = await fetch('/api/admin/asaas/customize', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify(settings.asaas_branding)
+                                        });
+                                        if (!res.ok) throw new Error((await res.json()).error);
+                                        await handleSave('asaas_branding', settings.asaas_branding); // Salva localmente também
+                                        alert('Identidade visual atualizada no Asaas!');
+                                    } catch (e: any) {
+                                        alert('Erro ao atualizar visual: ' + e.message);
+                                    } finally {
+                                        setSaving(null);
+                                    }
+                                }}
+                                disabled={saving === 'asaas_branding'}
+                                variant="outline"
+                                className="border-blue-900/50 text-blue-400 hover:bg-blue-950"
+                            >
+                                {saving === 'asaas_branding' ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                                Aplicar Personalização
+                            </Button>
+                        </div>
+                    </div>
+
                     {/* Stripe Section (Legacy/Backup) */}
                     <div className="space-y-4 pt-4 opacity-50 hover:opacity-100 transition-opacity">
                         <div className="flex items-center gap-2 mb-4">
