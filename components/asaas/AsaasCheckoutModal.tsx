@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, ExternalLink } from 'lucide-react';
+import { X, ExternalLink, FileText, CheckCircle2 } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface AsaasCheckoutModalProps {
     checkoutUrl: string;
@@ -12,6 +13,9 @@ interface AsaasCheckoutModalProps {
 
 export default function AsaasCheckoutModal({ checkoutUrl, isOpen, onClose }: AsaasCheckoutModalProps) {
     const [isLoading, setIsLoading] = useState(true);
+
+    // Identificar se é Checkout V3 (Iframe) ou URL direta (Boleto/Invoice)
+    const isCheckoutSession = checkoutUrl.includes('checkoutSession');
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
@@ -27,54 +31,82 @@ export default function AsaasCheckoutModal({ checkoutUrl, isOpen, onClose }: Asa
         return () => window.removeEventListener('message', handleMessage);
     }, [onClose]);
 
-    // Detectar se é um PDF (provavelmente Boleto)
-    const isPdf = checkoutUrl.toLowerCase().includes('.pdf') || checkoutUrl.includes('bankSlip');
-
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-4xl w-full h-[90vh] p-0 bg-white overflow-hidden">
+            <DialogContent className="max-w-4xl w-full h-[90vh] p-0 bg-white overflow-hidden flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b bg-slate-50">
+                <div className="flex items-center justify-between p-4 border-b bg-slate-50 shrink-0">
                     <h2 className="text-lg font-bold text-slate-900">
-                        {isPdf ? 'Visualizar Boleto' : 'Finalizar Pagamento'}
+                        {isCheckoutSession ? 'Finalizar Pagamento' : 'Pagamento Gerado'}
                     </h2>
-                    <div className="flex items-center gap-2">
-                        <a
-                            href={checkoutUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                        >
-                            <ExternalLink className="w-4 h-4" />
-                            Abrir em nova aba
-                        </a>
-                        <button
-                            onClick={onClose}
-                            className="p-2 hover:bg-slate-200 rounded-lg transition-colors"
-                        >
-                            <X className="w-5 h-5 text-slate-600" />
-                        </button>
-                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-slate-200 rounded-lg transition-colors"
+                    >
+                        <X className="w-5 h-5 text-slate-600" />
+                    </button>
                 </div>
 
-                {/* Iframe */}
-                <div className="relative w-full h-full pb-16"> {/* Padding bottom para não cortar */}
-                    {isLoading && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
-                            <div className="text-center space-y-4">
-                                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                                <p className="text-slate-600 font-medium">Carregando...</p>
+                {/* Content */}
+                <div className="flex-1 relative w-full h-full bg-slate-50/50">
+                    {isCheckoutSession ? (
+                        /* Modo Iframe (Cartão) */
+                        <>
+                            {isLoading && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
+                                    <div className="text-center space-y-4">
+                                        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                                        <p className="text-slate-600 font-medium">Carregando checkout...</p>
+                                    </div>
+                                </div>
+                            )}
+                            <iframe
+                                src={checkoutUrl}
+                                className="w-full h-full border-0"
+                                onLoad={() => setIsLoading(false)}
+                                title="Checkout Asaas"
+                                allow="payment"
+                            />
+                        </>
+                    ) : (
+                        /* Modo Boleto Gerado (Link Externo) */
+                        <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-6">
+                            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
+                                <CheckCircle2 className="w-10 h-10 text-green-600" />
                             </div>
+
+                            <div className="space-y-2 max-w-md">
+                                <h3 className="text-2xl font-bold text-slate-900">Cobrança Gerada com Sucesso!</h3>
+                                <p className="text-slate-600">
+                                    O boleto foi gerado. Por questões de segurança do navegador, ele deve ser aberto em uma nova aba.
+                                </p>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
+                                <Button
+                                    size="lg"
+                                    className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700"
+                                    onClick={() => window.open(checkoutUrl, '_blank')}
+                                >
+                                    <FileText className="w-5 h-5" />
+                                    Visualizar Boleto
+                                </Button>
+
+                                <Button
+                                    size="lg"
+                                    variant="outline"
+                                    className="flex-1"
+                                    onClick={onClose}
+                                >
+                                    Fechar
+                                </Button>
+                            </div>
+
+                            <p className="text-xs text-slate-400 mt-8">
+                                Uma cópia também foi enviada para o seu e-mail.
+                            </p>
                         </div>
                     )}
-
-                    <iframe
-                        src={checkoutUrl}
-                        className="w-full h-full border-0"
-                        onLoad={() => setIsLoading(false)}
-                        title="Checkout Asaas"
-                        allow="payment"
-                    />
                 </div>
             </DialogContent>
         </Dialog>

@@ -141,31 +141,25 @@ export async function POST(req: Request) {
 
                 const subscription = await asaas.createSubscription(subscriptionPayload);
 
-                // Buscar primeira cobrança para pegar URL do boleto
-                // Aguardar breve delay para garantir criação da cobrança
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                const payments = await asaas.getSubscriptionPreviousPayments(subscription.id); // Check terminology/method
+                // Buscar primeira cobrança gerada pela assinatura para pegar o boleto
+                // Asaas gera a cobrança assincronamente, damos um pequeno delay e buscamos
+                await new Promise(resolve => setTimeout(resolve, 1500));
 
-                // Nota: getSubscriptionPreviousPayments pode estar errado se for payments list.
-                // Mas vamos usar a resposta da criação se tiver info, ou assumir fluxo de sucesso.
-                // Como fallback, retornamos sucesso e o usuário verá no painel. 
-                // Mas queremos o boleto AGORA. 
+                // Buscar pagamentos desta assinatura
+                const paymentsResponse = await asaas.client.get(`/payments`, {
+                    params: { subscription: subscription.id, limit: 1 }
+                });
 
-                // Se não conseguir pegar o boleto imediato da assinatura recém criada, 
-                // vamos criar uma cobrança única avulsa para o primeiro mês? Não, duplicaria.
+                const firstPayment = paymentsResponse.data.data?.[0];
 
-                // Melhor: Assinatura Asaas cria cobrança. Vamos listar cobranças da assinatura
-                // Na verdade, vamos simplificar:
-                checkoutId = subscription.id;
-                // Para boleto de assinatura, geralmente o Asaas envia por email.
-                // Mas queremos mostrar no modal.
-                // Vamos tentar pegar a cobrança gerada.
-                // Se falhar, fallback para página de sucesso dizendo "Boleto enviado por email".
-
-                // Correção: A API de Create Subscription não retorna bankSlipUrl direto.
-                // Vamos assumir URL de sucesso genérica se não acharmos.
-
-                checkoutUrl = `${baseUrl}/asaas/checkout/success`;
+                if (firstPayment) {
+                    checkoutId = firstPayment.id;
+                    checkoutUrl = firstPayment.invoiceUrl; // URL da Fatura (melhor que bankSlipUrl pois tem opção de boleto e pix)
+                } else {
+                    // Fallback seguro se ainda não gerou (muito raro)
+                    // Redireciona para lista de faturas do sistema
+                    checkoutUrl = `${baseUrl}/configuracoes/financeiro`;
+                }
 
             } else {
                 // Boleto Único (Semestral/Anual)
