@@ -29,13 +29,28 @@ export async function getCurrentUserAndTenant() {
 
         // 2. Tentar ler o token manualmente dos cookies (fallback para SSR)
         if (!userAuthId) {
-            console.log(`[AUTH] Checking ${allCookies.length} cookies...`);
+            console.log(`[AUTH] Iniciando varredura bruta de ${allCookies.length} cookies...`);
+
+            // Reconstruir cookies fragmentados (Supabase SSR divide tokens longos em chunks .0, .1, etc)
+            const chunkedGroups: Record<string, string[]> = {};
             for (const c of allCookies) {
-                // Supabase SSR cookies costumam ter nomes específicos ou serem JWTs longos
-                if (!c.value || c.value.length < 50) continue;
+                const isAuthCookie = c.name.includes('auth-token') || c.name.startsWith('sb-');
+                if (!isAuthCookie) continue;
+
+                const parts = c.name.split('.');
+                const baseName = parts[0];
+                const index = parts.length > 1 ? parseInt(parts[1], 10) : 0;
+
+                if (!chunkedGroups[baseName]) chunkedGroups[baseName] = [];
+                chunkedGroups[baseName][index] = c.value;
+            }
+
+            for (const baseName in chunkedGroups) {
+                const fullValue = chunkedGroups[baseName].join('');
+                if (!fullValue || fullValue.length < 50) continue;
 
                 try {
-                    const val = decodeURIComponent(c.value);
+                    const val = decodeURIComponent(fullValue);
                     let token = val;
 
                     if (val.startsWith('[')) {
@@ -43,6 +58,12 @@ export async function getCurrentUserAndTenant() {
                     } else if (val.startsWith('{')) {
                         const parsed = JSON.parse(val);
                         token = parsed.access_token || parsed.token || parsed[0];
+                    } else if (val.includes('"access_token"')) {
+                        // Fallback para JSON mal formatado após decodificação
+                        try {
+                            const match = val.match(/"access_token"\s*:\s*"([^"]+)"/);
+                            if (match) token = match[1];
+                        } catch { }
                     } else {
                         token = val.replace(/^"|"$/g, '');
                     }
@@ -50,14 +71,14 @@ export async function getCurrentUserAndTenant() {
                     if (token && token.split('.').length === 3) {
                         const { data: { user: adminUser }, error: adminError } = await supabaseAdmin.auth.getUser(token);
                         if (adminUser && !adminError) {
-                            console.log(`[AUTH] Sessão identificada via cookie: ${c.name}`);
+                            console.log(`[AUTH] Sucesso: Sessão recuperada de [${baseName}]`);
                             userAuthId = adminUser.id;
                             userObj = adminUser;
                             break;
                         }
                     }
                 } catch (e) {
-                    // Ignore
+                    // Fail silently for this specific cookie/group
                 }
             }
         }

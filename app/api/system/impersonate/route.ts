@@ -18,6 +18,11 @@ export async function GET(req: Request) {
             authResult = await getCurrentUserAndTenant();
         } catch (e: any) {
             console.error(`[IMPERSONATE-DEBUG] Falha na detecção de sessão: ${e.message}`);
+
+            // Logar nomes das cookies para diagnóstico (sem valores por segurança)
+            const cookieNames = cookieHeader?.split(';').map(c => c.split('=')[0].trim()) || [];
+            console.log(`[IMPERSONATE-DEBUG] Cookies presentes na falha: ${cookieNames.join(', ') || 'NENHUMA'}`);
+
             return addCorsHeaders(req, NextResponse.json({
                 error: 'Sessão expirada no servidor de API.',
                 details: e.message,
