@@ -9,7 +9,8 @@ export async function GET() {
                 *,
                 tenants (
                     name
-                )
+                ),
+                user:users(name, nickname, email)
             `)
             .order('created_at', { ascending: false });
 
