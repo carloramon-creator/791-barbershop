@@ -166,15 +166,27 @@ export default function SystemSettingsPage() {
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-slate-400 text-xs uppercase font-bold">Cor Secundária/Texto (Hex)</Label>
+                                <Label className="text-slate-400 text-xs uppercase font-bold">Cor Secundária (Fundo Info)</Label>
                                 <div className="flex gap-2">
                                     <Input
-                                        value={settings?.asaas_branding?.infoColor || ''}
-                                        onChange={(e) => setSettings({ ...settings, asaas_branding: { ...settings.asaas_branding, infoColor: e.target.value } })}
+                                        value={settings?.asaas_branding?.secondaryColor || settings?.asaas_branding?.infoColor || ''}
+                                        onChange={(e) => setSettings({ ...settings, asaas_branding: { ...settings.asaas_branding, secondaryColor: e.target.value } })}
                                         placeholder="#000000"
                                         className="bg-slate-950 border-slate-800 text-slate-100"
                                     />
-                                    <div className="w-10 h-10 rounded border border-slate-700 shrink-0" style={{ backgroundColor: settings?.asaas_branding?.infoColor || 'transparent' }}></div>
+                                    <div className="w-10 h-10 rounded border border-slate-700 shrink-0" style={{ backgroundColor: settings?.asaas_branding?.secondaryColor || settings?.asaas_branding?.infoColor || 'transparent' }}></div>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-slate-400 text-xs uppercase font-bold">Cor da Fonte (Texto)</Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        value={settings?.asaas_branding?.fontColor || ''}
+                                        onChange={(e) => setSettings({ ...settings, asaas_branding: { ...settings.asaas_branding, fontColor: e.target.value } })}
+                                        placeholder="#ffffff"
+                                        className="bg-slate-950 border-slate-800 text-slate-100"
+                                    />
+                                    <div className="w-10 h-10 rounded border border-slate-700 shrink-0" style={{ backgroundColor: settings?.asaas_branding?.fontColor || 'transparent' }}></div>
                                 </div>
                             </div>
                         </div>
