@@ -60,12 +60,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const { user } = await getCurrentUserAndTenant();
+        const { user: currentUser } = await getCurrentUserAndTenant();
 
         const { data: userData } = await supabaseAdmin
             .from('users')
             .select('is_system_admin')
-            .eq('id', user.id)
+            .eq('id', currentUser.id)
             .single();
 
         if (!userData || !userData.is_system_admin) {
@@ -74,18 +74,47 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
         const { id: tenantId } = await params;
 
-        console.log(`[SYSTEM] Admin ${user.id} deleting tenant ${tenantId}`);
+        console.log(`[SYSTEM] Admin ${currentUser.id} initializing full deletion for tenant ${tenantId}`);
 
+        // 1. Buscar todos os usuários vinculados ao tenant
+        const { data: usersToDelete, error: fetchUsersError } = await supabaseAdmin
+            .from('users')
+            .select('id, email')
+            .eq('tenant_id', tenantId);
+
+        if (fetchUsersError) {
+            console.error('[SYSTEM] Erro ao buscar usuários para exclusão:', fetchUsersError);
+        }
+
+        // 2. Excluir usuários do Supabase Auth (CRÍTICO)
+        if (usersToDelete && usersToDelete.length > 0) {
+            console.log(`[SYSTEM] Removendo ${usersToDelete.length} usuários do Auth para o tenant ${tenantId}`);
+            for (const user of usersToDelete) {
+                try {
+                    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
+                    if (authError) {
+                        console.error(`[SYSTEM] Falha ao deletar usuário ${user.email} (${user.id}) no Auth:`, authError.message);
+                    }
+                } catch (e: any) {
+                    console.error(`[SYSTEM] Erro crítico ao processar deleção de Auth para ${user.id}:`, e.message);
+                }
+            }
+        }
+
+        // 3. Excluir o registro do tenant (o banco deve lidar com CASCADE para o restante das tabelas)
         const { error } = await supabaseAdmin
             .from('tenants')
             .delete()
             .eq('id', tenantId);
 
         if (error) {
+            console.error('[SYSTEM] Erro ao excluir tenant do banco:', error);
             throw error;
         }
 
-        return addCorsHeaders(req, NextResponse.json({ success: true }));
+        console.log(`[SYSTEM] Tenant ${tenantId} e seus usuários foram excluídos com sucesso.`);
+
+        return addCorsHeaders(req, NextResponse.json({ success: true, usersRemoved: usersToDelete?.length || 0 }));
     } catch (error: any) {
         console.error('[SYSTEM] Failed to delete tenant:', error);
         return addCorsHeaders(req, NextResponse.json({ error: error.message }, { status: 500 }));
