@@ -71,17 +71,26 @@ export async function POST(req: Request) {
             financeRecord = data;
         }
 
+        // 5. Fallback Final: Tentar pelo Customer ID e Valor (para quando tudo mais falha no Sandbox)
         if (!financeRecord) {
-            console.log('[ASAAS WEBHOOK] ❌ Registro financeiro NÃO encontrado:', {
-                paymentId: payment.id,
-                subscriptionId: payment.subscription,
-                externalReference: payment.externalReference,
-                searchKeys: ['metadata->>external_reference', 'metadata->>asaas_checkout_id']
-            });
+            console.log('[ASAAS WEBHOOK] 🔍 Fallback final por Customer e Valor:', { customer: payment.customer, value: payment.value });
+            const { data, error } = await supabaseAdmin
+                .from('finance')
+                .select('*')
+                .eq('metadata->>asaas_customer_id', payment.customer)
+                .eq('value', payment.value)
+                .eq('is_paid', false)
+                .order('created_at', { ascending: false })
+                .maybeSingle();
+            financeRecord = data;
+        }
+
+        if (!financeRecord) {
+            console.log('[ASAAS WEBHOOK] ❌ Registro financeiro NÃO encontrado após todos os fallbacks');
             return NextResponse.json({
                 received: true,
                 message: 'Finance record not found',
-                details: { extRef: payment.externalReference, payId: payment.id }
+                details: { extRef: payment.externalReference, payId: payment.id, subId: payment.subscription, custId: payment.customer }
             });
         }
 

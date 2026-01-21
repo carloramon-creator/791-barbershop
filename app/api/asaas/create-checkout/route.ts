@@ -323,6 +323,12 @@ export async function POST(req: Request) {
         } else {
             // === Lógica para CARTÃO (Checkout V3) ===
 
+            // 4.1 Buscar ou criar cliente no Asaas (IMPORTANTE para ter um ID fixo)
+            let customer = await asaas.getCustomerByEmail(customerData.email);
+            if (!customer) {
+                customer = await asaas.createCustomer(customerData);
+            }
+
             // Truncar nome para 30 chars
             const safeItemName = itemName.length > 30 ? itemName.substring(0, 27) + '...' : itemName;
 
@@ -359,7 +365,7 @@ export async function POST(req: Request) {
             const checkoutPayload: any = {
                 billingTypes: ['CREDIT_CARD'],
                 chargeTypes: chargeTypes,
-                // minutesToExpire: 30, // Removed to avoid validation issues in some charge types
+                description: itemDescription, // Adicionado na raiz também
                 externalReference: externalReference,
                 callback: {
                     successUrl: `${baseUrl}/asaas/checkout/success`,
@@ -372,7 +378,7 @@ export async function POST(req: Request) {
                     quantity: 1,
                     value: totalAmount // Now fixed to 2 decimals
                 }],
-                customerData: customerData,
+                customer: customer.id, // Enviar o ID em vez dos dados brutos
                 subscription: subscriptionConfig,
                 installment: installmentConfig
             };
@@ -384,8 +390,6 @@ export async function POST(req: Request) {
 
         // 5. Salvar registro
         if (checkoutId) {
-            // Se for recorrência, o checkout.id é o ID da assinatura ou do primeiro pagamento?
-            // Testes indicam que salvando o checkout.id e buscando como fallback resolve.
             await supabaseAdmin
                 .from('finance')
                 .insert({
@@ -398,6 +402,7 @@ export async function POST(req: Request) {
                     metadata: {
                         is_saas_payment: true,
                         asaas_checkout_id: checkoutId,
+                        asaas_customer_id: (checkout as any).customer || (checkout as any).customerId || (checkout as any).customerData?.id || null, // Tentativa de pegar o ID do cliente
                         asaas_subscription_id: (checkout as any).subscriptionId || (checkout as any).subscription || null,
                         external_reference: externalReference,
                         payment_method: paymentMethod,
