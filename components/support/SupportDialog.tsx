@@ -23,8 +23,13 @@ type TicketType = 'bug' | 'feature' | 'finance' | 'question';
 
 export function SupportDialog({ open, onOpenChange }: SupportDialogProps) {
     const { tenant, user } = useAuth();
+    const [mounted, setMounted] = useState(false);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
     const [type, setType] = useState<TicketType>('bug');
     const [message, setMessage] = useState('');
     const [history, setHistory] = useState<any[]>([]);
@@ -91,6 +96,8 @@ export function SupportDialog({ open, onOpenChange }: SupportDialogProps) {
         { id: 'finance', label: 'FINANCEIRO', icon: Wallet, color: 'text-emerald-400', border: 'border-emerald-400/20 hover:border-emerald-400/50 hover:bg-emerald-400/10' },
         { id: 'question', label: 'DÚVIDA', icon: HelpCircle, color: 'text-blue-400', border: 'border-blue-400/20 hover:border-blue-400/50 hover:bg-blue-400/10' },
     ] as const;
+
+    if (!mounted) return null;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -193,10 +200,15 @@ export function SupportDialog({ open, onOpenChange }: SupportDialogProps) {
                                             {history.map((ticket) => (
                                                 <div key={ticket.id} className="p-4 bg-slate-900/50 hover:bg-slate-800/50 transition-colors">
                                                     <div className="flex items-start justify-between mb-2">
-                                                        <div className="flex items-center gap-2">
-                                                            {categories.find(c => c.id === ticket.type)?.icon({ size: 14, className: categories.find(c => c.id === ticket.type)?.color })}
-                                                            <span className="text-[10px] font-bold uppercase text-slate-400">
-                                                                {categories.find(c => c.id === ticket.type)?.label}
+                                                        <div className="flex flex-col">
+                                                            <div className="flex items-center gap-2">
+                                                                {categories.find(c => c.id === ticket.type)?.icon({ size: 14, className: categories.find(c => c.id === ticket.type)?.color })}
+                                                                <span className="text-[10px] font-bold uppercase text-slate-400">
+                                                                    {categories.find(c => c.id === ticket.type)?.label}
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-[9px] text-slate-500 font-bold uppercase mt-1">
+                                                                Enviado por: {ticket.user?.nickname || ticket.user?.name || 'Usuário'}
                                                             </span>
                                                         </div>
                                                         <div className="flex flex-col items-end gap-1">

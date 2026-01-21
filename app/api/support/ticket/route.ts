@@ -6,11 +6,12 @@ export async function GET() {
     try {
         const { user, tenantId, role } = await getCurrentUserAndTenant();
 
-        console.log(`[SUPPORT GET] Fetching history for user ${user.id} (${user.email}), role: ${role}, tenant: ${tenantId}`);
-
         let query = supabaseAdmin
             .from('support_tickets')
-            .select('*')
+            .select(`
+                *,
+                user:users(name, nickname, email)
+            `)
             .order('created_at', { ascending: false });
 
         // Se for dono, vê tudo da barbearia. Se não, vê só o que ele abriu.
@@ -24,8 +25,6 @@ export async function GET() {
 
         if (error) throw error;
 
-        console.log(`[SUPPORT GET] Found ${data?.length || 0} tickets`);
-
         return NextResponse.json(data);
     } catch (error: any) {
         console.error('[SUPPORT GET ERROR]', error);
@@ -35,6 +34,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
     try {
+        const { user, tenantId } = await getCurrentUserAndTenant();
         const payload = await req.json();
         const { type, message, context } = payload;
 
@@ -48,11 +48,11 @@ export async function POST(req: Request) {
             .insert({
                 type,
                 message,
-                tenant_id: context?.tenantId,
-                user_id: context?.userId,
+                tenant_id: tenantId,
+                user_id: user.id,
                 context: {
                     ...context,
-                    timestamp: new Date().toISOString()
+                    serverTime: new Date().toISOString()
                 },
                 status: 'open'
             });
