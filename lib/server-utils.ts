@@ -49,15 +49,21 @@ export async function getCurrentUserAndTenant() {
         if (!userAuthId) {
             console.log(`[AUTH] Iniciando varredura bruta de ${allCookies.length} cookies (Fallback)...`);
 
-            // Reconstruir cookies fragmentados (Supabase SSR divide tokens longos em chunks .0, .1, etc)
+            // Reconstruir cookies fragmentados (Supabase SSR divide tokens longos em chunks .0, .1 ou -0, -1)
             const chunkedGroups: Record<string, string[]> = {};
             for (const c of allCookies) {
-                const isAuthCookie = c.name.includes('auth-token') || c.name.startsWith('sb-');
+                const isAuthCookie = c.name.includes('auth-token') || c.name.startsWith('sb-') || c.name.includes('supabase-auth');
                 if (!isAuthCookie) continue;
 
-                const parts = c.name.split('.');
-                const baseName = parts[0];
-                const index = parts.length > 1 ? parseInt(parts[1], 10) : 0;
+                // Tenta detectar o índice do chunk (. index ou - index)
+                const parts = c.name.split(/[.-]/);
+                const lastPart = parts[parts.length - 1];
+                const index = /^\d+$/.test(lastPart) ? parseInt(lastPart, 10) : 0;
+
+                // O nome base é tudo exceto o índice se ele existir
+                const baseName = index > 0 || (parts.length > 1 && /^\d+$/.test(lastPart))
+                    ? c.name.substring(0, c.name.lastIndexOf(c.name.includes('.') ? '.' : '-'))
+                    : c.name;
 
                 if (!chunkedGroups[baseName]) chunkedGroups[baseName] = [];
                 chunkedGroups[baseName][index] = c.value;
@@ -65,22 +71,22 @@ export async function getCurrentUserAndTenant() {
 
             for (const baseName in chunkedGroups) {
                 const fullValue = chunkedGroups[baseName].join('');
-                if (!fullValue || fullValue.length < 50) continue;
+                if (!fullValue || fullValue.length < 40) continue;
 
                 try {
                     const val = decodeURIComponent(fullValue);
                     let token = val;
 
                     if (val.startsWith('[')) {
-                        token = JSON.parse(val)[0];
+                        try { token = JSON.parse(val)[0]; } catch { }
                     } else if (val.startsWith('{')) {
-                        const parsed = JSON.parse(val);
-                        token = parsed.access_token || parsed.token || parsed[0];
-                    } else if (val.includes('"access_token"')) {
                         try {
-                            const match = val.match(/"access_token"\s*:\s*"([^"]+)"/);
-                            if (match) token = match[1];
+                            const parsed = JSON.parse(val);
+                            token = parsed.access_token || parsed.token || parsed[0] || val;
                         } catch { }
+                    } else if (val.includes('"access_token"')) {
+                        const match = val.match(/"access_token"\s*:\s*"([^"]+)"/);
+                        if (match) token = match[1];
                     } else {
                         token = val.replace(/^"|"$/g, '');
                     }
@@ -88,15 +94,13 @@ export async function getCurrentUserAndTenant() {
                     if (token && token.split('.').length === 3) {
                         const { data: { user: adminUser }, error: adminError } = await supabaseAdmin.auth.getUser(token);
                         if (adminUser && !adminError) {
-                            console.log(`[AUTH] Sucesso via Fallback Manual [${baseName}]`);
+                            console.log(`[AUTH] Sucesso via Fallback Manual [${baseName}] (Usuário: ${adminUser.email})`);
                             userAuthId = adminUser.id;
                             userObj = adminUser;
                             break;
                         }
                     }
-                } catch (e) {
-                    // Fail silently
-                }
+                } catch (e) { }
             }
         }
 
@@ -112,6 +116,7 @@ export async function getCurrentUserAndTenant() {
             .single();
 
         if (profileError || !userData) {
+            console.error(`[AUTH] Perfil não encontrado para ID: ${userAuthId}. Erro: ${profileError?.message || 'Sem dados'}`);
             throw new Error('Perfil do sistema não localizado.');
         }
 
