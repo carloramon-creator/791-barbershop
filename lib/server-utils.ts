@@ -24,12 +24,30 @@ export async function getCurrentUserAndTenant() {
             if (adminUser && !adminError) {
                 userAuthId = adminUser.id;
                 userObj = adminUser;
+                console.log(`[AUTH] Sessão via Authorization Header (Admin: ${adminUser.email})`);
             }
         }
 
-        // 2. Tentar ler o token manualmente dos cookies (fallback para SSR)
+        // 2. Tentar via SDK (Supabase SSR) - MÉTODO OFICIAL E MAIS CONFIÁVEL
         if (!userAuthId) {
-            console.log(`[AUTH] Iniciando varredura bruta de ${allCookies.length} cookies...`);
+            try {
+                const client = await supabase();
+                const { data: { user: sdkUser }, error: sdkError } = await client.auth.getUser();
+                if (sdkUser && !sdkError) {
+                    userAuthId = sdkUser.id;
+                    userObj = sdkUser;
+                    console.log(`[AUTH] Sessão via SDK (SSR: ${sdkUser.email})`);
+                } else if (sdkError) {
+                    console.log(`[AUTH] SDK Session mismatch: ${sdkError.message}`);
+                }
+            } catch (sdkErr) {
+                console.log(`[AUTH] SDK Critical Failure:`, sdkErr);
+            }
+        }
+
+        // 3. Tentar ler o token manualmente dos cookies (FALLBACK RADICAL)
+        if (!userAuthId) {
+            console.log(`[AUTH] Iniciando varredura bruta de ${allCookies.length} cookies (Fallback)...`);
 
             // Reconstruir cookies fragmentados (Supabase SSR divide tokens longos em chunks .0, .1, etc)
             const chunkedGroups: Record<string, string[]> = {};
@@ -59,7 +77,6 @@ export async function getCurrentUserAndTenant() {
                         const parsed = JSON.parse(val);
                         token = parsed.access_token || parsed.token || parsed[0];
                     } else if (val.includes('"access_token"')) {
-                        // Fallback para JSON mal formatado após decodificação
                         try {
                             const match = val.match(/"access_token"\s*:\s*"([^"]+)"/);
                             if (match) token = match[1];
@@ -71,25 +88,15 @@ export async function getCurrentUserAndTenant() {
                     if (token && token.split('.').length === 3) {
                         const { data: { user: adminUser }, error: adminError } = await supabaseAdmin.auth.getUser(token);
                         if (adminUser && !adminError) {
-                            console.log(`[AUTH] Sucesso: Sessão recuperada de [${baseName}]`);
+                            console.log(`[AUTH] Sucesso via Fallback Manual [${baseName}]`);
                             userAuthId = adminUser.id;
                             userObj = adminUser;
                             break;
                         }
                     }
                 } catch (e) {
-                    // Fail silently for this specific cookie/group
+                    // Fail silently
                 }
-            }
-        }
-
-        // 3. Fallback para o SDK
-        if (!userAuthId) {
-            const client = await supabase();
-            const { data: { user }, error } = await client.auth.getUser();
-            if (user && !error) {
-                userAuthId = user.id;
-                userObj = user;
             }
         }
 

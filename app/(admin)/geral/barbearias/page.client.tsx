@@ -196,7 +196,15 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                         <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Carregando...</p>
                     </div>
                 ) : filteredTenants.map((tenant) => {
-                    const onlineCount = (tenant.barbers || []).filter((b: any) => b.status === 'available' || b.status === 'busy').length;
+                    // CÁLCULO REAL DE ONLINE (Baseado em atividade nos últimos 5 minutos)
+                    const now = new Date().getTime();
+                    const FIVE_MINS = 5 * 60 * 1000;
+                    const onlineCount = (tenant.users || []).filter((u: any) => {
+                        if (!u.last_seen_at) return false;
+                        return (now - new Date(u.last_seen_at).getTime()) < FIVE_MINS;
+                    }).length;
+
+                    const totalUsers = (tenant.users || []).length;
 
                     return (
                         <Card key={tenant.id} className="bg-slate-900/40 border-slate-800/50 hover:border-blue-500/40 transition-all group shadow-xl relative overflow-hidden">
@@ -269,7 +277,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                 <p className="text-[7px] font-black text-slate-600 uppercase tracking-tighter">Atendimentos</p>
                                             </div>
                                             <div className="text-center">
-                                                <p className="text-sm font-black text-white leading-none mb-1">{tenant.stats?.total_users || 0}</p>
+                                                <p className="text-sm font-black text-white leading-none mb-1">{totalUsers}</p>
                                                 <p className="text-[7px] font-black text-slate-600 uppercase tracking-tighter">Colaboradores</p>
                                             </div>
                                             <div className="text-center">
@@ -320,7 +328,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                 size="icon"
                                                 className="h-8 w-8 border-slate-800 bg-slate-950 text-blue-500 hover:bg-blue-600 hover:text-white rounded-lg shadow-lg"
                                                 onClick={() => {
-                                                    window.location.href = `/api/system/impersonate?tenant_id=${tenant.id}`;
+                                                    window.open(`/api/system/impersonate?tenant_id=${tenant.id}`, '_blank');
                                                 }}
                                                 title="Acessar"
                                             >

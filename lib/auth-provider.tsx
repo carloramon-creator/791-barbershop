@@ -106,15 +106,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         fetchSession();
 
         const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (_event, session) => {
-            // Re-run fetch logic if simpler, or just update session
-            // But simpler to just call fetchSession to update role/tenant as well
-            // Wait, infinite loop risk? No, if session changes.
-            // But onAuthStateChange gives session. 
-            // We'll just update state.
             setSession(session);
             setUser(session?.user ?? null);
             if (session?.user) {
-                // For now, re-fetching full details can be slightly redundant but safe
                 fetchSession();
             } else {
                 setRole(null);
@@ -125,7 +119,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
         });
 
-        return () => subscription.unsubscribe();
+        // Heartbeat para manter last_seen_at atualizado (Real-time Online Status)
+        const heartbeat = setInterval(async () => {
+            const { data: { session: currentSession } } = await supabaseClient.auth.getSession();
+            if (currentSession?.user) {
+                await supabaseClient
+                    .from('users')
+                    .update({ last_seen_at: new Date().toISOString() })
+                    .eq('id', currentSession.user.id);
+            }
+        }, 1000 * 60 * 2); // A cada 2 minutos
+
+        return () => {
+            subscription.unsubscribe();
+            clearInterval(heartbeat);
+        };
     }, []);
 
     const signOut = async () => {
