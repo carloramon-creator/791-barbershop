@@ -332,6 +332,7 @@ export default function PlanPage() {
             });
 
             const data = await res.json();
+            console.log('[PAYMENT DEBUG] Response:', { ok: res.ok, status: res.status, data, paymentMethod });
             if (!res.ok) throw new Error(data.error || 'Erro ao processar pagamento');
 
             if (data.checkoutUrl && paymentMethod === 'card') {

@@ -280,7 +280,15 @@ export async function POST(req: Request) {
         }));
 
     } catch (error: any) {
-        console.error('[CHECKOUT ERROR]', error);
-        return addCorsHeaders(req, NextResponse.json({ error: error.message || 'Erro interno' }, { status: 500 }));
+        console.error('[SAAS BOLETO CHECKOUT ERROR]', error);
+        let msg = 'Erro interno ao processar boleto';
+        if (error.message) msg = error.message;
+        if (typeof error.message === 'string' && error.message.includes('{')) {
+            try {
+                const parsed = JSON.parse(error.message);
+                msg = parsed.title || parsed.detail || msg;
+            } catch (e) { }
+        }
+        return addCorsHeaders(req, NextResponse.json({ error: msg }, { status: 500 }));
     }
 }

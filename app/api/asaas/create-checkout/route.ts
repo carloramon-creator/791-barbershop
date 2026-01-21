@@ -267,9 +267,9 @@ export async function POST(req: Request) {
                     nextDueDate: nextDueDate.toISOString().split('T')[0]
                 };
             } else if (interval > 1 || installments > 1) {
-                chargeTypes = ['INSTALLMENT']; // Force installment choice if annual/semiannual
+                chargeTypes = ['DETACHED', 'INSTALLMENT']; // Both required by Asaas for integrated checkout with installments
                 installmentConfig = {
-                    installmentCount: installments, // Try to pre-fill/force
+                    installmentCount: installments,
                     maxInstallmentCount: installments
                 };
             }

@@ -307,9 +307,6 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error('[SAAS PIX CHECKOUT ERROR]', error);
-        console.error('[SAAS PIX ERROR STACK]', error.stack);
-
-        // Mensagem mais amigável para o usuário
         let userMessage = 'Erro inesperado ao processar pagamento';
         if (error.message) {
             if (error.message.includes('CNPJ') || error.message.includes('CPF')) {
@@ -318,6 +315,11 @@ export async function POST(req: Request) {
                 userMessage = 'Tempo esgotado ao conectar com o banco. Tente novamente.';
             } else if (error.message.includes('certificado') || error.message.includes('certificate')) {
                 userMessage = 'Erro de autenticação com o banco. Contate o suporte.';
+            } else if (typeof error.message === 'string' && error.message.includes('{')) {
+                try {
+                    const parsed = JSON.parse(error.message);
+                    userMessage = parsed.title || parsed.detail || userMessage;
+                } catch (e) { }
             } else {
                 userMessage = error.message;
             }
