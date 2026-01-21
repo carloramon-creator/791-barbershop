@@ -221,7 +221,13 @@ export function SupportDialog({ open, onOpenChange }: SupportDialogProps) {
                                                             </div>
                                                             <div className="flex flex-col items-end gap-1">
                                                                 <span className="text-[10px] text-slate-500 font-medium">
-                                                                    {format(new Date(ticket.created_at), "dd 'de' MMM, HH:mm", { locale: ptBR })}
+                                                                    {(() => {
+                                                                        try {
+                                                                            return format(new Date(ticket.created_at), "dd 'de' MMM, HH:mm", { locale: ptBR });
+                                                                        } catch (e) {
+                                                                            return 'Data indisponível';
+                                                                        }
+                                                                    })()}
                                                                 </span>
                                                                 <Badge className={cn(
                                                                     "text-[8px] uppercase font-black px-1.5 py-0 h-4 border",

@@ -215,8 +215,8 @@ export default function SupportPage() {
 
             {/* Modal de Detalhes JUMBO */}
             <Dialog open={!!selectedTicket} onOpenChange={(open) => !open && setSelectedTicket(null)}>
-                <DialogContent className="sm:max-w-7xl w-[95vw] h-[90vh] bg-slate-900 border-slate-800 text-slate-100 flex flex-col p-0 overflow-hidden shadow-2xl">
-                    <div className="p-8 border-b border-slate-800 bg-slate-950">
+                <DialogContent className="sm:!max-w-7xl !w-[95vw] !h-[85vh] bg-slate-900 border-slate-800 text-slate-100 flex flex-col p-0 overflow-hidden shadow-2xl">
+                    <div className="p-6 border-b border-slate-800 bg-slate-950">
                         <DialogHeader>
                             <div className="flex items-center gap-4 mb-1">
                                 <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800">
@@ -243,7 +243,7 @@ export default function SupportPage() {
                                         <MessageCircle className="w-4 h-4 text-blue-500" />
                                         <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Mensagem do Cliente</label>
                                     </div>
-                                    <div className="p-8 bg-slate-950 border border-slate-800 rounded-3xl min-h-[300px] text-xl leading-relaxed text-slate-200 shadow-inner whitespace-pre-wrap">
+                                    <div className="p-6 bg-slate-950 border border-slate-800 rounded-2xl min-h-[200px] text-sm leading-relaxed text-slate-300 shadow-inner whitespace-pre-wrap">
                                         {selectedTicket?.message}
                                     </div>
                                 </div>
@@ -272,13 +272,13 @@ export default function SupportPage() {
                                 <div className="space-y-3">
                                     <label className="text-xs font-black text-slate-500 uppercase tracking-widest block">Status do Atendimento</label>
                                     <Select value={ticketStatus} onValueChange={setTicketStatus}>
-                                        <SelectTrigger className="bg-slate-950 border-slate-800 h-16 text-xl font-black rounded-2xl ring-offset-blue-600 focus:ring-2">
+                                        <SelectTrigger className="bg-slate-950 border-slate-800 h-12 text-sm font-bold rounded-xl ring-offset-blue-600 focus:ring-2">
                                             <SelectValue placeholder="Selecione o status" />
                                         </SelectTrigger>
                                         <SelectContent className="bg-slate-950 border-slate-800">
-                                            <SelectItem value="open" className="text-lg py-3 font-bold text-blue-400">ABERTO</SelectItem>
-                                            <SelectItem value="progress" className="text-lg py-3 font-bold text-amber-400">EM ANÁLISE</SelectItem>
-                                            <SelectItem value="closed" className="text-lg py-3 font-bold text-emerald-400">CONCLUÍDO / RESOLVIDO</SelectItem>
+                                            <SelectItem value="open" className="text-sm py-2 font-bold text-blue-400">ABERTO</SelectItem>
+                                            <SelectItem value="progress" className="text-sm py-2 font-bold text-amber-400">EM ANÁLISE</SelectItem>
+                                            <SelectItem value="closed" className="text-sm py-2 font-bold text-emerald-400">CONCLUÍDO</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -289,7 +289,7 @@ export default function SupportPage() {
                                         <Badge variant="outline" className="text-[10px] uppercase font-bold text-blue-500 border-blue-500/20">O cliente verá esta nota</Badge>
                                     </div>
                                     <Textarea
-                                        className="bg-slate-950 border-slate-800 text-xl font-medium min-h-[350px] rounded-3xl p-8 resize-none focus:ring-2 focus:ring-blue-600/50 shadow-inner custom-scrollbar"
+                                        className="bg-slate-950 border-slate-800 text-sm font-medium min-h-[250px] rounded-2xl p-6 resize-none focus:ring-2 focus:ring-blue-600/50 shadow-inner custom-scrollbar"
                                         placeholder="Digite aqui a resposta que o cliente verá no painel dele..."
                                         value={adminNotes}
                                         onChange={(e) => setAdminNotes(e.target.value)}
@@ -299,16 +299,16 @@ export default function SupportPage() {
                         </div>
                     </div>
 
-                    <div className="p-8 border-t border-slate-800 bg-slate-950 flex justify-end items-center gap-4">
+                    <div className="p-6 border-t border-slate-800 bg-slate-950 flex justify-end items-center gap-4">
                         <Button
                             variant="ghost"
                             onClick={() => setSelectedTicket(null)}
-                            className="h-14 px-8 text-slate-400 hover:text-slate-100 hover:bg-slate-900 font-bold uppercase text-xs tracking-widest rounded-2xl"
+                            className="h-12 px-6 text-slate-400 hover:text-slate-100 hover:bg-slate-900 font-bold uppercase text-xs tracking-widest rounded-xl"
                         >
                             Cancelar e Sair
                         </Button>
                         <Button
-                            className="h-14 px-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-2xl shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                            className="h-12 px-10 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-xs tracking-widest rounded-xl shadow-2xl shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                             onClick={handleUpdateTicket}
                             disabled={updating}
                         >
