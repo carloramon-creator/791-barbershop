@@ -39,8 +39,12 @@ export async function GET(req: NextRequest) {
         }
 
         // 2. Parar Impersonate
+        const protocol = req.headers.get('x-forwarded-proto') || 'https';
+        const host = req.headers.get('host') || req.nextUrl.host;
+        const publicOrigin = `${protocol}://${host}`;
+
         if (stop === 'true') {
-            const resp = NextResponse.redirect(new URL('/geral/barbearias', req.nextUrl.origin));
+            const resp = NextResponse.redirect(new URL('/geral/barbearias', publicOrigin));
             resp.cookies.delete('impersonate_tenant_id');
             return addCorsHeaders(req, resp);
         }
@@ -50,10 +54,10 @@ export async function GET(req: NextRequest) {
         }
 
         // 3. Iniciar Impersonate (Setar Cookie e Redirecionar)
-        console.log(`[IMPERSONATE-DEBUG] Setando tenant: ${tenantId}`);
+        console.log(`[IMPERSONATE-DEBUG] Setando tenant: ${tenantId}, origin: ${publicOrigin}`);
 
         // Redireciona para o dashboard com o cookie setado
-        const response = NextResponse.redirect(new URL('/dashboard', req.nextUrl.origin));
+        const response = NextResponse.redirect(new URL('/dashboard', publicOrigin));
 
         response.cookies.set('impersonate_tenant_id', tenantId, {
             path: '/',
