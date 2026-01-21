@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const tenantId = searchParams.get('tenant_id');
@@ -40,7 +40,7 @@ export async function GET(req: Request) {
 
         // 2. Parar Impersonate
         if (stop === 'true') {
-            const resp = NextResponse.redirect(new URL('/geral/barbearias', req.url));
+            const resp = NextResponse.redirect(new URL('/geral/barbearias', req.nextUrl.origin));
             resp.cookies.delete('impersonate_tenant_id');
             return addCorsHeaders(req, resp);
         }
@@ -53,7 +53,7 @@ export async function GET(req: Request) {
         console.log(`[IMPERSONATE-DEBUG] Setando tenant: ${tenantId}`);
 
         // Redireciona para o dashboard com o cookie setado
-        const response = NextResponse.redirect(new URL('/dashboard', req.url));
+        const response = NextResponse.redirect(new URL('/dashboard', req.nextUrl.origin));
 
         response.cookies.set('impersonate_tenant_id', tenantId, {
             path: '/',
