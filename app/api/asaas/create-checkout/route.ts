@@ -160,7 +160,27 @@ export async function POST(req: Request) {
         // 4. Lógica de Cobrança (Híbrida)
         let checkoutId = null;
         let checkoutUrl = '';
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://791barber.com';
+
+        // Determinar baseUrl de forma robusta para evitar localhost em produção
+        const referer = req.headers.get('referer');
+        let baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://791barber.com';
+
+        if (referer && !referer.includes('localhost')) {
+            try {
+                baseUrl = new URL(referer).origin;
+            } catch (e) {
+                console.error('[ASAAS] Falha ao parsear referer para baseUrl:', e);
+            }
+        } else {
+            // Fallback para headers de proxy
+            const protocol = req.headers.get('x-forwarded-proto') || 'https';
+            const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
+            if (host && !host.includes('localhost')) {
+                baseUrl = `${protocol}://${host}`;
+            }
+        }
+
+        console.log(`[ASAAS] Base URL detectada: ${baseUrl}`);
 
         // Generate a unique reference for matching in Webhook
         const externalReference = crypto.randomUUID();

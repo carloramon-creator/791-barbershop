@@ -29,6 +29,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             // 2. WhiteList (sempre livre)
             isWhiteListed =
                 pathname.startsWith('/checkout') ||
+                pathname.startsWith('/asaas/checkout') ||
                 pathname === '/configuracoes/plano' ||
                 pathname === '/configuracoes/barbearia';
 
