@@ -124,6 +124,13 @@ export class AsaasClient {
         return response.data;
     }
 
+    async getPaymentsBySubscription(subscriptionId: string, limit: number = 10) {
+        const response = await this.client.get('/payments', {
+            params: { subscription: subscriptionId, limit }
+        });
+        return response.data;
+    }
+
 
     async getPaymentByExternalReference(externalReference: string) {
         const response = await this.client.get('/payments', {
