@@ -206,6 +206,17 @@ export const Api = {
     updateSystemCoupon: (payload: Record<string, unknown>) => apiFetch('/api/system/coupons', { method: 'PATCH', body: JSON.stringify(payload) }),
     deleteSystemCoupon: (id: string) => apiFetch(`/api/system/coupons?id=${id}`, { method: 'DELETE' }),
 
+    // Holding Finance (SuperAdmin)
+    getHoldingAccounts: () => apiFetch('/api/admin/finance/accounts'),
+    createHoldingAccount: (payload: Record<string, unknown>) => apiFetch('/api/admin/finance/accounts', { method: 'POST', body: JSON.stringify(payload) }),
+    updateHoldingAccount: (id: string, payload: Record<string, unknown>) => apiFetch(`/api/admin/finance/accounts/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+    deleteHoldingAccount: (id: string) => apiFetch(`/api/admin/finance/accounts/${id}`, { method: 'DELETE' }),
+
+    getHoldingCategories: (type?: 'income' | 'expense') => apiFetch(`/api/admin/finance/categories?type=${type || ''}`),
+    createHoldingCategory: (payload: Record<string, unknown>) => apiFetch('/api/admin/finance/categories', { method: 'POST', body: JSON.stringify(payload) }),
+    updateHoldingCategory: (id: string, payload: Record<string, unknown>) => apiFetch(`/api/admin/finance/categories/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+    deleteHoldingCategory: (id: string) => apiFetch(`/api/admin/finance/categories/${id}`, { method: 'DELETE' }),
+
     // Public/Client Actions
     getPublicQueueStatus: (tenantId?: string) => apiFetch(`/api/public/queue?tenant_id=${tenantId || ''}`),
     enterPublicQueue: (payload: Record<string, any>) => apiFetch('/api/public/queue/enter', { method: 'POST', body: JSON.stringify(payload) }),

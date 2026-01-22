@@ -21,9 +21,15 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
     const [type, setType] = useState<'revenue' | 'expense'>('expense');
 
     // Form States
+    const [accounts, setAccounts] = useState<any[]>([]);
+    const [categories, setCategories] = useState<any[]>([]);
+    const [loadingData, setLoadingData] = useState(false);
+
+    // Form States
     const [description, setDescription] = useState('');
     const [value, setValue] = useState('');
-    const [category, setCategory] = useState('');
+    const [categoryId, setCategoryId] = useState('');
+    const [accountId, setAccountId] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [status, setStatus] = useState<'paid' | 'pending'>('paid');
     const [businessUnit, setBusinessUnit] = useState('holding');
@@ -33,8 +39,42 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
     const [recurrenceInterval, setRecurrenceInterval] = useState<'monthly' | 'weekly' | 'yearly'>('monthly');
     const [recurrenceCount, setRecurrenceCount] = useState('12');
 
+    // Load Data on Open
+    import { useEffect } from 'react';
+
+    useEffect(() => {
+        if (open) {
+            loadAuxData();
+        }
+    }, [open, type]);
+
+    async function loadAuxData() {
+        setLoadingData(true);
+        try {
+            const [accs, cats] = await Promise.all([
+                Api.getHoldingAccounts(),
+                Api.getHoldingCategories(type === 'revenue' ? 'income' : 'expense')
+            ]);
+            setAccounts(accs || []);
+            setCategories(cats || []);
+
+            // Set default account if none selected
+            if (!accountId && accs && accs.length > 0) {
+                const defaultAcc = accs.find((a: any) => a.is_default) || accs[0];
+                setAccountId(defaultAcc.id);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingData(false);
+        }
+    }
+
     const handleSubmit = async () => {
-        if (!description || !value || !date) return;
+        if (!description || !value || !date || !accountId || !categoryId) {
+            alert('Preencha todos os campos obrigatórios (Descrição, Valor, Data, Conta e Categoria).');
+            return;
+        }
 
         try {
             setLoading(true);
@@ -42,11 +82,16 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
             // Clean currency mask to number
             const numberValue = parseFloat(value.replace('R$', '').replace('.', '').replace(',', '.').trim());
 
+            // Find category name for legacy support or display
+            const selectedCategory = categories.find(c => c.id === categoryId);
+
             const basePayload = {
                 type,
                 description,
                 value: numberValue,
-                category: category || (type === 'expense' ? 'Despesa Operacional' : 'Receita Extra'),
+                category_id: categoryId, // New Relation
+                category: selectedCategory?.name || 'Geral', // Legacy/Fallback
+                account_id: accountId, // New Relation
                 status,
                 business_unit: businessUnit,
                 payment_method: 'manual',
@@ -68,10 +113,6 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
                     if (recurrenceInterval === 'monthly') currentDate.setMonth(currentDate.getMonth() + i);
                     if (recurrenceInterval === 'weekly') currentDate.setDate(currentDate.getDate() + (i * 7));
                     if (recurrenceInterval === 'yearly') currentDate.setFullYear(currentDate.getFullYear() + i);
-
-                    // Se for recorrente, apenas a primeira pode ser 'paid' se o usuário selecionou 'paid'. 
-                    // As futuras geralmente nascem como 'pending', a menos que seja um lançamento retroativo pago.
-                    // Por precaução, vamos manter o status escolhido, mas adicionar no metadata que é parcela X.
                 }
 
                 promises.push(Api.createSystemFinanceRecord({
@@ -97,7 +138,7 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
             // Reset form
             setDescription('');
             setValue('');
-            setCategory('');
+            setCategoryId('');
             setStatus('paid');
             setIsRecurrent(false);
 
@@ -108,10 +149,6 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
             setLoading(false);
         }
     };
-
-    const categories = type === 'expense'
-        ? ['Infraestrutura', 'Marketing', 'Equipe', 'Imostos', 'Pro-labore', 'Outros']
-        : ['Consultoria', 'Projeto Extra', 'Venda de Ativos', 'Outros'];
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -197,15 +234,53 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500 uppercase">Categoria</Label>
-                                <Select value={category} onValueChange={setCategory}>
+                                <Label className="text-xs font-bold text-slate-500 uppercase">Conta Bancária</Label>
+                                <Select value={accountId} onValueChange={setAccountId}>
                                     <SelectTrigger className="bg-slate-950 border-slate-800 text-white">
                                         <SelectValue placeholder="Selecione..." />
                                     </SelectTrigger>
                                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                        {categories.map(cat => (
-                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                        {accounts.map(acc => (
+                                            <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
                                         ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold text-slate-500 uppercase">Categoria</Label>
+                                <Select value={categoryId} onValueChange={setCategoryId}>
+                                    <SelectTrigger className="bg-slate-950 border-slate-800 text-white">
+                                        <SelectValue placeholder="Selecione..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-slate-900 border-slate-800 text-white max-h-[200px]">
+                                        {categories.map(cat => (
+                                            <SelectItem key={cat.id} value={cat.id}>
+                                                <div className="flex items-center gap-2">
+                                                    {cat.color && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />}
+                                                    {cat.name}
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                        {categories.length === 0 && (
+                                            <div className="p-2 text-[10px] text-slate-500 text-center">Nenhuma categoria encontrada.</div>
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold text-slate-500 uppercase">Unidade de Negócio</Label>
+                                <Select value={businessUnit} onValueChange={setBusinessUnit}>
+                                    <SelectTrigger className="bg-slate-950 border-slate-800 text-white">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                        <SelectItem value="holding">Holding (791 Soluções)</SelectItem>
+                                        <SelectItem value="barber">791 Barber (Aporte)</SelectItem>
+                                        <SelectItem value="beauty">791 Beauty (Aporte)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -268,20 +343,6 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
                                     </p>
                                 </div>
                             )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold text-slate-500 uppercase">Unidade de Negócio</Label>
-                            <Select value={businessUnit} onValueChange={setBusinessUnit}>
-                                <SelectTrigger className="bg-slate-950 border-slate-800 text-white">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                    <SelectItem value="holding">Holding (791 Soluções)</SelectItem>
-                                    <SelectItem value="barber">791 Barber (Aporte)</SelectItem>
-                                    <SelectItem value="beauty">791 Beauty (Aporte)</SelectItem>
-                                </SelectContent>
-                            </Select>
                         </div>
                     </div>
 

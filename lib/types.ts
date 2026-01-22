@@ -151,7 +151,29 @@ export interface Product {
 }
 
 
+// --- HOLDING FINANCE SYSTEM TYPES ---
 
+export interface HoldingAccount {
+    id: string;
+    name: string;
+    type: 'checking' | 'savings' | 'investment' | 'cash';
+    balance: number;
+    is_active: boolean;
+    is_default: boolean;
+    bank_name?: string;
+    created_at: string;
+}
+
+export interface HoldingCategory {
+    id: string;
+    name: string;
+    type: 'income' | 'expense';
+    parent_id?: string | null;
+    color?: string;
+    icon?: string;
+    is_active: boolean;
+    created_at: string;
+}
 
 export interface FinanceCategory {
     id: string;
