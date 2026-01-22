@@ -122,7 +122,7 @@ export async function POST(req: Request) {
             // Marcar Financeiro como Pago
             supabaseAdmin.from('finance').update({
                 is_paid: true,
-                date_paid: new Date().toISOString(),
+                date: new Date().toISOString().split('T')[0],
                 metadata: { ...metadata, asaas_payment_id: payment.id, webhook_processed_at: new Date().toISOString() }
             }).eq('id', financeRecord.id),
             // Log de Auditoria
