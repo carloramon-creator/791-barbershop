@@ -571,7 +571,7 @@ export default function HoldingFinanceDashboard() {
                                                                 <CheckCircle2 size={12} />
                                                             </Button>
                                                         )}
-                                                        <Button size="icon" variant="ghost" className="h-6 w-6 text-red-500 hover:bg-red-500/10" title="Excluir" onClick={() => handleDelete(record.id)}>
+                                                        <Button size="icon" variant="ghost" className="h-6 w-6 text-red-500 hover:bg-red-500/10" title="Excluir" onClick={() => handleDeleteClick(record)}>
                                                             <Trash2 size={12} />
                                                         </Button>
                                                     </div>
