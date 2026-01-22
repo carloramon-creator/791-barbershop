@@ -194,7 +194,16 @@ export function Sidebar() {
                 {/* Header */}
                 <div className="p-6 pb-2">
                     <div className="flex items-center gap-3 font-black text-xl tracking-tighter uppercase text-blue-600">
-                        {tenant?.logo_url ? (
+                        {pathname?.startsWith('/geral') ? (
+                            <>
+                                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-white/10">
+                                    <Image src="/holding-logo.png" alt="791 Soluções" width={24} height={24} className="w-6 h-6 object-contain" unoptimized />
+                                </div>
+                                <div>
+                                    791 <span className="text-slate-100">Soluções</span>
+                                </div>
+                            </>
+                        ) : tenant?.logo_url ? (
                             <>
                                 <Image src={tenant.logo_url} alt={tenant.name || 'Logo'} width={32} height={32} className="w-8 h-8 rounded-lg object-cover" unoptimized />
                                 {tenant.name}

@@ -50,29 +50,22 @@ export default function SystemAdminsPage() {
         e.preventDefault();
         try {
             setInviting(true);
-            // First find the user
-            const { data: user, error: findError } = await supabaseClient
-                .from('users')
-                .select('id, email')
-                .eq('email', inviteEmail)
-                .single();
 
-            if (findError || !user) {
-                alert('Usuário não encontrado. Ele precisa primeiro ter uma conta no sistema.');
-                return;
+            const res = await fetch('/api/admin/system-admins', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: inviteEmail })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Erro ao processar solicitação.');
             }
-
-            // Promote
-            const { error: promoError } = await supabaseClient
-                .from('users')
-                .update({ is_system_admin: true })
-                .eq('id', user.id);
-
-            if (promoError) throw promoError;
 
             setInviteEmail('');
             loadAdmins();
-            alert('Novo administrador promovido com sucesso!');
+            alert(data.message || 'Operação realizada com sucesso!');
         } catch (e: any) {
             alert('Erro: ' + e.message);
         } finally {
@@ -119,10 +112,10 @@ export default function SystemAdminsPage() {
                     <CardHeader>
                         <CardTitle className="text-slate-100 flex items-center gap-2">
                             <UserPlus size={18} className="text-blue-500" />
-                            Promover Usuário
+                            Convidar ou Promover
                         </CardTitle>
                         <CardDescription className="text-xs text-slate-500">
-                            Transforme um dono de barbearia ou funcionário em administrador global.
+                            Convide um novo Super Admin ou promova um usuário existente.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -134,7 +127,7 @@ export default function SystemAdminsPage() {
                                     <Input
                                         id="email"
                                         type="email"
-                                        placeholder="exemplo@email.com"
+                                        placeholder="novo.admin@email.com"
                                         value={inviteEmail}
                                         onChange={e => setInviteEmail(e.target.value)}
                                         className="bg-slate-950 border-slate-800 pl-10 h-11 text-sm text-slate-100"
@@ -147,14 +140,14 @@ export default function SystemAdminsPage() {
                                 disabled={inviting || !inviteEmail}
                                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-11"
                             >
-                                {inviting ? <Loader2 className="animate-spin w-4 h-4" /> : 'Promover à Admin'}
+                                {inviting ? <Loader2 className="animate-spin w-4 h-4" /> : 'Convidar / Promover'}
                             </Button>
                         </form>
                         <div className="mt-6 p-4 bg-blue-600/5 border border-blue-600/10 rounded-xl">
                             <div className="flex gap-3">
                                 <AlertCircle size={16} className="text-blue-500 shrink-0" />
                                 <p className="text-[10px] text-slate-500 leading-relaxed">
-                                    <strong>Atenção:</strong> Administradores podem alterar chaves de API, deletar barbearias e criar novos cupons. Promova apenas pessoas de extrema confiança.
+                                    <strong>Atenção:</strong> Novos usuários receberão um e-mail de convite. Usuários existentes terão acesso imediato ao painel <strong>/geral</strong>.
                                 </p>
                             </div>
                         </div>

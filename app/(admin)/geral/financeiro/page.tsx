@@ -61,6 +61,7 @@ export default function HoldingFinanceDashboard() {
     const [allRecords, setAllRecords] = useState<any[]>([]); // Store raw data
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState({ businessUnit: 'all' });
+    const [viewMode, setViewMode] = useState<'monthly' | 'accumulated'>('monthly');
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [isNewTransactionOpen, setIsNewTransactionOpen] = useState(false);
 
@@ -73,9 +74,9 @@ export default function HoldingFinanceDashboard() {
     }, [filter.businessUnit]);
 
     useEffect(() => {
-        // Client-side filtering when date changes
+        // Client-side filtering when date changes or view mode changes
         filterRecords();
-    }, [selectedDate, allRecords]);
+    }, [selectedDate, allRecords, viewMode]);
 
     async function loadData() {
         setLoading(true);
@@ -93,18 +94,23 @@ export default function HoldingFinanceDashboard() {
     }
 
     function filterRecords() {
-        // Filter logic: show records within the selected month
         const start = startOfMonth(selectedDate);
         const end = endOfMonth(selectedDate);
 
         const filtered = allRecords.filter(r => {
-            // Date parsing safety
             const recordDate = new Date(r.date);
-            // Fix timezone offset issue simple check: recordDate string is YYYY-MM-DD
-            const rDateStr = r.date.substring(0, 7); // YYYY-MM
-            const sDateStr = selectedDate.toISOString().substring(0, 7);
+            const rDateStr = r.date.substring(0, 10); // YYYY-MM-DD
 
-            return rDateStr === sDateStr;
+            if (viewMode === 'accumulated') {
+                // Show everything UP TO the end of the selected month
+                const endDateStr = end.toISOString().substring(0, 10);
+                return rDateStr <= endDateStr;
+            } else {
+                // Monthly View (Strict)
+                const rMonthStr = r.date.substring(0, 7); // YYYY-MM
+                const sMonthStr = selectedDate.toISOString().substring(0, 7);
+                return rMonthStr === sMonthStr;
+            }
         });
 
         setRecords(filtered);
@@ -358,6 +364,29 @@ export default function HoldingFinanceDashboard() {
                                 <option value="barber">791 Barber</option>
                                 <option value="beauty">791 Beauty</option>
                             </select>
+
+                            <div className="bg-slate-950 border border-slate-800 rounded-lg p-1 flex items-center shadow-lg h-[38px]">
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => setViewMode('monthly')}
+                                    className={cn(
+                                        "h-7 text-[10px] font-black uppercase tracking-wider px-3 rounded-md transition-all",
+                                        viewMode === 'monthly' ? "bg-blue-600 text-white shadow-md" : "text-slate-500 hover:text-slate-300"
+                                    )}
+                                >
+                                    Mensal
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => setViewMode('accumulated')}
+                                    className={cn(
+                                        "h-7 text-[10px] font-black uppercase tracking-wider px-3 rounded-md transition-all",
+                                        viewMode === 'accumulated' ? "bg-purple-600 text-white shadow-md" : "text-slate-500 hover:text-slate-300"
+                                    )}
+                                >
+                                    Acumulado
+                                </Button>
+                            </div>
                         </div>
 
                         <button
@@ -371,22 +400,22 @@ export default function HoldingFinanceDashboard() {
                     {/* Cards de Métricas (Animated v2) */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <MetricCard
-                            title="Receita Realizada"
+                            title={viewMode === 'accumulated' ? "Receita Total" : "Receita Realizada"}
                             value={formatCurrency(totalRevenue)}
-                            description="Total Recebido este mês"
+                            description={viewMode === 'accumulated' ? "Acumulado até hoje" : "Total Recebido este mês"}
                             icon={TrendingUp}
                             color="blue"
-                            trend={{ value: 12.5, isPositive: true }}
+                            trend={viewMode === 'accumulated' ? undefined : { value: 12.5, isPositive: true }}
                             chartData={dailyData.map(d => ({ value: d.receita }))}
                             delay={0}
                         />
                         <MetricCard
-                            title="Despesas Pagas"
+                            title={viewMode === 'accumulated' ? "Despesa Total" : "Despesas Pagas"}
                             value={formatCurrency(totalExpense)}
-                            description="Custo Operacional este mês"
+                            description={viewMode === 'accumulated' ? "Custos Acumulados" : "Custo Operacional este mês"}
                             icon={TrendingDown}
                             color="red"
-                            trend={{ value: 4.2, isPositive: false }}
+                            trend={viewMode === 'accumulated' ? undefined : { value: 4.2, isPositive: false }}
                             chartData={dailyData.map(d => ({ value: d.despesa }))}
                             delay={1}
                         />
@@ -400,12 +429,12 @@ export default function HoldingFinanceDashboard() {
                             delay={2}
                         />
                         <MetricCard
-                            title="Resultado (EBITDA)"
+                            title={viewMode === 'accumulated' ? "Saldo Acumulado" : "Resultado (EBITDA)"}
                             value={formatCurrency(balance)}
-                            description="Lucro Líquido Mensal"
+                            description={viewMode === 'accumulated' ? "Caixa Atual" : "Lucro Líquido Mensal"}
                             icon={DollarSign}
-                            color="green"
-                            trend={{ value: 8.9, isPositive: true }}
+                            color={balance >= 0 ? "green" : "red"}
+                            trend={viewMode === 'accumulated' ? undefined : { value: 8.9, isPositive: true }}
                             chartData={dailyData.map(d => ({ value: d.receita - d.despesa }))}
                             delay={3}
                         />

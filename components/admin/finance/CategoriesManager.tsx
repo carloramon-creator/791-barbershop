@@ -85,6 +85,12 @@ export function CategoriesManager() {
         }
     }
 
+    function startNewSub(parentId: string) {
+        resetForm();
+        setParentId(parentId);
+        setIsOpen(true);
+    }
+
     function startEdit(cat: HoldingCategory) {
         setEditingId(cat.id);
         setName(cat.name);
@@ -192,6 +198,7 @@ export function CategoriesManager() {
                                                     <span className="font-semibold text-slate-200">{cat.name}</span>
                                                 </div>
                                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-blue-500 hover:text-blue-400" onClick={() => startNewSub(cat.id)} title="Nova Subcategoria"><Plus size={12} /></Button>
                                                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => startEdit(cat)}><Edit2 size={12} /></Button>
                                                     <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:text-red-400" onClick={() => handleDelete(cat.id)}><Trash2 size={12} /></Button>
                                                 </div>

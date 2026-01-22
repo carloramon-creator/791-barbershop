@@ -9,9 +9,23 @@ import { PendingConfigAlert } from '@/components/layout/pending-config-alert';
 import { Topbar } from '@/components/layout/topbar';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-    const { session, loading, tenant } = useAuth();
+    const { session, loading, tenant, isSystemAdmin, role } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
+
+    // -- ISOLAMENTO SUPER ADMIN --
+    // Se for Super Admin e tentar acessar área de tenants sem ter um tenant vinculado, 
+    // força volta para /geral.
+    useEffect(() => {
+        if (!loading && session && isSystemAdmin) {
+            // Se não for 'owner', 'staff' ou 'barber', assume Admin Puro que não deve estar aqui.
+            // Ou se tenant for nulo.
+            const hasTenantRole = ['owner', 'staff', 'barber'].includes(role || '');
+            if (!hasTenantRole) {
+                router.replace('/geral');
+            }
+        }
+    }, [loading, session, isSystemAdmin, role, router]);
 
     // -- LÓGICA DE BLOQUEIO --
     let isBlocked = false;
