@@ -9,17 +9,21 @@ export async function POST(req: Request) {
 
     console.log(`[ASAAS WEBHOOK 2.0] Evento recebido: ${event} | ID: ${body.id}`);
 
-    // 1. Idempotência: Evitar processar o mesmo evento duas vezes
-    const { data: existingEvent } = await supabaseAdmin
-        .from('system_audit_logs')
-        .select('id')
-        .eq('action', 'asaas_webhook_processed')
-        .eq('metadata->>webhook_event_id', body.id)
-        .maybeSingle();
+    // 1. Idempotência: Evitar processar o mesmo evento duas vezes (OPCIONAL - não bloqueia se tabela não existir)
+    try {
+        const { data: existingEvent } = await supabaseAdmin
+            .from('system_audit_logs')
+            .select('id')
+            .eq('action', 'asaas_webhook_processed')
+            .eq('metadata->>webhook_event_id', body.id)
+            .maybeSingle();
 
-    if (existingEvent) {
-        console.log('[ASAAS WEBHOOK 2.0] Evento já processado. Ignorando.');
-        return NextResponse.json({ success: true, duplicated: true });
+        if (existingEvent) {
+            console.log('[ASAAS WEBHOOK 2.0] Evento já processado. Ignorando.');
+            return NextResponse.json({ success: true, duplicated: true });
+        }
+    } catch (auditError) {
+        console.log('[ASAAS WEBHOOK 2.0] Audit logs não disponíveis, continuando sem idempotência...');
     }
 
     // 2. Focar nos eventos de sucesso de pagamento
@@ -116,22 +120,26 @@ export async function POST(req: Request) {
             updateData.plan = planSlug;
         }
 
+        // Atualizar Tenant e Finance (CRÍTICO)
         await Promise.all([
-            // Atualizar Tenant
             supabaseAdmin.from('tenants').update(updateData).eq('id', tenant.id),
-            // Marcar Financeiro como Pago
             supabaseAdmin.from('finance').update({
                 is_paid: true,
                 date: new Date().toISOString().split('T')[0],
                 metadata: { ...metadata, asaas_payment_id: payment.id, webhook_processed_at: new Date().toISOString() }
-            }).eq('id', financeRecord.id),
-            // Log de Auditoria
-            supabaseAdmin.from('system_audit_logs').insert({
+            }).eq('id', financeRecord.id)
+        ]);
+
+        // Log de Auditoria (OPCIONAL - não bloqueia se falhar)
+        try {
+            await supabaseAdmin.from('system_audit_logs').insert({
                 action: 'asaas_webhook_processed',
                 tenant_id: tenant.id,
                 metadata: { webhook_event_id: body.id, payment_id: payment.id, event: event }
-            })
-        ]);
+            });
+        } catch (auditError) {
+            console.log('[ASAAS WEBHOOK 2.0] Falha ao gravar audit log (não crítico):', auditError);
+        }
 
         console.log(`[ASAAS WEBHOOK 2.0] ✅ Processamento concluído com sucesso para ${tenant.name}`);
         return NextResponse.json({ success: true, processed: true });
