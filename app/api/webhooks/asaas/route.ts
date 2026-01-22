@@ -65,6 +65,21 @@ export async function POST(req: Request) {
             }
         }
 
+        // Estratégia B2: Pelo valor e data (quando não há externalReference)
+        if (!financeRecord && payment?.value && payment?.confirmedDate) {
+            console.log('[ASAAS WEBHOOK 2.0] 🔍 Buscando por valor e data:', payment.value, payment.confirmedDate);
+            const { data } = await supabaseAdmin
+                .from('finance')
+                .select('*, tenants(*)')
+                .eq('value', payment.value)
+                .eq('is_paid', false)
+                .gte('created_at', new Date(payment.confirmedDate).toISOString())
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+            financeRecord = data;
+        }
+
         // Estratégia C: Pelo Customer ID (quando payload é minimalista)
         if (!financeRecord && (payment?.customer || body.customer)) {
             const customerId = payment?.customer || body.customer;
