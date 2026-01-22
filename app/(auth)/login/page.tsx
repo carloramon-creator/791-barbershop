@@ -136,13 +136,19 @@ export default function LoginPage() {
         try {
             const { data: userData, error: userError } = await supabaseClient
                 .from('users')
-                .select('role')
+                .select('role, is_system_admin')
                 .eq('id', userId)
                 .single();
 
             if (userError) {
                 console.error('Erro ao buscar perfil:', userError);
                 throw new Error('Perfil não encontrado. Sua conta pode não estar vinculada a uma barbearia.');
+            }
+
+            // Super Admin Redirect (Prioridade)
+            if (userData.is_system_admin) {
+                router.push('/geral');
+                return;
             }
 
             if (userData.role === 'owner' || userData.role === 'staff') {

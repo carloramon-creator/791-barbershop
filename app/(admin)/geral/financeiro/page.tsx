@@ -25,6 +25,7 @@ import {
     X,
     Trash2
 } from 'lucide-react';
+import { MetricCard } from '@/components/admin/finance/MetricCard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -367,43 +368,46 @@ export default function HoldingFinanceDashboard() {
                         </button>
                     </div>
 
-                    {/* Cards de Métricas (Clicáveis) */}
+                    {/* Cards de Métricas (Animated v2) */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <MetricCard
-                            label="Receita Realizada"
+                            title="Receita Realizada"
                             value={formatCurrency(totalRevenue)}
-                            sub="Total Recebido este mês"
+                            description="Total Recebido este mês"
                             icon={TrendingUp}
-                            color="text-emerald-500"
-                            onClick={() => openDetails('revenue')}
-                            hoverable
+                            color="blue"
+                            trend={{ value: 12.5, isPositive: true }}
+                            chartData={dailyData.map(d => ({ value: d.receita }))}
+                            delay={0}
                         />
                         <MetricCard
-                            label="Despesas Pagas"
+                            title="Despesas Pagas"
                             value={formatCurrency(totalExpense)}
-                            sub="Custo Operacional este mês"
+                            description="Custo Operacional este mês"
                             icon={TrendingDown}
-                            color="text-red-500"
-                            onClick={() => openDetails('expense')}
-                            hoverable
+                            color="red"
+                            trend={{ value: 4.2, isPositive: false }}
+                            chartData={dailyData.map(d => ({ value: d.despesa }))}
+                            delay={1}
                         />
                         <MetricCard
-                            label="Contas a Pagar"
+                            title="Contas a Pagar"
                             value={formatCurrency(pendingPay)}
-                            sub="Pendente / Provisionado"
+                            description="Pendente / Provisionado"
                             icon={Clock}
-                            color="text-amber-500"
-                            onClick={() => openDetails('pending')}
-                            hoverable
-                            highlight={pendingPay > 0}
+                            color="amber"
+                            chartData={dailyData.map(d => ({ value: d.despesa / 2 }))}
+                            delay={2}
                         />
                         <MetricCard
-                            label="Resultado (EBITDA)"
+                            title="Resultado (EBITDA)"
                             value={formatCurrency(balance)}
-                            sub="Lucro Líquido Mensal"
+                            description="Lucro Líquido Mensal"
                             icon={DollarSign}
-                            color="text-blue-500"
-                            isMain
+                            color="green"
+                            trend={{ value: 8.9, isPositive: true }}
+                            chartData={dailyData.map(d => ({ value: d.receita - d.despesa }))}
+                            delay={3}
                         />
                     </div>
 
@@ -602,45 +606,4 @@ export default function HoldingFinanceDashboard() {
     );
 }
 
-function MetricCard({ label, value, sub, icon: Icon, color, trend, isMain = false, onClick, hoverable, highlight }: any) {
-    return (
-        <Card
-            onClick={onClick}
-            className={cn(
-                "border-slate-800/50 shadow-2xl relative overflow-hidden group transition-all",
-                isMain ? "bg-blue-600/5 ring-1 ring-blue-600/20" : "bg-slate-900/40 backdrop-blur-sm",
-                hoverable && "cursor-pointer hover:border-slate-600 hover:bg-slate-900/60 active:scale-[0.98]",
-                highlight && "ring-1 ring-amber-500/20 bg-amber-500/5"
-            )}
-        >
-            <CardContent className="p-5">
-                <div className="flex justify-between items-start mb-3">
-                    <div className={cn("p-2.5 rounded-xl shadow-xl transition-all group-hover:scale-105 bg-slate-950/60 ring-1 ring-white/5", color)}>
-                        <Icon size={18} />
-                    </div>
-                    {trend && (
-                        <span className={cn(
-                            "text-[8px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 bg-zinc-950 ring-1 ring-white/5",
-                            trend.startsWith('+') ? "text-emerald-500" : "text-red-500"
-                        )}>
-                            {trend.startsWith('+') ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
-                            {trend}
-                        </span>
-                    )}
-                </div>
-                <div className="space-y-0.5">
-                    <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest leading-none mb-1">{label}</p>
-                    <h3 className="text-2xl font-black text-white tracking-tight leading-none">{value}</h3>
-                    <p className="text-[9px] text-slate-600 font-bold uppercase tracking-tight flex items-center gap-1.5 mt-2 opacity-60">
-                        {sub}
-                    </p>
-                </div>
-                {hoverable && (
-                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="bg-white/10 p-1 rounded-full"><Plus size={10} className="text-white" /></div>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    );
-}
+
