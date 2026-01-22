@@ -66,6 +66,34 @@ export async function POST(req: Request) {
             if (disc > 0) baseAmount = baseAmount * (1 - (disc / 100));
         }
 
+        // Aplicar cupom se fornecido
+        let couponDiscount = 0;
+        if (coupon) {
+            const { data: dbCoupon } = await supabaseAdmin
+                .from('system_coupons')
+                .select('*')
+                .eq('code', coupon.toUpperCase())
+                .eq('is_active', true)
+                .maybeSingle();
+
+            if (dbCoupon) {
+                // Verificar validade
+                if (dbCoupon.expires_at && new Date(dbCoupon.expires_at) < new Date()) {
+                    throw new Error('Cupom expirado');
+                }
+                // Aplicar desconto
+                if (dbCoupon.discount_type === 'percentage') {
+                    couponDiscount = baseAmount * (dbCoupon.discount_value / 100);
+                } else {
+                    couponDiscount = dbCoupon.discount_value;
+                }
+                baseAmount = Math.max(0, baseAmount - couponDiscount);
+                console.log(`[ASAAS 2.0] Cupom ${coupon} aplicado: -R$ ${couponDiscount.toFixed(2)}`);
+            } else {
+                console.log(`[ASAAS 2.0] Cupom ${coupon} inválido ou inativo`);
+            }
+        }
+
         const totalAmount = Number((baseAmount * interval).toFixed(2));
 
         // 3. Garantir Cliente no Asaas (Pre-requisito para Checkout Robusto)
