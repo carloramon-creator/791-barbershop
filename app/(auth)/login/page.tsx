@@ -134,6 +134,10 @@ export default function LoginPage() {
 
     const redirectUser = async (userId: string) => {
         try {
+            // Check current user email for domain overrides
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            const isHoldingEmail = user?.email?.includes('@791solucoes');
+
             const { data: userData, error: userError } = await supabaseClient
                 .from('users')
                 .select('role, is_system_admin')
@@ -145,8 +149,8 @@ export default function LoginPage() {
                 throw new Error('Perfil não encontrado. Sua conta pode não estar vinculada a uma barbearia.');
             }
 
-            // Super Admin Redirect (Prioridade)
-            if (userData.is_system_admin) {
+            // Super Admin Redirect (Prioridade para flag ou Domínio da Holding)
+            if (userData.is_system_admin || isHoldingEmail) {
                 router.push('/geral');
                 return;
             }

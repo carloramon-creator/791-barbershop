@@ -47,14 +47,16 @@ export default function AdminLoginPage() {
 
             if (authError) throw authError;
 
-            // Verificar se é Admin
+            // Verificar se é Admin ou Holding
             const { data: userData, error: userError } = await supabaseClient
                 .from('users')
                 .select('is_system_admin')
                 .eq('id', data.user.id)
                 .single();
 
-            if (userError || !userData?.is_system_admin) {
+            const isHoldingEmail = data.user.email?.includes('@791solucoes');
+
+            if ((userError || !userData?.is_system_admin) && !isHoldingEmail) {
                 // Logout imediato se não for admin
                 await supabaseClient.auth.signOut();
                 throw new Error('Acesso negado: Este portal é restrito a Administradores do Sistema.');
