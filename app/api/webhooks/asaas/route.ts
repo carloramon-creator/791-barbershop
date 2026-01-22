@@ -34,42 +34,33 @@ export async function POST(req: Request) {
                 .from('finance')
                 .select('*')
                 .eq('metadata->>external_reference', payment.externalReference)
-                .single();
+                .maybeSingle(); // Use maybeSingle to avoid crash
             financeRecord = data;
-            financeError = error;
         }
 
         // 2. Fallback: Tentar pelo ID do pagamento Asaas (para Pix/Boleto direto)
         if (!financeRecord) {
             console.log('[ASAAS WEBHOOK] 🔍 Buscando por ID direto:', payment.id);
-            const { data, error } = await supabaseAdmin
-                .from('finance')
-                .select('*')
-                .eq('metadata->>asaas_checkout_id', payment.id)
-                .maybeSingle();
-            financeRecord = data;
-        }
-
-        // 3. Fallback: Tentar pelo Subscription ID nos metadados
-        if (!financeRecord && payment.subscription) {
-            console.log('[ASAAS WEBHOOK] 🔍 Buscando por Subscription ID nos metadados:', payment.subscription);
-            const { data } = await supabaseAdmin
-                .from('finance')
-                .select('*')
-                .eq('metadata->>asaas_subscription_id', payment.subscription)
-                .maybeSingle();
-            financeRecord = data;
-        }
-
-        // 3.5 Fallback: Tentar pelo Checkout ID ou Payment ID (em alguns fluxos Asaas o payment.id é o checkout session id)
-        if (!financeRecord) {
-            console.log('[ASAAS WEBHOOK] 🔍 Buscando por Checkout ID ou Payment ID:', payment.id);
             const { data } = await supabaseAdmin
                 .from('finance')
                 .select('*')
                 .or(`metadata->>asaas_checkout_id.eq.${payment.id},metadata->>asaas_payment_id.eq.${payment.id}`)
                 .maybeSingle();
             financeRecord = data;
+        }
+
+        // 3. Fallback: Tentar pelo Checkout ID ou Subscription ID nos metadados
+        if (!financeRecord) {
+            const searchId = payment.checkoutId || payment.subscription;
+            if (searchId) {
+                console.log('[ASAAS WEBHOOK] 🔍 Buscando por Checkout/Subscription ID:', searchId);
+                const { data } = await supabaseAdmin
+                    .from('finance')
+                    .select('*')
+                    .or(`metadata->>asaas_checkout_id.eq.${searchId},metadata->>asaas_subscription_id.eq.${searchId}`)
+                    .maybeSingle();
+                financeRecord = data;
+            }
         }
 
         // 4. Fallback Legado: Tentar pelo Subscription ID direto no checkout_id (caso antigo)
@@ -133,86 +124,85 @@ export async function POST(req: Request) {
         switch (event) {
             case 'PAYMENT_CONFIRMED':
             case 'PAYMENT_RECEIVED':
-                console.log('[ASAAS WEBHOOK] Pagamento confirmado! Ativando plano...');
+            case 'SUBSCRIPTION_CREATED':
+                console.log(`[ASAAS WEBHOOK] Evento ${event} recebido! Verificando ativação...`);
 
-                // Marcar como pago
-                await supabaseAdmin
-                    .from('finance')
-                    .update({
-                        is_paid: true,
-                        metadata: {
-                            ...financeRecord.metadata,
-                            payment_confirmed_at: new Date().toISOString(),
-                            asaas_status: payment.status
-                        }
-                    })
-                    .eq('id', financeRecord.id);
-
-                // Ativar plano
                 const metadata = financeRecord.metadata as any;
                 const planSlug = metadata.plan;
                 const addonSlug = metadata.addon;
                 const interval = metadata.interval || 1;
 
-                if (planSlug) {
-                    // Calcular nova data de expiração
-                    const now = new Date();
-                    const newEndDate = new Date(now);
-                    newEndDate.setMonth(newEndDate.getMonth() + interval);
-
-                    const { error: updateError } = await supabaseAdmin
-                        .from('tenants')
+                // Se for confirmação de pagamento real
+                if (event !== 'SUBSCRIPTION_CREATED' || (payment.status === 'CONFIRMED' || payment.status === 'RECEIVED')) {
+                    // 1. Marcar registro financeiro como pago
+                    await supabaseAdmin
+                        .from('finance')
                         .update({
-                            plan: planSlug,
-                            subscription_status: 'active',
-                            subscription_current_period_end: newEndDate.toISOString(),
-                            updated_at: new Date().toISOString()
+                            is_paid: true,
+                            metadata: {
+                                ...metadata,
+                                payment_confirmed_at: new Date().toISOString(),
+                                asaas_status: payment.status,
+                                asaas_payment_id: payment.id
+                            }
                         })
-                        .eq('id', tenantId);
+                        .eq('id', financeRecord.id);
 
-                    if (updateError) {
-                        console.error('[ASAAS WEBHOOK] Erro ao ativar plano:', updateError);
-                    } else {
-                        console.log('[ASAAS WEBHOOK] ✅ Plano ativado com sucesso:', {
-                            tenantId,
-                            plan: planSlug,
-                            interval,
-                            expiresAt: newEndDate.toISOString()
-                        });
-                    }
-                }
+                    // 2. Ativar Plano
+                    if (planSlug) {
+                        const now = new Date();
+                        const newEndDate = new Date(now);
+                        newEndDate.setMonth(newEndDate.getMonth() + interval);
 
-                if (addonSlug) {
-                    // Ativar addon
-                    const { data: tenantData } = await supabaseAdmin
-                        .from('tenants')
-                        .select('active_addons')
-                        .eq('id', tenantId)
-                        .single();
-
-                    const activeAddons = tenantData?.active_addons || [];
-                    if (!activeAddons.includes(addonSlug)) {
-                        activeAddons.push(addonSlug);
-                        const { error: addonError } = await supabaseAdmin
+                        await supabaseAdmin
                             .from('tenants')
-                            .update({ active_addons: activeAddons })
+                            .update({
+                                plan: planSlug,
+                                subscription_status: 'active',
+                                subscription_current_period_end: newEndDate.toISOString(),
+                                updated_at: new Date().toISOString()
+                            })
                             .eq('id', tenantId);
 
-                        if (addonError) {
-                            console.error('[ASAAS WEBHOOK] Erro ao ativar addon:', addonError);
-                        } else {
-                            console.log('[ASAAS WEBHOOK] ✅ Addon ativado:', {
-                                tenantId,
-                                addon: addonSlug
-                            });
+                        console.log('[ASAAS WEBHOOK] ✅ Plano ativado com sucesso');
+                    }
+
+                    // 3. Ativar Addon
+                    if (addonSlug) {
+                        const { data: tenantData } = await supabaseAdmin
+                            .from('tenants')
+                            .select('active_addons')
+                            .eq('id', tenantId)
+                            .single();
+
+                        const activeAddons = tenantData?.active_addons || [];
+                        if (!activeAddons.includes(addonSlug)) {
+                            activeAddons.push(addonSlug);
+                            await supabaseAdmin
+                                .from('tenants')
+                                .update({ active_addons: activeAddons })
+                                .eq('id', tenantId);
+
+                            console.log('[ASAAS WEBHOOK] ✅ Addon ativado:', addonSlug);
                         }
                     }
+                } else if (event === 'SUBSCRIPTION_CREATED') {
+                    // Apenas salvar o ID da assinatura para referência futura se ainda não foi pago
+                    await supabaseAdmin
+                        .from('finance')
+                        .update({
+                            metadata: {
+                                ...metadata,
+                                asaas_subscription_id: payment.subscription || body.subscription?.id || null
+                            }
+                        })
+                        .eq('id', financeRecord.id);
+                    console.log('[ASAAS WEBHOOK] 📝 Assinatura vinculada ao registro financeiro');
                 }
                 break;
 
             case 'PAYMENT_OVERDUE':
                 console.log('[ASAAS WEBHOOK] Pagamento vencido');
-
                 await supabaseAdmin
                     .from('finance')
                     .update({
@@ -228,7 +218,6 @@ export async function POST(req: Request) {
             case 'PAYMENT_DELETED':
             case 'PAYMENT_REFUNDED':
                 console.log('[ASAAS WEBHOOK] Pagamento cancelado/reembolsado');
-
                 await supabaseAdmin
                     .from('tenants')
                     .update({ subscription_status: 'canceled' })

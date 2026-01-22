@@ -52,7 +52,12 @@ export async function GET(req: Request) {
 
                         // 1. Descobrir ID do pagamento real
                         const checkout = await asaas.getCheckout(asaasCheckoutId);
-                        const paymentId = checkout.paymentId || checkout.payment?.id || checkout.subscriptionId;
+                        // No Checkout V3, o ID do pagamento pode estar em múltiplos lugares dependendo se é assinatura ou cobrança única
+                        const paymentId = checkout.paymentId ||
+                            checkout.payment?.id ||
+                            checkout.subscriptionId ||
+                            (checkout.payments && checkout.payments[0]?.id) ||
+                            (checkout.paymentData && checkout.paymentData[0]?.id);
 
                         if (paymentId) {
                             const payment = await asaas.getPayment(paymentId);

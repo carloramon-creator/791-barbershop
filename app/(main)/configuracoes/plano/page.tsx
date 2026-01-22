@@ -537,7 +537,7 @@ export default function PlanPage() {
                         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                         const isUnderTrialGrace = diffDays <= 10;
 
-                        const isTrialOrPending = ((currentPlan === 'trial' || isUnderTrialGrace) || isExpired || ['past_due', 'unpaid', 'pending_payment'].includes(subscriptionStatus || '')) && subscriptionStatus !== 'active';
+                        const isTrialOrPending = ((currentPlan === 'trial' || isUnderTrialGrace) || isExpired || ['past_due', 'unpaid', 'pending_payment', 'trialing', 'trial_expired'].includes(subscriptionStatus || '')) && subscriptionStatus !== 'active';
 
                         const CurrentPlanSection = (
                             <div key="current-plan" className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

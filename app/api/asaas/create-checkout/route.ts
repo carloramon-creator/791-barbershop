@@ -73,22 +73,29 @@ export async function POST(req: Request) {
             if (!planData) return addCorsHeaders(req, NextResponse.json({ error: 'Plano inválido' }, { status: 400 }));
 
             baseAmount = Number(planData.price);
-            itemName = `791 Barber - Plano ${planData.name}`;
+            // Evitar duplicidade "Plano Plano"
+            const planNameRaw = planData.name;
+            const planDisplayName = planNameRaw.toLowerCase().startsWith('plano') ? planNameRaw.split(' ').slice(1).join(' ') : planNameRaw;
+            itemName = `791 Barber - Plano ${planDisplayName}`;
 
             if (interval === 6) {
                 discountPercent = Number(planData.discount_semiannual || 10);
-                itemDescription = `Assinatura semestral do plano ${planData.name} com ${discountPercent}% de desconto`;
+                itemDescription = `Assinatura semestral do Plano ${planDisplayName} com ${discountPercent}% de desconto`;
             } else if (interval === 12) {
                 discountPercent = Number(planData.discount_annual || 20);
-                itemDescription = `Assinatura anual do plano ${planData.name} com ${discountPercent}% de desconto`;
+                itemDescription = `Assinatura anual do Plano ${planDisplayName} com ${discountPercent}% de desconto`;
             } else {
-                itemDescription = `Assinatura mensal do plano ${planData.name}`;
+                itemDescription = `Assinatura mensal do Plano ${planDisplayName}`;
             }
         }
 
         // 2.3 Desconto Automático (10% na primeira assinatura/trial)
         let firstSubscriptionDiscount = 0;
-        if (!isAddon && (tenant.plan === 'trial' || !tenant.subscription_status || tenant.subscription_status === 'trial')) {
+        const isUnderTrial = tenant.plan === 'trial' ||
+            !tenant.subscription_status ||
+            ['trial', 'trialing', 'trial_expired'].includes(tenant.subscription_status);
+
+        if (!isAddon && isUnderTrial) {
             firstSubscriptionDiscount = 10; // 10% de desconto automático
             console.log('[ASAAS] Aplicando desconto automático de 10% para trial/primeira assinatura');
         }
@@ -311,6 +318,7 @@ export async function POST(req: Request) {
                 value: totalAmount,
                 dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +1 dia
                 description: itemDescription,
+                observations: itemDescription, // Adicionado para dashboard Asaas
                 externalReference: externalReference
             };
 
@@ -379,7 +387,8 @@ export async function POST(req: Request) {
             const checkoutPayload: any = {
                 billingTypes: ['CREDIT_CARD'],
                 chargeTypes: chargeTypes,
-                description: itemDescription, // Adicionado na raiz também
+                description: itemDescription,
+                observations: itemDescription, // Observations aparece em mais lugares no dashboard
                 externalReference: externalReference,
                 callback: {
                     successUrl: `${baseUrl}/asaas/checkout/success`,
@@ -390,9 +399,9 @@ export async function POST(req: Request) {
                     name: safeItemName,
                     description: itemDescription,
                     quantity: 1,
-                    value: totalAmount // Now fixed to 2 decimals
+                    value: totalAmount
                 }],
-                customer: customer.id, // Enviar o ID em vez dos dados brutos
+                customer: customer.id,
                 subscription: subscriptionConfig,
                 installment: installmentConfig
             };
