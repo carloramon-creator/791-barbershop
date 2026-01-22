@@ -269,7 +269,7 @@ export default function HoldingFinanceDashboard() {
                 </DialogContent>
             </Dialog>
 
-            {/* Delete Confirmation Modal */}
+            {/* Delete Confirmation Modal (Spacer) */}
             <Dialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog({ open: false, record: null })}>
                 <DialogContent className="max-w-md bg-slate-950 border-slate-800">
                     <DialogHeader>
