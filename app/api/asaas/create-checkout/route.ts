@@ -74,8 +74,7 @@ export async function POST(req: Request) {
 
             baseAmount = Number(planData.price);
             // Evitar duplicidade "Plano Plano"
-            const planNameRaw = planData.name;
-            const planDisplayName = planNameRaw.toLowerCase().startsWith('plano') ? planNameRaw.split(' ').slice(1).join(' ') : planNameRaw;
+            const planDisplayName = planData.name.replace(/^Plano\s+/i, '');
             itemName = `791 Barber - Plano ${planDisplayName}`;
 
             if (interval === 6) {
@@ -182,6 +181,9 @@ export async function POST(req: Request) {
         let checkoutId = null;
         let checkoutUrl = '';
         let checkout: any = null;
+        let customer: any = null;
+        let subscriptionConfig: any = null;
+        let installmentConfig: any = null;
 
         // Determinar baseUrl de forma robusta para evitar localhost em produção
         const referer = req.headers.get('referer');
@@ -228,7 +230,7 @@ export async function POST(req: Request) {
             // === Lógica para BOLETO (API Direta) ===
 
             // 4.1 Buscar ou criar cliente no Asaas
-            let customer = await asaas.getCustomerByEmail(customerData.email);
+            customer = await asaas.getCustomerByEmail(customerData.email);
             if (!customer) {
                 customer = await asaas.createCustomer(customerData);
             }
@@ -304,7 +306,7 @@ export async function POST(req: Request) {
             // === Lógica para PIX (API Direta) ===
 
             // 4.1 Buscar ou criar cliente no Asaas
-            let customer = await asaas.getCustomerByEmail(customerData.email);
+            customer = await asaas.getCustomerByEmail(customerData.email);
             if (!customer) {
                 customer = await asaas.createCustomer(customerData);
             }
@@ -346,7 +348,7 @@ export async function POST(req: Request) {
             // === Lógica para CARTÃO (Checkout V3) ===
 
             // 4.1 Buscar ou criar cliente no Asaas (IMPORTANTE para ter um ID fixo)
-            let customer = await asaas.getCustomerByEmail(customerData.email);
+            customer = await asaas.getCustomerByEmail(customerData.email);
             if (!customer) {
                 customer = await asaas.createCustomer(customerData);
             }
@@ -357,8 +359,8 @@ export async function POST(req: Request) {
             const safeItemName = fullItemName.length > 30 ? fullItemName.substring(0, 27) + '...' : fullItemName;
 
             let chargeTypes = ['DETACHED'];
-            let subscriptionConfig = undefined;
-            let installmentConfig = undefined;
+            subscriptionConfig = undefined;
+            installmentConfig = undefined;
 
             if (interval === 1 && !isAddon) {
                 chargeTypes = ['RECURRENT'];
@@ -428,8 +430,8 @@ export async function POST(req: Request) {
                     metadata: {
                         is_saas_payment: true,
                         asaas_checkout_id: checkoutId,
-                        asaas_customer_id: (checkout as any).customer || (checkout as any).customerId || (checkout as any).customerData?.id || null, // Tentativa de pegar o ID do cliente
-                        asaas_subscription_id: (checkout as any).subscriptionId || (checkout as any).subscription || null,
+                        asaas_customer_id: customer.id || (checkout as any).customer || (checkout as any).customerId || null,
+                        asaas_subscription_id: subscriptionConfig ? (checkout as any).subscriptionId || (checkout as any).subscription || null : null,
                         external_reference: externalReference,
                         payment_method: paymentMethod,
                         [isAddon ? 'addon' : 'plan']: addonSlug || planSlug,

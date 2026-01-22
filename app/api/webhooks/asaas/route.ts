@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 
         // 3. Fallback: Tentar pelo Checkout ID ou Subscription ID nos metadados
         if (!financeRecord) {
-            const searchId = payment.checkoutId || payment.subscription;
+            const searchId = payment.checkoutId || payment.subscription || body.subscriptionId || body.subscription?.id;
             if (searchId) {
                 console.log('[ASAAS WEBHOOK] 🔍 Buscando por Checkout/Subscription ID:', searchId);
                 const { data } = await supabaseAdmin
