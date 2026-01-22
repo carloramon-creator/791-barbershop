@@ -15,16 +15,16 @@ export async function POST(req: Request) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Não autenticado' }, { status: 401 }));
         }
 
+        const body = await req.json();
         const {
             plan: planSlug,
             addon: addonSlug,
             interval = 1,
-            paymentMethod = 'CREDIT_CARD', // CREDIT_CARD ou BOLETO
-            installments = 1,
-            coupon
-        } = await req.json();
+            paymentMethod = 'CREDIT_CARD',
+            installments = 1
+        } = body;
 
-        // 1. Configurar Asaas
+        // 1. Obter Configurações Asaas
         const { data: settingsData } = await supabaseAdmin
             .from('system_settings')
             .select('value')
@@ -33,440 +33,134 @@ export async function POST(req: Request) {
 
         const asaasConfig = settingsData?.value;
         const apiKey = asaasConfig?.api_key || process.env.ASAAS_API_KEY;
-        const environment = asaasConfig?.environment || 'sandbox';
+        const environment = (asaasConfig?.environment || 'sandbox') as 'sandbox' | 'production';
 
         if (!apiKey) {
-            return addCorsHeaders(req, NextResponse.json({
-                error: 'Configuração do Asaas incompleta. Configure em Configurações API.'
-            }, { status: 400 }));
+            return addCorsHeaders(req, NextResponse.json({ error: 'Configuração Asaas incompleta' }, { status: 400 }));
         }
 
-        const asaas = new AsaasClient({ apiKey, environment: environment as 'sandbox' | 'production' });
+        const asaas = new AsaasClient({ apiKey, environment });
 
-        // 2. Buscar Preço Dinâmico
+        // 2. Definir Item e Valor
         let baseAmount = 0;
         let itemName = '';
         let itemDescription = '';
-        let isAddon = false;
-        let discountPercent = 0;
+        let isAddon = !!addonSlug;
 
-        if (addonSlug) {
-            const { data: addon } = await supabaseAdmin
-                .from('system_addons')
-                .select('*')
-                .eq('slug', addonSlug)
-                .single();
-
-            if (!addon) return addCorsHeaders(req, NextResponse.json({ error: 'Add-on inválido' }, { status: 400 }));
-
+        if (isAddon) {
+            const { data: addon } = await supabaseAdmin.from('system_addons').select('*').eq('slug', addonSlug).single();
+            if (!addon) throw new Error('Add-on não encontrado');
             baseAmount = Number(addon.price);
-            itemName = `791 Barber - ${addon.name}`;
-            itemDescription = addon.description || `Módulo adicional: ${addon.name}`;
-            isAddon = true;
+            itemName = `Add-on: ${addon.name}`;
+            itemDescription = `Módulo adicional ${addon.name}`;
         } else {
-            const { data: planData } = await supabaseAdmin
-                .from('system_plans')
-                .select('*')
-                .eq('slug', planSlug)
-                .single();
+            const { data: plan } = await supabaseAdmin.from('system_plans').select('*').eq('slug', planSlug).single();
+            if (!plan) throw new Error('Plano não encontrado');
+            baseAmount = Number(plan.price);
+            itemName = `Plano ${plan.name}`;
 
-            if (!planData) return addCorsHeaders(req, NextResponse.json({ error: 'Plano inválido' }, { status: 400 }));
+            const disc = interval === 12 ? (plan.discount_annual || 20) : interval === 6 ? (plan.discount_semiannual || 10) : 0;
+            const cycleText = interval === 12 ? 'Anual' : interval === 6 ? 'Semestral' : 'Mensal';
+            itemDescription = `Assinatura ${cycleText} ${itemName}`;
 
-            baseAmount = Number(planData.price);
-            // Evitar duplicidade "Plano Plano"
-            const planDisplayName = planData.name.replace(/^Plano\s+/i, '');
-            itemName = `791 Barber - Plano ${planDisplayName}`;
-
-            if (interval === 6) {
-                discountPercent = Number(planData.discount_semiannual || 10);
-                itemDescription = `Assinatura semestral do Plano ${planDisplayName} com ${discountPercent}% de desconto`;
-            } else if (interval === 12) {
-                discountPercent = Number(planData.discount_annual || 20);
-                itemDescription = `Assinatura anual do Plano ${planDisplayName} com ${discountPercent}% de desconto`;
-            } else {
-                itemDescription = `Assinatura mensal do Plano ${planDisplayName}`;
-            }
+            if (disc > 0) baseAmount = baseAmount * (1 - (disc / 100));
         }
 
-        // 2.3 Desconto Automático (10% na primeira assinatura/trial)
-        let firstSubscriptionDiscount = 0;
-        const isUnderTrial = tenant.plan === 'trial' ||
-            !tenant.subscription_status ||
-            ['trial', 'trialing', 'trial_expired'].includes(tenant.subscription_status);
+        const totalAmount = Number((baseAmount * interval).toFixed(2));
 
-        if (!isAddon && isUnderTrial) {
-            firstSubscriptionDiscount = 10; // 10% de desconto automático
-            console.log('[ASAAS] Aplicando desconto automático de 10% para trial/primeira assinatura');
-        }
-
-        // Calcular valor total e corrigir precisão
-        let totalAmount = baseAmount * interval;
-
-        // Aplicar maior desconto (intervalo ou trial)
-        const effectiveDiscount = Math.max(discountPercent, firstSubscriptionDiscount);
-
-        if (effectiveDiscount > 0) {
-            totalAmount = totalAmount * (1 - (effectiveDiscount / 100));
-            if (effectiveDiscount === firstSubscriptionDiscount && !isAddon) {
-                itemDescription += ` (Com 10% de desconto de boas-vindas)`;
-            }
-        }
-
-        // 2.5 Processar Cupom (SaaS Checkout)
-        let discountFromCoupon = 0;
-        let couponApplied = null;
-
-        if (coupon && coupon.trim() !== '') {
-            const code = String(coupon).trim().toUpperCase();
-            const { data: couponData } = await supabaseAdmin
-                .from('system_coupons')
-                .select('*')
-                .eq('code', code)
-                .eq('is_active', true)
-                .single();
-
-            if (couponData) {
-                couponApplied = code;
-                if (couponData.discount_percent) {
-                    discountFromCoupon = (totalAmount * Number(couponData.discount_percent)) / 100;
-                } else if (couponData.discount_value) {
-                    discountFromCoupon = Number(couponData.discount_value);
-                }
-            } else {
-                return addCorsHeaders(req, NextResponse.json({ error: 'Cupom inválido ou expirado' }, { status: 400 }));
-            }
-        }
-
-        totalAmount = Math.max(0, totalAmount - discountFromCoupon);
-        totalAmount = Number(totalAmount.toFixed(2));
-
-        // 3. Preparar dados do cliente e Validar Campos Obrigatórios (Checkout V3 exige endereço/tel)
+        // 3. Garantir Cliente no Asaas (Pre-requisito para Checkout Robusto)
         const cpfCnpj = (tenant.cnpj || tenant.cpf || tenant.document || '').replace(/\D/g, '');
         const phone = (tenant.phone || '').replace(/\D/g, '');
-        const address = tenant.street || tenant.address_street || '';
-        const number = tenant.number || '';
-        const postalCode = (tenant.address_zip || tenant.cep || '').replace(/\D/g, '');
-        const province = tenant.neighborhood || tenant.address_neighborhood || '';
-
-        if (!phone || !address || !number || !postalCode || !province) {
-            const missing = [];
-            if (!phone) missing.push('Telefone');
-            if (!address) missing.push('Rua');
-            if (!number) missing.push('Número');
-            if (!postalCode) missing.push('CEP');
-            if (!province) missing.push('Bairro');
-
-            return addCorsHeaders(req, NextResponse.json({
-                error: `Dados incompletos: O Asaas exige endereço completo e telefone nas configurações da barbearia. Faltando: ${missing.join(', ')}`
-            }, { status: 400 }));
-        }
 
         const customerData = {
-            name: tenant.name || 'Cliente',
+            name: tenant.name || 'Cliente 791',
+            email: user.email,
             cpfCnpj: cpfCnpj,
-            email: user.email || '',
-            phone: phone,
             mobilePhone: phone,
-            phoneNumber: phone, // Sugerido pelo erro do Asaas V3
-            address: address,
-            addressNumber: number,
-            complement: tenant.complement || '',
-            postalCode: postalCode,
-            province: province,
+            address: tenant.street || tenant.address_street || 'Endereço não informado',
+            addressNumber: tenant.number || 'SN',
+            postalCode: (tenant.address_zip || tenant.cep || '').replace(/\D/g, ''),
+            province: tenant.neighborhood || tenant.address_neighborhood || 'Bairro'
         };
 
-        console.log('[ASAAS] Payload customerData:', customerData);
-
-        // 4. Lógica de Cobrança (Híbrida)
-        let checkoutId = null;
-        let checkoutUrl = '';
-        let checkout: any = null;
-        let customer: any = null;
-        let subscriptionConfig: any = null;
-        let installmentConfig: any = null;
-
-        // Determinar baseUrl de forma robusta para evitar localhost em produção
-        const referer = req.headers.get('referer');
-        let baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://791barber.com';
-
-        if (referer && !referer.includes('localhost')) {
-            try {
-                baseUrl = new URL(referer).origin;
-            } catch (e) {
-                console.error('[ASAAS] Falha ao parsear referer para baseUrl:', e);
-            }
-        } else {
-            // Fallback para headers de proxy
-            const protocol = req.headers.get('x-forwarded-proto') || 'https';
-            const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
-            if (host && !host.includes('localhost')) {
-                baseUrl = `${protocol}://${host}`;
-            }
+        console.log('[ASAAS 2.0] Verificando cliente:', customerData.email);
+        let customer = await asaas.getCustomerByEmail(customerData.email);
+        if (!customer) {
+            console.log('[ASAAS 2.0] Criando novo cliente');
+            customer = await asaas.createCustomer(customerData);
         }
 
-        console.log(`[ASAAS] Base URL detectada: ${baseUrl}`);
-
-        // Generate a unique reference for matching in Webhook
+        // 4. Criar Checkout Minimalista (RECOMENDADO PELA DOC V3)
         const externalReference = crypto.randomUUID();
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://791barber.com';
 
-        // Check environment from Asaas config
-        const isSandbox = environment === 'sandbox';
+        // Truncar nome do item para 30 chars (Limite rígido Asaas)
+        const safeItemName = (itemName.length > 30 ? itemName.substring(0, 27) + '...' : itemName);
 
-        console.log(`[ASAAS] Criando Checkout (${environment}):`, {
-            method: paymentMethod,
-            amount: totalAmount,
-            externalReference,
-            isSandbox
-        });
-        // Base URL for checkout session depends on environment
-        const asaasCheckoutBaseUrl = isSandbox
-            ? 'https://sandbox.asaas.com/checkoutSession/show'
-            : 'https://www.asaas.com/checkoutSession/show';
-
-        let boletoData = null;
-        let pixData = null;
-
-        if (paymentMethod === 'BOLETO') {
-            // === Lógica para BOLETO (API Direta) ===
-
-            // 4.1 Buscar ou criar cliente no Asaas
-            customer = await asaas.getCustomerByEmail(customerData.email);
-            if (!customer) {
-                customer = await asaas.createCustomer(customerData);
-            }
-
-            let paymentIdToFetch = null;
-
-            // 4.2 Criar Assinatura ou Cobrança
-            if (interval === 1 && !isAddon) {
-                // Assinatura Mensal via Boleto
-                const subscriptionPayload = {
-                    customer: customer.id,
-                    billingType: 'BOLETO',
-                    value: totalAmount,
-                    nextDueDate: new Date().toISOString().split('T')[0], // Hoje
-                    cycle: 'MONTHLY',
-                    description: itemDescription,
-                    externalReference: externalReference
-                };
-
-                const subscription = await asaas.createSubscription(subscriptionPayload);
-
-                // Buscar primeira cobrança gerada pela assinatura
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                const paymentsResponse = await asaas.getPaymentsBySubscription(subscription.id, 1);
-                const firstPayment = paymentsResponse.data?.[0];
-
-                if (firstPayment) {
-                    paymentIdToFetch = firstPayment.id;
-                    checkoutId = firstPayment.id;
-                    checkoutUrl = firstPayment.bankSlipUrl || firstPayment.invoiceUrl;
-                }
-            } else {
-                // Boleto Único (Semestral/Anual)
-                const paymentPayload: any = {
-                    customer: customer.id,
-                    billingType: 'BOLETO',
-                    value: totalAmount,
-                    dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +3 dias
-                    description: itemDescription,
-                    installmentCount: (installments > 1) ? installments : undefined,
-                    installmentValue: (installments > 1) ? Number((totalAmount / installments).toFixed(2)) : undefined,
-                    externalReference: externalReference
-                };
-
-                const payment = await asaas.createPayment(paymentPayload);
-                paymentIdToFetch = payment.id;
-                checkoutId = payment.id;
-                checkoutUrl = payment.bankSlipUrl || payment.invoiceUrl;
-            }
-
-            // 4.3 Buscar Linha Digitável e Código de Barras
-            if (paymentIdToFetch) {
-                try {
-                    // Buscar dados completos do pagamento para ter certeza da data de vencimento e valor final
-                    const fullPayment = await asaas.getPayment(paymentIdToFetch);
-                    // Buscar linha digitável
-                    const barCodeData = await asaas.getBoletoBarCode(paymentIdToFetch);
-
-                    boletoData = {
-                        identificationField: barCodeData?.identificationField, // Linha digitável
-                        barCode: barCodeData?.barCode,
-                        value: fullPayment.value,
-                        dueDate: fullPayment.dueDate,
-                        bankSlipUrl: fullPayment.bankSlipUrl || fullPayment.invoiceUrl
-                    };
-                } catch (err) {
-                    console.error('Erro ao buscar código de barras do boleto:', err);
-                    // Não falha o request, apenas vai sem os dados extras
-                }
-            }
-
-        } else if (paymentMethod === 'PIX') {
-            // === Lógica para PIX (API Direta) ===
-
-            // 4.1 Buscar ou criar cliente no Asaas
-            customer = await asaas.getCustomerByEmail(customerData.email);
-            if (!customer) {
-                customer = await asaas.createCustomer(customerData);
-            }
-
-            let paymentIdToFetch = null;
-
-            // 4.2 Criar Cobrança Pix
-            const paymentPayload: any = {
-                customer: customer.id,
-                billingType: 'PIX',
+        const checkoutPayload: any = {
+            customer: customer.id, // APENAS ID, SEM CUSTOMERDATA (Resolve conflito)
+            billingTypes: [paymentMethod],
+            description: itemDescription,
+            externalReference: externalReference,
+            totalValue: totalAmount,
+            minutesToExpire: 60,
+            callback: {
+                successUrl: `${baseUrl}/asaas/checkout/success`,
+                cancelUrl: `${baseUrl}/asaas/checkout/cancel`
+            },
+            items: [{
+                name: safeItemName,
                 value: totalAmount,
-                dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +1 dia
-                description: itemDescription,
-                observations: itemDescription, // Adicionado para dashboard Asaas
-                externalReference: externalReference
+                quantity: 1
+            }]
+        };
+
+        // Adicionar recorrência se for mensal e não for addon
+        if (interval === 1 && !isAddon && paymentMethod === 'CREDIT_CARD') {
+            checkoutPayload.chargeTypes = ['RECURRENT'];
+            const nextDate = new Date();
+            nextDate.setMonth(nextDate.getMonth() + 1);
+            checkoutPayload.subscription = {
+                cycle: 'MONTHLY',
+                nextDueDate: nextDate.toISOString().split('T')[0]
             };
-
-            const payment = await asaas.createPayment(paymentPayload);
-            paymentIdToFetch = payment.id;
-            checkoutId = payment.id;
-            // Pix não tem checkoutUrl direto da mesma forma, mas pode ter invoiceUrl
-            checkoutUrl = payment.invoiceUrl;
-
-            // 4.3 Buscar QRCode Pix
-            if (paymentIdToFetch) {
-                try {
-                    const pixQrCode = await asaas.getPixQrCode(paymentIdToFetch);
-                    pixData = {
-                        encodedImage: pixQrCode.encodedImage,
-                        payload: pixQrCode.payload,
-                        expirationDate: pixQrCode.expirationDate
-                    };
-                } catch (err) {
-                    console.error('Erro ao buscar QRCode Pix:', err);
-                }
-            }
-
-        } else {
-            // === Lógica para CARTÃO (Checkout V3) ===
-
-            // 4.1 Buscar ou criar cliente no Asaas (IMPORTANTE para ter um ID fixo)
-            customer = await asaas.getCustomerByEmail(customerData.email);
-            if (!customer) {
-                customer = await asaas.createCustomer(customerData);
-            }
-
-            // Truncar nome para 30 chars (Limite rígido do Asaas para items[].name no Checkout V3)
-            // IMPORTANTE: O Asaas usa o 'name' do item como título principal no e-mail de confirmação.
-            const fullItemName = itemName; // Evitar concatenar descrição aqui para não estourar os 30 chars
-            const safeItemName = fullItemName.length > 30 ? fullItemName.substring(0, 27) + '...' : fullItemName;
-
-            let chargeTypes = ['DETACHED'];
-            subscriptionConfig = undefined;
-            installmentConfig = undefined;
-
-            if (interval === 1 && !isAddon) {
-                chargeTypes = ['RECURRENT'];
-                const nextDueDate = new Date();
-                nextDueDate.setMonth(nextDueDate.getMonth() + 1);
-                subscriptionConfig = {
-                    cycle: 'MONTHLY',
-                    nextDueDate: nextDueDate.toISOString().split('T')[0],
-                    description: itemDescription
-                };
-            } else if (interval > 1 || installments > 1) {
-                // Configuração de parcelas: Mensal (1x), Semestral (6x), Anual (10x)
-                chargeTypes = ['DETACHED'];
-                let maxInstallments = 1;
-
-                if (interval === 6) maxInstallments = 6;
-                else if (interval === 12) maxInstallments = 10;
-                else if (installments > 1) maxInstallments = installments; // Fallback para Add-ons
-
-                if (maxInstallments > 1) {
-                    chargeTypes.push('INSTALLMENT');
-                    installmentConfig = {
-                        maxInstallmentCount: maxInstallments
-                    };
-                }
-            }
-
-            const checkoutPayload: any = {
-                billingTypes: ['CREDIT_CARD'],
-                chargeTypes: chargeTypes,
-                description: itemDescription,
-                observations: itemDescription, // Observations aparece em mais lugares no dashboard
-                externalReference: externalReference,
-                minutesToExpire: 60, // Expira em 1 hora se não pago
-                callback: {
-                    successUrl: `${baseUrl}/asaas/checkout/success`,
-                    cancelUrl: `${baseUrl}/asaas/checkout/cancel`,
-                    expiredUrl: `${baseUrl}/asaas/checkout/expired`
-                },
-                items: [{
-                    name: safeItemName, // O Asaas usa esse nome nos e-mails (Max 30 chars)
-                    description: itemDescription,
-                    quantity: 1,
-                    value: totalAmount
-                }],
-                customer: customer.id,
-                subscription: subscriptionConfig,
-                installment: installmentConfig
-            };
-
-            checkout = await asaas.createCheckout(checkoutPayload);
-            checkoutId = checkout.id;
-            checkoutUrl = `${asaasCheckoutBaseUrl}?id=${checkout.id}`;
         }
 
-        // 5. Salvar registro
-        if (checkoutId) {
-            await supabaseAdmin
-                .from('finance')
-                .insert({
-                    tenant_id: tenant.id,
-                    type: 'expense',
-                    value: totalAmount,
-                    description: `Assinatura SaaS - ${itemName} (${interval} ${interval === 1 ? 'mês' : 'meses'})`,
-                    date: new Date().toISOString().split('T')[0],
-                    is_paid: false,
-                    metadata: {
-                        is_saas_payment: true,
-                        asaas_checkout_id: checkoutId,
-                        asaas_customer_id: customer.id || (checkout as any).customer || (checkout as any).customerId || null,
-                        asaas_subscription_id: subscriptionConfig ? (checkout as any).subscriptionId || (checkout as any).subscription || null : null,
-                        external_reference: externalReference,
-                        payment_method: paymentMethod,
-                        [isAddon ? 'addon' : 'plan']: addonSlug || planSlug,
-                        is_addon: isAddon,
-                        interval: interval
-                    }
-                });
-        }
+        console.log('[ASAAS 2.0] Criando checkout:', externalReference);
+        const checkout = await asaas.createCheckout(checkoutPayload);
+
+        // 5. Salvar Registro de Auditoria no Banco para o Webhook encontrar
+        await supabaseAdmin.from('finance').insert({
+            tenant_id: tenant.id,
+            type: 'expense',
+            value: totalAmount,
+            description: `Assinatura SaaS - ${itemName}`,
+            date: new Date().toISOString().split('T')[0],
+            is_paid: false,
+            metadata: {
+                is_saas_payment: true,
+                asaas_checkout_id: checkout.id,
+                asaas_customer_id: customer.id,
+                external_reference: externalReference,
+                payment_method: paymentMethod,
+                plan: planSlug,
+                addon: addonSlug,
+                interval: interval
+            }
+        });
+
+        const asaasPortalUrl = environment === 'sandbox' ? 'https://sandbox.asaas.com' : 'https://www.asaas.com';
 
         return addCorsHeaders(req, NextResponse.json({
             success: true,
-            checkoutId: checkoutId,
-            checkoutUrl: checkoutUrl,
-            boletoData: boletoData,
-            pixData: pixData,
+            checkoutId: checkout.id,
+            checkoutUrl: `${asaasPortalUrl}/checkoutSession/show?id=${checkout.id}`,
             amount: totalAmount
         }));
 
     } catch (error: any) {
-        console.error('[ASAAS CREATE CHECKOUT ERROR]', error);
-
-        let errorMessage = 'Erro ao processar pagamento';
-        if (error.response?.data) {
-            const data = error.response.data;
-            if (data.errors && data.errors.length > 0) {
-                errorMessage = data.errors[0].description;
-            } else {
-                errorMessage = JSON.stringify(data);
-            }
-        } else if (error.message) {
-            errorMessage = error.message;
-        }
-
-        return addCorsHeaders(req, NextResponse.json({
-            error: errorMessage
-        }, { status: error.response?.status || 500 }));
+        console.error('[ASAAS 2.0 ERROR]', error);
+        const msg = error.response?.data?.errors?.[0]?.description || error.message || 'Erro interno';
+        return addCorsHeaders(req, NextResponse.json({ error: msg }, { status: 500 }));
     }
 }

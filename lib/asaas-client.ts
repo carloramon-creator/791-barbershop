@@ -153,13 +153,44 @@ export class AsaasClient {
 
     // Checkout API
     async createCheckout(payload: any) {
-        const response = await this.client.post('/checkouts', payload);
-        return response.data;
+        try {
+            const response = await this.client.post('/checkouts', payload);
+            return response.data;
+        } catch (error: any) {
+            console.error('[ASAAS CLIENT] Error creating checkout:', error.response?.data || error.message);
+            throw error;
+        }
     }
 
     async getCheckout(checkoutId: string) {
-        const response = await this.client.get(`/checkouts/${checkoutId}`);
-        return response.data;
+        try {
+            const response = await this.client.get(`/checkouts/${checkoutId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('[ASAAS CLIENT] Error fetching checkout:', error.response?.data || error.message);
+            throw error;
+        }
+    }
+
+    // New Payment Verification Methods
+    async getPaymentById(paymentId: string) {
+        try {
+            const response = await this.client.get(`/payments/${paymentId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('[ASAAS CLIENT] Error fetching payment:', error.response?.data || error.message);
+            throw error;
+        }
+    }
+
+    async getSubscription(subscriptionId: string) {
+        try {
+            const response = await this.client.get(`/subscriptions/${subscriptionId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('[ASAAS CLIENT] Error fetching subscription:', error.response?.data || error.message);
+            throw error;
+        }
     }
 
     // Invoice Customization
