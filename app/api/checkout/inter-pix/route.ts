@@ -101,6 +101,20 @@ export async function POST(req: Request) {
             }
         }
 
+        // 3. Desconto de Boas-Vindas (10% para novos cadastros até 5 dias)
+        if (discountFromCoupon === 0 && interval === 1 && !isAddon) {
+            const isTrial = tenant.plan === 'trial' || tenant.subscription_status === 'trialing' || !tenant.stripe_subscription_id;
+            const tenantCreated = new Date(tenant.created_at || new Date());
+            const now = new Date();
+            const diffDays = Math.ceil(Math.abs(now.getTime() - tenantCreated.getTime()) / (1000 * 60 * 60 * 24));
+            const isNewAccount = diffDays <= 5;
+
+            if (isTrial && isNewAccount) {
+                discountFromCoupon = (finalAmount * 10) / 100; // 10%
+                couponApplied = 'BOAS_VINDAS_10';
+                console.log(`[INTER PIX] Desconto de Boas-Vindas aplicado: -R$ ${discountFromCoupon.toFixed(2)} (conta criada há ${diffDays} dias)`);
+            }
+        }
 
         // Aplicar desconto final
         finalAmount = Math.max(0, finalAmount - discountFromCoupon);
