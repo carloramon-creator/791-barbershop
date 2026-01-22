@@ -100,6 +100,7 @@ export async function POST(req: Request) {
         const checkoutPayload: any = {
             customer: customer.id, // APENAS ID, SEM CUSTOMERDATA (Resolve conflito)
             billingTypes: [paymentMethod],
+            chargeTypes: ['DETACHED'], // Valor padrão
             description: itemDescription,
             externalReference: externalReference,
             totalValue: totalAmount,
@@ -115,15 +116,23 @@ export async function POST(req: Request) {
             }]
         };
 
-        // Adicionar recorrência se for mensal e não for addon
-        if (interval === 1 && !isAddon && paymentMethod === 'CREDIT_CARD') {
-            checkoutPayload.chargeTypes = ['RECURRENT'];
-            const nextDate = new Date();
-            nextDate.setMonth(nextDate.getMonth() + 1);
-            checkoutPayload.subscription = {
-                cycle: 'MONTHLY',
-                nextDueDate: nextDate.toISOString().split('T')[0]
-            };
+        // Adicionar recorrência ou parcelamento
+        if (paymentMethod === 'CREDIT_CARD') {
+            if (interval === 1 && !isAddon) {
+                checkoutPayload.chargeTypes = ['RECURRENT'];
+                const nextDate = new Date();
+                nextDate.setMonth(nextDate.getMonth() + 1);
+                checkoutPayload.subscription = {
+                    cycle: 'MONTHLY',
+                    nextDueDate: nextDate.toISOString().split('T')[0]
+                };
+            } else if (interval > 1) {
+                // Permitir parcelamento para planos anuais/semestrais
+                checkoutPayload.chargeTypes = ['DETACHED', 'INSTALLMENT'];
+                checkoutPayload.installment = {
+                    maxInstallmentCount: interval === 12 ? 12 : 6
+                };
+            }
         }
 
         console.log('[ASAAS 2.0] Criando checkout:', externalReference);
