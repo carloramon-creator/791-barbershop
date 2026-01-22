@@ -19,6 +19,7 @@ export async function POST(req: Request) {
         const {
             plan: planSlug,
             addon: addonSlug,
+            coupon,
             interval = 1,
             paymentMethod = 'CREDIT_CARD',
             installments = 1
