@@ -133,6 +133,14 @@ export async function POST(req: Request) {
 
         if (!isAddon) {
             updateData.plan = planSlug;
+        } else {
+            // Se for add-on, adicionar ao array active_addons
+            const currentAddons = tenant.active_addons || [];
+            const addonSlug = metadata.addon;
+            if (addonSlug && !currentAddons.includes(addonSlug)) {
+                updateData.active_addons = [...currentAddons, addonSlug];
+                console.log(`[ASAAS WEBHOOK 2.0] 📦 Adicionando add-on: ${addonSlug}`);
+            }
         }
 
         // Atualizar Tenant e Finance (CRÍTICO)
