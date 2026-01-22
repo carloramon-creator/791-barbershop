@@ -5,7 +5,9 @@ import AsaasClient from '@/lib/asaas-client';
 export async function POST(req: Request) {
     const body = await req.json();
     const event = body.event;
-    const payment = body.payment || body.checkout || {};
+
+    // O Asaas pode enviar payment, checkout, ou dados no nível raiz
+    const payment = body.payment || body.checkout || body;
 
     console.log(`[ASAAS WEBHOOK 2.0] Evento recebido: ${event} | ID: ${body.id}`);
 
