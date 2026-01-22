@@ -5,9 +5,10 @@ import AsaasClient from '@/lib/asaas-client';
 export async function POST(req: Request) {
     const body = await req.json();
     const event = body.event;
-    const payment = body.payment;
+    const payment = body.payment || {};
 
     console.log(`[ASAAS WEBHOOK 2.0] Evento recebido: ${event} | ID: ${body.id}`);
+    console.log(`[ASAAS WEBHOOK 2.0] Body completo:`, JSON.stringify(body, null, 2));
 
     // 1. Idempotência: Evitar processar o mesmo evento duas vezes (OPCIONAL - não bloqueia se tabela não existir)
     try {
@@ -38,7 +39,7 @@ export async function POST(req: Request) {
         let financeRecord = null;
 
         // Estratégia A: Pelo externalReference (Mais confiável)
-        const extRef = payment.externalReference || body.externalReference;
+        const extRef = payment?.externalReference || body.externalReference || payment?.id || body.id;
         if (extRef) {
             console.log('[ASAAS WEBHOOK 2.0] 🔍 Buscando por externalReference:', extRef);
             const { data } = await supabaseAdmin
