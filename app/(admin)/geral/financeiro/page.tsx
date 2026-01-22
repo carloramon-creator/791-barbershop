@@ -146,15 +146,7 @@ export default function HoldingFinanceDashboard() {
         }
     };
 
-    const handlePayBill = async (id: string) => {
-        if (!confirm('Confirmar pagamento desta conta?')) return;
-        try {
-            await Api.updateSystemFinanceRecord(id, { status: 'paid' });
-            loadData(); // Reload to refresh lists
-        } catch (e) {
-            alert('Erro ao atualizar');
-        }
-    };
+
 
     const openDetails = (type: 'revenue' | 'expense' | 'pending') => {
         setDetailsType(type);
