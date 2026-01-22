@@ -101,20 +101,8 @@ export async function POST(req: Request) {
             }
         }
 
-        // 3. Desconto automático de Trial (apenas se for primeira assinatura mensal)
-        if (discountFromCoupon === 0 && interval === 1) {
-            const isTrial = tenant.plan === 'trial' || tenant.subscription_status === 'trialing' || !tenant.stripe_subscription_id;
-            const tenantCreated = new Date(tenant.created_at || new Date());
-            const now = new Date();
-            const diffDays = Math.ceil(Math.abs(now.getTime() - tenantCreated.getTime()) / (1000 * 60 * 60 * 24));
-            const isNewAccount = diffDays <= 5;
 
-            if (isTrial && !isAddon && isNewAccount) {
-                discountFromCoupon = (finalAmount * 10) / 100; // 10%
-                couponApplied = 'TRIAL_WELCOME_10';
-            }
-        }
-
+        // Aplicar desconto final
         finalAmount = Math.max(0, finalAmount - discountFromCoupon);
         const amount = finalAmount;
         const currentDate = new Intl.DateTimeFormat('fr-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
