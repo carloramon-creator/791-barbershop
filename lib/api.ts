@@ -188,8 +188,8 @@ export const Api = {
     },
     createSystemFinanceRecord: (payload: Record<string, unknown>) =>
         apiFetch('/api/system/finance', { method: 'POST', body: JSON.stringify(payload) }),
-    deleteSystemFinanceRecord: (id: string) =>
-        apiFetch(`/api/system/finance?id=${id}`, { method: 'DELETE' }),
+    deleteSystemFinanceRecord: (id: string, deleteMode: 'single' | 'all' | 'future' = 'single') =>
+        apiFetch(`/api/system/finance?id=${id}&deleteMode=${deleteMode}`, { method: 'DELETE' }),
     updateSystemFinanceRecord: (id: string, payload: Record<string, unknown>) =>
         apiFetch(`/api/system/finance?id=${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
 
