@@ -8,4 +8,4 @@ SET admin_permissions = '["all"]'
 WHERE is_system_admin = true AND (admin_permissions IS NULL OR admin_permissions = '[]');
 
 -- Comment on column
-COMMENT ON COLUMN users.admin_permissions IS 'Array of permission strings: ["all", "manage_tenants", "manage_finance", "manage_support", "manage_settings"]';
+COMMENT ON COLUMN users.admin_permissions IS 'Array of permission strings: ["all", "manage_tenants", "manage_finance", "manage_plans", "manage_coupons", "manage_settings", "manage_support", "manage_admins"]';

@@ -17,6 +17,7 @@ interface MetricCardProps {
     chartData?: any[]; // Array of { value: number }
     color?: "blue" | "green" | "red" | "amber";
     delay?: number; // Animation delay index
+    onClick?: () => void;
 }
 
 const colorMap = {
@@ -54,16 +55,19 @@ export function MetricCard({
     trend,
     chartData,
     color = "blue",
-    delay = 0
+    delay = 0,
+    onClick
 }: MetricCardProps) {
     const theme = colorMap[color];
 
     return (
         <Card
+            onClick={onClick}
             className={cn(
                 "relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group",
                 "bg-white light:bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800",
-                "animate-in fade-in slide-in-from-bottom-4 fill-mode-backwards"
+                "animate-in fade-in slide-in-from-bottom-4 fill-mode-backwards",
+                onClick && "cursor-pointer hover:ring-2 hover:ring-offset-2 hover:ring-offset-slate-950 hover:ring-blue-600/50"
             )}
             style={{ animationDelay: `${delay * 100}ms` }}
         >

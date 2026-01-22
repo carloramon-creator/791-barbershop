@@ -4,7 +4,7 @@ import { supabase, getSupabaseAdmin } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
     try {
-        const { email } = await req.json();
+        const { email, permissions = ['manage_tenants', 'manage_finance', 'manage_plans', 'manage_coupons', 'manage_settings', 'manage_support', 'manage_admins'] } = await req.json();
         if (!email) {
             return NextResponse.json({ error: 'Email is required' }, { status: 400 });
         }
@@ -52,7 +52,10 @@ export async function POST(req: NextRequest) {
             // User Exists in Public -> Just Promote
             const { error: updateError } = await adminClient
                 .from('users')
-                .update({ is_system_admin: true })
+                .update({
+                    is_system_admin: true,
+                    admin_permissions: permissions
+                })
                 .eq('id', userId);
 
             if (updateError) throw updateError;
@@ -79,6 +82,7 @@ export async function POST(req: NextRequest) {
                     email: email,
                     name: email.split('@')[0], // Default name
                     is_system_admin: true,
+                    admin_permissions: permissions,
                     role: null, // Pure admin
                     created_at: new Date().toISOString()
                 });

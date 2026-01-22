@@ -24,6 +24,24 @@ export default function SystemAdminsPage() {
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviting, setInviting] = useState(false);
 
+    // Permissions State
+    const allPermissions = [
+        { id: 'manage_tenants', label: 'Gerenciar Barbearias' },
+        { id: 'manage_finance', label: 'Financeiro Holding' },
+        { id: 'manage_plans', label: 'Gestão de Planos' },
+        { id: 'manage_coupons', label: 'Gestão de Cupons' },
+        { id: 'manage_settings', label: 'Configurações Globais' },
+        { id: 'manage_support', label: 'Suporte / Impersonate' },
+        { id: 'manage_admins', label: 'Gerenciar Admins' }
+    ];
+    const [selectedPermissions, setSelectedPermissions] = useState<string[]>(allPermissions.map(p => p.id));
+
+    const togglePermission = (id: string) => {
+        setSelectedPermissions(prev =>
+            prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+        );
+    };
+
     const loadAdmins = async () => {
         try {
             setLoading(true);
@@ -54,7 +72,7 @@ export default function SystemAdminsPage() {
             const res = await fetch('/api/admin/system-admins', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: inviteEmail })
+                body: JSON.stringify({ email: inviteEmail, permissions: selectedPermissions })
             });
 
             const data = await res.json();
@@ -120,19 +138,46 @@ export default function SystemAdminsPage() {
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handlePromoteByEmail} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="email" className="text-slate-400 text-[10px] font-black uppercase tracking-widest">E-mail do Usuário</Label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" size={14} />
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        placeholder="novo.admin@email.com"
-                                        value={inviteEmail}
-                                        onChange={e => setInviteEmail(e.target.value)}
-                                        className="bg-slate-950 border-slate-800 pl-10 h-11 text-sm text-slate-100"
-                                        required
-                                    />
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="email" className="text-slate-400 text-[10px] font-black uppercase tracking-widest">E-mail do Usuário</Label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" size={14} />
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            placeholder="novo.admin@email.com"
+                                            value={inviteEmail}
+                                            onChange={e => setInviteEmail(e.target.value)}
+                                            className="bg-slate-950 border-slate-800 pl-10 h-11 text-sm text-slate-100"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Permissões de Acesso</Label>
+                                    <div className="grid grid-cols-1 gap-2 bg-slate-950/50 p-3 rounded-lg border border-slate-800">
+                                        {allPermissions.map(p => (
+                                            <label key={p.id} className="flex items-center gap-3 cursor-pointer group">
+                                                <div className={`
+                                                    w-4 h-4 rounded border flex items-center justify-center transition-colors
+                                                    ${selectedPermissions.includes(p.id) ? 'bg-blue-600 border-blue-600' : 'border-slate-600 group-hover:border-slate-500'}
+                                                `}>
+                                                    {selectedPermissions.includes(p.id) && <ShieldCheck size={10} className="text-white" />}
+                                                    <input
+                                                        type="checkbox"
+                                                        className="hidden"
+                                                        checked={selectedPermissions.includes(p.id)}
+                                                        onChange={() => togglePermission(p.id)}
+                                                    />
+                                                </div>
+                                                <span className={`text-xs font-bold transition-colors ${selectedPermissions.includes(p.id) ? 'text-slate-200' : 'text-slate-500'}`}>
+                                                    {p.label}
+                                                </span>
+                                            </label>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                             <Button

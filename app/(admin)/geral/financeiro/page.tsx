@@ -226,12 +226,54 @@ export default function HoldingFinanceDashboard() {
             <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
                 <DialogContent className="max-w-3xl bg-slate-950 border-slate-800 max-h-[85vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle className="text-white uppercase tracking-wider text-sm font-bold flex items-center gap-2">
-                            {detailsType === 'pending' && <Clock className="text-amber-500" size={18} />}
-                            {detailsType === 'revenue' && <TrendingUp className="text-emerald-500" size={18} />}
-                            {detailsType === 'expense' && <TrendingDown className="text-red-500" size={18} />}
-                            {modalTitle} - {format(selectedDate, 'MMMM yyyy', { locale: ptBR })}
-                        </DialogTitle>
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <DialogTitle className="text-white uppercase tracking-wider text-sm font-bold flex items-center gap-2">
+                                {detailsType === 'pending' && <Clock className="text-amber-500" size={18} />}
+                                {detailsType === 'revenue' && <TrendingUp className="text-emerald-500" size={18} />}
+                                {detailsType === 'expense' && <TrendingDown className="text-red-500" size={18} />}
+                                {modalTitle}
+                            </DialogTitle>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] uppercase font-bold text-slate-500 hidden md:block">
+                                    {format(selectedDate, 'MMM yyyy', { locale: ptBR })}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Filters */}
+                        <div className="flex flex-col md:flex-row gap-3 mt-4 items-center">
+                            <div className="relative flex-1 w-full">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar por descrição, categoria ou valor..."
+                                    value={modalFilter.search}
+                                    onChange={(e) => setModalFilter(prev => ({ ...prev, search: e.target.value }))}
+                                    className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
+                            </div>
+                            <div className="flex bg-slate-900 border border-slate-800 rounded-lg p-1 shrink-0">
+                                {[
+                                    { id: 'day', label: 'Dia' },
+                                    { id: 'week', label: 'Semana' },
+                                    { id: 'fortnight', label: 'Quinzena' },
+                                    { id: 'month', label: 'Mês' }
+                                ].map((p) => (
+                                    <button
+                                        key={p.id}
+                                        onClick={() => setModalFilter(prev => ({ ...prev, period: p.id as any }))}
+                                        className={cn(
+                                            "px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded transition-all",
+                                            modalFilter.period === p.id
+                                                ? "bg-blue-600 text-white shadow-md"
+                                                : "text-slate-500 hover:text-slate-300"
+                                        )}
+                                    >
+                                        {p.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </DialogHeader>
                     <div className="space-y-2 mt-4">
                         {modalList.length === 0 ? (
@@ -408,6 +450,7 @@ export default function HoldingFinanceDashboard() {
                             trend={viewMode === 'accumulated' ? undefined : { value: 12.5, isPositive: true }}
                             chartData={dailyData.map(d => ({ value: d.receita }))}
                             delay={0}
+                            onClick={() => openDetails('revenue')}
                         />
                         <MetricCard
                             title={viewMode === 'accumulated' ? "Despesa Total" : "Despesas Pagas"}
@@ -418,6 +461,7 @@ export default function HoldingFinanceDashboard() {
                             trend={viewMode === 'accumulated' ? undefined : { value: 4.2, isPositive: false }}
                             chartData={dailyData.map(d => ({ value: d.despesa }))}
                             delay={1}
+                            onClick={() => openDetails('expense')}
                         />
                         <MetricCard
                             title="Contas a Pagar"
@@ -427,6 +471,7 @@ export default function HoldingFinanceDashboard() {
                             color="amber"
                             chartData={dailyData.map(d => ({ value: d.despesa / 2 }))}
                             delay={2}
+                            onClick={() => openDetails('pending')}
                         />
                         <MetricCard
                             title={viewMode === 'accumulated' ? "Saldo Acumulado" : "Resultado (EBITDA)"}

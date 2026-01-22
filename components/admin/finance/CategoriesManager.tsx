@@ -86,9 +86,17 @@ export function CategoriesManager() {
     }
 
     function startNewSub(parentId: string) {
-        resetForm();
-        setParentId(parentId);
-        setIsOpen(true);
+        const parent = categories.find(c => c.id === parentId);
+        if (parent) {
+            resetForm();
+            // Force tab to match parent type so it appears in the Select
+            setActiveTab(parent.type);
+            // We need to wait for state to update or just set it. 
+            // Since activeTab state update might be async, let's rely on re-render.
+            // But we also need to setParentId matching the found parent.
+            setParentId(parentId);
+            setIsOpen(true);
+        }
     }
 
     function startEdit(cat: HoldingCategory) {
