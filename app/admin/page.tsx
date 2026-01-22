@@ -26,7 +26,9 @@ export default function AdminLoginPage() {
         const checkSesh = async () => {
             if (session?.user) {
                 const { data } = await supabaseClient.from('users').select('is_system_admin').eq('id', session.user.id).single();
-                if (data?.is_system_admin) {
+                const isHolding = session.user.email?.includes('@791solucoes');
+
+                if (data?.is_system_admin || isHolding) {
                     router.push('/geral');
                 }
             }

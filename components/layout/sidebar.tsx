@@ -20,7 +20,11 @@ import {
     LogOut,
     UserCheck,
     CreditCard,
-    Briefcase
+    Briefcase,
+    Store,
+    Ticket,
+    Database,
+    FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -38,6 +42,7 @@ interface MenuItem {
     module?: string;
     newTab?: boolean;
     isSystemOnly?: boolean;
+    adminPermission?: string;
 }
 
 interface MenuGroup {
@@ -49,12 +54,12 @@ interface MenuGroup {
 
 export function Sidebar() {
     const pathname = usePathname();
-    const { role, tenant, signOut, isSystemAdmin, isImpersonating } = useAuth();
+    const { role, tenant, signOut, isSystemAdmin, isImpersonating, adminPermissions } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [showSupport, setShowSupport] = useState(false);
 
     // Collapsible states
-    const [openGroups, setOpenGroups] = useState<string[]>(['Gestão', 'Financeiro']);
+    const [openGroups, setOpenGroups] = useState<string[]>(['Gestão', 'Financeiro', 'Super Admin']);
 
     const texts = getBusinessTexts(tenant?.business_type);
 
@@ -67,8 +72,20 @@ export function Sidebar() {
 
     // Helper to check permissions
     const checkPermission = (item: MenuItem) => {
-        if (isSystemAdmin) return true;
-        if (item.isSystemOnly && !isSystemAdmin) return false;
+        // Super Admin Logic
+        if (item.isSystemOnly) {
+            if (!isSystemAdmin) return false;
+            if (item.adminPermission) {
+                // If user has 'all', they have everything
+                if (adminPermissions?.includes('all')) return true;
+                // Otherwise check specific permission
+                return adminPermissions?.includes(item.adminPermission) ?? false;
+            }
+            return true; // No specific permission required for this admin item
+        }
+
+        if (isSystemAdmin) return true; // System admin sees all tenant menus (optional, or restrict?)
+        // Usually System Admin impersonating sees what the role sees.
 
         const roleAllowed = !item.roles || (role && item.roles.includes(role));
         if (!roleAllowed) return false;
@@ -127,7 +144,14 @@ export function Sidebar() {
             isSystemOnly: true,
             items: [
                 { name: 'Visão Geral', href: '/geral', icon: ShieldCheck, roles: ['owner'] },
-                { name: 'Financeiro Holding', href: '/geral/financeiro', icon: CreditCard, roles: ['owner'] },
+                { name: 'Barbearias', href: '/geral/barbearias', icon: Store, roles: ['owner'], adminPermission: 'manage_tenants' },
+                { name: 'Financeiro Holding', href: '/geral/financeiro', icon: CreditCard, roles: ['owner'], adminPermission: 'manage_finance' },
+                { name: 'Planos & Extras', href: '/geral/planos', icon: ShoppingBag, roles: ['owner'], adminPermission: 'manage_plans' },
+                { name: 'Cupons', href: '/geral/cupons', icon: Ticket, roles: ['owner'], adminPermission: 'manage_coupons' },
+                { name: 'Configurações API', href: '/geral/configuracoes', icon: Database, roles: ['owner'], adminPermission: 'manage_settings' },
+                { name: 'Configuração Fiscal', href: '/geral/configuracoes/nfs-e', icon: FileText, roles: ['owner'], adminPermission: 'manage_settings' },
+                { name: 'Suporte', href: '/geral/suporte', icon: HelpCircle, roles: ['owner'], adminPermission: 'manage_support' },
+                { name: 'Administradores', href: '/geral/usuarios', icon: Users, roles: ['owner'], adminPermission: 'manage_admins' },
             ]
         }
     ];
@@ -203,7 +227,16 @@ export function Sidebar() {
                 {/* Navigation */}
                 <nav className="flex-1 px-4 py-4 space-y-4 overflow-y-auto custom-scrollbar">
                     {menuGroups.map((group) => {
-                        // Check if group should be visible
+                        // Logic to isolate Super Admin environment
+                        const isSuperAdminRoute = pathname?.startsWith('/geral');
+
+                        // If in Super Admin Panel, show ONLY Super Admin menu
+                        if (isSuperAdminRoute && group.label !== 'Super Admin') return null;
+
+                        // If NOT in Super Admin Panel (Tenant View), you might want to hide Super Admin menu 
+                        // or keep it for easy switching. Reverting to standard logic:
+
+                        // Check if group should be visible (System Only groups)
                         if (group.isSystemOnly && !isSystemAdmin) return null;
 
                         const visibleItems = group.items.filter(checkPermission);
@@ -216,12 +249,15 @@ export function Sidebar() {
                                 onOpenChange={() => toggleGroup(group.label)}
                                 className="space-y-1"
                             >
-                                <div className="flex items-center justify-between px-2 mb-1">
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                <div
+                                    className="flex items-center justify-between px-2 mb-1 cursor-pointer hover:bg-slate-800/50 rounded-md py-1 transition-colors group/header select-none"
+                                    onClick={() => toggleGroup(group.label)}
+                                >
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover/header:text-slate-300 transition-colors">
                                         {group.label}
                                     </h4>
                                     <CollapsibleTrigger asChild>
-                                        <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-slate-800 text-slate-500">
+                                        <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-slate-500 hover:text-slate-300 hover:bg-transparent">
                                             {openGroups.includes(group.label) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                                         </Button>
                                     </CollapsibleTrigger>

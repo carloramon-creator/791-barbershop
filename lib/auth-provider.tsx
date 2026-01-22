@@ -19,6 +19,7 @@ interface AuthContextType {
     refresh: () => Promise<void>;
     checkPermission: (action: string) => boolean;
     profile: { name: string; nickname: string; email: string; photo_url: string } | null;
+    adminPermissions: string[] | null;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -30,6 +31,7 @@ const AuthContext = createContext<AuthContextType>({
     role: null,
     roles: null,
     isSystemAdmin: false,
+    adminPermissions: null,
     isImpersonating: false,
     refresh: async () => { },
     checkPermission: () => false,
@@ -44,6 +46,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [role, setRole] = useState<string | null>(null);
     const [roles, setRoles] = useState<string[] | null>(null);
     const [isSystemAdmin, setIsSystemAdmin] = useState<boolean>(false);
+    const [adminPermissions, setAdminPermissions] = useState<string[] | null>(null);
     const [profile, setProfile] = useState<{ name: string; nickname: string; email: string; photo_url: string } | null>(null);
 
     const [isImpersonating, setIsImpersonating] = useState(false);
@@ -64,12 +67,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 // Obter role e perfil do usuário
                 const { data } = await supabaseClient
                     .from('users')
-                    .select('role, roles, is_system_admin, name, nickname, email, photo_url')
+                    .select('role, roles, is_system_admin, admin_permissions, name, nickname, email, photo_url')
                     .eq('id', session.user.id)
                     .single();
                 setRole(data?.role ?? null);
                 setRoles(data?.roles ?? (data?.role ? [data.role] : null));
                 setIsSystemAdmin(data?.is_system_admin ?? false);
+                // Default to 'all' if admin but column missing/null, provided permission check logic handles it or we default here.
+                // Let's default to ['all'] if system admin but permissions null to be safe for now
+                setAdminPermissions(data?.admin_permissions ?? (data?.is_system_admin ? ['all'] : null));
+
                 setProfile(data ? {
                     name: data.name,
                     nickname: data.nickname,
@@ -92,6 +99,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setRole(null);
                 setRoles(null);
                 setIsSystemAdmin(false);
+                setAdminPermissions(null);
                 setProfile(null);
                 setTenant(null);
             }
@@ -115,6 +123,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setRoles(null);
                 setTenant(null);
                 setProfile(null);
+                setIsSystemAdmin(false);
+                setAdminPermissions(null);
                 setLoading(false);
             }
         });
@@ -148,6 +158,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setRole(null);
         setRoles(null);
         setIsSystemAdmin(false);
+        setAdminPermissions(null);
         setProfile(null);
         setTenant(null);
         setUser(null);
@@ -178,7 +189,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     return (
         <AuthContext.Provider value={{
-            user, session, tenant, loading, signOut, role, roles, isSystemAdmin, isImpersonating, refresh: fetchSession,
+            user, session, tenant, loading, signOut, role, roles, isSystemAdmin, adminPermissions, isImpersonating, refresh: fetchSession,
             checkPermission, profile
         }}>
             {children}

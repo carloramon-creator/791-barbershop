@@ -39,6 +39,11 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
     const [recurrenceInterval, setRecurrenceInterval] = useState<'monthly' | 'weekly' | 'yearly'>('monthly');
     const [recurrenceCount, setRecurrenceCount] = useState('12');
 
+    // Quick Create State
+    const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+    const [newCatName, setNewCatName] = useState('');
+    const [newCatParent, setNewCatParent] = useState('none');
+
     // Load Data on Open
     useEffect(() => {
         if (open) {
@@ -67,6 +72,30 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
             setLoadingData(false);
         }
     }
+
+    const handleQuickCreateCategory = async () => {
+        if (!newCatName) return;
+        try {
+            setLoading(true);
+            const payload = {
+                name: newCatName,
+                type: type === 'revenue' ? 'income' : 'expense',
+                color: '#94a3b8',
+                parent_id: newCatParent === 'none' ? null : newCatParent
+            };
+            const newCat = await Api.createHoldingCategory(payload);
+            await loadAuxData(); // Refresh list to get new cat
+            setCategoryId(newCat.id); // Auto select
+            setIsCreatingCategory(false);
+            setNewCatName('');
+            setNewCatParent('none');
+        } catch (e) {
+            console.error(e);
+            alert('Erro ao criar categoria.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSubmit = async () => {
         if (!description || !value || !date || !accountId || !categoryId) {
@@ -249,24 +278,82 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
 
                             <div className="space-y-2">
                                 <Label className="text-xs font-bold text-slate-500 uppercase">Categoria</Label>
-                                <Select value={categoryId} onValueChange={setCategoryId}>
-                                    <SelectTrigger className="bg-slate-950 border-slate-800 text-white">
-                                        <SelectValue placeholder="Selecione..." />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-slate-900 border-slate-800 text-white max-h-[200px]">
-                                        {categories.map(cat => (
-                                            <SelectItem key={cat.id} value={cat.id}>
+                                {isCreatingCategory ? (
+                                    <div className="p-3 bg-slate-950 border border-slate-800 rounded-lg space-y-3 animate-in fade-in zoom-in-95">
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-slate-400">Nome da Nova Categoria</Label>
+                                            <Input
+                                                value={newCatName}
+                                                onChange={e => setNewCatName(e.target.value)}
+                                                placeholder="Ex: Combustível"
+                                                className="h-8 text-xs bg-slate-900 border-slate-700"
+                                                autoFocus
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-slate-400">Subcategoria de (Opcional)</Label>
+                                            <Select value={newCatParent} onValueChange={setNewCatParent}>
+                                                <SelectTrigger className="h-8 text-xs bg-slate-900 border-slate-700">
+                                                    <SelectValue placeholder="Nenhuma (Raiz)" />
+                                                </SelectTrigger>
+                                                <SelectContent className="bg-slate-900 border-slate-800">
+                                                    <SelectItem value="none">-- Principal --</SelectItem>
+                                                    {categories.filter(c => !c.parent_id).map(cat => (
+                                                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button size="sm" onClick={handleQuickCreateCategory} className="flex-1 h-7 text-xs bg-purple-600 hover:bg-purple-500">
+                                                Salvar
+                                            </Button>
+                                            <Button size="sm" variant="ghost" onClick={() => setIsCreatingCategory(false)} className="h-7 text-xs flex-1">
+                                                Cancelar
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <Select
+                                        value={categoryId}
+                                        onValueChange={(val) => {
+                                            if (val === '_new_') {
+                                                setIsCreatingCategory(true);
+                                            } else {
+                                                setCategoryId(val);
+                                            }
+                                        }}
+                                    >
+                                        <SelectTrigger className="bg-slate-950 border-slate-800 text-white">
+                                            <SelectValue placeholder="Selecione..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-slate-900 border-slate-800 text-white max-h-[300px]">
+                                            <SelectItem value="_new_" className="text-purple-400 font-bold bg-purple-500/10 focus:bg-purple-500/20 mb-2 border-b border-purple-500/20">
                                                 <div className="flex items-center gap-2">
-                                                    {cat.color && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />}
-                                                    {cat.name}
+                                                    <Plus size={14} /> Nova Categoria...
                                                 </div>
                                             </SelectItem>
-                                        ))}
-                                        {categories.length === 0 && (
-                                            <div className="p-2 text-[10px] text-slate-500 text-center">Nenhuma categoria encontrada.</div>
-                                        )}
-                                    </SelectContent>
-                                </Select>
+                                            {categories.filter(c => !c.parent_id && c.type === (type === 'revenue' ? 'income' : 'expense')).map(parent => (
+                                                <>
+                                                    <SelectItem key={parent.id} value={parent.id} className="font-bold">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: parent.color || '#64748b' }} />
+                                                            {parent.name}
+                                                        </div>
+                                                    </SelectItem>
+                                                    {categories.filter(c => c.parent_id === parent.id).map(sub => (
+                                                        <SelectItem key={sub.id} value={sub.id} className="pl-8 text-sm text-slate-400">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sub.color || parent.color }} />
+                                                                {sub.name}
+                                                            </div>
+                                                        </SelectItem>
+                                                    ))}
+                                                </>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
                             </div>
                         </div>
 
