@@ -94,6 +94,118 @@ export async function GET(req: Request) {
 
         const activeAddons = addons?.map((a: any) => a.system_addons?.slug).filter(Boolean) || [];
 
+        // 2.6 Sincronização Automática (Self-Healing)
+        // Se a barbearia consta como Trial/Expirado no banco, mas tem pagamento recente, ativa na hora.
+        if (subscriptionStatus !== 'active') {
+            try {
+                // 1. Verificar registros financeiros locais do tipo SaaS PAGOS nos últimos 7 dias
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+                const { data: paidRecent } = await supabaseAdmin
+                    .from('finance')
+                    .select('*')
+                    .eq('tenant_id', tenantId)
+                    .eq('is_paid', true)
+                    .or('metadata->>is_saas_payment.eq.true,description.ilike.%SaaS%,description.ilike.%Assinatura%')
+                    .gte('created_at', sevenDaysAgo.toISOString())
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (paidRecent) {
+                    console.log(`[PLAN API HEALING] Detectado pagamento recente de R$ ${paidRecent.value}. Ativando tenant...`);
+                    const meta = paidRecent.metadata as any;
+                    const planSlug = meta.plan || (paidRecent.description?.toLowerCase().includes('premium') ? 'premium' : 'basic');
+                    const interval = meta.interval || 1;
+
+                    const now = new Date();
+                    const periodEnd = new Date(now);
+                    periodEnd.setMonth(periodEnd.getMonth() + interval);
+
+                    await supabaseAdmin.from('tenants').update({
+                        plan: planSlug,
+                        subscription_status: 'active',
+                        subscription_current_period_end: periodEnd.toISOString()
+                    }).eq('id', tenantId);
+
+                    subscriptionStatus = 'active';
+                    tenant.plan = planSlug;
+                } else {
+                    // 2. Se não achou pago, verifica se tem PENDENTES recentes do Asaas pra conferir no ato
+                    const { data: pendingAsaas } = await supabaseAdmin
+                        .from('finance')
+                        .select('*')
+                        .eq('tenant_id', tenantId)
+                        .eq('is_paid', false)
+                        .not('metadata->>asaas_checkout_id', 'is', null)
+                        .gte('created_at', sevenDaysAgo.toISOString())
+                        .order('created_at', { ascending: false })
+                        .limit(3);
+
+                    if (pendingAsaas && pendingAsaas.length > 0) {
+                        const { data: asaasSettings } = await supabaseAdmin
+                            .from('system_settings')
+                            .select('value')
+                            .eq('key', 'asaas_config')
+                            .single();
+
+                        const asaasKey = asaasSettings?.value?.api_key || process.env.ASAAS_API_KEY;
+                        if (asaasKey) {
+                            const AsaasClient = (await import('@/lib/asaas-client')).default;
+                            const asaas = new AsaasClient({
+                                apiKey: asaasKey,
+                                environment: (asaasSettings?.value?.environment || 'sandbox') as 'sandbox' | 'production'
+                            });
+
+                            for (const charge of pendingAsaas) {
+                                try {
+                                    const checkoutId = charge.metadata.asaas_checkout_id;
+                                    const checkout = await asaas.getCheckout(checkoutId);
+                                    const paymentId = checkout.paymentId || checkout.payment?.id || checkout.subscriptionId || (checkout.payments && checkout.payments[0]?.id);
+
+                                    if (paymentId) {
+                                        const payment = await asaas.getPayment(paymentId);
+                                        if (payment.status === 'CONFIRMED' || payment.status === 'RECEIVED') {
+                                            console.log(`[PLAN API HEALING] Asaas confirmou pagamento ${paymentId} em tempo real. Ativando...`);
+
+                                            // Atualiza fatura
+                                            await supabaseAdmin.from('finance').update({
+                                                is_paid: true,
+                                                metadata: { ...charge.metadata, asaas_status: payment.status, asaas_payment_id: paymentId, sync_type: 'plan_api_healing' }
+                                            }).eq('id', charge.id);
+
+                                            // Ativa plano
+                                            const meta = charge.metadata as any;
+                                            const planSlug = meta.plan || 'basic';
+                                            const interval = meta.interval || 1;
+                                            const now = new Date();
+                                            const periodEnd = new Date(now);
+                                            periodEnd.setMonth(periodEnd.getMonth() + interval);
+
+                                            await supabaseAdmin.from('tenants').update({
+                                                plan: planSlug,
+                                                subscription_status: 'active',
+                                                subscription_current_period_end: periodEnd.toISOString()
+                                            }).eq('id', tenantId);
+
+                                            subscriptionStatus = 'active';
+                                            tenant.plan = planSlug;
+                                            break; // Achou um pago, já ativa e encerra
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.warn(`[PLAN API HEALING] Falha ao conferir checkout ${charge.metadata.asaas_checkout_id}`);
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('[PLAN API HEALING ERROR]', err);
+            }
+        }
+
         const response = NextResponse.json({
             currentPlan: tenant.plan || 'basic',
             stripeSubscriptionId: stripeSubscriptionId,
