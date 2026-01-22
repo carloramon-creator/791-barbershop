@@ -530,7 +530,14 @@ export default function PlanPage() {
                 <>
                     {/* --- LÓGICA DE REORDENAMENTO --- */}
                     {(() => {
-                        const isTrialOrPending = currentPlan === 'trial' || isExpired || ['past_due', 'unpaid', 'pending_payment'].includes(subscriptionStatus || '');
+                        // Se estiver no trial (até 10 dias) ou pagamento pendente, mostramos planos no topo
+                        const now = new Date();
+                        const referenceDate = tenantCreatedAt ? new Date(tenantCreatedAt) : new Date();
+                        const diffTime = Math.abs(now.getTime() - referenceDate.getTime());
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        const isUnderTrialGrace = diffDays <= 10;
+
+                        const isTrialOrPending = ((currentPlan === 'trial' || isUnderTrialGrace) || isExpired || ['past_due', 'unpaid', 'pending_payment'].includes(subscriptionStatus || '')) && subscriptionStatus !== 'active';
 
                         const CurrentPlanSection = (
                             <div key="current-plan" className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

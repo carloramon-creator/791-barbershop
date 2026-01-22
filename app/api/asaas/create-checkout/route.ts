@@ -86,10 +86,24 @@ export async function POST(req: Request) {
             }
         }
 
+        // 2.3 Desconto Automático (10% na primeira assinatura/trial)
+        let firstSubscriptionDiscount = 0;
+        if (!isAddon && (tenant.plan === 'trial' || !tenant.subscription_status || tenant.subscription_status === 'trial')) {
+            firstSubscriptionDiscount = 10; // 10% de desconto automático
+            console.log('[ASAAS] Aplicando desconto automático de 10% para trial/primeira assinatura');
+        }
+
         // Calcular valor total e corrigir precisão
         let totalAmount = baseAmount * interval;
-        if (discountPercent > 0) {
-            totalAmount = totalAmount * (1 - (discountPercent / 100));
+
+        // Aplicar maior desconto (intervalo ou trial)
+        const effectiveDiscount = Math.max(discountPercent, firstSubscriptionDiscount);
+
+        if (effectiveDiscount > 0) {
+            totalAmount = totalAmount * (1 - (effectiveDiscount / 100));
+            if (effectiveDiscount === firstSubscriptionDiscount && !isAddon) {
+                itemDescription += ` (Com 10% de desconto de boas-vindas)`;
+            }
         }
 
         // 2.5 Processar Cupom (SaaS Checkout)
@@ -396,7 +410,7 @@ export async function POST(req: Request) {
                     tenant_id: tenant.id,
                     type: 'expense',
                     value: totalAmount,
-                    description: `SaaS - ${itemName}`,
+                    description: `Assinatura SaaS - ${itemName} (${interval} ${interval === 1 ? 'mês' : 'meses'})`,
                     date: new Date().toISOString().split('T')[0],
                     is_paid: false,
                     metadata: {

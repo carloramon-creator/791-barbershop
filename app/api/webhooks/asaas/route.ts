@@ -166,6 +166,7 @@ export async function POST(req: Request) {
                             plan: planSlug,
                             subscription_status: 'active',
                             subscription_current_period_end: newEndDate.toISOString(),
+                            updated_at: new Date().toISOString()
                         })
                         .eq('id', tenantId);
 

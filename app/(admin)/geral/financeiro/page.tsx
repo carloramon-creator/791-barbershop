@@ -71,6 +71,14 @@ export default function HoldingFinanceDashboard() {
     const [detailsType, setDetailsType] = useState<'revenue' | 'expense' | 'pending' | null>(null);
     const [modalFilter, setModalFilter] = useState({ search: '', period: 'month' as 'day' | 'week' | 'fortnight' | 'month' });
 
+    // Payment Dialog State
+    const [payDialog, setPayDialog] = useState<{ open: boolean, recordId: string | null, accountId: string }>({
+        open: false,
+        recordId: null,
+        accountId: ''
+    });
+    const [accounts, setAccounts] = useState<any[]>([]);
+
     useEffect(() => {
         loadData();
     }, [filter.businessUnit]);
@@ -83,11 +91,13 @@ export default function HoldingFinanceDashboard() {
     async function loadData() {
         setLoading(true);
         try {
-            // Fetch ALL records for the selected unit, we will filter by date locally for fluidity
-            const data = await Api.getSystemFinanceRecords({
-                businessUnit: filter.businessUnit
-            });
+            // Fetch ALL records and accounts in parallel
+            const [data, accountsData] = await Promise.all([
+                Api.getSystemFinanceRecords({ businessUnit: filter.businessUnit }),
+                Api.getHoldingAccounts()
+            ]);
             setAllRecords(data || []);
+            setAccounts(accountsData || []);
         } catch (e) {
             console.error('Falha ao carregar financeiro da holding:', e);
         } finally {
@@ -122,13 +132,18 @@ export default function HoldingFinanceDashboard() {
         setSelectedDate(prev => direction === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1));
     };
 
-    const handlePayBill = async (id: string) => {
-        if (!confirm('Confirmar pagamento desta conta?')) return;
+    const handlePayBill = async () => {
+        if (!payDialog.recordId || !payDialog.accountId) return;
         try {
-            await Api.updateSystemFinanceRecord(id, { status: 'paid' });
-            loadData(); // Reload to refresh lists
+            await Api.updateSystemFinanceRecord(payDialog.recordId, {
+                status: 'paid',
+                account_id: payDialog.accountId,
+                updated_at: new Date().toISOString()
+            });
+            setPayDialog({ open: false, recordId: null, accountId: '' });
+            loadData();
         } catch (e) {
-            alert('Erro ao atualizar');
+            alert('Erro ao atualizar: ' + (e as Error).message);
         }
     };
 
@@ -270,7 +285,7 @@ export default function HoldingFinanceDashboard() {
 
             {/* Details Modal */}
             <Dialog open={detailsModalOpen} onOpenChange={setDetailsModalOpen}>
-                <DialogContent className="max-w-3xl bg-slate-950 border-slate-800 max-h-[85vh] overflow-y-auto">
+                <DialogContent className="max-w-5xl bg-slate-950 border-slate-800 max-h-[85vh] overflow-y-auto">
                     <DialogHeader>
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <DialogTitle className="text-white uppercase tracking-wider text-sm font-bold flex items-center gap-2">
@@ -340,8 +355,12 @@ export default function HoldingFinanceDashboard() {
                                                 {formatCurrency(item.value)}
                                             </span>
                                             {detailsType === 'pending' && (
-                                                <Button size="sm" variant="outline" className="h-7 text-[10px] border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-400 uppercase font-bold" onClick={() => handlePayBill(item.id)}>
-                                                    <CheckCircle2 size={12} className="mr-1" /> Pagar
+                                                <Button
+                                                    size="sm"
+                                                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[9px] uppercase h-7 px-3"
+                                                    onClick={() => setPayDialog({ open: true, recordId: item.id, accountId: accounts[0]?.id || '' })}
+                                                >
+                                                    <CheckCircle2 size={12} className="mr-1.5" /> Pagar
                                                 </Button>
                                             )}
                                             <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-600 hover:text-red-500 hover:bg-red-500/10" onClick={() => handleDeleteClick(item)}>
@@ -691,7 +710,13 @@ export default function HoldingFinanceDashboard() {
                                                 <td className="px-6 py-4 text-right">
                                                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         {record.status === 'pending' && (
-                                                            <Button size="icon" variant="ghost" className="h-6 w-6 text-emerald-500 hover:bg-emerald-500/10" title="Marcar como Pago" onClick={() => handlePayBill(record.id)}>
+                                                            <Button
+                                                                size="icon"
+                                                                variant="ghost"
+                                                                className="h-6 w-6 text-emerald-500 hover:bg-emerald-500/10"
+                                                                title="Marcar como Pago"
+                                                                onClick={() => setPayDialog({ open: true, recordId: record.id, accountId: accounts[0]?.id || '' })}
+                                                            >
                                                                 <CheckCircle2 size={12} />
                                                             </Button>
                                                         )}
@@ -707,6 +732,49 @@ export default function HoldingFinanceDashboard() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* Pay Confirmation Dialog */}
+                    <Dialog open={payDialog.open} onOpenChange={(v) => !v && setPayDialog({ open: false, recordId: null, accountId: '' })}>
+                        <DialogContent className="max-w-md bg-slate-900 border-slate-800 text-white">
+                            <DialogHeader>
+                                <DialogTitle className="uppercase tracking-tight font-black text-sm flex items-center gap-2">
+                                    <Wallet className="text-emerald-500" size={18} /> Confirmar Pagamento
+                                </DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Selecione a Conta Origem</label>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {accounts.map(acc => (
+                                            <button
+                                                key={acc.id}
+                                                onClick={() => setPayDialog(prev => ({ ...prev, accountId: acc.id }))}
+                                                className={cn(
+                                                    "flex items-center justify-between p-3 rounded-lg border transition-all text-left",
+                                                    payDialog.accountId === acc.id
+                                                        ? "bg-blue-600/10 border-blue-600 text-white"
+                                                        : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: acc.color || '#3b82f6' }} />
+                                                    <span className="text-xs font-bold uppercase">{acc.name}</span>
+                                                </div>
+                                                <span className="text-[10px] font-mono opacity-50">SALDO DISP.</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <Button
+                                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase tracking-widest text-xs py-6"
+                                    disabled={!payDialog.accountId}
+                                    onClick={handlePayBill}
+                                >
+                                    Confirmar Pagamento
+                                </Button>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
                 </TabsContent>
 
                 {/* CONFIGURATION TAB (New) */}

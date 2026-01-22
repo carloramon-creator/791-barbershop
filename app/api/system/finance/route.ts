@@ -122,3 +122,34 @@ export async function DELETE(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 400 });
     }
 }
+export async function PATCH(req: Request) {
+    try {
+        const { isSystemAdmin } = await getCurrentUserAndTenant();
+        if (!isSystemAdmin) {
+            return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+        }
+
+        const { searchParams } = new URL(req.url);
+        const id = searchParams.get('id');
+        if (!id) throw new Error('ID não informado');
+
+        const payload = await req.json();
+
+        const { data, error } = await supabaseAdmin
+            .from('system_finance_records')
+            .update({
+                ...payload,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        return NextResponse.json(data);
+    } catch (error: any) {
+        console.error('[HOLDING FINANCE PATCH] Error:', error.message);
+        return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+}

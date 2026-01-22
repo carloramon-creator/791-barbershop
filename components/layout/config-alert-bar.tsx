@@ -12,7 +12,7 @@ export function ExpirationAlert() {
     const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
 
     useEffect(() => {
-        if (tenant?.subscription_current_period_end) {
+        if (tenant?.subscription_current_period_end && tenant?.subscription_status !== 'active') {
             const end = new Date(tenant.subscription_current_period_end);
             const now = new Date();
             const diffTime = end.getTime() - now.getTime();
