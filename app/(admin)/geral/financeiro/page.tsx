@@ -52,6 +52,7 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 import { NewTransactionDialog } from '@/components/admin/finance/NewTransactionDialog';
 import { AccountsManager } from '@/components/admin/finance/AccountsManager';
 import { CategoriesManager } from '@/components/admin/finance/CategoriesManager';
+import { FinancialReports } from '@/components/admin/finance/FinancialReports';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function HoldingFinanceDashboard() {
