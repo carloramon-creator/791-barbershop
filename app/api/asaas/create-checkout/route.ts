@@ -351,10 +351,10 @@ export async function POST(req: Request) {
                 customer = await asaas.createCustomer(customerData);
             }
 
-            // Truncar nome para 60 chars (Asaas Checkout V3 permite mais e isso ajuda no e-mail)
+            // Truncar nome para 30 chars (Limite rígido do Asaas para items[].name no Checkout V3)
             // IMPORTANTE: O Asaas usa o 'name' do item como título principal no e-mail de confirmação.
-            const fullItemName = itemName + (itemDescription ? ` - ${itemDescription}` : '');
-            const safeItemName = fullItemName.length > 64 ? fullItemName.substring(0, 61) + '...' : fullItemName;
+            const fullItemName = itemName; // Evitar concatenar descrição aqui para não estourar os 30 chars
+            const safeItemName = fullItemName.length > 30 ? fullItemName.substring(0, 27) + '...' : fullItemName;
 
             let chargeTypes = ['DETACHED'];
             let subscriptionConfig = undefined;
