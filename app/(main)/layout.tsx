@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-provider';
 import { Sidebar } from '@/components/layout/sidebar';
 import { ExpirationAlert } from '@/components/layout/config-alert-bar';
+import { PendingConfigAlert } from '@/components/layout/pending-config-alert';
 import { Topbar } from '@/components/layout/topbar';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -88,6 +89,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <div className="flex-1 flex flex-col overflow-hidden">
                 <Topbar />
                 <ExpirationAlert />
+                <PendingConfigAlert />
                 <main className="flex-1 overflow-y-auto p-2 md:p-4 light:bg-white text-slate-50 light:text-slate-900 custom-scrollbar transition-colors">
                     <div className="w-full max-w-none">
                         {content}

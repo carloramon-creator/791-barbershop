@@ -28,6 +28,11 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
     const [status, setStatus] = useState<'paid' | 'pending'>('paid');
     const [businessUnit, setBusinessUnit] = useState('holding');
 
+    // Recurrence State
+    const [isRecurrent, setIsRecurrent] = useState(false);
+    const [recurrenceInterval, setRecurrenceInterval] = useState<'monthly' | 'weekly' | 'yearly'>('monthly');
+    const [recurrenceCount, setRecurrenceCount] = useState('12');
+
     const handleSubmit = async () => {
         if (!description || !value || !date) return;
 
@@ -37,12 +42,11 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
             // Clean currency mask to number
             const numberValue = parseFloat(value.replace('R$', '').replace('.', '').replace(',', '.').trim());
 
-            await Api.createSystemFinanceRecord({
+            const basePayload = {
                 type,
                 description,
                 value: numberValue,
                 category: category || (type === 'expense' ? 'Despesa Operacional' : 'Receita Extra'),
-                date,
                 status,
                 business_unit: businessUnit,
                 payment_method: 'manual',
@@ -50,7 +54,42 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
                     source: 'manual_entry',
                     created_via: 'admin_dashboard'
                 }
-            });
+            };
+
+            // Criar lançamentos (único ou recorrente)
+            const promises = [];
+            const count = isRecurrent ? parseInt(recurrenceCount) : 1;
+            const startDate = new Date(date);
+
+            for (let i = 0; i < count; i++) {
+                const currentDate = new Date(startDate);
+
+                if (i > 0) { // Incrementar data para as próximas parcelas
+                    if (recurrenceInterval === 'monthly') currentDate.setMonth(currentDate.getMonth() + i);
+                    if (recurrenceInterval === 'weekly') currentDate.setDate(currentDate.getDate() + (i * 7));
+                    if (recurrenceInterval === 'yearly') currentDate.setFullYear(currentDate.getFullYear() + i);
+
+                    // Se for recorrente, apenas a primeira pode ser 'paid' se o usuário selecionou 'paid'. 
+                    // As futuras geralmente nascem como 'pending', a menos que seja um lançamento retroativo pago.
+                    // Por precaução, vamos manter o status escolhido, mas adicionar no metadata que é parcela X.
+                }
+
+                promises.push(Api.createSystemFinanceRecord({
+                    ...basePayload,
+                    date: currentDate.toISOString().split('T')[0],
+                    description: isRecurrent ? `${description} (${i + 1}/${count})` : description,
+                    metadata: {
+                        ...basePayload.metadata,
+                        recurrence: isRecurrent ? {
+                            current: i + 1,
+                            total: count,
+                            interval: recurrenceInterval
+                        } : null
+                    }
+                }));
+            }
+
+            await Promise.all(promises);
 
             onSuccess();
             onOpenChange(false);
@@ -60,6 +99,7 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
             setValue('');
             setCategory('');
             setStatus('paid');
+            setIsRecurrent(false);
 
         } catch (error) {
             console.error(error);
@@ -75,9 +115,9 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md bg-slate-900 border-slate-800 p-0 overflow-hidden shadow-2xl">
+            <DialogContent className="max-w-md bg-slate-900 border-slate-800 p-0 overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto">
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-slate-800 bg-slate-950 flex items-center justify-between">
+                <div className="px-6 py-4 border-b border-slate-800 bg-slate-950 flex items-center justify-between sticky top-0 z-10">
                     <div>
                         <h2 className="text-lg font-bold text-slate-100 uppercase tracking-tight">Novo Lançamento</h2>
                         <p className="text-[10px] text-slate-500 font-bold uppercase">Financeiro Holding</p>
@@ -122,7 +162,7 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
                             <Input
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
-                                placeholder={type === 'expense' ? "Ex: Servidor AWS, Anúncio Instagram..." : "Ex: Consultoria Técnica..."}
+                                placeholder={type === 'expense' ? "Ex: Servidor AWS..." : "Ex: Consultoria..."}
                                 className="bg-slate-950 border-slate-800 text-white"
                             />
                         </div>
@@ -142,7 +182,7 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500 uppercase">Data</Label>
+                                <Label className="text-xs font-bold text-slate-500 uppercase">Data Inicial</Label>
                                 <div className="relative">
                                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                     <Input
@@ -171,17 +211,63 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500 uppercase">Status</Label>
+                                <Label className="text-xs font-bold text-slate-500 uppercase">Status Inicial</Label>
                                 <Select value={status} onValueChange={(v: any) => setStatus(v)}>
                                     <SelectTrigger className="bg-slate-950 border-slate-800 text-white">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                        <SelectItem value="paid">Pago / Recebido</SelectItem>
-                                        <SelectItem value="pending">Pendente / A Pagar</SelectItem>
+                                        <SelectItem value="paid">Pago / Efetuado</SelectItem>
+                                        <SelectItem value="pending">Pendente / Agendado</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
+                        </div>
+
+                        {/* Recorrência */}
+                        <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/50 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs font-bold text-slate-400 uppercase flex items-center gap-2">
+                                    <TrendingUp size={14} className="text-blue-500" />
+                                    Repetir Lançamento?
+                                </Label>
+                                <div
+                                    className={cn("w-10 h-5 rounded-full relative cursor-pointer transition-colors", isRecurrent ? "bg-blue-600" : "bg-slate-700")}
+                                    onClick={() => setIsRecurrent(!isRecurrent)}
+                                >
+                                    <div className={cn("absolute top-1 w-3 h-3 rounded-full bg-white transition-all", isRecurrent ? "left-6" : "left-1")} />
+                                </div>
+                            </div>
+
+                            {isRecurrent && (
+                                <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2">
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-bold text-slate-500 uppercase">Frequência</Label>
+                                        <Select value={recurrenceInterval} onValueChange={(v: any) => setRecurrenceInterval(v)}>
+                                            <SelectTrigger className="h-9 bg-slate-900 border-slate-700 text-white text-xs">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                                <SelectItem value="monthly">Mensal</SelectItem>
+                                                <SelectItem value="weekly">Semanal</SelectItem>
+                                                <SelectItem value="yearly">Anual</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-bold text-slate-500 uppercase">Repetições (Vezes)</Label>
+                                        <Input
+                                            type="number"
+                                            value={recurrenceCount}
+                                            onChange={(e) => setRecurrenceCount(e.target.value)}
+                                            className="h-9 bg-slate-900 border-slate-700 text-white text-xs"
+                                        />
+                                    </div>
+                                    <p className="col-span-2 text-[10px] text-blue-400/80 text-center font-medium">
+                                        Serão criados {recurrenceCount} lançamentos futuros automaticamente.
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
                         <div className="space-y-2">

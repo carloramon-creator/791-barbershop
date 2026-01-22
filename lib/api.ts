@@ -190,6 +190,8 @@ export const Api = {
         apiFetch('/api/system/finance', { method: 'POST', body: JSON.stringify(payload) }),
     deleteSystemFinanceRecord: (id: string) =>
         apiFetch(`/api/system/finance?id=${id}`, { method: 'DELETE' }),
+    updateSystemFinanceRecord: (id: string, payload: Record<string, unknown>) =>
+        apiFetch(`/api/system/finance?id=${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
 
     getSystemPlans: () => apiFetch('/api/system/plans'),
     createSystemPlan: (payload: Record<string, unknown>) => apiFetch('/api/system/plans', { method: 'POST', body: JSON.stringify(payload) }),
