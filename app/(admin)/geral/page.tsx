@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { RecentActivityFeed } from '@/components/admin/dashboard/RecentActivityFeed';
 
 export default function AdminDashboard() {
     const [tenants, setTenants] = useState<any[]>([]);
@@ -181,38 +182,7 @@ export default function AdminDashboard() {
                     </CardContent>
                 </Card>
 
-                <Card className="bg-slate-900/60 border-slate-800 shadow-2xl overflow-hidden relative">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500" />
-                    <CardHeader className="p-5 border-b border-white/5">
-                        <CardTitle className="text-sm font-black text-white uppercase tracking-tighter leading-none">Status de Contas</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6">
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-end">
-                                <div className="space-y-0.5">
-                                    <p className="text-xl font-black text-emerald-500 leading-none">{statsData?.subscriptions?.active || 0}</p>
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">Ativas</p>
-                                </div>
-                                <div className="space-y-0.5 text-right">
-                                    <p className="text-xl font-black text-red-500 leading-none">{statsData?.subscriptions?.inactive || 0}</p>
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">Inativas</p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-[8px] font-black uppercase text-slate-500">
-                                    <span>Saúde</span>
-                                    <span className="text-emerald-500">{Math.round(((statsData?.subscriptions?.active || 0) / (statsData?.subscriptions?.active + statsData?.subscriptions?.inactive || 1)) * 100)}%</span>
-                                </div>
-                                <div className="w-full h-1.5 bg-slate-950 rounded-full flex overflow-hidden ring-1 ring-white/5">
-                                    <div className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.2)] transition-all duration-1000" style={{ width: `${(statsData?.subscriptions?.active / (statsData?.subscriptions?.active + statsData?.subscriptions?.inactive + statsData?.subscriptions?.trials || 1)) * 100}%` }} />
-                                    <div className="h-full bg-blue-500 opacity-60" style={{ width: `${(statsData?.subscriptions?.trials / (statsData?.subscriptions?.active + statsData?.subscriptions?.inactive + statsData?.subscriptions?.trials || 1)) * 100}%` }} />
-                                    <div className="h-full bg-red-500 opacity-40" style={{ width: `${(statsData?.subscriptions?.inactive / (statsData?.subscriptions?.active + statsData?.subscriptions?.inactive + statsData?.subscriptions?.trials || 1)) * 100}%` }} />
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <RecentActivityFeed />
             </div>
 
             {/* Performance Ranking Preview */}
