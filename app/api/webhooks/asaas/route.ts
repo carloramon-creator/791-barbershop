@@ -53,10 +53,21 @@ export async function POST(req: Request) {
         // 3. Fallback: Tentar pelo Subscription ID nos metadados
         if (!financeRecord && payment.subscription) {
             console.log('[ASAAS WEBHOOK] 🔍 Buscando por Subscription ID nos metadados:', payment.subscription);
-            const { data, error } = await supabaseAdmin
+            const { data } = await supabaseAdmin
                 .from('finance')
                 .select('*')
                 .eq('metadata->>asaas_subscription_id', payment.subscription)
+                .maybeSingle();
+            financeRecord = data;
+        }
+
+        // 3.5 Fallback: Tentar pelo Checkout ID ou Payment ID (em alguns fluxos Asaas o payment.id é o checkout session id)
+        if (!financeRecord) {
+            console.log('[ASAAS WEBHOOK] 🔍 Buscando por Checkout ID ou Payment ID:', payment.id);
+            const { data } = await supabaseAdmin
+                .from('finance')
+                .select('*')
+                .or(`metadata->>asaas_checkout_id.eq.${payment.id},metadata->>asaas_payment_id.eq.${payment.id}`)
                 .maybeSingle();
             financeRecord = data;
         }

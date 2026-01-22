@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { InterAPIV3 } from '@/lib/inter-api-v3';
+import AsaasClient from '@/lib/asaas-client';
 
 export async function OPTIONS(req: Request) {
     return addCorsHeaders(req, new NextResponse(null, { status: 200 }));
@@ -21,7 +22,7 @@ export async function GET(req: Request) {
         const { data: charge } = await supabaseAdmin
             .from('finance')
             .select('*')
-            .eq('metadata->>seu_numero', seuNumero)
+            .or(`metadata->>seu_numero.eq.${seuNumero},metadata->>asaas_checkout_id.eq.${seuNumero}`)
             .maybeSingle();
 
         if (!charge) return addCorsHeaders(req, NextResponse.json({ ready: false }));
@@ -30,7 +31,71 @@ export async function GET(req: Request) {
         if (charge.metadata?.method === 'pix_inter' && charge.metadata?.pix_payload) isReady = true;
 
         if (!isReady) {
-            // 1. Configurar Inter - Buscar do DB primeiro
+            // --- Lógica ASAAS ---
+            const asaasCheckoutId = charge.metadata?.asaas_checkout_id;
+            if (asaasCheckoutId) {
+                const { data: asaasSettings } = await supabaseAdmin
+                    .from('system_settings')
+                    .select('value')
+                    .eq('key', 'asaas_config')
+                    .single();
+
+                const asaasConfig = asaasSettings?.value;
+                const asaasKey = asaasConfig?.api_key || process.env.ASAAS_API_KEY;
+
+                if (asaasKey) {
+                    try {
+                        const asaas = new AsaasClient({
+                            apiKey: asaasKey,
+                            environment: (asaasConfig?.environment || 'sandbox') as 'sandbox' | 'production'
+                        });
+
+                        // 1. Descobrir ID do pagamento real
+                        const checkout = await asaas.getCheckout(asaasCheckoutId);
+                        const paymentId = checkout.paymentId || checkout.payment?.id || checkout.subscriptionId;
+
+                        if (paymentId) {
+                            const payment = await asaas.getPayment(paymentId);
+                            const isPaid = payment.status === 'CONFIRMED' || payment.status === 'RECEIVED';
+
+                            if (isPaid && !charge.is_paid) {
+                                // Sincronizar
+                                await supabaseAdmin.from('finance').update({
+                                    is_paid: true,
+                                    metadata: {
+                                        ...charge.metadata,
+                                        payment_confirmed_at: new Date().toISOString(),
+                                        asaas_status: payment.status,
+                                        sync_type: 'manual_check_pending'
+                                    }
+                                }).eq('id', charge.id);
+
+                                // Ativar plano
+                                const planSlug = charge.metadata.plan;
+                                const interval = charge.metadata.interval || 1;
+                                if (planSlug) {
+                                    const now = new Date();
+                                    const periodEnd = new Date(now);
+                                    periodEnd.setMonth(periodEnd.getMonth() + interval);
+                                    await supabaseAdmin.from('tenants').update({
+                                        plan: planSlug,
+                                        subscription_status: 'active',
+                                        subscription_current_period_end: periodEnd.toISOString()
+                                    }).eq('id', charge.tenant_id);
+                                }
+                                charge.is_paid = true;
+                            }
+                            isReady = true;
+                            // Prepara o payload para o retorno
+                            charge.metadata = { ...charge.metadata, asaas_payment_id: paymentId, asaas_status: payment.status };
+                        }
+                    } catch (e) {
+                        console.error('[POLLING ASAAS ERROR]', e);
+                    }
+                }
+            }
+
+            // --- Lógica INTER ---
             const { data: settingsData } = await supabaseAdmin
                 .from('system_settings')
                 .select('value')
