@@ -625,9 +625,9 @@ export default function PlanPage() {
                                                 const currentPlanData = dynamicPlans.find(p => p.slug === currentPlan);
                                                 if (!currentPlanData) return true;
 
-                                                const addonName = addon.name.toLowerCase().replace('módulo ', '').trim();
+                                                const addonName = (addon.name || '').toLowerCase().replace('módulo ', '').trim();
 
-                                                const features = (currentPlanData.features || []).map((f: any) => String(f).toLowerCase());
+                                                const features = (currentPlanData.features || []).map((f: any) => String(f || '').toLowerCase());
 
                                                 const hasFeature = features.some((f: string) => {
                                                     // Ignorar features negativas (ex: "Sem Estoque")
