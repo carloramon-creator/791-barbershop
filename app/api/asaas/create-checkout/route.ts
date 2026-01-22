@@ -393,18 +393,6 @@ export async function POST(req: Request) {
                 observations: itemDescription, // Observations aparece em mais lugares no dashboard
                 externalReference: externalReference,
                 minutesToExpire: 60, // Expira em 1 hora se não pago
-                customerData: {
-                    name: customerData.name,
-                    cpfCnpj: customerData.cpfCnpj,
-                    email: customerData.email,
-                    phone: customerData.phone,
-                    mobilePhone: customerData.mobilePhone,
-                    postalCode: customerData.postalCode,
-                    address: customerData.address,
-                    addressNumber: customerData.addressNumber,
-                    complement: customerData.complement,
-                    province: customerData.province,
-                },
                 callback: {
                     successUrl: `${baseUrl}/asaas/checkout/success`,
                     cancelUrl: `${baseUrl}/asaas/checkout/cancel`,
