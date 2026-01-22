@@ -103,6 +103,7 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
             const promises = [];
             const count = isRecurrent ? parseInt(recurrenceCount) : 1;
             const startDate = new Date(date);
+            const recurrenceGroupId = isRecurrent ? crypto.randomUUID() : null;
 
             for (let i = 0; i < count; i++) {
                 const currentDate = new Date(startDate);
@@ -120,6 +121,7 @@ export function NewTransactionDialog({ open, onOpenChange, onSuccess }: NewTrans
                     metadata: {
                         ...basePayload.metadata,
                         recurrence: isRecurrent ? {
+                            id: recurrenceGroupId,
                             current: i + 1,
                             total: count,
                             interval: recurrenceInterval
