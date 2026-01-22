@@ -124,6 +124,8 @@ export async function POST(req: Request) {
         switch (event) {
             case 'PAYMENT_CONFIRMED':
             case 'PAYMENT_RECEIVED':
+            case 'PAYMENT_AUTHORIZED':
+            case 'CHECKOUT_PAID':
             case 'SUBSCRIPTION_CREATED':
                 console.log(`[ASAAS WEBHOOK] Evento ${event} recebido! Verificando ativação...`);
 
@@ -132,8 +134,17 @@ export async function POST(req: Request) {
                 const addonSlug = metadata.addon;
                 const interval = metadata.interval || 1;
 
-                // Se for confirmação de pagamento real
-                if (event !== 'SUBSCRIPTION_CREATED' || (payment.status === 'CONFIRMED' || payment.status === 'RECEIVED')) {
+                // Idempotência: Se já está pago e não é um evento de assinatura, podemos pular a ativação
+                // mas ainda é bom garantir que os metadados estejam atualizados
+                if (financeRecord.is_paid && event !== 'SUBSCRIPTION_CREATED') {
+                    console.log('[ASAAS WEBHOOK] ⏭️ Registro já marcado como pago. Pulando ativação redundante.');
+                    return NextResponse.json({ received: true, message: 'Already processed' });
+                }
+
+                // Se for confirmação de pagamento real ou autorização/checkout pago
+                const isSuccessEvent = ['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED', 'PAYMENT_AUTHORIZED', 'CHECKOUT_PAID'].includes(event);
+
+                if (isSuccessEvent) {
                     // 1. Marcar registro financeiro como pago
                     await supabaseAdmin
                         .from('finance')
@@ -142,8 +153,10 @@ export async function POST(req: Request) {
                             metadata: {
                                 ...metadata,
                                 payment_confirmed_at: new Date().toISOString(),
+                                last_event: event,
                                 asaas_status: payment.status,
-                                asaas_payment_id: payment.id
+                                asaas_payment_id: payment.id,
+                                asaas_event_id: body.id // Armazenar o ID do evento para conferência
                             }
                         })
                         .eq('id', financeRecord.id);

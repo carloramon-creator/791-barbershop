@@ -392,13 +392,26 @@ export async function POST(req: Request) {
                 description: itemDescription,
                 observations: itemDescription, // Observations aparece em mais lugares no dashboard
                 externalReference: externalReference,
+                minutesToExpire: 60, // Expira em 1 hora se não pago
+                customerData: {
+                    name: customerData.name,
+                    cpfCnpj: customerData.cpfCnpj,
+                    email: customerData.email,
+                    phone: customerData.phone,
+                    mobilePhone: customerData.mobilePhone,
+                    postalCode: customerData.postalCode,
+                    address: customerData.address,
+                    addressNumber: customerData.addressNumber,
+                    complement: customerData.complement,
+                    province: customerData.province,
+                },
                 callback: {
                     successUrl: `${baseUrl}/asaas/checkout/success`,
                     cancelUrl: `${baseUrl}/asaas/checkout/cancel`,
                     expiredUrl: `${baseUrl}/asaas/checkout/expired`
                 },
                 items: [{
-                    name: safeItemName, // O Asaas usa esse nome nos e-mails
+                    name: safeItemName, // O Asaas usa esse nome nos e-mails (Max 30 chars)
                     description: itemDescription,
                     quantity: 1,
                     value: totalAmount
