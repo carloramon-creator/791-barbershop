@@ -20,6 +20,7 @@ import {
     Building2,
     CheckCircle2,
     Clock,
+    Search,
     ChevronLeft,
     ChevronRight,
     X,
@@ -68,6 +69,7 @@ export default function HoldingFinanceDashboard() {
     // Details Modal State
     const [detailsModalOpen, setDetailsModalOpen] = useState(false);
     const [detailsType, setDetailsType] = useState<'revenue' | 'expense' | 'pending' | null>(null);
+    const [modalFilter, setModalFilter] = useState({ search: '', period: 'month' as 'day' | 'week' | 'fortnight' | 'month' });
 
     useEffect(() => {
         loadData();
@@ -157,6 +159,7 @@ export default function HoldingFinanceDashboard() {
 
     const openDetails = (type: 'revenue' | 'expense' | 'pending') => {
         setDetailsType(type);
+        setModalFilter({ search: '', period: 'month' });
         setDetailsModalOpen(true);
     };
 
@@ -194,13 +197,56 @@ export default function HoldingFinanceDashboard() {
         { name: 'Holding / Freelance', value: records.filter(r => r.business_unit === 'holding' && r.type === 'revenue').reduce((acc, c) => acc + Number(c.value), 0) },
     ].filter(d => d.value > 0);
 
-    // Filered List for Modal
+    // Filtered List for Modal
     const modalList = (() => {
         if (!detailsType) return [];
-        if (detailsType === 'revenue') return records.filter(r => r.type === 'revenue' && r.status === 'paid');
-        if (detailsType === 'expense') return records.filter(r => r.type === 'expense' && r.status === 'paid');
-        if (detailsType === 'pending') return records.filter(r => r.type === 'expense' && r.status === 'pending').sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        return [];
+
+        let list = [];
+        if (detailsType === 'revenue') list = records.filter(r => r.type === 'revenue' && r.status === 'paid');
+        else if (detailsType === 'expense') list = records.filter(r => r.type === 'expense' && r.status === 'paid');
+        else if (detailsType === 'pending') list = records.filter(r => r.type === 'expense' && r.status === 'pending');
+
+        // Apply Smart Search
+        if (modalFilter.search) {
+            const s = modalFilter.search.toLowerCase();
+            list = list.filter(r =>
+                r.description?.toLowerCase().includes(s) ||
+                r.category_name?.toLowerCase().includes(s) ||
+                String(r.value).includes(s)
+            );
+        }
+
+        // Apply Period (Day, Week, Fortnight)
+        if (modalFilter.period !== 'month') {
+            const today = format(selectedDate, 'yyyy-MM-dd');
+
+            if (modalFilter.period === 'day') {
+                list = list.filter(r => r.date.substring(0, 10) === today);
+            } else if (modalFilter.period === 'week') {
+                const sDate = parseISO(today);
+                list = list.filter(r => {
+                    const rDate = parseISO(r.date.substring(0, 10));
+                    return isWithinInterval(rDate, {
+                        start: new Date(sDate.getFullYear(), sDate.getMonth(), sDate.getDate() - sDate.getDay()),
+                        end: new Date(sDate.getFullYear(), sDate.getMonth(), sDate.getDate() + (6 - sDate.getDay()))
+                    });
+                });
+            } else if (modalFilter.period === 'fortnight') {
+                const dayOfMonth = selectedDate.getDate();
+                const isFirstFortnight = dayOfMonth <= 15;
+                const startDay = isFirstFortnight ? 1 : 16;
+                const endDay = isFirstFortnight ? 15 : endOfMonth(selectedDate).getDate();
+
+                list = list.filter(r => {
+                    const d = new Date(r.date).getDate();
+                    return d >= startDay && d <= endDay;
+                });
+            }
+        }
+
+        if (detailsType === 'pending') list.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        return list;
     })();
 
     const modalTitle = detailsType === 'revenue' ? 'Receitas Recebidas' : detailsType === 'expense' ? 'Despesas Pagas' : 'Contas a Pagar (Pendentes)';
