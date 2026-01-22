@@ -149,8 +149,7 @@ export async function GET(req: Request) {
         }
 
         // 3. Buscar faturas atualizadas
-        // Busca APENAS pagamentos SaaS (assinaturas/add-ons), NÃO transações da barbearia
-        // Critério: deve ter metadata específica de SaaS OU descrição contendo palavras-chave SaaS
+        // Busca APENAS pagamentos SaaS...
         const { data: invoices, error } = await supabaseAdmin
             .from('finance')
             .select('*')
@@ -160,6 +159,71 @@ export async function GET(req: Request) {
             .order('created_at', { ascending: false });
 
         if (error) throw error;
+
+        // 4. ASAAS HEALING: Se houver faturas PENDENTES, tenta sincronizar uma delas em tempo real (Throttled)
+        const pendingAsaas = (invoices || []).filter(inv => !inv.is_paid && inv.metadata?.asaas_checkout_id).slice(0, 2);
+        if (pendingAsaas.length > 0) {
+            try {
+                const { data: asaasSettings } = await supabaseAdmin
+                    .from('system_settings')
+                    .select('value')
+                    .eq('key', 'asaas_config')
+                    .single();
+
+                const asaasConfig = asaasSettings?.value;
+                const asaasKey = asaasConfig?.api_key || process.env.ASAAS_API_KEY;
+
+                if (asaasKey) {
+                    const AsaasClient = (await import('@/lib/asaas-client')).default;
+                    const asaas = new AsaasClient({
+                        apiKey: asaasKey,
+                        environment: (asaasConfig?.environment || 'sandbox') as 'sandbox' | 'production'
+                    });
+
+                    for (const inv of pendingAsaas) {
+                        try {
+                            const checkout = await asaas.getCheckout(inv.metadata.asaas_checkout_id);
+                            const paymentId = checkout.paymentId || checkout.payment?.id || checkout.subscriptionId;
+
+                            if (paymentId) {
+                                const payment = await asaas.getPayment(paymentId);
+                                if (payment.status === 'CONFIRMED' || payment.status === 'RECEIVED') {
+                                    console.log(`[INVOICES HEALING] Sincronizando ${inv.id} via polling em tempo real...`);
+
+                                    // Marcar como pago
+                                    await supabaseAdmin.from('finance').update({
+                                        is_paid: true,
+                                        metadata: { ...inv.metadata, asaas_status: payment.status, asaas_payment_id: paymentId, sync_type: 'invoice_list_healing' }
+                                    }).eq('id', inv.id);
+
+                                    // Ativar plano se necessário (redundância de segurança)
+                                    const meta = inv.metadata as any;
+                                    const planSlug = meta.plan;
+                                    const interval = meta.interval || 1;
+                                    if (planSlug) {
+                                        const now = new Date();
+                                        const periodEnd = new Date(now);
+                                        periodEnd.setMonth(periodEnd.getMonth() + interval);
+                                        await supabaseAdmin.from('tenants').update({
+                                            plan: planSlug,
+                                            subscription_status: 'active',
+                                            subscription_current_period_end: periodEnd.toISOString()
+                                        }).eq('id', tenant.id);
+                                    }
+
+                                    // Atualiza o objeto na lista local para o usuário já ver como PAGO
+                                    inv.is_paid = true;
+                                }
+                            }
+                        } catch (e) {
+                            console.warn(`[INVOICES HEALING] Falha ao conferir checkout ${inv.metadata.asaas_checkout_id}`);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('[INVOICES HEALING ERROR]', e);
+            }
+        }
 
         console.log(`[INVOICES] Finalizado em ${Date.now() - startTime}ms. Encontradas: ${invoices?.length || 0}`);
         return addCorsHeaders(req, NextResponse.json({ invoices: invoices || [] }));
