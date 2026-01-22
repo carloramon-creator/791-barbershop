@@ -64,36 +64,49 @@ export async function POST(req: Request) {
             }
         }
 
-        // Estratégia C: Pelo CPF e Valor (Última instância - Auto-Cura Extrema)
-        if (!financeRecord && payment.customer) {
-            console.log('[ASAAS WEBHOOK 2.0] 🔍 Tentando Auto-Cura por Cliente/Valor...');
-            // Buscar CPF na API do Asaas primeiro
+        // Estratégia C: Pelo Customer ID (quando payload é minimalista)
+        if (!financeRecord && (payment?.customer || body.customer)) {
+            const customerId = payment?.customer || body.customer;
+            console.log('[ASAAS WEBHOOK 2.0] 🔍 Tentando buscar por Customer ID (payload minimalista):', customerId);
+
+            // Buscar informações do cliente no Asaas
             const { data: settings } = await supabaseAdmin.from('system_settings').select('value').eq('key', 'asaas_config').single();
             const asaas = new AsaasClient({ apiKey: settings?.value?.api_key || process.env.ASAAS_API_KEY as string });
-            const asaasCustomer = await asaas.getCustomer(payment.customer);
-            const cpfCnpj = asaasCustomer.cpfCnpj;
 
-            if (cpfCnpj) {
-                const { data: tenantByDoc } = await supabaseAdmin
-                    .from('tenants')
-                    .select('id, name')
-                    .or(`cnpj.eq.${cpfCnpj},cpf.eq.${cpfCnpj},document.eq.${cpfCnpj}`)
-                    .maybeSingle();
+            try {
+                const asaasCustomer = await asaas.getCustomer(customerId);
+                const cpfCnpj = asaasCustomer.cpfCnpj;
 
-                if (tenantByDoc) {
-                    console.log('[ASAAS WEBHOOK 2.0] ✅ Auto-Cura funcional! Tenant encontrado pelo documento:', tenantByDoc.name);
-                    // Criar registro de finance se não existir (Opcional, mas aqui vamos apenas vincular ao ID)
-                    const { data: recentFinance } = await supabaseAdmin
-                        .from('finance')
-                        .select('*')
-                        .eq('tenant_id', tenantByDoc.id)
-                        .eq('is_paid', false)
-                        .order('created_at', { ascending: false })
-                        .limit(1)
+                if (cpfCnpj) {
+                    // Buscar tenant pelo CPF/CNPJ
+                    const { data: tenantByDoc } = await supabaseAdmin
+                        .from('tenants')
+                        .select('id, name')
+                        .or(`cnpj.eq.${cpfCnpj},cpf.eq.${cpfCnpj},document.eq.${cpfCnpj}`)
                         .maybeSingle();
 
-                    if (recentFinance) financeRecord = { ...recentFinance, tenants: tenantByDoc };
+                    if (tenantByDoc) {
+                        console.log('[ASAAS WEBHOOK 2.0] ✅ Tenant encontrado pelo documento:', tenantByDoc.name);
+
+                        // Buscar a ÚLTIMA fatura pendente deste tenant
+                        const { data: recentFinance } = await supabaseAdmin
+                            .from('finance')
+                            .select('*')
+                            .eq('tenant_id', tenantByDoc.id)
+                            .eq('is_paid', false)
+                            .eq('metadata->>is_saas_payment', 'true')
+                            .order('created_at', { ascending: false })
+                            .limit(1)
+                            .maybeSingle();
+
+                        if (recentFinance) {
+                            console.log('[ASAAS WEBHOOK 2.0] ✅ Fatura pendente encontrada:', recentFinance.id);
+                            financeRecord = { ...recentFinance, tenants: tenantByDoc };
+                        }
+                    }
                 }
+            } catch (err) {
+                console.log('[ASAAS WEBHOOK 2.0] Erro ao buscar customer no Asaas:', err);
             }
         }
 
