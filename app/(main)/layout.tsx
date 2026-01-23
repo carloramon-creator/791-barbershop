@@ -102,8 +102,16 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <Sidebar />
             <div className="flex-1 flex flex-col overflow-hidden">
                 <Topbar />
-                <ExpirationAlert />
-                <PendingConfigAlert />
+                {(() => {
+                    // Priorizar alerta de configuração incompleta
+                    const isConfigIncomplete = !tenant?.cep || !tenant?.street || !tenant?.number || !tenant?.neighborhood || !tenant?.city || !tenant?.state;
+
+                    if (isConfigIncomplete && pathname !== '/configuracoes/barbearia') {
+                        return <PendingConfigAlert />;
+                    }
+
+                    return <ExpirationAlert />;
+                })()}
                 <main className="flex-1 overflow-y-auto p-2 md:p-4 light:bg-white text-slate-50 light:text-slate-900 custom-scrollbar transition-colors">
                     <div className="w-full max-w-none">
                         {content}

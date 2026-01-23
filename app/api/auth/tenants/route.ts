@@ -6,7 +6,7 @@ import { supabase, supabaseAdmin } from '@/lib/supabase-server';
  */
 export async function POST(req: Request) {
     try {
-        const { name, plan } = await req.json();
+        const { name, plan, cnpj, phone, cep, street, number, complement, neighborhood, city, state } = await req.json();
         const client = await supabase();
 
         // Pegar usuário logado via Supabase Auth
@@ -19,7 +19,19 @@ export async function POST(req: Request) {
         // Usamos admin para garantir a criação mesmo se o RLS restringir por tenant_id (que ainda não temos no JWT)
         const { data: tenant, error: tenantError } = await supabaseAdmin
             .from('tenants')
-            .insert({ name, plan: plan || 'basic' })
+            .insert({
+                name,
+                plan: plan || 'basic',
+                cnpj,
+                phone,
+                cep,
+                street,
+                number,
+                complement,
+                neighborhood,
+                city,
+                state
+            })
             .select()
             .single();
 

@@ -1103,16 +1103,31 @@ export default function PlanPage() {
                             )}
 
                             <DialogFooter>
-                                {!pixData && !boletoData && !pendingData ? (
-                                    <>
-                                        <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800" onClick={() => { setOpenDialog(false); fetchInvoices(); }} disabled={saving}>Cancelar</Button>
-                                        <Button onClick={handleChangePlan} disabled={saving} className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
-                                            {saving ? 'Processando...' : 'Confirmar e Pagar'}
-                                        </Button>
-                                    </>
-                                ) : (
-                                    <Button onClick={() => { setOpenDialog(false); fetchInvoices(); }} className="w-full bg-slate-800 text-white hover:bg-slate-700">Fechar</Button>
-                                )}
+                                {(() => {
+                                    const isConfigIncomplete = !tenantObject?.cep || !tenantObject?.street || !tenantObject?.number || !tenantObject?.neighborhood || !tenantObject?.city || !tenantObject?.state || !tenantObject?.phone;
+
+                                    if (!pixData && !boletoData && !pendingData) {
+                                        return (
+                                            <>
+                                                <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800" onClick={() => { setOpenDialog(false); fetchInvoices(); }} disabled={saving}>Cancelar</Button>
+                                                {isConfigIncomplete ? (
+                                                    <Button
+                                                        onClick={() => router.push('/configuracoes/barbearia')}
+                                                        className="bg-orange-600 hover:bg-orange-700 text-white font-bold"
+                                                    >
+                                                        Completar Perfil p/ Pagar
+                                                    </Button>
+                                                ) : (
+                                                    <Button onClick={handleChangePlan} disabled={saving} className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
+                                                        {saving ? 'Processando...' : 'Confirmar e Pagar'}
+                                                    </Button>
+                                                )}
+                                            </>
+                                        );
+                                    }
+
+                                    return <Button onClick={() => { setOpenDialog(false); fetchInvoices(); }} className="w-full bg-slate-800 text-white hover:bg-slate-700">Fechar</Button>;
+                                })()}
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
