@@ -113,11 +113,6 @@ export class AsaasClient {
         return response.data;
     }
 
-    // Subscription Management
-    async createSubscription(subscription: any) {
-        const response = await this.client.post('/subscriptions', subscription);
-        return response.data;
-    }
 
     async getSubscriptionPreviousPayments(subscriptionId: string) {
         const response = await this.client.get(`/subscriptions/${subscriptionId}/payments`);
