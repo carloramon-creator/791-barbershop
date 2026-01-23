@@ -174,7 +174,7 @@ export async function POST(req: Request) {
                 uf: (tenant.state || tenant.address_state || "SC").substring(0, 2)
             },
             dataVencimento: dueDateStr,
-            valorNominal: amount.toFixed(2),
+            valorNominal: (amount || 0).toFixed(2),
             dataEmissao: currentDate,
             mensagem: {
                 linha1: `791 Barber - ${itemName}`.substring(0, 80)

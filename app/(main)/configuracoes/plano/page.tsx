@@ -762,12 +762,12 @@ export default function PlanPage() {
                                                             return (
                                                                 <>
                                                                     <div className="flex items-baseline gap-1">
-                                                                        <span className="text-3xl font-black text-slate-100">R$ {monthlyEquivalent.toFixed(2).replace('.', ',')}</span>
+                                                                        <span className="text-3xl font-black text-slate-100">R$ {(monthlyEquivalent || 0).toFixed(2).replace('.', ',')}</span>
                                                                         <span className="text-xs text-slate-500 font-bold lowercase">/mês</span>
                                                                     </div>
                                                                     {selectedInterval > 1 && (
                                                                         <div className="text-[10px] font-black text-emerald-500 uppercase tracking-wider">
-                                                                            Total: R$ {totalPrice.toFixed(2).replace('.', ',')} ({selectedInterval} meses)
+                                                                            Total: R$ {(totalPrice || 0).toFixed(2).replace('.', ',')} ({selectedInterval} meses)
                                                                         </div>
                                                                     )}
                                                                 </>
@@ -860,7 +860,7 @@ export default function PlanPage() {
                                 <DialogTitle className="font-black text-xl md:text-2xl tracking-tighter uppercase">Confirmar Contratação</DialogTitle>
                                 <DialogDescription className="text-slate-400 light:text-slate-500 font-bold">
                                     {selectedAddon ? (
-                                        <>Módulo <span className="text-amber-500 uppercase">{selectedAddon.name}</span> — R$ {Number(selectedAddon.price).toFixed(2).replace('.', ',')}/mês</>
+                                        <>Módulo <span className="text-amber-500 uppercase">{selectedAddon.name}</span> — R$ {(Number(selectedAddon.price) || 0).toFixed(2).replace('.', ',')}/mês</>
                                     ) : (
                                         <div className="flex flex-col gap-1">
                                             <span>
@@ -871,7 +871,7 @@ export default function PlanPage() {
                                                     const basePrice = plan.price || 0;
                                                     const discount = selectedInterval === 6 ? 10 : selectedInterval === 12 ? 20 : 0;
                                                     const totalPrice = (basePrice * selectedInterval) * (1 - (discount / 100));
-                                                    return ` R$ ${totalPrice.toFixed(2).replace('.', ',')} (${selectedInterval} ${selectedInterval === 1 ? 'mês' : 'meses'})`;
+                                                    return ` R$ ${(totalPrice || 0).toFixed(2).replace('.', ',')} (${selectedInterval} ${selectedInterval === 1 ? 'mês' : 'meses'})`;
                                                 })()}
                                             </span>
                                             {/* VISUALIZAÇÃO DO DESCONTO 10% (Apenas se cadastrado há menos de 5 dias) */}
@@ -986,7 +986,7 @@ export default function PlanPage() {
                                     <div className="text-center bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl w-full">
                                         <p className="text-[10px] text-emerald-500 uppercase font-black tracking-widest">Valor do Pix</p>
                                         <p className="text-2xl font-black text-slate-100">
-                                            R$ {(pixData.amount || Number((selectedAddon ? selectedAddon.price : dynamicPlans.find(p => p.slug === selectedPlan)?.price) || 0)).toFixed(2).replace('.', ',')}
+                                            R$ {((pixData.amount || Number((selectedAddon ? selectedAddon.price : dynamicPlans.find(p => p.slug === selectedPlan)?.price) || 0)) || 0).toFixed(2).replace('.', ',')}
                                         </p>
                                     </div>
 
@@ -1049,7 +1049,7 @@ export default function PlanPage() {
                                         <div className="pt-4 flex justify-around border-t border-blue-500/10">
                                             <div className="text-center">
                                                 <p className="text-[10px] text-slate-500 uppercase font-bold">Valor</p>
-                                                <p className="text-sm font-black text-slate-100">R$ {(boletoData.amount || Number((selectedAddon ? selectedAddon.price : dynamicPlans.find(p => p.slug === selectedPlan)?.price) || 0)).toFixed(2).replace('.', ',')}</p>
+                                                <p className="text-sm font-black text-slate-100">R$ {((boletoData.amount || Number((selectedAddon ? selectedAddon.price : dynamicPlans.find(p => p.slug === selectedPlan)?.price) || 0)) || 0).toFixed(2).replace('.', ',')}</p>
                                             </div>
                                             <div className="text-center">
                                                 <p className="text-[10px] text-slate-500 uppercase font-bold">Vencimento</p>
@@ -1183,7 +1183,7 @@ export default function PlanPage() {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 text-xs font-black text-slate-200">
-                                                        R$ {inv.value.toFixed(2).replace('.', ',')}
+                                                        R$ {(inv.value || 0).toFixed(2).replace('.', ',')}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         {inv.is_paid ? (

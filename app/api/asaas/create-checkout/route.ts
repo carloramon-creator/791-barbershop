@@ -89,13 +89,13 @@ export async function POST(req: Request) {
                     couponDiscount = dbCoupon.discount_value;
                 }
                 baseAmount = Math.max(0, baseAmount - couponDiscount);
-                console.log(`[ASAAS 2.0] Cupom ${coupon} aplicado: -R$ ${couponDiscount.toFixed(2)}`);
+                console.log(`[ASAAS 2.0] Cupom ${coupon} aplicado: -R$ ${(couponDiscount || 0).toFixed(2)}`);
             } else {
                 console.log(`[ASAAS 2.0] Cupom ${coupon} inválido ou inativo`);
             }
         }
 
-        const totalAmount = Number((baseAmount * interval).toFixed(2));
+        const totalAmount = Number(((baseAmount * interval) || 0).toFixed(2));
 
         // 3. Garantir Cliente no Asaas (Pre-requisito para Checkout Robusto)
         const cpfCnpj = (tenant.cnpj || tenant.cpf || tenant.document || '').replace(/\D/g, '');
@@ -156,7 +156,7 @@ export async function POST(req: Request) {
                     planAtual: currentPlanValue,
                     addon: addonValue,
                     novoValor: newSubscriptionValue,
-                    addonProRata: addonProRata.toFixed(2)
+                    addonProRata: (addonProRata || 0).toFixed(2)
                 });
 
                 // Cancelar assinatura atual
@@ -183,7 +183,7 @@ export async function POST(req: Request) {
                 itemName = `${itemName} (Pro-rata ${daysRemaining} dias)`;
 
                 console.log('[ASAAS 2.0] ✅ Nova assinatura criada:', newSubscription.id);
-                console.log('[ASAAS 2.0] Cobrando pro-rata do add-on: R$', addonProRata.toFixed(2));
+                console.log('[ASAAS 2.0] Cobrando pro-rata do add-on: R$', (addonProRata || 0).toFixed(2));
 
                 // Atualizar tenant com novo subscription_id imediatamente
                 await supabaseAdmin
