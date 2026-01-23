@@ -65,6 +65,16 @@ export async function POST(req: Request) {
             itemDescription = `Assinatura ${cycleText} ${itemName}`;
 
             if (disc > 0) baseAmount = baseAmount * (1 - (disc / 100));
+
+            // BÔNUS: Desconto de 10% adicional para contas criadas há menos de 5 dias (Boas-vindas)
+            const created = new Date(tenant.created_at || new Date());
+            const now = new Date();
+            const diffDays = Math.ceil(Math.abs(now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+
+            if (diffDays <= 5 && (!tenant.subscription_status || tenant.subscription_status === 'trial')) {
+                console.log(`[ASAAS 2.0] Aplicando desconto de boas-vindas (10%) para novo tenant: ${tenant.name}`);
+                baseAmount = baseAmount * 0.9;
+            }
         }
 
         // Aplicar cupom se fornecido

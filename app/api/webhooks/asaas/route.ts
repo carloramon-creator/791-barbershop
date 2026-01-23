@@ -39,8 +39,12 @@ export async function POST(req: Request) {
         // 3. Sistema de Auto-Cura (Buscando o Tenant/Fatura de múltiplas formas)
         let financeRecord = null;
 
+        // Função auxiliar para sleep
+        const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
         // Estratégia A: Pelo externalReference (Mais confiável)
         const extRef = payment?.externalReference || body.externalReference || body.checkout?.externalReference || payment?.external_reference || body.external_reference;
+
         if (extRef) {
             console.log('[ASAAS WEBHOOK 2.0] 🔍 Buscando por externalReference:', extRef);
             const { data } = await supabaseAdmin
@@ -49,6 +53,18 @@ export async function POST(req: Request) {
                 .eq('metadata->>external_reference', extRef)
                 .maybeSingle();
             financeRecord = data;
+
+            // Se não encontrar, aguardar 2 segundos (Atraso de rede/reatividade)
+            if (!financeRecord) {
+                console.log('[ASAAS WEBHOOK 2.0] ⏳ Registro não encontrado por ExternalRef. Aguardando 2s...');
+                await sleep(2000);
+                const { data: retryData } = await supabaseAdmin
+                    .from('finance')
+                    .select('*, tenants(*)')
+                    .eq('metadata->>external_reference', extRef)
+                    .maybeSingle();
+                financeRecord = retryData;
+            }
         }
 
         // Estratégia B: Pelo Checkout ID ou Subscription ID
