@@ -40,7 +40,7 @@ export async function POST(req: Request) {
         let financeRecord = null;
 
         // Estratégia A: Pelo externalReference (Mais confiável)
-        const extRef = payment?.externalReference || body.externalReference || body.checkout?.externalReference || payment?.id || body.id;
+        const extRef = payment?.externalReference || body.externalReference || body.checkout?.externalReference || payment?.external_reference || body.external_reference;
         if (extRef) {
             console.log('[ASAAS WEBHOOK 2.0] 🔍 Buscando por externalReference:', extRef);
             const { data } = await supabaseAdmin
@@ -53,27 +53,27 @@ export async function POST(req: Request) {
 
         // Estratégia B: Pelo Checkout ID ou Subscription ID
         if (!financeRecord) {
-            const searchId = payment.checkoutId || payment.subscription || body.subscriptionId;
+            const searchId = payment.checkoutId || payment.checkout_id || payment.subscription || payment.subscription_id || body.subscriptionId || body.checkoutId;
             if (searchId) {
                 console.log('[ASAAS WEBHOOK 2.0] 🔍 Buscando por Checkout/Subscription ID:', searchId);
                 const { data } = await supabaseAdmin
                     .from('finance')
                     .select('*, tenants(*)')
-                    .or(`metadata->>asaas_checkout_id.eq.${searchId},metadata->>asaas_subscription_id.eq.${searchId}`)
+                    .or(`metadata->>asaas_checkout_id.eq."${searchId}",metadata->>asaas_subscription_id.eq."${searchId}"`)
                     .maybeSingle();
                 financeRecord = data;
             }
         }
 
         // Estratégia B2: Pelo valor e data (quando não há externalReference)
-        if (!financeRecord && payment?.value && payment?.confirmedDate) {
-            console.log('[ASAAS WEBHOOK 2.0] 🔍 Buscando por valor e data:', payment.value, payment.confirmedDate);
+        if (!financeRecord && payment?.value) {
+            console.log('[ASAAS WEBHOOK 2.0] 🔍 Buscando por valor e proximidade temporal:', payment.value);
             const { data } = await supabaseAdmin
                 .from('finance')
                 .select('*, tenants(*)')
                 .eq('value', payment.value)
                 .eq('is_paid', false)
-                .gte('created_at', new Date(payment.confirmedDate).toISOString())
+                .eq('metadata->>is_saas_payment', 'true')
                 .order('created_at', { ascending: false })
                 .limit(1)
                 .maybeSingle();
@@ -83,28 +83,26 @@ export async function POST(req: Request) {
         // Estratégia C: Pelo Customer ID (quando payload é minimalista)
         if (!financeRecord && (payment?.customer || body.customer)) {
             const customerId = payment?.customer || body.customer;
-            console.log('[ASAAS WEBHOOK 2.0] 🔍 Tentando buscar por Customer ID (payload minimalista):', customerId);
+            console.log('[ASAAS WEBHOOK 2.0] 🔍 Tentando buscar por Customer ID:', customerId);
 
-            // Buscar informações do cliente no Asaas
             const { data: settings } = await supabaseAdmin.from('system_settings').select('value').eq('key', 'asaas_config').single();
-            const asaas = new AsaasClient({ apiKey: settings?.value?.api_key || process.env.ASAAS_API_KEY as string });
+            const asaas = new AsaasClient({
+                apiKey: settings?.value?.api_key || process.env.ASAAS_API_KEY as string,
+                environment: (settings?.value?.environment || 'sandbox') as 'sandbox' | 'production'
+            });
 
             try {
                 const asaasCustomer = await asaas.getCustomer(customerId);
-                const cpfCnpj = asaasCustomer.cpfCnpj;
+                const cpfCnpj = (asaasCustomer.cpfCnpj || '').replace(/\D/g, '');
 
                 if (cpfCnpj) {
-                    // Buscar tenant pelo CPF/CNPJ
                     const { data: tenantByDoc } = await supabaseAdmin
                         .from('tenants')
                         .select('id, name')
-                        .or(`cnpj.eq.${cpfCnpj},cpf.eq.${cpfCnpj},document.eq.${cpfCnpj}`)
+                        .or(`cnpj.ilike.%${cpfCnpj}%,cpf.ilike.%${cpfCnpj}%,document.ilike.%${cpfCnpj}%`)
                         .maybeSingle();
 
                     if (tenantByDoc) {
-                        console.log('[ASAAS WEBHOOK 2.0] ✅ Tenant encontrado pelo documento:', tenantByDoc.name);
-
-                        // Buscar a ÚLTIMA fatura pendente deste tenant
                         const { data: recentFinance } = await supabaseAdmin
                             .from('finance')
                             .select('*')
@@ -116,19 +114,25 @@ export async function POST(req: Request) {
                             .maybeSingle();
 
                         if (recentFinance) {
-                            console.log('[ASAAS WEBHOOK 2.0] ✅ Fatura pendente encontrada:', recentFinance.id);
                             financeRecord = { ...recentFinance, tenants: tenantByDoc };
                         }
                     }
                 }
-            } catch (err) {
-                console.log('[ASAAS WEBHOOK 2.0] Erro ao buscar customer no Asaas:', err);
-            }
+            } catch (err) { }
         }
 
         if (!financeRecord || !financeRecord.tenants) {
-            console.error('[ASAAS WEBHOOK 2.0] ❌ Tenant não localizado para este pagamento.');
-            return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
+            console.error('[ASAAS WEBHOOK 2.0] ❌ Tenant não localizado.');
+            return NextResponse.json({
+                error: 'Tenant not found',
+                debug: {
+                    event,
+                    extRef,
+                    paymentId: payment?.id,
+                    checkoutId: payment?.checkoutId || payment?.checkout_id,
+                    customerId: payment?.customer || body.customer
+                }
+            }, { status: 404 });
         }
 
         const tenant = financeRecord.tenants;

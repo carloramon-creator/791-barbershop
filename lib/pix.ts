@@ -49,7 +49,7 @@ export function generatePixPayload(
     // Basic normalization
     const name = merchantName.substring(0, 25).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const city = merchantCity.substring(0, 15).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    const formattedAmount = amount.toFixed(2);
+    const formattedAmount = (amount || 0).toFixed(2);
 
     let payload =
         formatField('00', '01') + // Format Indicator (Version 01)
