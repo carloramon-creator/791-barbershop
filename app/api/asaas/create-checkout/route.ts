@@ -82,11 +82,10 @@ export async function POST(req: Request) {
                 if (dbCoupon.expires_at && new Date(dbCoupon.expires_at) < new Date()) {
                     throw new Error('Cupom expirado');
                 }
-                // Aplicar desconto
-                if (dbCoupon.discount_type === 'percentage') {
-                    couponDiscount = baseAmount * (dbCoupon.discount_value / 100);
-                } else {
-                    couponDiscount = dbCoupon.discount_value;
+                if (dbCoupon.discount_percent) {
+                    couponDiscount = baseAmount * (Number(dbCoupon.discount_percent) / 100);
+                } else if (dbCoupon.discount_value) {
+                    couponDiscount = Number(dbCoupon.discount_value);
                 }
                 baseAmount = Math.max(0, baseAmount - couponDiscount);
                 console.log(`[ASAAS 2.0] Cupom ${coupon} aplicado: -R$ ${(couponDiscount || 0).toFixed(2)}`);
