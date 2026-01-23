@@ -158,6 +158,12 @@ export async function POST(req: Request) {
             }
         }
 
+        // Salvar subscription_id se for assinatura
+        if (payment.subscription) {
+            updateData.asaas_subscription_id = payment.subscription;
+            console.log(`[ASAAS WEBHOOK 2.0] 💳 Salvando subscription_id: ${payment.subscription}`);
+        }
+
         // Atualizar Tenant e Finance (CRÍTICO)
         await Promise.all([
             supabaseAdmin.from('tenants').update(updateData).eq('id', tenant.id),

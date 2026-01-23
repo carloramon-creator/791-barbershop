@@ -119,10 +119,86 @@ export async function POST(req: Request) {
             customer = await asaas.createCustomer(customerData);
         }
 
-        // 4. Criar Checkout Minimalista (RECOMENDADO PELA DOC V3)
+        // 3.5. Preparar referências
         const externalReference = crypto.randomUUID();
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://791barber.com';
 
+        // 3.6. LÓGICA DE ADD-ON RECORRENTE (Replicar comportamento Stripe)
+        let subscriptionMode = false;
+        let subscriptionId = null;
+
+        if (isAddon && tenant.asaas_subscription_id) {
+            console.log('[ASAAS 2.0] 🔄 Add-on detectado com assinatura ativa. Iniciando upgrade...');
+
+            try {
+                // Buscar assinatura atual
+                const currentSubscription = await asaas.getSubscription(tenant.asaas_subscription_id);
+                console.log('[ASAAS 2.0] Assinatura atual:', {
+                    id: currentSubscription.id,
+                    value: currentSubscription.value,
+                    nextDueDate: currentSubscription.nextDueDate
+                });
+
+                // Calcular dias restantes
+                const nextDueDate = new Date(currentSubscription.nextDueDate);
+                const today = new Date();
+                const daysRemaining = Math.ceil((nextDueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                console.log('[ASAAS 2.0] Dias restantes até próxima cobrança:', daysRemaining);
+
+                // Calcular pro-rata
+                const currentPlanValue = Number(currentSubscription.value);
+                const addonValue = baseAmount;
+                const newSubscriptionValue = currentPlanValue + addonValue;
+
+                // Pro-rata do add-on (cobrar apenas os dias restantes)
+                const addonProRata = (addonValue / 31) * daysRemaining;
+                console.log('[ASAAS 2.0] Cálculo pro-rata:', {
+                    planAtual: currentPlanValue,
+                    addon: addonValue,
+                    novoValor: newSubscriptionValue,
+                    addonProRata: addonProRata.toFixed(2)
+                });
+
+                // Cancelar assinatura atual
+                console.log('[ASAAS 2.0] Cancelando assinatura atual...');
+                await asaas.cancelSubscription(tenant.asaas_subscription_id);
+
+                // Criar nova assinatura com valor combinado
+                console.log('[ASAAS 2.0] Criando nova assinatura com valor combinado...');
+                const newSubscription = await asaas.createSubscription({
+                    customer: customer.id,
+                    billingType: 'CREDIT_CARD',
+                    value: newSubscriptionValue,
+                    cycle: 'MONTHLY',
+                    nextDueDate: currentSubscription.nextDueDate,
+                    description: `${currentSubscription.description || 'Plano'} + ${itemName}`,
+                    externalReference: externalReference
+                });
+
+                subscriptionId = newSubscription.id;
+                subscriptionMode = true;
+
+                // Atualizar valor base para cobrar apenas o pro-rata do add-on
+                baseAmount = addonProRata;
+                itemName = `${itemName} (Pro-rata ${daysRemaining} dias)`;
+
+                console.log('[ASAAS 2.0] ✅ Nova assinatura criada:', newSubscription.id);
+                console.log('[ASAAS 2.0] Cobrando pro-rata do add-on: R$', addonProRata.toFixed(2));
+
+                // Atualizar tenant com novo subscription_id imediatamente
+                await supabaseAdmin
+                    .from('tenants')
+                    .update({ asaas_subscription_id: newSubscription.id })
+                    .eq('id', tenant.id);
+
+            } catch (error: any) {
+                console.error('[ASAAS 2.0] ❌ Erro ao processar add-on recorrente:', error.message);
+                // Se falhar, continuar com fluxo normal (pagamento único)
+                console.log('[ASAAS 2.0] Continuando com fluxo de pagamento único...');
+            }
+        }
+
+        // 4. Criar Checkout Minimalista (RECOMENDADO PELA DOC V3)
         // Truncar nome do item para 30 chars (Limite rígido Asaas)
         const safeItemName = (itemName.length > 30 ? itemName.substring(0, 27) + '...' : itemName);
 

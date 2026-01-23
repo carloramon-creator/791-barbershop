@@ -227,6 +227,46 @@ export class AsaasClient {
         return response.data;
     }
 
+
+    /**
+     * Cancelar uma assinatura
+     */
+    async cancelSubscription(subscriptionId: string) {
+        try {
+            const response = await this.client.delete(`/subscriptions/${subscriptionId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('[ASAAS CLIENT] Error canceling subscription:', error.response?.data || error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * Criar uma nova assinatura
+     */
+    async createSubscription(data: {
+        customer: string;
+        billingType: 'BOLETO' | 'CREDIT_CARD' | 'UNDEFINED';
+        value: number;
+        cycle: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'SEMIANNUALLY' | 'YEARLY';
+        nextDueDate: string; // YYYY-MM-DD
+        description?: string;
+        externalReference?: string;
+        discount?: {
+            value?: number;
+            dueDateLimitDays?: number;
+            type?: 'FIXED' | 'PERCENTAGE';
+        };
+    }) {
+        try {
+            const response = await this.client.post('/subscriptions', data);
+            return response.data;
+        } catch (error: any) {
+            console.error('[ASAAS CLIENT] Error creating subscription:', error.response?.data || error.message);
+            throw error;
+        }
+    }
+
     // Webhook verification
     verifyWebhook(payload: any, signature: string, secret: string): boolean {
         // Asaas doesn't use signature verification by default
