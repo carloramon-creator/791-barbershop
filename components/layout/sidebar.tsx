@@ -99,7 +99,7 @@ export function Sidebar() {
             const allowedByPlan = planPermissions.includes(item.permission);
             const allowedByAddon =
                 (item.permission === 'finance' && activeAddons.includes('finance_module')) ||
-                (item.permission === 'inventory' && activeAddons.includes('inventory'));
+                ((item.permission === 'inventory' || item.permission === 'products') && activeAddons.includes('inventory'));
 
             if (!allowedByPlan && !allowedByAddon) return false;
         }
