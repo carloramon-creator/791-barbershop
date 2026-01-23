@@ -130,8 +130,28 @@ export async function POST(req: Request) {
             console.log('[ASAAS 2.0] 🔄 Add-on detectado com assinatura ativa. Iniciando upgrade...');
 
             try {
+                let subId = tenant.asaas_subscription_id;
+
+                // Detectar e corrigir ID corrompido (JSON em vez de string)
+                if (subId.startsWith('{')) {
+                    console.warn('[ASAAS 2.0] 🚨 Detectado asaas_subscription_id corrompido (JSON). Tentando limpar...');
+                    try {
+                        const parsed = JSON.parse(subId);
+                        subId = parsed.id || subId;
+                        if (!subId || subId.startsWith('{')) {
+                            // Se falhou em achar o .id ou retornou outro objeto, abortar upgrade para evitar crash
+                            console.log('[ASAAS 2.0] ID inválido após parse. Cobrando avulso.');
+                            throw new Error('Invalid Subscription ID format');
+                        }
+                        console.log('[ASAAS 2.0] ✅ ID limpo com sucesso:', subId);
+                    } catch (e) {
+                        console.error('[ASAAS 2.0] ❌ Falha ao dar parse no ID corrompido.');
+                        throw e;
+                    }
+                }
+
                 // Buscar assinatura atual
-                const currentSubscription = await asaas.getSubscription(tenant.asaas_subscription_id);
+                const currentSubscription = await asaas.getSubscription(subId);
                 console.log('[ASAAS 2.0] Assinatura atual:', {
                     id: currentSubscription.id,
                     value: currentSubscription.value,

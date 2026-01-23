@@ -53,19 +53,19 @@ export async function POST(req: Request) {
 
         // Estratégia B: Pelo Checkout ID ou Subscription ID
         if (!financeRecord) {
-            const searchId = payment.checkoutId || payment.checkout_id || payment.subscription || payment.subscription_id || body.subscriptionId || body.checkoutId;
+            const searchId = payment.checkoutId || payment.checkout_id || payment.checkoutSession || payment.checkout_session || payment.subscription || payment.subscription_id || body.subscriptionId || body.checkoutId;
             if (searchId) {
                 console.log('[ASAAS WEBHOOK 2.0] 🔍 Buscando por Checkout/Subscription ID:', searchId);
                 const { data } = await supabaseAdmin
                     .from('finance')
                     .select('*, tenants(*)')
-                    .or(`metadata->>asaas_checkout_id.eq."${searchId}",metadata->>asaas_subscription_id.eq."${searchId}"`)
+                    .or(`metadata->>asaas_checkout_id.eq."${searchId}",metadata->>asaas_subscription_id.eq."${searchId}",metadata->>asaas_payment_id.eq."${searchId}"`)
                     .maybeSingle();
                 financeRecord = data;
             }
         }
 
-        // Estratégia B2: Pelo valor e data (quando não há externalReference)
+        // Estratégia B2: Pelo valor e proximidade temporal (para pagamentos sem ID vinculado)
         if (!financeRecord && payment?.value) {
             console.log('[ASAAS WEBHOOK 2.0] 🔍 Buscando por valor e proximidade temporal:', payment.value);
             const { data } = await supabaseAdmin
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
             financeRecord = data;
         }
 
-        // Estratégia C: Pelo Customer ID (quando payload é minimalista)
+        // Estratégia C: Pelo Customer ID -> Documento do Tenant (Último recurso)
         if (!financeRecord && (payment?.customer || body.customer)) {
             const customerId = payment?.customer || body.customer;
             console.log('[ASAAS WEBHOOK 2.0] 🔍 Tentando buscar por Customer ID:', customerId);
@@ -96,25 +96,29 @@ export async function POST(req: Request) {
                 const cpfCnpj = (asaasCustomer.cpfCnpj || '').replace(/\D/g, '');
 
                 if (cpfCnpj) {
-                    const { data: tenantByDoc } = await supabaseAdmin
+                    // Buscar tenant pelo CPF/CNPJ (Pode haver múltiplos, pegamos o que teve atividade recente)
+                    const { data: tenants } = await supabaseAdmin
                         .from('tenants')
                         .select('id, name')
                         .or(`cnpj.ilike.%${cpfCnpj}%,cpf.ilike.%${cpfCnpj}%,document.ilike.%${cpfCnpj}%`)
-                        .maybeSingle();
+                        .order('created_at', { ascending: false });
 
-                    if (tenantByDoc) {
-                        const { data: recentFinance } = await supabaseAdmin
-                            .from('finance')
-                            .select('*')
-                            .eq('tenant_id', tenantByDoc.id)
-                            .eq('is_paid', false)
-                            .eq('metadata->>is_saas_payment', 'true')
-                            .order('created_at', { ascending: false })
-                            .limit(1)
-                            .maybeSingle();
+                    if (tenants && tenants.length > 0) {
+                        for (const t of tenants) {
+                            const { data: recentFinance } = await supabaseAdmin
+                                .from('finance')
+                                .select('*')
+                                .eq('tenant_id', t.id)
+                                .eq('is_paid', false)
+                                .eq('metadata->>is_saas_payment', 'true')
+                                .order('created_at', { ascending: false })
+                                .limit(1)
+                                .maybeSingle();
 
-                        if (recentFinance) {
-                            financeRecord = { ...recentFinance, tenants: tenantByDoc };
+                            if (recentFinance) {
+                                financeRecord = { ...recentFinance, tenants: t };
+                                break;
+                            }
                         }
                     }
                 }
