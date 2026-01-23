@@ -153,19 +153,47 @@ export async function POST(req: Request) {
         if (!isAddon) {
             updateData.plan = planSlug;
         } else {
-            // Se for add-on, adicionar ao array active_addons
-            const currentAddons = tenant.active_addons || [];
             const addonSlug = metadata.addon;
-            if (addonSlug && !currentAddons.includes(addonSlug)) {
-                updateData.active_addons = [...currentAddons, addonSlug];
-                console.log(`[ASAAS WEBHOOK 2.0] 📦 Adicionando add-on: ${addonSlug}`);
+            console.log(`[ASAAS WEBHOOK 2.0] 📦 Processando ativação de add-on: ${addonSlug}`);
+
+            try {
+                // Buscar ID do Add-on pelo slug
+                const { data: addonData } = await supabaseAdmin
+                    .from('system_addons')
+                    .select('id')
+                    .eq('slug', addonSlug)
+                    .single();
+
+                if (addonData) {
+                    // Upsert na tabela tenant_addons
+                    const { error: addonError } = await supabaseAdmin
+                        .from('tenant_addons')
+                        .upsert({
+                            tenant_id: tenant.id,
+                            addon_id: addonData.id,
+                            status: 'active',
+                            activated_at: new Date().toISOString()
+                        }, { onConflict: 'tenant_id,addon_id' });
+
+                    if (addonError) {
+                        console.error('[ASAAS WEBHOOK 2.0] ❌ Erro ao ativar add-on na tabela tenant_addons:', addonError);
+                    } else {
+                        console.log(`[ASAAS WEBHOOK 2.0] ✅ Add-on ${addonSlug} ativado com sucesso em tenant_addons.`);
+                    }
+                } else {
+                    console.error(`[ASAAS WEBHOOK 2.0] ❌ Add-on slug '${addonSlug}' não encontrado em system_addons.`);
+                }
+            } catch (err) {
+                console.error('[ASAAS WEBHOOK 2.0] ❌ Falha crítica ao processar add-on:', err);
             }
         }
 
         // Salvar subscription_id se for assinatura
         if (payment.subscription) {
-            updateData.asaas_subscription_id = payment.subscription;
-            console.log(`[ASAAS WEBHOOK 2.0] 💳 Salvando subscription_id: ${payment.subscription}`);
+            updateData.asaas_subscription_id = typeof payment.subscription === 'object'
+                ? (payment.subscription as any).id
+                : payment.subscription;
+            console.log(`[ASAAS WEBHOOK 2.0] 💳 Salvando subscription_id: ${updateData.asaas_subscription_id}`);
         }
 
         // Atualizar Tenant e Finance (CRÍTICO)
