@@ -14,7 +14,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
-    const [view, setView] = useState<'login' | 'updatePassword' | 'forgotPassword'>('login');
+    const [view, setView] = useState<'login' | 'updatePassword' | 'forgotPassword' | 'resendConfirmation'>('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -66,6 +66,8 @@ export default function LoginPage() {
             let message = error.message || 'Erro ao entrar';
             if (message === 'Failed to fetch' || message === 'Load failed') {
                 message = `Erro de conexão: O domínio ${window.location.hostname} pode estar bloqueado no CORS do Supabase.`;
+            } else if (message.includes('Email not confirmed')) {
+                message = 'Email não confirmado. Verifique sua caixa de entrada ou solicite o reenvio.';
             }
 
             setError(message);
@@ -132,6 +134,41 @@ export default function LoginPage() {
         }
     };
 
+    const handleResendConfirmation = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+        setSuccessMessage(null);
+
+        try {
+            // PRIORIDADE ABSOLUTA: Hardcoded para https://791barber.com/auth/callback
+            // Evita loop de localhost:8080 se rodar no backend ou se frontend window.location estiver confuso
+            const emailRedirectTo = 'https://791barber.com/auth/callback';
+
+            const { error } = await supabaseClient.auth.resend({
+                type: 'signup',
+                email: email,
+                options: {
+                    emailRedirectTo
+                }
+            });
+
+            if (error) throw error;
+
+            setSuccessMessage(`Email de confirmação reenviado para ${email}. Verifique sua caixa de entrada e spam. O link já estará corrigido.`);
+        } catch (err: any) {
+            console.error('Resend error:', err);
+            // Supabase rate limit error usually
+            if (err.status === 429) {
+                setError('Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.');
+            } else {
+                setError(err.message || 'Erro ao reenviar email. Verifique se o endereço está correto.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const redirectUser = async (userId: string) => {
         try {
             // Check current user email for domain overrides
@@ -175,6 +212,7 @@ export default function LoginPage() {
 
     const isUpdateView = view === 'updatePassword';
     const isRecoveryView = view === 'forgotPassword';
+    const isResendView = view === 'resendConfirmation';
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-slate-950 px-4 relative overflow-hidden">
@@ -194,14 +232,16 @@ export default function LoginPage() {
                 <Card className="border-slate-800 bg-slate-900/80 backdrop-blur-xl shadow-2xl relative">
                     <CardHeader className="space-y-2 pb-6">
                         <CardTitle className="text-3xl text-center font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                            {isUpdateView ? 'Defina sua Senha' : isRecoveryView ? 'Recuperar Senha' : '791 Barber'}
+                            {isUpdateView ? 'Defina sua Senha' : isRecoveryView ? 'Recuperar Senha' : isResendView ? 'Reenviar Confirmação' : '791 Barber'}
                         </CardTitle>
                         <CardDescription className="text-center text-slate-400 text-sm">
                             {isUpdateView
                                 ? 'Crie uma senha segura para acessar sua conta.'
                                 : isRecoveryView
                                     ? 'Digite seu email para receber um link de redefinição.'
-                                    : 'Entre com sua conta de dono ou colaborador'}
+                                    : isResendView
+                                        ? 'Digite seu email para receber um novo link de confirmação.'
+                                        : 'Entre com sua conta de dono ou colaborador'}
                         </CardDescription>
                     </CardHeader>
 
@@ -227,7 +267,7 @@ export default function LoginPage() {
                             </div>
                         </CardContent>
                     ) : (
-                        <form onSubmit={isUpdateView ? handleUpdatePassword : isRecoveryView ? handleRecovery : handleLogin}>
+                        <form onSubmit={isUpdateView ? handleUpdatePassword : isRecoveryView ? handleRecovery : isResendView ? handleResendConfirmation : handleLogin}>
                             <CardContent className="space-y-4 pt-0">
                                 {error && (
                                     <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-xs text-center font-medium animate-in shake duration-300">
@@ -294,7 +334,30 @@ export default function LoginPage() {
                                     </div>
                                 )}
 
-                                {!isUpdateView && !isRecoveryView && (
+                                {isResendView && (
+                                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="email" className="text-slate-300">Email cadastrado</Label>
+                                            <div className="relative">
+                                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                                <Input
+                                                    id="email"
+                                                    type="email"
+                                                    placeholder="seu@email.com"
+                                                    value={email}
+                                                    onChange={(e) => setEmail(e.target.value)}
+                                                    className="bg-slate-950 border-slate-800 pl-10 h-12 rounded-xl focus:ring-blue-500/20"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20 text-xs text-blue-300 leading-relaxed">
+                                            Será enviado um novo link para confirmar sua conta. O link será válido para o domínio oficial 791barber.com.
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!isUpdateView && !isRecoveryView && !isResendView && (
                                     <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
                                         <div className="space-y-2">
                                             <Label htmlFor="email" className="text-slate-300">Email</Label>
@@ -353,22 +416,31 @@ export default function LoginPage() {
                                         <Loader2 className="w-5 h-5 animate-spin" />
                                     ) : (
                                         <>
-                                            {isUpdateView ? 'Definir Senha e Entrar' : isRecoveryView ? 'Enviar Link de Recuperação' : 'Acessar Painel 791'}
+                                            {isUpdateView ? 'Definir Senha e Entrar' : isRecoveryView ? 'Enviar Link de Recuperação' : isResendView ? 'Reenviar Email' : 'Acessar Painel 791'}
                                             <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                                         </>
                                     )}
                                 </Button>
 
-                                {!isUpdateView && !isRecoveryView && (
-                                    <p className="text-sm text-slate-400 text-center">
-                                        Não tem uma conta?{' '}
-                                        <Link href="/register" className="text-blue-500 hover:text-blue-400 font-medium hover:underline">
-                                            Cadastre sua barbearia
-                                        </Link>
-                                    </p>
+                                {!isUpdateView && !isRecoveryView && !isResendView && (
+                                    <div className="space-y-2 text-center">
+                                        <button
+                                            type="button"
+                                            onClick={() => { setError(null); setView('resendConfirmation'); }}
+                                            className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                                        >
+                                            Não recebeu o email de confirmação?
+                                        </button>
+                                        <p className="text-sm text-slate-400">
+                                            Não tem uma conta?{' '}
+                                            <Link href="/register" className="text-blue-500 hover:text-blue-400 font-medium hover:underline">
+                                                Cadastre sua barbearia
+                                            </Link>
+                                        </p>
+                                    </div>
                                 )}
 
-                                {isRecoveryView && !successMessage && (
+                                {(isRecoveryView || isResendView) && !successMessage && (
                                     <button
                                         type="button"
                                         onClick={() => { setError(null); setView('login'); }}
