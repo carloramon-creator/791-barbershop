@@ -45,16 +45,13 @@ export async function POST(req: Request) {
         // 2. Definir Item e Valor
         let baseAmount = 0;
         let itemName = '';
-        let itemDescription = '';
         let isAddon = !!addonSlug;
-        let discountConfig = null;
 
         if (isAddon) {
             const { data: addon } = await supabaseAdmin.from('system_addons').select('*').eq('slug', addonSlug).single();
             if (!addon) throw new Error('Add-on não encontrado');
             baseAmount = Number(addon.price);
             itemName = `Add-on: ${addon.name}`;
-            itemDescription = `Módulo adicional ${addon.name}`;
         } else {
             const { data: plan } = await supabaseAdmin.from('system_plans').select('*').eq('slug', planSlug).single();
             if (!plan) throw new Error('Plano não encontrado');
@@ -62,30 +59,10 @@ export async function POST(req: Request) {
             itemName = `Plano ${plan.name}`;
 
             const disc = interval === 12 ? (plan.discount_annual || 20) : interval === 6 ? (plan.discount_semiannual || 10) : 0;
-            const cycleText = interval === 12 ? 'Anual' : interval === 6 ? 'Semestral' : 'Mensal';
-            itemDescription = `Assinatura ${cycleText} ${itemName}`;
-
             if (disc > 0) baseAmount = baseAmount * (1 - (disc / 100));
-
-            // BÔNUS: Desconto de 10% adicional para contas criadas há menos de 5 dias (Boas-vindas)
-            // APLICAÇÃO CORRETA: Apenas no 1º ciclo
-            const created = new Date(tenant.created_at || new Date());
-            const now = new Date();
-            const diffDays = Math.ceil(Math.abs(now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
-
-            if (diffDays <= 5 && (!tenant.subscription_status || tenant.subscription_status === 'trial')) {
-                console.log(`[ASAAS 2.0] Configurando desconto de boas-vindas (10%) para 1º ciclo`);
-                discountConfig = {
-                    value: 10,
-                    type: 'PERCENTAGE',
-                    cycles: 1
-                };
-            }
         }
 
-        // Aplicar cupom se fornecido (Prioridade sobre welcome discount se existir lógica conflitante, aqui acumula?)
-        // Simplificação: Se tiver cupom, aplica no baseAmount (permanente se não tiver lógica complexa) ou substitui discountConfig
-        // Por enquanto mantemos cupom reduzindo baseAmount (comportamento "para sempre" se for recorrente)
+        // Aplicar cupom se fornecido
         let couponDiscount = 0;
         if (coupon) {
             const { data: dbCoupon } = await supabaseAdmin
@@ -96,7 +73,6 @@ export async function POST(req: Request) {
                 .maybeSingle();
 
             if (dbCoupon) {
-                // Verificar validade
                 if (dbCoupon.expires_at && new Date(dbCoupon.expires_at) < new Date()) {
                     throw new Error('Cupom expirado');
                 }
@@ -106,13 +82,24 @@ export async function POST(req: Request) {
                     couponDiscount = Number(dbCoupon.discount_value);
                 }
                 baseAmount = Math.max(0, baseAmount - couponDiscount);
-                console.log(`[ASAAS 2.0] Cupom ${coupon} aplicado: -R$ ${(couponDiscount || 0).toFixed(2)}`);
-            } else {
-                console.log(`[ASAAS 2.0] Cupom ${coupon} inválido ou inativo`);
             }
         }
 
         const totalAmount = Number(((baseAmount * interval) || 0).toFixed(2));
+        const itemDescription = isAddon ? `Módulo Adicional: ${itemName}` : `Assinatura Mensal Plano ${itemName}`;
+
+        // Lógica de Desconto de Boas-vindas (10% no primeiro ciclo para novos tenants)
+        const isFirstSubscription = tenant.plan === 'trial' || !tenant.asaas_subscription_id;
+        const hasWelcomeCoupon = coupon?.toUpperCase() === 'WELCOME791';
+
+        let discountConfig = null;
+        if (isFirstSubscription || hasWelcomeCoupon) {
+            discountConfig = {
+                value: 10,
+                type: 'PERCENTAGE',
+                cycles: 1
+            };
+        }
 
         // 3. Garantir Cliente no Asaas
         const cpfCnpj = (tenant.cnpj || tenant.cpf || tenant.document || '').replace(/\D/g, '');
@@ -129,21 +116,10 @@ export async function POST(req: Request) {
             province: tenant.neighborhood || tenant.address_neighborhood || 'Bairro'
         };
 
-        // Lógica de Desconto de Boas-vindas (10% no primeiro ciclo)
-        const isFirstSubscription = tenant.plan === 'trial' || !tenant.asaas_subscription_id;
-        const hasWelcomeCoupon = body.coupon === 'WELCOME791';
-
-        let discountConfig = null;
-        if (isFirstSubscription || hasWelcomeCoupon) {
-            discountConfig = {
-                value: 10,
-                type: 'PERCENTAGE',
-                cycles: 1
-            };
+        let customer = await asaas.getCustomerByEmail(customerData.email);
+        if (!customer) {
+            customer = await asaas.createCustomer(customerData);
         }
-
-        const totalAmount = parseFloat(targetItem.price.toString());
-        const itemDescription = isAddon ? `Módulo Adicional: ${itemName}` : `Assinatura Mensal Plano ${itemName}`;
 
         // 3.5. Preparar referências
         const externalReference = crypto.randomUUID();
