@@ -51,12 +51,12 @@ export async function POST(req: Request) {
             const { data: addon } = await supabaseAdmin.from('system_addons').select('*').eq('slug', addonSlug).single();
             if (!addon) throw new Error('Add-on não encontrado');
             baseAmount = Number(addon.price);
-            itemName = `Add-on: ${addon.name}`;
+            itemName = addon.name;
         } else {
             const { data: plan } = await supabaseAdmin.from('system_plans').select('*').eq('slug', planSlug).single();
             if (!plan) throw new Error('Plano não encontrado');
             baseAmount = Number(plan.price);
-            itemName = `Plano ${plan.name}`;
+            itemName = plan.name;
 
             const disc = interval === 12 ? (plan.discount_annual || 20) : interval === 6 ? (plan.discount_semiannual || 10) : 0;
             if (disc > 0) baseAmount = baseAmount * (1 - (disc / 100));
@@ -86,14 +86,18 @@ export async function POST(req: Request) {
         }
 
         const totalAmount = Number(((baseAmount * interval) || 0).toFixed(2));
-        const itemDescription = isAddon ? `Módulo Adicional: ${itemName}` : `Assinatura Mensal Plano ${itemName}`;
+        const itemDescription = isAddon ? `Módulo Adicional: ${itemName}` : `Assinatura Mensal: ${itemName}`;
 
-        // Lógica de Desconto de Boas-vindas (10% no primeiro ciclo para novos tenants)
-        const isFirstSubscription = tenant.plan === 'trial' || !tenant.asaas_subscription_id;
+        // Lógica de Desconto de Boas-vindas (10% no primeiro ciclo para novos ou inativos)
+        const isNotActive = !tenant.subscription_status ||
+            ['trial', 'trial_expired', 'past_due', 'unpaid', 'incomplete'].includes(tenant.subscription_status || '');
+        const isFirstSubscription = !tenant.asaas_subscription_id || isNotActive;
+
         const hasWelcomeCoupon = coupon?.toUpperCase() === 'WELCOME791';
 
         let discountConfig = null;
         if (isFirstSubscription || hasWelcomeCoupon) {
+            console.log(`[ASAAS 2.0] Aplicando Boas-Vindas (10% OFF): isFirst=${isFirstSubscription}, coupon=${hasWelcomeCoupon}`);
             discountConfig = {
                 value: 10,
                 type: 'PERCENTAGE',
