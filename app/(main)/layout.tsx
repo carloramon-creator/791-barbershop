@@ -117,7 +117,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         {content}
                     </div>
                     <footer className="mt-8 py-4 text-center text-xs text-slate-600 light:text-slate-400">
-                        Licensed by <span className="text-slate-500 font-semibold">791 Barber</span>
+                        Licensed by <span className="text-slate-500 font-semibold">791 Barber</span> • v2.1
                     </footer>
                 </main>
             </div>
