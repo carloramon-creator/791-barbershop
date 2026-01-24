@@ -129,7 +129,7 @@ export default function RegisterPage() {
 
                 <Card className="border-slate-800 bg-slate-900 shadow-2xl">
                     <CardHeader className="space-y-1 py-4">
-                        <CardTitle className="text-xl text-center font-bold">Configurar Sua Barbearia</CardTitle>
+                        <CardTitle className="text-xl text-center font-bold">Configurar Sua Barbearia v2.1</CardTitle>
                         <CardDescription className="text-center text-slate-400 text-xs">
                             {step === 1 ? 'Primeiro, seus dados de acesso' : 'Agora, localize sua barbearia'}
                         </CardDescription>
