@@ -57,6 +57,8 @@ export async function PUT(req: Request) {
             module_appointments_enabled: body.module_appointments_enabled,
             business_type: body.business_type || body.tipo_negocio,
             opening_hours: body.opening_hours,
+            lunch_start: body.lunch_start,
+            lunch_end: body.lunch_end,
             settings: body.settings
         };
 

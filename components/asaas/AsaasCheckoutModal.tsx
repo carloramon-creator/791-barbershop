@@ -27,8 +27,8 @@ export default function AsaasCheckoutModal({ checkoutUrl, isOpen, onClose, bolet
     const [copied, setCopied] = useState(false);
 
     // Identificar modo (Cartão, Boleto ou Pix)
-    // Checkout V3 (Redirect) se tiver URL e NÃO tiver dados de boleto ou pix
-    const isCheckoutSession = checkoutUrl && checkoutUrl.includes('checkoutSession') && !pixData;
+    // Checkout SESSION (Redirect) se tiver URL e NÃO tiver dados de boleto ou pix
+    const isCheckoutSession = !!checkoutUrl && !pixData && !boletoData;
 
     // Helper de cópia
     const copyToClipboard = (text: string) => {

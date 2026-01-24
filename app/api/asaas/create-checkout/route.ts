@@ -129,10 +129,21 @@ export async function POST(req: Request) {
             province: tenant.neighborhood || tenant.address_neighborhood || 'Bairro'
         };
 
-        let customer = await asaas.getCustomerByEmail(customerData.email);
-        if (!customer) {
-            customer = await asaas.createCustomer(customerData);
+        // Lógica de Desconto de Boas-vindas (10% no primeiro ciclo)
+        const isFirstSubscription = tenant.plan === 'trial' || !tenant.asaas_subscription_id;
+        const hasWelcomeCoupon = body.coupon === 'WELCOME791';
+
+        let discountConfig = null;
+        if (isFirstSubscription || hasWelcomeCoupon) {
+            discountConfig = {
+                value: 10,
+                type: 'PERCENTAGE',
+                cycles: 1
+            };
         }
+
+        const totalAmount = parseFloat(targetItem.price.toString());
+        const itemDescription = isAddon ? `Módulo Adicional: ${itemName}` : `Assinatura Mensal Plano ${itemName}`;
 
         // 3.5. Preparar referências
         const externalReference = crypto.randomUUID();
@@ -144,51 +155,50 @@ export async function POST(req: Request) {
         }
 
         // 4. CRIAÇÃO DE ASSINATURA (PLANOS)
-        // Se for Crédito + Plano (não add-on isolado), usar createSubscription para suportar desconto de 1 ciclo
+        // Se for Crédito + Plano Mensal, usar createCheckout com valores distintos para o 1º ciclo
         if (!isAddon && paymentMethod === 'CREDIT_CARD' && interval === 1) {
-            console.log('[ASAAS 2.0] Criando Assinatura Mensal via createSubscription (Suporte a Desconto 1º Ciclo)');
+            console.log('[ASAAS 2.0] Criando Checkout Recorrente com Desconto no 1º Ciclo');
 
-            const subscriptionPayload: any = {
+            const nextDueDate = new Date();
+            nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+
+            const checkoutPayload: any = {
                 customer: customer.id,
-                billingType: 'CREDIT_CARD',
-                value: totalAmount,
-                nextDueDate: new Date().toISOString().split('T')[0], // Hoje
-                cycle: 'MONTHLY',
+                billingTypes: ['CREDIT_CARD'],
+                chargeTypes: ['RECURRENT'],
                 description: itemDescription,
-                externalReference: externalReference
+                externalReference: externalReference,
+                totalValue: discountConfig ? totalAmount * 0.9 : totalAmount, // Valor do 1º pagamento (com desconto de boas-vindas)
+                subscription: {
+                    cycle: 'MONTHLY',
+                    value: totalAmount, // Valor recorrente FULL R$ 49,90 ou 99,90
+                    nextDueDate: nextDueDate.toISOString().split('T')[0]
+                },
+                callback: {
+                    successUrl: `${baseUrl}/asaas/checkout/success`,
+                    cancelUrl: `${baseUrl}/asaas/checkout/cancel`
+                },
+                items: [{
+                    name: (itemName.length > 30 ? itemName.substring(0, 27) + '...' : itemName),
+                    value: discountConfig ? totalAmount * 0.9 : totalAmount,
+                    quantity: 1
+                }]
             };
 
-            if (discountConfig) {
-                subscriptionPayload.discount = discountConfig;
-            }
-
-            const subscription = await asaas.createSubscription(subscriptionPayload);
-            console.log('[ASAAS 2.0] Assinatura criada:', subscription.id);
-
-            // Buscar a primeira cobrança gerada para pegar o link
-            const payments = await asaas.getPaymentsBySubscription(subscription.id);
-            const firstPayment = payments?.data?.[0]; // Asaas retorna { data: [], ... }
-
-            if (!firstPayment) {
-                throw new Error('Assinatura criada mas nenhuma cobrança gerada.');
-            }
+            const checkout = await asaas.createCheckout(checkoutPayload);
+            console.log('[ASAAS 2.0] Checkout recorrente criado:', checkout.id);
 
             // Salvar no banco
-            await supabaseAdmin.from('tenants')
-                .update({ asaas_subscription_id: subscription.id })
-                .eq('id', tenant.id);
-
             await supabaseAdmin.from('finance').insert({
                 tenant_id: tenant.id,
                 type: 'expense',
-                value: totalAmount, // Valor cheio referência
+                value: totalAmount,
                 description: `Assinatura SaaS - ${itemName}`,
                 date: new Date().toISOString().split('T')[0],
                 is_paid: false,
                 metadata: {
                     is_saas_payment: true,
-                    asaas_subscription_id: subscription.id,
-                    asaas_payment_id: firstPayment.id,
+                    asaas_checkout_id: checkout.id,
                     external_reference: externalReference,
                     payment_method: paymentMethod,
                     plan: planSlug
@@ -196,12 +206,11 @@ export async function POST(req: Request) {
             });
 
             const asaasPortalUrl = environment === 'sandbox' ? 'https://sandbox.asaas.com' : 'https://www.asaas.com';
-            // Retornar link da fatura (que aceita cartão)
             return addCorsHeaders(req, NextResponse.json({
                 success: true,
-                checkoutId: firstPayment.id,
-                checkoutUrl: firstPayment.invoiceUrl || `${asaasPortalUrl}/i/${firstPayment.id}`, // Fallback
-                amount: firstPayment.value // Valor real da 1ª cobrança (com desconto)
+                checkoutId: checkout.id,
+                checkoutUrl: `${asaasPortalUrl}/checkoutSession/show?id=${checkout.id}`,
+                amount: discountConfig ? totalAmount * 0.9 : totalAmount
             }));
         }
 
