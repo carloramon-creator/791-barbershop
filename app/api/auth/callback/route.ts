@@ -6,9 +6,9 @@ export async function GET(request: Request) {
     const code = searchParams.get('code');
     const next = searchParams.get('next') ?? '/dashboard'; // Default to dashboard instead of root
 
-    // PRIORIDADE: Usar domínio de produção hardcoded ou variável de ambiente
-    // Evita loop de localhost:8080 quando atrás de proxy reverso
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://791barber.com';
+    // PRIORIDADE ABSOLUTA: Hardcoded para https://791barber.com
+    // Motivo: A variável de ambiente no servidor pode estar setada incorretamente (ex: localhost:8080)
+    const baseUrl = 'https://791barber.com';
 
     if (code) {
         const client = await supabase();

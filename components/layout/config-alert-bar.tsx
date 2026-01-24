@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/lib/auth-provider';
-import { AlertCircle, ArrowRight } from 'lucide-react';
+import { AlertCircle, ArrowRight, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
@@ -50,6 +50,44 @@ export function ExpirationAlert() {
                     isExpired ? "bg-white text-red-600 shadow-red-900/20" : "bg-slate-950 text-amber-500 shadow-amber-900/20"
                 )}>
                     Renovar Agora <ArrowRight size={12} />
+                </div>
+            </Link>
+        </div>
+    );
+}
+
+export function ConfigAlert() {
+    const { tenant } = useAuth();
+    const [missingFields, setMissingFields] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (tenant) {
+            const missing = [];
+            if (!tenant.logo_url) missing.push('Logo da Barbearia');
+            // Check address fields - assuming new tenants via wizard have these, but old ones might not or user might want to check
+            if (!tenant.street || !tenant.city) missing.push('Endereço Completo');
+            if (!tenant.pix_key) missing.push('Chave Pix');
+            if (!tenant.lunch_start || !tenant.lunch_end) missing.push('Horário de Almoço');
+
+            setMissingFields(missing);
+        }
+    }, [tenant]);
+
+    if (missingFields.length === 0) return null;
+
+    return (
+        <div className="w-full bg-orange-950/30 border-b border-orange-500/20 py-2 px-4 flex items-center justify-center gap-4 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-2 text-xs md:text-sm text-orange-200">
+                <AlertTriangle size={16} className="text-orange-500" />
+                <span className="font-bold text-orange-500 uppercase tracking-wider text-[10px] md:text-xs">CONFIGURAÇÃO INCOMPLETA</span>
+                <span className="hidden md:inline text-orange-200/50">|</span>
+                <span className="truncate max-w-[300px] md:max-w-none">
+                    Faltam {missingFields.length} itens: {missingFields.slice(0, 3).join(', ')}{missingFields.length > 3 ? '...' : ''}
+                </span>
+            </div>
+            <Link href="/geral/configuracoes">
+                <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-orange-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-orange-400 transition-colors shadow-lg shadow-orange-900/20">
+                    Completar Perfil <ArrowRight size={12} />
                 </div>
             </Link>
         </div>

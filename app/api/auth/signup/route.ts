@@ -48,9 +48,9 @@ export async function POST(req: Request) {
         }
 
         // Enviar email de confirmação
-        // PRIORIDADE: Usar o link que veio do frontend (emailRedirectTo), pois ele sabe o domínio correto (791barber.com)
-        // Se falhar, usa env.
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://791barber.com';
+        // PRIORIDADE ABSOLUTA: Usar o link que veio do frontend (emailRedirectTo) ou hardcoded
+        // Ignorar env vars do servidor que podem estar como localhost
+        const baseUrl = 'https://791barber.com';
         const finalRedirectUrl = emailRedirectTo || `${baseUrl}/auth/callback`;
 
         console.log('[API SIGNUP] Final Redirect URL:', finalRedirectUrl);

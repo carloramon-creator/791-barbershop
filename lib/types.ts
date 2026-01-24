@@ -61,6 +61,8 @@ export interface Tenant {
         auto_emit?: boolean;
         municipal_code?: string;
     };
+    lunch_start?: string;
+    lunch_end?: string;
     created_at: string;
 }
 
