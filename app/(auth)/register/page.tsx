@@ -55,8 +55,12 @@ export default function RegisterPage() {
         try {
             // Garantir que o redirect URL seja http://localhost:3000 localmente para bater com a Allow List do Supabase
             // e evitar que browsers ou proxies troquem para porta 8080 ou HTTPS indevidamente.
-            let redirectUrl = `${window.location.origin}/auth/callback`;
-            if (window.location.hostname === 'localhost') {
+            // Lógica inteligente de Redirect URL:
+            // 1. Em DEV (localhost), forçamos http://localhost:3000 para evitar conflitos de porta 8080.
+            // 2. Em PROD (nuvem), usamos window.location.origin que já pega o domínio correto (https://...).
+            let redirectUrl = window.location.origin + '/auth/callback';
+
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 redirectUrl = 'http://localhost:3000/auth/callback';
             }
 
