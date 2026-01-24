@@ -52,12 +52,21 @@ export default function RegisterPage() {
         setError(null);
 
         try {
+            // Garantir que o redirect URL seja http://localhost:3000 localmente para bater com a Allow List do Supabase
+            // e evitar que browsers ou proxies troquem para porta 8080 ou HTTPS indevidamente.
+            let redirectUrl = `${window.location.origin}/auth/callback`;
+            if (window.location.hostname === 'localhost') {
+                redirectUrl = 'http://localhost:3000/auth/callback';
+            }
+
+            console.log('[Register] Using Redirect URL:', redirectUrl);
+
             // 1. Criar conta no Supabase Auth
             const { data: authData, error: authError } = await supabaseClient.auth.signUp({
                 email,
                 password,
                 options: {
-                    emailRedirectTo: `${window.location.origin}/auth/callback`,
+                    emailRedirectTo: redirectUrl,
                     data: {
                         full_name: name,
                     },
