@@ -55,11 +55,13 @@ export default function RegisterPage() {
         try {
             // Garantir que o redirect URL seja http://localhost:3000 localmente para bater com a Allow List do Supabase
             // e evitar que browsers ou proxies troquem para porta 8080 ou HTTPS indevidamente.
-            // Usando window.location.origin para garantir comportamento padrão em qualquer ambiente.
-            // O sucesso do redirect depende apenas da Allow List no Supabase conter a URL atual (seja localhost ou produção).
-            const redirectUrl = `${window.location.origin}/auth/callback`;
+            // FORÇAR URL CORRETA:
+            // O problema é que o Supabase às vezes ignora o Site URL se o redirectURL não for exatamente igual ao da Allow List.
+            // Aqui garantimos que estamos enviando exatamente o que o browser está usando.
+            const origin = window.location.origin;
+            const redirectUrl = `${origin}/auth/callback`;
 
-            console.log('[Register] Using Redirect URL:', redirectUrl);
+            console.log('[Register] FORCE Redirect URL:', redirectUrl);
 
             // 1. Criar conta no Supabase Auth
             const { data: authData, error: authError } = await supabaseClient.auth.signUp({
