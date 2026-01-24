@@ -7,7 +7,7 @@ export default function TermsPage() {
                 <div className="bg-slate-900 border border-slate-800 rounded-lg p-8 text-slate-300 space-y-6 leading-relaxed text-sm text-justify">
                     <section className="space-y-2">
                         <p><strong>1. ACEITAÇÃO DOS TERMOS</strong></p>
-                        <p>Ao utilizar o sistema <strong>791 Barber</strong>, de titularidade da <strong>791 SOLUÇÕES EMPRESARIAIS LTDA</strong>, inscrita no CNPJ sob o nº <strong>61.887.941/0001-83</strong>, com sede na Rua Eugênio Portela, 415, Barreiros, São José/SC, o usuário declara ter lido, compreendido e aceitado integralmente as condições deste documento.</p>
+                        <p>Ao utilizar o sistema <strong>791 Barber</strong>, de titularidade da <strong>791 SOLUÇÕES EMPRESARIAIS LTDA</strong>, inscrita no CNPJ sob o nº <strong>61.887.941/0001-83</strong>, com sede em São José/SC, o usuário declara ter lido, compreendido e aceitado integralmente as condições deste documento.</p>
                         <p>O uso do sistema implica adesão automática a estes Termos de Uso e à Política de Privacidade correspondente. O serviço é fornecido "no estado em que se encontra" (as is), podendo sofrer alterações, suspensões ou encerramento sem aviso prévio.</p>
                     </section>
 
