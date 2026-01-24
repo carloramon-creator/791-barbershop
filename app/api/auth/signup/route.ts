@@ -11,7 +11,14 @@ export async function OPTIONS(req: Request) {
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { name, email, password, barbershopName, phone, cnpj, businessType, services, products, module_queue_enabled, module_appointments_enabled } = body;
+        const {
+            name, email, password, barbershopName, phone, cnpj, businessType,
+            services, products, module_queue_enabled, module_appointments_enabled,
+            // Address fields
+            cep, street, number, neighborhood, city, state,
+            // Redirect Override
+            emailRedirectTo
+        } = body;
 
         console.log('[API SIGNUP] Email:', email, 'Barbershop:', barbershopName, 'Type:', businessType);
 
@@ -41,15 +48,18 @@ export async function POST(req: Request) {
         }
 
         // Enviar email de confirmação
+        // PRIORIDADE: Usar o link que veio do frontend (emailRedirectTo), pois ele sabe o domínio correto (791barber.com)
+        // Se falhar, usa env.
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://791barber.com';
-        const redirectUrl = `${baseUrl}/auth/callback`;
-        console.log('[API SIGNUP] Redirect URL:', redirectUrl);
+        const finalRedirectUrl = emailRedirectTo || `${baseUrl}/auth/callback`;
+
+        console.log('[API SIGNUP] Final Redirect URL:', finalRedirectUrl);
 
         await supabaseAdmin.auth.resend({
             type: 'signup',
             email: email,
             options: {
-                emailRedirectTo: redirectUrl
+                emailRedirectTo: finalRedirectUrl
             }
         });
 
@@ -80,7 +90,7 @@ export async function POST(req: Request) {
             ip: req.headers.get('x-forwarded-for') || '0.0.0.0'
         };
 
-        // 3. Criar tenant (Barbearia) com plano PREMIUM e período de trial
+        // 3. Criar tenant (Barbearia) com plano PREMIUM, trial e ENDEREÇO
         const { data: tenant, error: tenantError } = await supabaseAdmin
             .from('tenants')
             .insert({
@@ -88,6 +98,14 @@ export async function POST(req: Request) {
                 slug,
                 phone: phone || null,
                 cnpj: cnpj || null,
+                // Endereço
+                cep: cep || null,
+                street: street || null,
+                number: number || null,
+                neighborhood: neighborhood || null,
+                city: city || null,
+                state: state || null,
+                // --------------
                 business_type: businessType || 'barbershop',
                 plan: 'premium',
                 subscription_status: 'trial',

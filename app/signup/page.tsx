@@ -694,11 +694,23 @@ function Step6({ formData, services, products, loading, onSubmit, onBack, onOpen
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                     <span className="text-green-400">✅</span>
-                    <span className="text-slate-300">Endereço cadastrado: {formData.city}/{formData.state}</span>
+                    <span className="text-slate-300">Endereço: {formData.city}/{formData.state}</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                     <span className="text-green-400">✅</span>
-                    <span className="text-slate-300">Modo: {formData.businessType === 'barbershop' ? 'Barbearia' : 'Salão'}</span>
+                    <span className="text-slate-300">Segmento: {formData.businessType === 'barbershop' ? 'Barbearia' : 'Salão de Beleza'}</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                    <span className="text-green-400">✅</span>
+                    <span className="text-slate-300">Atendimento: {formData.serviceMethod === 'queue' ? 'Fila Digital (Ordem de chegada)' : 'Hora Marcada'}</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                    <span className="text-green-400">✅</span>
+                    <span className="text-slate-300">{services.length} serviços cadastrados</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                    <span className="text-green-400">✅</span>
+                    <span className="text-slate-300">{products.length} produtos cadastrados</span>
                 </div>
             </div>
 
@@ -741,8 +753,65 @@ function TermsContent() {
             <section className="space-y-2">
                 <p><strong>1. ACEITAÇÃO DOS TERMOS</strong></p>
                 <p>Ao utilizar o sistema <strong>791 Barber</strong>, de titularidade da <strong>791 SOLUÇÕES EMPRESARIAIS LTDA</strong>, inscrita no CNPJ sob o nº <strong>61.887.941/0001-83</strong>, com sede em São José/SC, o usuário declara ter lido, compreendido e aceitado integralmente as condições deste documento.</p>
-                <p>O uso do sistema implica adesão automática a estes Termos de Uso e à Política de Privacidade correspondente.</p>
+                <p>O uso do sistema implica adesão automática a estes Termos de Uso e à Política de Privacidade correspondente. O serviço é fornecido "no estado em que se encontra" (as is), podendo sofrer alterações, suspensões ou encerramento sem aviso prévio.</p>
             </section>
+
+            <section className="space-y-2">
+                <p><strong>2. USO DO SISTEMA</strong></p>
+                <p>O 791 Barber destina-se exclusivamente ao gerenciamento de barbearias e salões de beleza, incluindo funcionalidades de agendamento, controle financeiro, cadastro de clientes e relatórios.</p>
+                <p>O usuário é responsável por manter a confidencialidade de suas credenciais de acesso (login e senha), bem como por todas as atividades realizadas sob sua conta. O compartilhamento de credenciais é expressamente proibido.</p>
+                <p>É vedado o uso do sistema para fins ilícitos, abusivos, fraudulentos ou que violem direitos de terceiros, sob pena de suspensão ou exclusão da conta.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>3. PLANOS E PAGAMENTOS</strong></p>
+                <p>O acesso ao sistema é concedido mediante assinatura nos planos disponibilizados (mensal, semestral ou anual).</p>
+                <p>O pagamento é processado por meio das plataformas integradas ao sistema (como Stripe, Pix ou outros métodos disponíveis).</p>
+                <p>A ausência de pagamento ou atraso poderá resultar na suspensão automática do acesso até a regularização.</p>
+                <p>Valores pagos não são reembolsáveis, exceto em casos previstos em lei ou falhas comprovadas da plataforma.</p>
+                <p>Alterações de preço ou de planos poderão ocorrer, com comunicação prévia ao usuário por e-mail ou dentro da plataforma.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>4. RESPONSABILIDADES DO USUÁRIO E DA 791 SOLUÇÕES</strong></p>
+                <p>O usuário é integralmente responsável pelas informações inseridas no sistema, incluindo dados de clientes, produtos e registros financeiros.</p>
+                <p>A 791 Soluções Empresariais LTDA não se responsabiliza por:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                    <li>Dados inseridos incorretamente pelo usuário;</li>
+                    <li>Interrupções, falhas ou instabilidades decorrentes de problemas na conexão de internet do cliente;</li>
+                    <li>Danos indiretos, lucros cessantes ou perda de informações decorrentes do uso indevido da plataforma.</li>
+                </ul>
+                <p>Embora adote medidas de segurança e backup, a empresa não garante disponibilidade contínua do serviço nem isenção total de erros.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>5. SUPORTE E ATENDIMENTO</strong></p>
+                <p>O suporte técnico é oferecido nos canais oficiais da 791 Barber, nos horários e prazos informados na plataforma. Dúvidas relacionadas ao uso, cobrança ou funcionalidades devem ser encaminhadas pelos meios indicados.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>6. CANCELAMENTO E EXCLUSÃO DE CONTA</strong></p>
+                <p>O usuário pode solicitar o cancelamento da assinatura a qualquer momento, diretamente pelo painel ou via suporte. O cancelamento não gera direito a reembolso de períodos já pagos e não utilizados.</p>
+                <p>Em caso de inatividade prolongada ou violação destes termos, a 791 Soluções poderá, a seu critério, suspender ou excluir o acesso do usuário, preservando os dados conforme a legislação vigente.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>7. PRIVACIDADE E PROTEÇÃO DE DADOS</strong></p>
+                <p>A coleta, armazenamento e tratamento de dados pessoais seguem a Lei Geral de Proteção de Dados (LGPD – Lei nº 13.709/2018). As informações são utilizadas exclusivamente para fins operacionais e de melhoria do sistema, conforme descrito na Política de Privacidade.</p>
+                <p>O usuário poderá solicitar, a qualquer momento, a exclusão definitiva de seus dados, sujeito aos prazos e limitações legais.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>8. ALTERAÇÕES DESTES TERMOS</strong></p>
+                <p>A 791 Soluções poderá alterar estes Termos a qualquer momento. As versões atualizadas estarão sempre disponíveis no site oficial e passam a valer a partir da data de publicação. O uso contínuo do sistema após a atualização implica aceitação automática das novas condições.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>9. FORO E LEGISLAÇÃO APLICÁVEL</strong></p>
+                <p>Estes Termos são regidos pelas leis da República Federativa do Brasil. Fica eleito o foro da Comarca de Florianópolis – SC como competente para resolver quaisquer disputas oriundas deste contrato, com renúncia expressa a qualquer outro, por mais privilegiado que seja.</p>
+            </section>
+
+            <p className="pt-6 text-xs text-slate-500 font-bold">Última atualização: 18 de janeiro de 2026.</p>
         </div>
     );
 }
@@ -752,8 +821,108 @@ function PrivacyContent() {
         <div className="text-slate-300 space-y-6 leading-relaxed text-sm text-justify pr-2">
             <section className="space-y-2">
                 <p><strong>1. DISPOSIÇÕES GERAIS</strong></p>
-                <p>Esta Política de Privacidade descreve como a <strong>791 SOLUÇÕES EMPRESARIAIS LTDA</strong>, inscrita no CNPJ sob o nº <strong>61.887.941/0001-83</strong>, sediada em São José/SC (“791 Soluções”, “nós”), coleta, utiliza, armazena e protege os dados pessoais dos usuários.</p>
+                <p>Esta Política de Privacidade descreve como a <strong>791 SOLUÇÕES EMPRESARIAIS LTDA</strong>, inscrita no CNPJ sob o nº <strong>61.887.941/0001-83</strong>, sediada em São José/SC (“791 Soluções”, “nós”), coleta, utiliza, armazena e protege os dados pessoais dos usuários do sistema 791 Barber e dos clientes cadastrados pelos estabelecimentos (barbearias e salões).</p>
+                <p>O tratamento de dados pessoais é realizado em conformidade com a Lei nº 13.709/2018 – Lei Geral de Proteção de Dados Pessoais (LGPD) e demais normas aplicáveis.</p>
             </section>
+
+            <section className="space-y-2">
+                <p><strong>2. DADOS COLETADOS</strong></p>
+                <p>Poderão ser coletados:</p>
+                <ul className="list-disc pl-5 space-y-2">
+                    <li><strong>Dados do estabelecimento e responsáveis:</strong> nome, razão social, CNPJ, CPF, e-mail, telefone, endereço, dados de cobrança e faturamento.</li>
+                    <li><strong>Dados de usuários do sistema:</strong> nome, e-mail, telefone, função no estabelecimento e dados de acesso (login).</li>
+                    <li><strong>Dados dos clientes do estabelecimento:</strong> nome, telefone, e-mail, histórico de agendamentos e serviços realizados.</li>
+                    <li><strong>Dados de uso:</strong> endereço IP, data e hora de acesso, tipo de dispositivo, navegador e interações com o sistema, para fins de segurança e melhoria da plataforma.</li>
+                </ul>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>3. FINALIDADES DO TRATAMENTO</strong></p>
+                <p>Os dados são utilizados para:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                    <li>Permitir o funcionamento do 791 Barber (cadastro, login, agendamentos, controle financeiro, relatórios).</li>
+                    <li>Executar o contrato de prestação de serviços firmado com o estabelecimento assinante.</li>
+                    <li>Enviar comunicações operacionais, avisos sobre o serviço, cobranças, notas fiscais e informações de suporte.</li>
+                    <li>Cumprir obrigações legais e regulatórias, inclusive fiscais e de guarda de registros de acesso.</li>
+                    <li>Melhorar a experiência de uso, prevenir fraudes e garantir a segurança da aplicação e dos dados.</li>
+                </ul>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>4. BASES LEGAIS UTILIZADAS</strong></p>
+                <p>O tratamento de dados pessoais se fundamenta principalmente em:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                    <li>Execução de contrato ou de procedimentos preliminares relacionados a contrato do qual o titular seja parte.</li>
+                    <li>Cumprimento de obrigação legal ou regulatória, quando aplicável (por exemplo, obrigações fiscais e de registros de acesso).</li>
+                    <li>Legítimo interesse, para atividades de segurança, prevenção a fraudes, melhoria de serviços e comunicação com clientes, respeitados os direitos dos titulares.</li>
+                    <li>Consentimento, quando exigido pela LGPD, especialmente para comunicações de marketing direto, podendo ser revogado a qualquer momento pelo titular.</li>
+                </ul>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>5. COMPARTILHAMENTO DE DADOS</strong></p>
+                <p>Os dados poderão ser compartilhados:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                    <li>Com provedores de serviços de tecnologia (hospedagem, e-mail, gateways de pagamento, ferramentas de análise), estritamente na medida necessária para operação do sistema.</li>
+                    <li>Com autoridades públicas, quando houver obrigação legal, ordem judicial ou requisição de autoridade competente.</li>
+                    <li>Em casos de operações societárias (fusão, aquisição ou incorporação), condicionadas à continuidade das garantias desta Política.</li>
+                </ul>
+                <p>Não há venda de dados pessoais a terceiros para fins comerciais alheios ao serviço prestado.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>6. ARMAZENAMENTO E SEGURANÇA DOS DADOS</strong></p>
+                <p>Os dados são armazenados em ambientes controlados e de acesso restrito, com uso de medidas técnicas e organizacionais de segurança razoáveis para proteger contra acessos não autorizados, perda, alteração ou destruição.</p>
+                <p>Apesar dos esforços de segurança, nenhum sistema é totalmente imune a incidentes, motivo pelo qual não é possível garantir segurança absoluta das informações.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>7. PRAZO DE CONSERVAÇÃO</strong></p>
+                <p>Os dados são mantidos pelo tempo necessário para:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                    <li>Cumprir as finalidades indicadas nesta Política e no contrato de prestação de serviços.</li>
+                    <li>Atender exigências legais, regulatórias e de defesa em processos judiciais, administrativos ou arbitrais.</li>
+                </ul>
+                <p>Após o término das finalidades, os dados poderão ser eliminados ou anonimizados, salvo nas hipóteses legais de guarda obrigatória.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>8. DIREITOS DOS TITULARES</strong></p>
+                <p>O titular de dados pessoais poderá, mediante requisição:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                    <li>Confirmar a existência de tratamento e obter acesso aos seus dados.</li>
+                    <li>Corrigir dados incompletos, inexatos ou desatualizados.</li>
+                    <li>Solicitar anonimização, bloqueio ou eliminação de dados desnecessários, excessivos ou tratados em desconformidade com a LGPD.</li>
+                    <li>Solicitar a portabilidade dos dados a outro fornecedor de serviço ou produto, respeitadas as normas da autoridade nacional.</li>
+                    <li>Revogar o consentimento, quando o tratamento se basear nesta hipótese, observados os efeitos dessa revogação.</li>
+                </ul>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>9. RESPONSABILIDADES DO ESTABELECIMENTO (CONTROLADOR)</strong></p>
+                <p>Em relação aos dados dos clientes cadastrados na plataforma (por exemplo, clientes da barbearia), o estabelecimento é, em regra, o controlador e a 791 Soluções atua como operadora em diversas operações de tratamento.</p>
+                <p>Cabe ao estabelecimento garantir que possui base legal adequada para cadastrar dados de seus clientes no sistema e para utilizar tais dados para agendamentos, comunicações e registros.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>10. COOKIES E TECNOLOGIAS DE RASTREAMENTO</strong></p>
+                <p>O sistema poderá utilizar cookies e tecnologias similares para: lembrar preferências, manter a sessão ativa, gerar estatísticas de uso e melhorar a experiência do usuário.</p>
+                <p>O usuário poderá ajustar as configurações de cookies no navegador, ciente de que algumas funcionalidades podem ser afetadas caso determinados cookies sejam desativados.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>11. ATUALIZAÇÕES DESTA POLÍTICA</strong></p>
+                <p>Esta Política de Privacidade poderá ser alterada periodicamente para refletir ajustes legais, regulatórios ou melhorias nos processos de tratamento de dados.</p>
+                <p>A versão atualizada estará sempre disponível no site ou no painel do 791 Barber, indicando a data de última atualização, e o uso continuado do serviço após as alterações implica ciência das novas condições.</p>
+            </section>
+
+            <section className="space-y-2">
+                <p><strong>12. ENCARREGADO (DPO) E CONTATO</strong></p>
+                <p>A 791 Soluções indicará um Encarregado pelo Tratamento de Dados Pessoais (DPO), responsável por receber reclamações e comunicações dos titulares e da Autoridade Nacional de Proteção de Dados (ANPD), além de orientar internamente sobre proteção de dados.</p>
+                <p>Para exercer seus direitos ou esclarecer dúvidas sobre esta Política, o titular poderá entrar em contato pelo e-mail: <strong>contato@791solucoes.com.br</strong>.</p>
+            </section>
+
+            <p className="pt-6 text-xs text-slate-500 font-bold">Última atualização: 18 de janeiro de 2026.</p>
         </div>
     );
 }
