@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Topbar } from '@/components/layout/topbar';
 import { Sidebar } from '@/components/layout/sidebar';
+import { ConfigAlert, ExpirationAlert } from '@/components/layout/config-alert-bar';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { isSystemAdmin, loading } = useAuth();
