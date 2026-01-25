@@ -378,6 +378,7 @@ export default function PlanPage() {
                             seu_numero: data.seu_numero
                         });
                     }
+                    setSelectedAddonsSlugs([]); // Limpar ao gerar Pix Inter
                     setOpenDialog(true);
                 } else if (paymentMethod === 'boleto-inter') {
                     if (data.pdfUrl && data.linhaDigitavel) {
@@ -396,6 +397,7 @@ export default function PlanPage() {
                             message: 'Registrando boleto no Banco Inter...',
                             seu_numero: data.seu_numero
                         });
+                        setSelectedAddonsSlugs([]); // Limpar ao gerar Boleto Inter
                         setOpenDialog(true);
                     }
                 }
@@ -420,9 +422,15 @@ export default function PlanPage() {
                     amount: data.amount || data.boletoData?.value
                 } as any);
                 setPaymentMethod('boleto-result');
+                setSelectedAddonsSlugs([]); // Limpar seleção local
                 fetchInvoices();
             } else {
                 throw new Error('Retorno desconhecido do gateway');
+            }
+
+            // Limpeza geral para cartões (se não houver redirecionamento imediato)
+            if (paymentMethod === 'card') {
+                setSelectedAddonsSlugs([]);
             }
 
         } catch (err: any) {

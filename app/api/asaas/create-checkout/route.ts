@@ -194,10 +194,15 @@ export async function POST(req: Request) {
                 totalValue: firstPaymentValue,
                 subscription: {
                     cycle: 'MONTHLY',
-                    value: totalAmount, // Valor cheio para o futuro
+                    value: totalAmount, // Valor cheio para o futuro (R$ 109,90)
                     nextDueDate: nextDueDate.toISOString().split('T')[0],
                     description: itemDescription,
-                    observations: itemDescription
+                    observations: itemDescription,
+                    discount: applyWelcomeDiscount ? {
+                        value: Number((totalAmount * 0.1).toFixed(2)),
+                        type: 'FIXED',
+                        dueDateLimitDays: 0
+                    } : undefined
                 },
                 callback: {
                     successUrl: `${baseUrl}/asaas/checkout/success`,
@@ -223,7 +228,7 @@ export async function POST(req: Request) {
                     external_reference: externalReference,
                     payment_method: paymentMethod,
                     plan: planSlug,
-                    addon: addonSlug,
+                    addons: finalAddonsSlugs,
                     is_first_payment: true,
                     original_value: totalAmount
                 }
@@ -279,7 +284,7 @@ export async function POST(req: Request) {
                 external_reference: externalReference,
                 payment_method: paymentMethod,
                 plan: planSlug,
-                addon: addonSlug,
+                addons: finalAddonsSlugs,
                 interval: interval,
                 is_first_payment: true,
                 original_value: totalAmount

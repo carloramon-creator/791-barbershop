@@ -161,8 +161,8 @@ export async function POST(req: Request) {
         console.log(`[ASAAS WEBHOOK 2.0] 🚀 Ativando plano para: ${tenant.name}`);
 
         const metadata = financeRecord.metadata || {};
-        const planSlug = metadata.plan || 'complete';
-        const isAddon = !!metadata.addon;
+        const planSlug = metadata.plan;
+        const addonsSlugs = metadata.addons || (metadata.addon ? [metadata.addon] : []);
 
         // Atualizar Tenant
         const updateData: any = {
@@ -170,41 +170,45 @@ export async function POST(req: Request) {
             subscription_current_period_end: new Date(Date.now() + (metadata.interval || 1) * 31 * 24 * 60 * 60 * 1000).toISOString()
         };
 
-        if (!isAddon) {
+        // 4.1 Ativar Plano (se houver)
+        if (planSlug) {
+            console.log(`[ASAAS WEBHOOK 2.0] 🚀 Ativando plano: ${planSlug}`);
             updateData.plan = planSlug;
-        } else {
-            const addonSlug = metadata.addon;
-            console.log(`[ASAAS WEBHOOK 2.0] 📦 Processando ativação de add-on: ${addonSlug}`);
+        }
 
-            try {
-                // Buscar ID do Add-on pelo slug
-                const { data: addonData } = await getSupabaseAdmin()
-                    .from('system_addons')
-                    .select('id')
-                    .eq('slug', addonSlug)
-                    .single();
+        // 4.2 Ativar Add-ons (se houver)
+        if (addonsSlugs.length > 0) {
+            console.log(`[ASAAS WEBHOOK 2.0] 📦 Processando ativação de ${addonsSlugs.length} add-ons: ${addonsSlugs.join(', ')}`);
 
-                if (addonData) {
-                    // Upsert na tabela tenant_addons
-                    const { error: addonError } = await getSupabaseAdmin()
-                        .from('tenant_addons')
-                        .upsert({
-                            tenant_id: tenant.id,
-                            addon_id: addonData.id,
-                            status: 'active',
-                            activated_at: new Date().toISOString()
-                        }, { onConflict: 'tenant_id,addon_id' });
+            for (const addonSlug of addonsSlugs) {
+                try {
+                    // Buscar ID do Add-on pelo slug
+                    const { data: addonData } = await getSupabaseAdmin()
+                        .from('system_addons')
+                        .select('id')
+                        .eq('slug', addonSlug)
+                        .single();
 
-                    if (addonError) {
-                        console.error('[ASAAS WEBHOOK 2.0] ❌ Erro ao ativar add-on na tabela tenant_addons:', addonError);
-                    } else {
-                        console.log(`[ASAAS WEBHOOK 2.0] ✅ Add-on ${addonSlug} ativado com sucesso em tenant_addons.`);
+                    if (addonData) {
+                        // Upsert na tabela tenant_addons
+                        const { error: addonError } = await getSupabaseAdmin()
+                            .from('tenant_addons')
+                            .upsert({
+                                tenant_id: tenant.id,
+                                addon_id: addonData.id,
+                                status: 'active',
+                                activated_at: new Date().toISOString()
+                            }, { onConflict: 'tenant_id,addon_id' });
+
+                        if (addonError) {
+                            console.error(`[ASAAS WEBHOOK 2.0] ❌ Erro ao ativar add-on ${addonSlug}:`, addonError);
+                        } else {
+                            console.log(`[ASAAS WEBHOOK 2.0] ✅ Add-on ${addonSlug} ativado com sucesso.`);
+                        }
                     }
-                } else {
-                    console.error(`[ASAAS WEBHOOK 2.0] ❌ Add-on slug '${addonSlug}' não encontrado em system_addons.`);
+                } catch (err) {
+                    console.error(`[ASAAS WEBHOOK 2.0] ❌ Falha ao processar add-on ${addonSlug}:`, err);
                 }
-            } catch (err) {
-                console.error('[ASAAS WEBHOOK 2.0] ❌ Falha crítica ao processar add-on:', err);
             }
         }
 
