@@ -15,7 +15,8 @@ import {
     Zap,
     FileCheck,
     CheckCircle2,
-    Package
+    Package,
+    ArrowRight
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -665,20 +666,21 @@ export default function PlanPage() {
                                                                 </div>
                                                                 <Button
                                                                     size="sm"
-                                                                    variant={isActive ? "outline" : "default"}
+                                                                    variant={isActive ? "outline" : (selectedAddon?.id === addon.id ? "default" : "outline")}
                                                                     disabled={isActive || saving}
                                                                     onClick={() => {
-                                                                        setSelectedAddon(addon);
-                                                                        // Não limpamos mais o plano aqui para permitir combo
-                                                                        setPaymentMethod('card');
-                                                                        setOpenDialog(true);
+                                                                        if (selectedAddon?.id === addon.id) {
+                                                                            setSelectedAddon(null);
+                                                                        } else {
+                                                                            setSelectedAddon(addon);
+                                                                        }
                                                                     }}
                                                                     className={cn(
-                                                                        "h-9 text-[10px] font-black uppercase tracking-widest px-4 shadow-lg active:scale-95 transition-all",
-                                                                        isActive ? "border-emerald-500/50 text-emerald-500 bg-transparent" : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20"
+                                                                        "h-9 text-[10px] font-black uppercase tracking-widest px-4 shadow-lg active:scale-95 transition-all text-white",
+                                                                        isActive ? "border-emerald-500/50 text-emerald-500 bg-transparent" : (selectedAddon?.id === addon.id ? "bg-amber-600 border-amber-600" : "border-slate-700 hover:border-amber-500")
                                                                     )}
                                                                 >
-                                                                    {isActive ? 'Ativo' : 'Adicionar'}
+                                                                    {isActive ? 'Ativo' : (selectedAddon?.id === addon.id ? 'Selecionado' : 'Adicionar')}
                                                                 </Button>
                                                             </div>
                                                         </CardContent>
@@ -803,17 +805,18 @@ export default function PlanPage() {
                                                             'w-full py-7 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl',
                                                             currentPlan === plan.slug && subscriptionStatus === 'active'
                                                                 ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                                                                : 'bg-blue-600 hover:bg-white hover:text-blue-600 text-white shadow-blue-600/20 active:scale-95'
+                                                                : (selectedPlan === plan.slug ? 'bg-amber-600 text-white' : 'bg-blue-600 hover:bg-white hover:text-blue-600 text-white shadow-blue-600/20 active:scale-95')
                                                         )}
                                                         disabled={currentPlan === plan.slug && subscriptionStatus === 'active'}
                                                         onClick={() => {
-                                                            setSelectedPlan(plan.slug);
-                                                            // Não limpamos o addon para permitir combo
-                                                            setPaymentMethod('card');
-                                                            setOpenDialog(true);
+                                                            if (selectedPlan === plan.slug) {
+                                                                setSelectedPlan(null);
+                                                            } else {
+                                                                setSelectedPlan(plan.slug);
+                                                            }
                                                         }}
                                                     >
-                                                        {currentPlan === plan.slug && subscriptionStatus === 'active' ? 'Plano Ativo' : 'Assinar Agora'}
+                                                        {currentPlan === plan.slug && subscriptionStatus === 'active' ? 'Plano Ativo' : (selectedPlan === plan.slug ? 'Selecionado' : 'Selecionar Plano')}
                                                     </Button>
                                                 </CardContent>
                                             </div>
@@ -1431,6 +1434,35 @@ export default function PlanPage() {
                         </div>
                     </div>
                 </>
+            )}
+
+            {/* BARRA DE SELEÇÃO FIXA NO RODAPÉ */}
+            {(selectedPlan || selectedAddon) && !openDialog && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-slate-900/90 backdrop-blur-xl border border-blue-500/30 p-4 rounded-3xl shadow-2xl flex items-center justify-between z-50 animate-in slide-in-from-bottom-10 pointer-events-auto">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Pacote Selecionado</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-xl font-black text-white">
+                                R$ {(() => {
+                                    const plan = dynamicPlans.find(p => p.slug === selectedPlan);
+                                    const planTotal = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
+                                    const addonTotal = selectedAddon ? Number(selectedAddon.price) * selectedInterval : 0;
+                                    return (planTotal + addonTotal).toFixed(2).replace('.', ',');
+                                })()}
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-bold uppercase">/ {selectedInterval === 1 ? 'mês' : `${selectedInterval} meses`}</span>
+                        </div>
+                    </div>
+                    <Button
+                        onClick={() => {
+                            setPaymentMethod('card');
+                            setOpenDialog(true);
+                        }}
+                        className="bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest px-8 rounded-xl shadow-lg shadow-blue-900/40"
+                    >
+                        Checkout Agora <ArrowRight size={16} className="ml-2" />
+                    </Button>
+                </div>
             )}
 
             {/* Modal de Checkout Integrado do Asaas */}
