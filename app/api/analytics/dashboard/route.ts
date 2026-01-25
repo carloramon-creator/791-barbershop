@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 import { startOfDay, endOfDay, subDays, subWeeks, subMonths } from 'date-fns';
 
@@ -20,7 +20,7 @@ export async function GET(req: Request) {
         const endIso = endDate.toISOString();
 
         // 1. Faturamento no período
-        const { data: sales, error: salesError } = await supabaseAdmin
+        const { data: sales, error: salesError } = await getSupabaseAdmin()
             .from('sales')
             .select('total_amount')
             .eq('tenant_id', tenant.id)
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
         const totalBilling = sales?.reduce((acc, s) => acc + Number(s.total_amount), 0) || 0;
 
         // 2. Total de atendimentos feitos (finished)
-        const { count: servicesDone, error: queueError } = await supabaseAdmin
+        const { count: servicesDone, error: queueError } = await getSupabaseAdmin()
             .from('client_queue')
             .select('*', { count: 'exact', head: true })
             .eq('tenant_id', tenant.id)
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
         if (queueError) throw queueError;
 
         // 3. Média de espera entre todos os atendidos (started_at - created_at)
-        const { data: servedClients, error: servedError } = await supabaseAdmin
+        const { data: servedClients, error: servedError } = await getSupabaseAdmin()
             .from('client_queue')
             .select('created_at, started_at')
             .eq('tenant_id', tenant.id)

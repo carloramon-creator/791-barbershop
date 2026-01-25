@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getSystemInterClient } from '@/lib/inter-api';
 
 export async function POST(req: Request) {
     try {
         // 1. Get settings
-        const { data: setting, error: settingError } = await supabaseAdmin
+        const { data: setting, error: settingError } = await getSupabaseAdmin()
             .from('system_settings')
             .select('*')
             .eq('key', 'inter_config')

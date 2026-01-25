@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 /**
  * Endpoint PÚBLICO para cliente consultar status do seu ticket.
@@ -15,7 +15,7 @@ export async function GET(req: Request) {
         }
 
         // Buscar o ticket e o barbeiro
-        const { data: ticket, error: ticketError } = await supabaseAdmin
+        const { data: ticket, error: ticketError } = await getSupabaseAdmin()
             .from('client_queue')
             .select(`
                 *,
@@ -46,7 +46,7 @@ export async function GET(req: Request) {
         let estimatedWait = 0;
 
         if (ticket.status === 'waiting') {
-            const { count } = await supabaseAdmin
+            const { count } = await getSupabaseAdmin()
                 .from('client_queue')
                 .select('*', { count: 'exact', head: true })
                 .eq('barber_id', ticket.barber_id)

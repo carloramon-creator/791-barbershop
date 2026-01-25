@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 /**
@@ -9,7 +9,7 @@ export async function GET() {
     try {
         const { user, tenant, roles } = await getCurrentUserAndTenant();
 
-        const { data: barber, error } = await supabaseAdmin
+        const { data: barber, error } = await getSupabaseAdmin()
             .from('barbers')
             .select('*')
             .eq('tenant_id', tenant.id)
@@ -39,7 +39,7 @@ export async function PATCH(req: Request) {
         // REMOVED temporarily to fix user issues
         /* 
         if (status === 'available' || status === 'busy') {
-            const { data: userData } = await supabaseAdmin
+            const { data: userData } = await getSupabaseAdmin()
                 .from('users')
                 .select('last_seen_at')
                 .eq('id', user.id)
@@ -57,7 +57,7 @@ export async function PATCH(req: Request) {
         }
         */
 
-        const { data: updated, error } = await supabaseAdmin
+        const { data: updated, error } = await getSupabaseAdmin()
             .from('barbers')
             .update({ status })
             .eq('tenant_id', tenant.id)

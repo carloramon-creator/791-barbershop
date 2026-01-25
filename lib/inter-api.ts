@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { supabaseAdmin } from './supabase-server';
+import { getSupabaseAdmin } from './supabase-server';
 import * as https from 'https';
 import * as dns from 'dns';
 import { promisify } from 'util';
@@ -179,7 +179,7 @@ export class InterAPI {
 }
 
 export async function getInterClient(tenantId: string) {
-    const { data: tenant, error } = await supabaseAdmin
+    const { data: tenant, error } = await getSupabaseAdmin()
         .from('tenants')
         .select('inter_client_id, inter_client_secret, inter_cert_content, inter_key_content')
         .eq('id', tenantId)
@@ -198,7 +198,7 @@ export async function getInterClient(tenantId: string) {
 }
 
 export async function getSystemInterClient() {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
         .from('system_settings')
         .select('*')
         .eq('key', 'inter_config')

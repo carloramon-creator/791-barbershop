@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function GET() {
     try {
         const { user, tenantId, role } = await getCurrentUserAndTenant();
 
-        let query = supabaseAdmin
+        let query = getSupabaseAdmin()
             .from('support_tickets')
             .select(`
                 *,
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
         }
 
         // Insert into database
-        const { error } = await supabaseAdmin
+        const { error } = await getSupabaseAdmin()
             .from('support_tickets')
             .insert({
                 type,

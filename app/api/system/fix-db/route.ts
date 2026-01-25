@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export async function GET() {
     try {
         console.log('Aplicando correção de banco de dados...');
 
         // 1. Adicionar coluna expires_at
-        const { error: error1 } = await supabaseAdmin.rpc('run_sql_query', {
+        const { error: error1 } = await getSupabaseAdmin().rpc('run_sql_query', {
             query: "ALTER TABLE system_coupons ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP WITH TIME ZONE;"
         });
 

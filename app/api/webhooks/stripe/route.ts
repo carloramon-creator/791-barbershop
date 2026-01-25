@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe-server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import Stripe from 'stripe';
 import { invoiceProvider } from '@/lib/invoice-provider';
 
@@ -89,9 +89,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     console.log(`[STRIPE] Processando Checkout: Tenant=${tenantId}, Item=${addonSlug || planSlug}, Interval=${interval}, Mode=${session.mode}`);
 
     if (isAddon && addonSlug) {
-        const { data: addonData } = await supabaseAdmin.from('system_addons').select('id').eq('slug', addonSlug).single();
+        const { data: addonData } = await getSupabaseAdmin().from('system_addons').select('id').eq('slug', addonSlug).single();
         if (addonData) {
-            await supabaseAdmin.from('tenant_addons').upsert({
+            await getSupabaseAdmin().from('tenant_addons').upsert({
                 tenant_id: tenantId,
                 addon_id: addonData.id,
                 status: 'active',
@@ -115,8 +115,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
             updateData.subscription_current_period_end = futureDate.toISOString();
         }
 
-        await supabaseAdmin.from('tenants').update(updateData).eq('id', tenantId);
-        await supabaseAdmin.from('trial_subscriptions').update({ status: 'converted' }).eq('tenant_id', tenantId).eq('status', 'active');
+        await getSupabaseAdmin().from('tenants').update(updateData).eq('id', tenantId);
+        await getSupabaseAdmin().from('trial_subscriptions').update({ status: 'converted' }).eq('tenant_id', tenantId).eq('status', 'active');
     }
 
     // Financeiro para mode: 'payment'
@@ -124,7 +124,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         const amount = session.amount_total / 100;
         const description = `Assinatura SaaS ${interval === 12 ? 'Anual' : interval === 6 ? 'Semestral' : ''} - Plano ${planSlug} (Stripe Parcelado)`;
 
-        await supabaseAdmin.from('finance').insert({
+        await getSupabaseAdmin().from('finance').insert({
             tenant_id: tenantId,
             type: 'expense',
             value: amount,
@@ -146,7 +146,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
             const totalDiscount = session.total_details?.amount_discount || 0;
             const discountApplied = totalDiscount / 100;
 
-            await supabaseAdmin.from('system_coupon_usage').insert({
+            await getSupabaseAdmin().from('system_coupon_usage').insert({
                 coupon_id: couponId,
                 tenant_id: tenantId,
                 stripe_session_id: session.id,
@@ -155,7 +155,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
                 discount_applied: discountApplied
             });
 
-            await supabaseAdmin.rpc('increment_coupon_usage', { coupon_uuid: couponId });
+            await getSupabaseAdmin().rpc('increment_coupon_usage', { coupon_uuid: couponId });
         } catch (error) {
             console.error('[STRIPE] Erro ao registrar uso do cupom:', error);
         }
@@ -169,14 +169,14 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
 
     if (amount <= 0) return;
 
-    const { data: tenant } = await supabaseAdmin.from('tenants').select('id, plan, name, cnpj, cpf').eq('stripe_customer_id', customerId).single();
+    const { data: tenant } = await getSupabaseAdmin().from('tenants').select('id, plan, name, cnpj, cpf').eq('stripe_customer_id', customerId).single();
     if (!tenant) return;
 
     const isCreation = invoice.billing_reason === 'subscription_create';
     const isUpdate = invoice.billing_reason === 'subscription_update';
     const description = isCreation ? `Assinatura SaaS - Plano ${tenant.plan} (Stripe)` : isUpdate ? `Upgrade/Alteração SaaS - Plano ${tenant.plan} (Stripe)` : `Renovação SaaS - Plano ${tenant.plan} (Stripe)`;
 
-    const { data: financeRecord } = await supabaseAdmin.from('finance').insert({
+    const { data: financeRecord } = await getSupabaseAdmin().from('finance').insert({
         tenant_id: tenant.id,
         type: 'expense',
         value: amount,
@@ -193,7 +193,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
         }
     }).select('*').single();
 
-    await supabaseAdmin.from('tenants').update({ subscription_status: 'active' }).eq('id', tenant.id);
+    await getSupabaseAdmin().from('tenants').update({ subscription_status: 'active' }).eq('id', tenant.id);
 
     if (financeRecord) {
         try {
@@ -208,7 +208,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
             }, false);
 
             if (result.success) {
-                await supabaseAdmin.from('finance').update({
+                await getSupabaseAdmin().from('finance').update({
                     metadata: { ...financeRecord.metadata, nfe_id: result.invoiceId, nfe_pdf_url: result.pdfUrl, nfe_status: result.status }
                 }).eq('id', financeRecord.id);
             }
@@ -224,7 +224,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     if (!tenantId) return;
 
     const periodEnd = (subscription as any).current_period_end;
-    await supabaseAdmin.from('tenants').update({
+    await getSupabaseAdmin().from('tenants').update({
         stripe_subscription_id: subscription.id,
         subscription_status: subscription.status,
         subscription_current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
@@ -235,14 +235,14 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     const tenantId = subscription.metadata?.tenant_id;
     if (!tenantId) return;
-    await supabaseAdmin.from('tenants').update({ subscription_status: 'canceled', plan: 'basic' }).eq('id', tenantId);
+    await getSupabaseAdmin().from('tenants').update({ subscription_status: 'canceled', plan: 'basic' }).eq('id', tenantId);
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
     const customerId = invoice.customer as string;
     if (!customerId) return;
-    const { data: tenant } = await supabaseAdmin.from('tenants').select('id').eq('stripe_customer_id', customerId).single();
+    const { data: tenant } = await getSupabaseAdmin().from('tenants').select('id').eq('stripe_customer_id', customerId).single();
     if (tenant) {
-        await supabaseAdmin.from('tenants').update({ subscription_status: 'past_due' }).eq('id', tenant.id);
+        await getSupabaseAdmin().from('tenants').update({ subscription_status: 'past_due' }).eq('id', tenant.id);
     }
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { addCorsHeaders } from '@/lib/server-utils';
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +13,7 @@ export async function GET(
         const { searchParams } = new URL(req.url);
         const clientId = searchParams.get('c');
 
-        const { data: tenant, error } = await supabaseAdmin
+        const { data: tenant, error } = await getSupabaseAdmin()
             .from('tenants')
             .select('name, logo_url')
             .eq('slug', slug)

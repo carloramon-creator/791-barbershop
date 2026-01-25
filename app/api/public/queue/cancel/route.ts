@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export async function PUT(req: NextRequest) {
     try {
@@ -9,7 +9,7 @@ export async function PUT(req: NextRequest) {
             return NextResponse.json({ message: 'ID do ticket é obrigatório.' }, { status: 400 });
         }
 
-        const client = supabaseAdmin;
+        const client = getSupabaseAdmin();
 
         // 1. Busca o ticket atual
         const { data: ticket, error: ticketError } = await client

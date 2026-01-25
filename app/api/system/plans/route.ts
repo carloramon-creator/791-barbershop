@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
 
 export async function OPTIONS(req: Request) {
@@ -12,7 +12,7 @@ export async function GET(req: Request) {
         // Permitir que qualquer pessoa veja os planos (público)
         // await getCurrentUserAndTenant();
 
-        const { data: plans, error } = await supabaseAdmin
+        const { data: plans, error } = await getSupabaseAdmin()
             .from('system_plans')
             .select('*')
             .order('price', { ascending: true });
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('system_plans')
             .insert([body])
             .select()
@@ -57,7 +57,7 @@ export async function PATCH(req: Request) {
         const body = await req.json();
         const { id, ...updates } = body;
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('system_plans')
             .update(updates)
             .eq('id', id)

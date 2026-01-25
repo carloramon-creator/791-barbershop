@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant, getStatusColor, getDynamicBarberAverages } from '@/lib/server-utils';
 import { startOfDay, endOfDay } from 'date-fns';
 
@@ -12,19 +12,19 @@ export async function GET() {
         // 1. Médias dinâmicas
         const dynamicAverages = await getDynamicBarberAverages(tenant.id);
 
-        // Fazemos todas as buscas em paralelo usando supabaseAdmin para evitar overhead de RLS
+        // Fazemos todas as buscas em paralelo usando getSupabaseAdmin() para evitar overhead de RLS
         const [
             { data: barbers, error: barbersError },
             { data: sales, error: salesError },
             { data: allQueueItems, error: queueError }
         ] = await Promise.all([
-            supabaseAdmin.from('barbers')
+            getSupabaseAdmin().from('barbers')
                 .select('*, users(photo_url, name, nickname)')
                 .eq('tenant_id', tenant.id)
                 .eq('is_active', true) // Filter inactive barbers
                 .order('name', { ascending: true }),
-            supabaseAdmin.from('sales').select('*').eq('tenant_id', tenant.id).gte('created_at', todayStart).lte('created_at', todayEnd),
-            supabaseAdmin.from('client_queue').select('*, clients(photo_url, name, cpf)').eq('tenant_id', tenant.id).in('status', ['waiting', 'attending']).order('position', { ascending: true })
+            getSupabaseAdmin().from('sales').select('*').eq('tenant_id', tenant.id).gte('created_at', todayStart).lte('created_at', todayEnd),
+            getSupabaseAdmin().from('client_queue').select('*, clients(photo_url, name, cpf)').eq('tenant_id', tenant.id).in('status', ['waiting', 'attending']).order('position', { ascending: true })
         ]);
 
         if (barbersError) throw barbersError;

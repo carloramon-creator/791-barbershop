@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function POST(
@@ -18,7 +18,7 @@ export async function POST(
             return NextResponse.json({ error: 'Itens não fornecidos' }, { status: 400 });
         }
 
-        const { error } = await supabaseAdmin
+        const { error } = await getSupabaseAdmin()
             .from('appointments')
             .update({ draft_items: items })
             .eq('id', id)

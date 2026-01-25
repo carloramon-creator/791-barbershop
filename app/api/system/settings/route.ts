@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function GET(req: Request) {
@@ -7,7 +7,7 @@ export async function GET(req: Request) {
         const { isSystemAdmin } = await getCurrentUserAndTenant();
         if (!isSystemAdmin) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('system_settings')
             .select('*');
 
@@ -50,7 +50,7 @@ export async function PUT(req: Request) {
 
         const body = await req.json(); // { key: string, value: any }
 
-        const { error } = await supabaseAdmin
+        const { error } = await getSupabaseAdmin()
             .from('system_settings')
             .upsert({
                 key: body.key,

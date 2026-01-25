@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export async function GET() {
     try {
-        const { data: tables } = await supabaseAdmin.rpc('get_tables_list'); // If accessible
+        const { data: tables } = await getSupabaseAdmin().rpc('get_tables_list'); // If accessible
 
-        const { data: supportTickets, error: supportError } = await supabaseAdmin
+        const { data: supportTickets, error: supportError } = await getSupabaseAdmin()
             .from('support_tickets')
             .select('*')
             .order('created_at', { ascending: false })
             .limit(5);
 
-        const { data: barbersList, error: barbersError } = await supabaseAdmin
+        const { data: barbersList, error: barbersError } = await getSupabaseAdmin()
             .from('barbers')
             .select('id, user_id, tenant_id, name')
             .limit(5);

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 import { generatePixPayload } from '@/lib/pix';
 
@@ -17,8 +17,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         const body = await req.json();
         const { services, products, payment_method } = body;
 
-        // Usar supabaseAdmin para garantir a inserção sem bloqueio de RLS
-        const client = supabaseAdmin;
+        // Usar getSupabaseAdmin() para garantir a inserção sem bloqueio de RLS
+        const client = getSupabaseAdmin();
 
         // 1. Buscar info da fila (e validar tenant)
         const { data: queueItem, error: fetchError } = await client

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export async function GET(req: Request) {
     try {
@@ -11,7 +11,7 @@ export async function GET(req: Request) {
         // Buscar tenants que parecem ser testes (ex: plano trial e criados há mais de X horas)
         const transitionDate = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
 
-        const { data: testTenants, error: tenantError } = await supabaseAdmin
+        const { data: testTenants, error: tenantError } = await getSupabaseAdmin()
             .from('tenants')
             .select('id, name, created_at, plan')
             .eq('plan', 'trial')
@@ -33,7 +33,7 @@ export async function GET(req: Request) {
             console.log(`[CLEANUP] Removendo tenant: ${tenant.name} (${tenant.id})`);
 
             // 1. Buscar usuários do tenant
-            const { data: users } = await supabaseAdmin
+            const { data: users } = await getSupabaseAdmin()
                 .from('users')
                 .select('id, email')
                 .eq('tenant_id', tenant.id);
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
             if (users) {
                 for (const u of users) {
                     try {
-                        const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(u.id);
+                        const { error: authError } = await getSupabaseAdmin().auth.admin.deleteUser(u.id);
                         if (authError) console.error(`[CLEANUP] Erro ao deletar no Auth (${u.email}):`, authError.message);
                     } catch (e: any) {
                         console.error(`[CLEANUP] Falha crítica ao deletar no Auth (${u.email}):`, e.message);
@@ -52,7 +52,7 @@ export async function GET(req: Request) {
 
             // 3. Excluir o tenant (o banco deve lidar com CASCADE se configurado, senão removemos manualmente as refs)
             // Nota: Se não houver CASCADE, isso pode falhar.
-            const { error: deleteError } = await supabaseAdmin
+            const { error: deleteError } = await getSupabaseAdmin()
                 .from('tenants')
                 .delete()
                 .eq('id', tenant.id);

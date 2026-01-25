@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 import { findOrCreateClientByPhone } from '@/lib/clients';
 
@@ -12,7 +12,7 @@ export async function POST(
         const { tenant } = await getCurrentUserAndTenant();
 
         // 1. Buscar o agendamento
-        const { data: appt, error: apptError } = await supabaseAdmin
+        const { data: appt, error: apptError } = await getSupabaseAdmin()
             .from('appointments')
             .select('*, services(id, name, price)')
             .eq('id', id)
@@ -26,7 +26,7 @@ export async function POST(
 
         // 2. Encontrar ou Criar Cliente
         const client = await findOrCreateClientByPhone(
-            supabaseAdmin,
+            getSupabaseAdmin(),
             tenant.id,
             appt.client_name,
             appt.client_phone
@@ -55,7 +55,7 @@ export async function POST(
         }
 
         // 4. Inserir na Fila
-        const { data: queueEntry, error: queueError } = await supabaseAdmin
+        const { data: queueEntry, error: queueError } = await getSupabaseAdmin()
             .from('client_queue')
             .insert({
                 tenant_id: tenant.id,
@@ -74,7 +74,7 @@ export async function POST(
         if (queueError) throw queueError;
 
         // 4. Marcar agendamento como 'in_service' e vincular a entrada da fila
-        const { error: updateError } = await supabaseAdmin
+        const { error: updateError } = await getSupabaseAdmin()
             .from('appointments')
             .update({
                 status: 'in_service',
@@ -87,7 +87,7 @@ export async function POST(
         // 5. Enviar Notificação Push para o cliente
         try {
             // Re-busca o client para garantir que temos o fcm_token mais atualizado
-            const { data: clientData } = await supabaseAdmin
+            const { data: clientData } = await getSupabaseAdmin()
                 .from('clients')
                 .select('fcm_token')
                 .eq('id', client.id)

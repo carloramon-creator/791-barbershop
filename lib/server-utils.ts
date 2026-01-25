@@ -120,12 +120,9 @@ export async function getCurrentUserAndTenant() {
             throw new Error('Perfil do sistema não localizado.');
         }
 
-        // Segurança Ramon
+        // Blindagem Total Ramon: Apenas o e-mail mestre tem acesso global ao SaaS
         const userEmail = (userData.email || '').toLowerCase();
-        const isSystemAdmin =
-            userData.is_system_admin === true ||
-            userEmail === 'ramon@791solucoes.com.br' ||
-            userData.role === 'admin';
+        const isSystemAdmin = userEmail === 'ramon@791solucoes.com.br';
 
         let tenantIdToUse = userData.tenant_id;
 

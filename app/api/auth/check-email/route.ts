@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-const supabaseAdmin = createClient(
+const getSupabaseAdmin() = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
@@ -21,14 +21,14 @@ export async function POST(req: Request) {
         // but modern versions do via options or we can check a public profile table if it exists.
         // Assuming we rely on the auth system, we might need to iterate or use a different approach if the user base is huge.
         // For now, let's try to query the "users" table which we seem to be populating in signup route:
-        // "const { data: user, error: userError } = await supabaseAdmin.from('users').insert({...})"
+        // "const { data: user, error: userError } = await getSupabaseAdmin().from('users').insert({...})"
 
         // Let's verify if there is a 'users' table in signup/route.ts
         // In the viewed code of signup/route.ts, I see:
-        // const { data: user, error: userError } = await supabaseAdmin.from('users').insert({...})
+        // const { data: user, error: userError } = await getSupabaseAdmin().from('users').insert({...})
         // So YES, there is a public.users table. We should check THAT.
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('users')
             .select('email')
             .eq('email', email)

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
 
 export async function OPTIONS(req: Request) {
@@ -11,7 +11,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         const { user } = await getCurrentUserAndTenant();
 
         // Verificar se é super admin
-        const { data: userData } = await supabaseAdmin
+        const { data: userData } = await getSupabaseAdmin()
             .from('users')
             .select('is_system_admin')
             .eq('id', user.id)
@@ -41,7 +41,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
         console.log(`[SYSTEM] Admin ${user.id} updating tenant ${tenantId}:`, updates);
 
-        const { error } = await supabaseAdmin
+        const { error } = await getSupabaseAdmin()
             .from('tenants')
             .update(updates)
             .eq('id', tenantId);
@@ -62,7 +62,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     try {
         const { user: currentUser } = await getCurrentUserAndTenant();
 
-        const { data: userData } = await supabaseAdmin
+        const { data: userData } = await getSupabaseAdmin()
             .from('users')
             .select('is_system_admin')
             .eq('id', currentUser.id)
@@ -77,7 +77,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
         console.log(`[SYSTEM] Admin ${currentUser.id} initializing robust deletion for tenant ${tenantId}`);
 
         // 1. Buscar todos os usuários vinculados ao tenant
-        const { data: usersToDelete, error: fetchUsersError } = await supabaseAdmin
+        const { data: usersToDelete, error: fetchUsersError } = await getSupabaseAdmin()
             .from('users')
             .select('id, email')
             .eq('tenant_id', tenantId);
@@ -95,13 +95,13 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
                     console.log(`[SYSTEM] Removendo dependências do banco para user ${u.id} (${u.email})`);
 
                     // a. Remover da tabela de barbeiros (se existir)
-                    await supabaseAdmin.from('barbers').delete().eq('user_id', u.id).eq('tenant_id', tenantId);
+                    await getSupabaseAdmin().from('barbers').delete().eq('user_id', u.id).eq('tenant_id', tenantId);
 
                     // b. Remover da tabela de usuários (nossa customizada)
-                    await supabaseAdmin.from('users').delete().eq('id', u.id).eq('tenant_id', tenantId);
+                    await getSupabaseAdmin().from('users').delete().eq('id', u.id).eq('tenant_id', tenantId);
 
                     // c. Remover do Supabase Auth (Obrigatório para liberar o e-mail)
-                    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(u.id);
+                    const { error: authError } = await getSupabaseAdmin().auth.admin.deleteUser(u.id);
                     if (authError) {
                         console.error(`[SYSTEM] Erro ao deletar no Auth: ${authError.message}`);
                     } else {
@@ -115,7 +115,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
         // 3. Excluir o registro do tenant
         console.log(`[SYSTEM] Excluindo registro do tenant ${tenantId} do banco de dados`);
-        const { error: tenantDeleteError } = await supabaseAdmin
+        const { error: tenantDeleteError } = await getSupabaseAdmin()
             .from('tenants')
             .delete()
             .eq('id', tenantId);

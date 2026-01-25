@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 // Trigger Build: 11:41 BRT - PDF FIX 📄
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { InterAPIV3 } from '@/lib/inter-api-v3';
 
 export async function OPTIONS(req: Request) {
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
         let discountPercent = 0;
 
         if (addonSlug) {
-            const { data: addon } = await supabaseAdmin
+            const { data: addon } = await getSupabaseAdmin()
                 .from('system_addons')
                 .select('*')
                 .eq('slug', addonSlug)
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
             itemName = addon.name;
             isAddon = true;
         } else {
-            const { data: planData } = await supabaseAdmin
+            const { data: planData } = await getSupabaseAdmin()
                 .from('system_plans')
                 .select('*')
                 .eq('slug', planSlug)
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
 
         if (coupon && coupon.trim() !== '') {
             const code = String(coupon).trim().toUpperCase();
-            const { data: couponData } = await supabaseAdmin
+            const { data: couponData } = await getSupabaseAdmin()
                 .from('system_coupons')
                 .select('*')
                 .eq('code', code)
@@ -120,7 +120,7 @@ export async function POST(req: Request) {
         const dueDateStr = dueDate.toISOString().split('T')[0];
 
         // 2. Configurar Inter - Buscar do DB primeiro
-        const { data: settingsData } = await supabaseAdmin
+        const { data: settingsData } = await getSupabaseAdmin()
             .from('system_settings')
             .select('value')
             .eq('key', 'inter_config')
@@ -151,7 +151,7 @@ export async function POST(req: Request) {
         let doc = (tenant.cnpj || tenant.cpf || tenant.document || tenant.bank_account_doc || "").replace(/\D/g, '');
 
         if (!doc) {
-            const { data: userData } = await supabaseAdmin.from('users').select('cpf').eq('id', user.id).single();
+            const { data: userData } = await getSupabaseAdmin().from('users').select('cpf').eq('id', user.id).single();
             if (userData?.cpf) doc = userData.cpf.replace(/\D/g, '');
         }
 
@@ -235,7 +235,7 @@ export async function POST(req: Request) {
         let isReady = !!(nossoNumero && (linhaDigitavel || pixCopiaECola));
 
         // 4. Salvar registro local
-        const { error: insertError } = await supabaseAdmin
+        const { error: insertError } = await getSupabaseAdmin()
             .from('finance')
             .insert({
                 tenant_id: tenant.id,

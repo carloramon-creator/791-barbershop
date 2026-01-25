@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 /**
  * Endpoint PÚBLICO para barbeiro chamar o próximo cliente.
@@ -9,14 +9,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ barberId
 
     try {
         // 1. Finalizar qualquer atendimento atual
-        await supabaseAdmin
+        await getSupabaseAdmin()
             .from('client_queue')
             .update({ status: 'finished', finished_at: new Date().toISOString() })
             .eq('barber_id', barberId)
             .eq('status', 'attending');
 
         // 2. Buscar próximo na fila
-        const { data: nextClient, error: fetchError } = await supabaseAdmin
+        const { data: nextClient, error: fetchError } = await getSupabaseAdmin()
             .from('client_queue')
             .select('*')
             .eq('barber_id', barberId)
@@ -27,12 +27,12 @@ export async function PUT(req: Request, { params }: { params: Promise<{ barberId
 
         if (fetchError || !nextClient) {
             // Fila vazia, barbeiro fica disponível
-            await supabaseAdmin.from('barbers').update({ status: 'available' }).eq('id', barberId);
+            await getSupabaseAdmin().from('barbers').update({ status: 'available' }).eq('id', barberId);
             return NextResponse.json({ message: 'Fila vazia', nextClient: null });
         }
 
         // 3. Atualizar cliente para 'attending'
-        const { data: updatedClient, error: updateError } = await supabaseAdmin
+        const { data: updatedClient, error: updateError } = await getSupabaseAdmin()
             .from('client_queue')
             .update({ status: 'attending', started_at: new Date().toISOString() })
             .eq('id', nextClient.id)
@@ -42,7 +42,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ barberId
         if (updateError) throw updateError;
 
         // 4. Atualizar barbeiro para 'busy'
-        await supabaseAdmin.from('barbers').update({ status: 'busy' }).eq('id', barberId);
+        await getSupabaseAdmin().from('barbers').update({ status: 'busy' }).eq('id', barberId);
 
         return NextResponse.json(updatedClient);
     } catch (error: any) {

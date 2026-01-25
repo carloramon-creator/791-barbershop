@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function GET(req: Request) {
@@ -9,7 +9,7 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
         }
 
-        const { data: stats, error } = await supabaseAdmin.rpc('get_system_global_stats');
+        const { data: stats, error } = await getSupabaseAdmin().rpc('get_system_global_stats');
 
         if (error) throw error;
 

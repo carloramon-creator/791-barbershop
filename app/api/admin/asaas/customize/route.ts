@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import AsaasClient from '@/lib/asaas-client';
 
 export async function POST(req: Request) {
@@ -10,7 +10,7 @@ export async function POST(req: Request) {
         // Por simplificação assumimos que o middleware/chamada já verifica, 
         // mas aqui vamos pegar as configs do banco
 
-        const { data: settingsData } = await supabaseAdmin
+        const { data: settingsData } = await getSupabaseAdmin()
             .from('system_settings')
             .select('value')
             .eq('key', 'asaas_config')
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         }
 
         // 4. Salvar nas configurações locais
-        await supabaseAdmin
+        await getSupabaseAdmin()
             .from('system_settings')
             .upsert({
                 key: 'asaas_branding',

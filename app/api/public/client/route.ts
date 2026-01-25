@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { resolveTenantId, addCorsHeaders } from '@/lib/server-utils';
 
 export async function OPTIONS(req: Request) {
@@ -23,7 +23,7 @@ export async function GET(req: Request) {
         }
 
         // 2. Buscar dados básicos do cliente
-        const { data: client, error } = await supabaseAdmin
+        const { data: client, error } = await getSupabaseAdmin()
             .from('clients')
             .select('id, name, phone, photo_url, cpf, tenant_id')
             .eq('id', clientId)
@@ -56,7 +56,7 @@ export async function PATCH(req: Request) {
             return addCorsHeaders(req, NextResponse.json({ error: 'ID é obrigatório' }, { status: 400 }));
         }
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('clients')
             .update({ fcm_token })
             .eq('id', id)

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase, supabaseAdmin } from '@/lib/supabase-server';
+import { supabase, getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function GET() {
@@ -7,7 +7,7 @@ export async function GET() {
         const { tenant } = await getCurrentUserAndTenant();
 
         // 1. Buscar todos os usuários que têm a role 'barber'
-        const { data: barberUsers, error: usersError } = await supabaseAdmin
+        const { data: barberUsers, error: usersError } = await getSupabaseAdmin()
             .from('users')
             .select('*')
             .eq('tenant_id', tenant.id)
@@ -20,7 +20,7 @@ export async function GET() {
         // 2. Para cada usuário barbeiro, garantir que existe uma entrada na tabela 'barbers'
         if (barberUsers && barberUsers.length > 0) {
             for (const user of barberUsers) {
-                const { data: existingBarber } = await supabaseAdmin
+                const { data: existingBarber } = await getSupabaseAdmin()
                     .from('barbers')
                     .select('id, name, nickname, photo_url')
                     .eq('tenant_id', tenant.id)
@@ -29,7 +29,7 @@ export async function GET() {
 
                 if (!existingBarber) {
                     console.log(`[BACKEND] Creating missing barber entry for user ${user.name}`);
-                    await supabaseAdmin.from('barbers').insert({
+                    await getSupabaseAdmin().from('barbers').insert({
                         tenant_id: tenant.id,
                         user_id: user.id,
                         name: user.name,
@@ -45,7 +45,7 @@ export async function GET() {
                     (user.photo_url && existingBarber.photo_url !== user.photo_url)
                 ) {
                     console.log(`[BACKEND] Updating barber info for user ${user.name}`);
-                    await supabaseAdmin.from('barbers')
+                    await getSupabaseAdmin().from('barbers')
                         .update({
                             name: user.name,
                             nickname: user.nickname,
@@ -57,7 +57,7 @@ export async function GET() {
         }
 
         // 2.5 Self-healing: Desativar barbeiros cujos usuários não existem mais ou perderam a role
-        const { data: currentBarbers } = await supabaseAdmin
+        const { data: currentBarbers } = await getSupabaseAdmin()
             .from('barbers')
             .select('id, user_id, is_active')
             .eq('tenant_id', tenant.id);
@@ -69,7 +69,7 @@ export async function GET() {
 
             for (const b of barbersToDeactivate) {
                 console.log(`[BACKEND] Deactivating orphaned barber ${b.id} (User ${b.user_id} not found or demoted)`);
-                await supabaseAdmin
+                await getSupabaseAdmin()
                     .from('barbers')
                     .update({ is_active: false })
                     .eq('id', b.id);
@@ -77,7 +77,7 @@ export async function GET() {
         }
 
         // 3. Retornar a lista completa da tabela barbers
-        const { data: barbers, error } = await supabaseAdmin
+        const { data: barbers, error } = await getSupabaseAdmin()
             .from('barbers')
             .select('*')
             .eq('tenant_id', tenant.id)
@@ -99,9 +99,9 @@ export async function POST(req: Request) {
 
         const { name, photo_url, avg_time_minutes, commission_percentage, is_active } = await req.json();
 
-        // Usamos supabaseAdmin para o INSERT para evitar erros de RLS 
+        // Usamos getSupabaseAdmin() para o INSERT para evitar erros de RLS 
         // A validação de tenant já foi feita acima no getCurrentUserAndTenant
-        const { data: barber, error } = await supabaseAdmin
+        const { data: barber, error } = await getSupabaseAdmin()
             .from('barbers')
             .insert({
                 tenant_id: tenant.id,

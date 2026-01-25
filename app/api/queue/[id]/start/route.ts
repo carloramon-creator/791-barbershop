@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 /**
@@ -16,9 +16,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
         }
 
-        // Usar supabaseAdmin para garantir que encontramos o registro, independente de RLS
+        // Usar getSupabaseAdmin() para garantir que encontramos o registro, independente de RLS
         // A segurança é garantida verificando o tenant_id abaixo
-        const client = supabaseAdmin;
+        const client = getSupabaseAdmin();
 
         // 1. Buscar o item da fila
         const { data: queueItem, error: fetchError } = await client

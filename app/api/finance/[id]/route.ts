@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -10,7 +10,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
         const body = await req.json();
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('finance')
             .update(body)
             .eq('id', id)
@@ -32,7 +32,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
         const { tenant, role } = await getCurrentUserAndTenant();
         if (role !== 'owner') return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
 
-        const { error } = await supabaseAdmin
+        const { error } = await getSupabaseAdmin()
             .from('finance')
             .delete()
             .eq('id', id)

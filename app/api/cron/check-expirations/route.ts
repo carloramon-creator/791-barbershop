@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { firebaseAdmin } from '@/lib/firebase-admin';
 
 export const dynamic = 'force-dynamic';
@@ -26,7 +26,7 @@ export async function GET(req: Request) {
             targetDate.setDate(now.getDate() + days);
             const dateStr = targetDate.toISOString().split('T')[0];
 
-            const { data: tenants } = await supabaseAdmin
+            const { data: tenants } = await getSupabaseAdmin()
                 .from('tenants')
                 .select('id, name, subscription_current_period_end')
                 .gte('subscription_current_period_end', `${dateStr}T00:00:00`)
@@ -36,7 +36,7 @@ export async function GET(req: Request) {
             if (tenants) {
                 for (const tenant of tenants) {
                     // Buscar proprietários da barbearia
-                    const { data: owners } = await supabaseAdmin
+                    const { data: owners } = await getSupabaseAdmin()
                         .from('users')
                         .select('id, fcm_token, name, email')
                         .eq('tenant_id', tenant.id)

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export async function OPTIONS(req: Request) {
     const response = new NextResponse(null, { status: 200 });
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
         }
 
         // 0. Obter Configuração Stripe
-        const { data: settingsData } = await supabaseAdmin
+        const { data: settingsData } = await getSupabaseAdmin()
             .from('system_settings')
             .select('value')
             .eq('key', 'stripe_config')
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         let discountPercent = 0;
 
         if (addonSlug) {
-            const { data: addon } = await supabaseAdmin
+            const { data: addon } = await getSupabaseAdmin()
                 .from('system_addons')
                 .select('*')
                 .eq('slug', addonSlug)
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
             itemSlug = addonSlug;
             // Add-ons não tem desconto por período conforme solicitado
         } else {
-            const { data: plan } = await supabaseAdmin
+            const { data: plan } = await getSupabaseAdmin()
                 .from('system_plans')
                 .select('*')
                 .eq('slug', planSlug)
@@ -133,7 +133,7 @@ export async function POST(req: Request) {
                 metadata: { tenant_id: tenant.id }
             });
             customerId = customer.id;
-            await supabaseAdmin.from('tenants').update({ stripe_customer_id: customerId }).eq('id', tenant.id);
+            await getSupabaseAdmin().from('tenants').update({ stripe_customer_id: customerId }).eq('id', tenant.id);
         }
 
         // 3. Processar Coupon (Lógica existente simplificada)
@@ -146,7 +146,7 @@ export async function POST(req: Request) {
                 if (promoCodes.data.length > 0) {
                     discounts.push({ promotion_code: promoCodes.data[0].id });
                 } else {
-                    const { data: dbCoupon } = await supabaseAdmin.from('system_coupons').select('*').eq('code', coupon.toUpperCase()).single();
+                    const { data: dbCoupon } = await getSupabaseAdmin().from('system_coupons').select('*').eq('code', coupon.toUpperCase()).single();
                     if (dbCoupon && dbCoupon.is_active) {
                         discounts.push({ coupon: dbCoupon.code });
                     }

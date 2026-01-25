@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { InterAPIV3 } from '@/lib/inter-api-v3'; // Using V3
 import Stripe from 'stripe';
 
@@ -21,7 +21,7 @@ export async function GET(req: Request) {
         console.log(`[INVOICES] Iniciando busca para ${tenant.name} (${tenant.id})`);
 
         // 1. Busca Configuração Inter (para o check automático)
-        const { data: settingsData } = await supabaseAdmin
+        const { data: settingsData } = await getSupabaseAdmin()
             .from('system_settings')
             .select('value')
             .eq('key', 'inter_config')
@@ -36,7 +36,7 @@ export async function GET(req: Request) {
             try {
                 // Throttle: Só sincroniza se houveram novos registros criados nos últimos 10 minutos
                 const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-                const { data: recentSync } = await supabaseAdmin
+                const { data: recentSync } = await getSupabaseAdmin()
                     .from('finance')
                     .select('id')
                     .eq('tenant_id', tenant.id)
@@ -56,7 +56,7 @@ export async function GET(req: Request) {
                     const threeDaysAgo = new Date();
                     threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
-                    const { data: pendingRecent } = await supabaseAdmin
+                    const { data: pendingRecent } = await getSupabaseAdmin()
                         .from('finance')
                         .select('*')
                         .eq('tenant_id', tenant.id)
@@ -86,19 +86,19 @@ export async function GET(req: Request) {
                                     periodEnd.setDate(periodEnd.getDate() + 31);
 
                                     await Promise.all([
-                                        supabaseAdmin.from('tenants').update({
+                                        getSupabaseAdmin().from('tenants').update({
                                             plan,
                                             subscription_status: 'active',
                                             subscription_current_period_end: periodEnd.toISOString()
                                         }).eq('id', tenant.id),
-                                        supabaseAdmin.from('finance').update({
+                                        getSupabaseAdmin().from('finance').update({
                                             is_paid: true,
                                             metadata: { ...inv.metadata, status_inter: situacao }
                                         }).eq('id', inv.id)
                                     ]);
                                 } else if (['CANCELADO', 'EXPIRADO', 'REJEITADA', 'BAIXADO'].includes(situacao)) {
                                     console.log(`[AUTO-SYNC INTER] Removendo fatura ${txid} pois o status no banco é ${situacao}`);
-                                    await supabaseAdmin.from('finance').delete().eq('id', inv.id);
+                                    await getSupabaseAdmin().from('finance').delete().eq('id', inv.id);
                                 }
                             } catch (e) {
                                 console.warn(`[AUTO-SYNC INTER] Erro em ${txid}`);
@@ -117,7 +117,7 @@ export async function GET(req: Request) {
         // O código abaixo causava a criação de faturas "Stripe CSS" redundantes.
         /* 
         try {
-            const { data: stripeSettings } = await supabaseAdmin
+            const { data: stripeSettings } = await getSupabaseAdmin()
                 .from('system_settings')
                 .select('value')
                 .eq('key', 'stripe_config')
@@ -132,14 +132,14 @@ export async function GET(req: Request) {
         // 2.2 Limpeza de Registros Cancelados/Antigos (Agressiva)
         try {
             // Remove registros que já estão marcados como cancelados/expirados
-            await supabaseAdmin.from('finance')
+            await getSupabaseAdmin().from('finance')
                 .delete()
                 .eq('tenant_id', tenant.id)
                 .or('metadata->>status_inter.eq.CANCELADO,metadata->>status_inter.eq.EXPIRADO,metadata->>status_inter.eq.REJEITADA,metadata->>status_inter.eq.BAIXADO,metadata->>status.eq.CANCELADO,metadata->>status.eq.EXPIRADO,metadata->>txid.eq.PENDING,description.ilike.%PENDING%');
 
             // Limpeza de segurança extra: registros não pagos criados há mais de 10 dias que não sejam renovações recorrentes
             const tenDaysAgo = new Date(Date.now() - 10 * 24 * 3600 * 1000).toISOString();
-            await supabaseAdmin.from('finance')
+            await getSupabaseAdmin().from('finance')
                 .delete()
                 .eq('tenant_id', tenant.id)
                 .eq('is_paid', false)
@@ -150,7 +150,7 @@ export async function GET(req: Request) {
 
         // 3. Buscar faturas atualizadas
         // Busca APENAS pagamentos SaaS...
-        const { data: invoices, error } = await supabaseAdmin
+        const { data: invoices, error } = await getSupabaseAdmin()
             .from('finance')
             .select('*')
             .eq('tenant_id', tenant.id)
@@ -164,7 +164,7 @@ export async function GET(req: Request) {
         const pendingAsaas = (invoices || []).filter(inv => !inv.is_paid && inv.metadata?.asaas_checkout_id).slice(0, 2);
         if (pendingAsaas.length > 0) {
             try {
-                const { data: asaasSettings } = await supabaseAdmin
+                const { data: asaasSettings } = await getSupabaseAdmin()
                     .from('system_settings')
                     .select('value')
                     .eq('key', 'asaas_config')
@@ -191,7 +191,7 @@ export async function GET(req: Request) {
                                     console.log(`[INVOICES HEALING] Sincronizando ${inv.id} via polling em tempo real...`);
 
                                     // Marcar como pago
-                                    await supabaseAdmin.from('finance').update({
+                                    await getSupabaseAdmin().from('finance').update({
                                         is_paid: true,
                                         metadata: { ...inv.metadata, asaas_status: payment.status, asaas_payment_id: paymentId, sync_type: 'invoice_list_healing' }
                                     }).eq('id', inv.id);
@@ -204,7 +204,7 @@ export async function GET(req: Request) {
                                         const now = new Date();
                                         const periodEnd = new Date(now);
                                         periodEnd.setMonth(periodEnd.getMonth() + interval);
-                                        await supabaseAdmin.from('tenants').update({
+                                        await getSupabaseAdmin().from('tenants').update({
                                             plan: planSlug,
                                             subscription_status: 'active',
                                             subscription_current_period_end: periodEnd.toISOString()

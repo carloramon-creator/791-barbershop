@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant, getStatusColor, getDynamicBarberAverages } from '@/lib/server-utils';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,7 @@ export async function GET() {
         const { tenant } = await getCurrentUserAndTenant();
 
         // 1. Buscar todos barbeiros do tenant
-        const { data: barbers, error: barbersError } = await supabaseAdmin
+        const { data: barbers, error: barbersError } = await getSupabaseAdmin()
             .from('barbers')
             .select('*, users(photo_url, name, nickname)')
             .eq('tenant_id', tenant.id)
@@ -23,7 +23,7 @@ export async function GET() {
 
         // 2. Buscar TODOS os itens de fila ativos (waiting/attending) do tenant de uma vez
         // Ordenar por prioridade primeiro, depois por posição
-        const { data: allQueueItems, error: queueError } = await supabaseAdmin
+        const { data: allQueueItems, error: queueError } = await getSupabaseAdmin()
             .from('client_queue')
             .select('*, draft_items, clients(photo_url, name)')
             .eq('tenant_id', tenant.id)
@@ -47,11 +47,11 @@ export async function GET() {
             let currentStatus = barber.status;
             if (currentStatus === 'busy' && !attendingItem) {
                 // Diz que está ocupado, mas não tem ninguém sendo atendido -> LIVRE
-                supabaseAdmin.from('barbers').update({ status: 'available' }).eq('id', barber.id).then();
+                getSupabaseAdmin().from('barbers').update({ status: 'available' }).eq('id', barber.id).then();
                 currentStatus = 'available';
             } else if (currentStatus === 'available' && attendingItem) {
                 // Diz que está livre, mas tem alguém sendo atendido -> OCUPADO
-                supabaseAdmin.from('barbers').update({ status: 'busy' }).eq('id', barber.id).then();
+                getSupabaseAdmin().from('barbers').update({ status: 'busy' }).eq('id', barber.id).then();
                 currentStatus = 'busy';
             }
             // ---------------------------------

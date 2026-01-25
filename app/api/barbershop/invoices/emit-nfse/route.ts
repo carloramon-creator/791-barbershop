@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { invoiceProvider } from '@/lib/invoice-provider';
 
 export async function OPTIONS(req: Request) {
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
         }
 
         // 1. Buscar o registro financeiro
-        const { data: finance, error: financeError } = await supabaseAdmin
+        const { data: finance, error: financeError } = await getSupabaseAdmin()
             .from('finance')
             .select('*')
             .eq('id', financeId)
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
 
         if (result.success) {
             // 5. Atualizar o registro financeiro com o ID da nota
-            await supabaseAdmin.from('finance').update({
+            await getSupabaseAdmin().from('finance').update({
                 metadata: {
                     ...finance.metadata,
                     nfe_id: result.invoiceId,

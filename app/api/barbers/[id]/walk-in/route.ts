@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 /**
@@ -15,7 +15,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
         }
 
-        const client = supabaseAdmin;
+        const client = getSupabaseAdmin();
 
         // 1. Finalizar qualquer atendimento em aberto para este barbeiro
         await client

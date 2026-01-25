@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -17,7 +17,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
         console.log(`[BACKEND] Updating barber ${id}:`, updates);
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('barbers')
             .update(updates)
             .eq('id', id)
@@ -41,7 +41,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
                 userUpdates.commission_type = 'percentage';
                 userUpdates.commission_value = data.commission_percentage;
             }
-            await supabaseAdmin.from('users').update(userUpdates).eq('id', data.user_id);
+            await getSupabaseAdmin().from('users').update(userUpdates).eq('id', data.user_id);
         }
 
         return NextResponse.json(data);
@@ -59,9 +59,9 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
         const { id } = await params;
 
         // Buscar o barbeiro antes de deletar para ver se tem user_id vinculado
-        const { data: barber } = await supabaseAdmin.from('barbers').select('user_id').eq('id', id).single();
+        const { data: barber } = await getSupabaseAdmin().from('barbers').select('user_id').eq('id', id).single();
 
-        const { error } = await supabaseAdmin
+        const { error } = await getSupabaseAdmin()
             .from('barbers')
             .delete()
             .eq('id', id)
@@ -71,10 +71,10 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
         // Se houver user_id vinculado, remover a role 'barber' do usuário
         if (barber?.user_id) {
-            const { data: user } = await supabaseAdmin.from('users').select('roles').eq('id', barber.user_id).single();
+            const { data: user } = await getSupabaseAdmin().from('users').select('roles').eq('id', barber.user_id).single();
             if (user && user.roles) {
                 const newRoles = user.roles.filter((r: string) => r !== 'barber');
-                await supabaseAdmin.from('users').update({
+                await getSupabaseAdmin().from('users').update({
                     roles: newRoles,
                     role: newRoles[0] || 'staff' // Mantendo back-compat
                 }).eq('id', barber.user_id);

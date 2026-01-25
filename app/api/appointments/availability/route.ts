@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 import { addMinutes, format, parse, isBefore, isAfter, addDays, subDays, isSameDay } from 'date-fns';
 
@@ -23,7 +23,7 @@ export async function GET(req: Request) {
         const startWindow = format(subDays(baseDate, 1), "yyyy-MM-dd'T'00:00:00'Z'");
         const endWindow = format(addDays(baseDate, 1), "yyyy-MM-dd'T'23:59:59'Z'");
 
-        const { data: appointments, error } = await supabaseAdmin
+        const { data: appointments, error } = await getSupabaseAdmin()
             .from('appointments')
             .select('start_time, end_time')
             .eq('tenant_id', tenant.id)
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
         if (error) throw error;
 
         // 2. Fetch barber status for "offline" check
-        const { data: barber, error: barberError } = await supabaseAdmin
+        const { data: barber, error: barberError } = await getSupabaseAdmin()
             .from('barbers')
             .select('status')
             .eq('id', barberId)

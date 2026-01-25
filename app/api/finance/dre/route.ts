@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 import { startOfDay, endOfDay } from 'date-fns';
 
@@ -18,7 +18,7 @@ export async function GET(req: Request) {
 
         // 1. Buscar receitas manuais e despesas (finance table)
         // Precisamos de categoria para despesas
-        const { data: rawFinanceData, error: finError } = await supabaseAdmin
+        const { data: rawFinanceData, error: finError } = await getSupabaseAdmin()
             .from('finance')
             .select(`
                 value, 
@@ -33,7 +33,7 @@ export async function GET(req: Request) {
             .lte('date', end);
 
         // 2. Buscar vendas (sales table)
-        const { data: salesData, error: salesError } = await supabaseAdmin
+        const { data: salesData, error: salesError } = await getSupabaseAdmin()
             .from('sales')
             .select('total_amount, barber_commission_paid, commission_value')
             .eq('tenant_id', tenant.id)

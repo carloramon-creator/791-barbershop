@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { addCorsHeaders, resolveTenantId } from '@/lib/server-utils';
 import { addMinutes, format, parse, subDays, addDays, isAfter } from 'date-fns';
 
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
         }
 
         // Buscar dados do Tenant (Horários)
-        const { data: tenant } = await supabaseAdmin
+        const { data: tenant } = await getSupabaseAdmin()
             .from('tenants')
             .select('*')
             .eq('id', tenantId)
@@ -40,7 +40,7 @@ export async function GET(req: Request) {
         const startWindow = format(subDays(baseDate, 1), "yyyy-MM-dd'T'00:00:00'Z'");
         const endWindow = format(addDays(baseDate, 1), "yyyy-MM-dd'T'23:59:59'Z'");
 
-        const { data: appointments } = await supabaseAdmin
+        const { data: appointments } = await getSupabaseAdmin()
             .from('appointments')
             .select('start_time, end_time')
             .eq('tenant_id', tenantId)
@@ -50,7 +50,7 @@ export async function GET(req: Request) {
             .lte('start_time', endWindow);
 
         // 2. Fetch barber status
-        const { data: barber } = await supabaseAdmin
+        const { data: barber } = await getSupabaseAdmin()
             .from('barbers')
             .select('status')
             .eq('id', barberId)

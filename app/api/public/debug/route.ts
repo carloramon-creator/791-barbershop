@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import fs from 'fs';
 import path from 'path';
 import { addCorsHeaders } from '@/lib/server-utils';
@@ -13,14 +13,14 @@ export async function GET(req: Request) {
             commitHash = fs.readFileSync(path.join(process.cwd(), 'commit_hash.txt'), 'utf8').trim();
         } catch (e) { }
 
-        const { data, error } = await supabaseAdmin.from('tenants').select('count', { count: 'exact', head: true });
-        const { data: list } = await supabaseAdmin.from('tenants').select('id, slug, name');
+        const { data, error } = await getSupabaseAdmin().from('tenants').select('count', { count: 'exact', head: true });
+        const { data: list } = await getSupabaseAdmin().from('tenants').select('id, slug, name');
 
         const testSlug = 'ingleses';
         const { resolveTenantId } = await import('@/lib/server-utils');
         const resolvedId = await resolveTenantId(testSlug);
 
-        const { data: testResult, error: testError } = await supabaseAdmin
+        const { data: testResult, error: testError } = await getSupabaseAdmin()
             .from('tenants')
             .select('id')
             .ilike('slug', testSlug)

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getStatusColor, getDynamicBarberAverages, addCorsHeaders, resolveTenantId } from '@/lib/server-utils';
 
 export const dynamic = 'force-dynamic';
@@ -33,7 +33,7 @@ export async function GET(req: Request) {
 
         // 0. Buscar dados do Tenant (Branding)
         console.log(`[PUBLIC QUEUE] Fetching branding for ID: "${tenantId}"`);
-        const { data: tenant, error: tenantError } = await supabaseAdmin
+        const { data: tenant, error: tenantError } = await getSupabaseAdmin()
             .from('tenants')
             .select('name, logo_url, business_type, module_queue_enabled, module_appointments_enabled')
             .eq('id', tenantId)
@@ -51,7 +51,7 @@ export async function GET(req: Request) {
         const dynamicAverages = await getDynamicBarberAverages(tenantId);
 
         // 2. Buscar todos barbeiros ATIVOS e NÃO-OFFLINE do tenant
-        const { data: barbers, error: barbersError } = await supabaseAdmin
+        const { data: barbers, error: barbersError } = await getSupabaseAdmin()
             .from('barbers')
             .select('*, users(last_seen_at, photo_url, name, nickname)')
             .eq('tenant_id', tenantId)
@@ -69,7 +69,7 @@ export async function GET(req: Request) {
         const activeBarbers = barbers || [];
 
         // 2. Buscar itens de fila ativos com dados dos clientes
-        const { data: allQueueItems, error: queueError } = await supabaseAdmin
+        const { data: allQueueItems, error: queueError } = await getSupabaseAdmin()
             .from('client_queue')
             .select('*, clients(photo_url, name)')
             .eq('tenant_id', tenantId)

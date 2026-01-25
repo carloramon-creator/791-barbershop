@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { InterAPIV3 } from '@/lib/inter-api-v3';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
@@ -15,7 +15,7 @@ export async function GET(req: Request) {
         }
 
         // 1. Busca Configuração
-        const { data: settingsData } = await supabaseAdmin
+        const { data: settingsData } = await getSupabaseAdmin()
             .from('system_settings')
             .select('value')
             .eq('key', 'inter_config')
@@ -80,7 +80,7 @@ export async function GET(req: Request) {
         // 3. Verifica no Banco
         let charge;
         if (txid) {
-            const { data } = await supabaseAdmin.from('finance').select('*').eq('metadata->>txid', txid).single();
+            const { data } = await getSupabaseAdmin().from('finance').select('*').eq('metadata->>txid', txid).single();
             charge = data;
         }
 
@@ -99,21 +99,21 @@ export async function GET(req: Request) {
             periodEnd.setDate(periodEnd.getDate() + 31);
 
             if (charge.metadata?.tenant_id) {
-                await supabaseAdmin.from('tenants').update({
+                await getSupabaseAdmin().from('tenants').update({
                     plan: plan,
                     subscription_status: 'active',
                     subscription_current_period_end: periodEnd.toISOString()
                 }).eq('id', charge.metadata.tenant_id);
             }
 
-            await supabaseAdmin.from('finance').update({
+            await getSupabaseAdmin().from('finance').update({
                 is_paid: true,
                 metadata: { ...charge.metadata, ...details, status_inter: details.situacao || details.status }
             }).eq('id', charge.id);
             updated = true;
         } else if (charge && isCanceled && !charge.is_paid) {
             console.log('Atualizando status para CANCELADO/EXPIRADO...');
-            await supabaseAdmin.from('finance').update({
+            await getSupabaseAdmin().from('finance').update({
                 metadata: { ...charge.metadata, ...details, status_inter: details.situacao || details.status }
             }).eq('id', charge.id);
             updated = true;

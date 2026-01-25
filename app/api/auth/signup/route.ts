@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { addCorsHeaders } from '@/lib/server-utils';
 import { DEFAULT_CATEGORIES } from '@/lib/default-data';
 
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
         }
 
         // 1. Criar usuário no Auth
-        const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        const { data: authUser, error: authError } = await getSupabaseAdmin().auth.admin.createUser({
             email: email,
             password: password,
             email_confirm: false,
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
 
         console.log('[API SIGNUP] Final Redirect URL:', finalRedirectUrl);
 
-        await supabaseAdmin.auth.resend({
+        await getSupabaseAdmin().auth.resend({
             type: 'signup',
             email: email,
             options: {
@@ -80,8 +80,8 @@ export async function POST(req: Request) {
         const slug = `${baseSlug}-${randomSuffix}`;
 
         // 2.5 Capture Contract Snapshot (Plans and Addons)
-        const { data: currentPlans } = await supabaseAdmin.from('system_plans').select('*');
-        const { data: currentAddons } = await supabaseAdmin.from('system_addons').select('*');
+        const { data: currentPlans } = await getSupabaseAdmin().from('system_plans').select('*');
+        const { data: currentAddons } = await getSupabaseAdmin().from('system_addons').select('*');
         const contractSnapshot = {
             plans: currentPlans || [],
             addons: currentAddons || [],
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
         };
 
         // 3. Criar tenant (Barbearia) com plano PREMIUM, trial e ENDEREÇO
-        const { data: tenant, error: tenantError } = await supabaseAdmin
+        const { data: tenant, error: tenantError } = await getSupabaseAdmin()
             .from('tenants')
             .insert({
                 name: barbershopName,
@@ -122,13 +122,13 @@ export async function POST(req: Request) {
         if (tenantError) {
             console.error('[API SIGNUP] Tenant error:', tenantError);
             // Rollback: delete auth user
-            await supabaseAdmin.auth.admin.deleteUser(userId);
+            await getSupabaseAdmin().auth.admin.deleteUser(userId);
             throw tenantError;
         }
         console.log('[API SIGNUP] Tenant criado:', tenant.id);
 
         // 4. Criar usuário em public.users vinculado ao tenant (Owner + Barber)
-        const { error: userError } = await supabaseAdmin
+        const { error: userError } = await getSupabaseAdmin()
             .from('users')
             .insert({
                 id: userId,
@@ -143,13 +143,13 @@ export async function POST(req: Request) {
         if (userError) {
             console.error('[API SIGNUP] Public User error:', userError);
             // Rollback
-            await supabaseAdmin.auth.admin.deleteUser(userId);
-            await supabaseAdmin.from('tenants').delete().eq('id', tenant.id);
+            await getSupabaseAdmin().auth.admin.deleteUser(userId);
+            await getSupabaseAdmin().from('tenants').delete().eq('id', tenant.id);
             throw userError;
         }
 
         // 4.1 Criar registro na tabela barbers (Perfil do Barbeiro)
-        const { data: barber, error: barberError } = await supabaseAdmin
+        const { data: barber, error: barberError } = await getSupabaseAdmin()
             .from('barbers')
             .insert({
                 user_id: userId,
@@ -167,7 +167,7 @@ export async function POST(req: Request) {
         }
 
         // 5. Criar trial subscription (10 dias)
-        const { error: trialError } = await supabaseAdmin
+        const { error: trialError } = await getSupabaseAdmin()
             .from('trial_subscriptions')
             .insert({
                 user_id: userId,
@@ -183,7 +183,7 @@ export async function POST(req: Request) {
 
         // 6. Insert services (if any)
         if (services && services.length > 0) {
-            const { data: insertedServices, error: servicesError } = await supabaseAdmin.from('services').insert(
+            const { data: insertedServices, error: servicesError } = await getSupabaseAdmin().from('services').insert(
                 services.map((s: any) => ({
                     tenant_id: tenant.id,
                     name: s.name,
@@ -204,14 +204,14 @@ export async function POST(req: Request) {
                         barber_id: barber.id,
                         service_id: s.id
                     }));
-                    await supabaseAdmin.from('barber_services').insert(links);
+                    await getSupabaseAdmin().from('barber_services').insert(links);
                     console.log('[API SIGNUP] Vínculo Barber-Services realizado');
                 }
             }
         }
 
         // 7. Insert product categories
-        const { data: categories, error: categoriesError } = await supabaseAdmin
+        const { data: categories, error: categoriesError } = await getSupabaseAdmin()
             .from('product_categories')
             .insert(DEFAULT_CATEGORIES.map(c => ({
                 tenant_id: tenant.id,
@@ -229,7 +229,7 @@ export async function POST(req: Request) {
         // 8. Insert products (if any)
         if (products && products.length > 0) {
             // Re-fetch categories to ensure we have the IDs
-            const { data: finalCategories } = await supabaseAdmin
+            const { data: finalCategories } = await getSupabaseAdmin()
                 .from('product_categories')
                 .select('id, name')
                 .eq('tenant_id', tenant.id);
@@ -246,7 +246,7 @@ export async function POST(req: Request) {
                 category_id: categoriesMap[p.category] || categoriesMap['Bebidas'] || null,
             }));
 
-            const { error: productsError } = await supabaseAdmin
+            const { error: productsError } = await getSupabaseAdmin()
                 .from('products')
                 .insert(productsWithCategories);
 

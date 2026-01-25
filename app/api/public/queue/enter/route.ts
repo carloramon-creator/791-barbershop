@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { findOrCreateClientByPhone } from '@/lib/clients';
 import { addCorsHeaders, resolveTenantId } from '@/lib/server-utils';
 
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
         if (!finalTenantId) {
             // Fallback para dev: pegar primeiro tenant
-            const { data: firstTenant } = await supabaseAdmin
+            const { data: firstTenant } = await getSupabaseAdmin()
                 .from('tenants')
                 .select('id')
                 .limit(1)
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
 
         // 1. Encontrar ou criar cliente
         const client = await findOrCreateClientByPhone(
-            supabaseAdmin,
+            getSupabaseAdmin(),
             finalTenantId,
             client_name,
             client_phone,
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
         }
 
         // 2. Verificar se já está na fila
-        const { data: existingQueue } = await supabaseAdmin
+        const { data: existingQueue } = await getSupabaseAdmin()
             .from('client_queue')
             .select('id, status, barber_id')
             .eq('tenant_id', finalTenantId)
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
         if (existingQueue) {
             // Se já está na fila, ainda assim atualizamos o token FCM se veio no body
             if (body.fcm_token) {
-                await supabaseAdmin
+                await getSupabaseAdmin()
                     .from('clients')
                     .update({ fcm_token: body.fcm_token })
                     .eq('id', client.id);
@@ -88,7 +88,7 @@ export async function POST(req: Request) {
 
         // Se não especificou barbeiro, pegar o com menor fila (ANY)
         if (!selectedBarberId) {
-            const { data: barbers } = await supabaseAdmin
+            const { data: barbers } = await getSupabaseAdmin()
                 .from('barbers')
                 .select('id, avg_time_minutes, status')
                 .eq('tenant_id', finalTenantId)
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
             // Contar fila de cada barbeiro
             const barberQueues = await Promise.all(
                 barbers.map(async (barber) => {
-                    const { count } = await supabaseAdmin
+                    const { count } = await getSupabaseAdmin()
                         .from('client_queue')
                         .select('*', { count: 'exact', head: true })
                         .eq('barber_id', barber.id)
@@ -117,7 +117,7 @@ export async function POST(req: Request) {
         }
 
         // Buscar dados do barbeiro selecionado
-        const { data: barber, error: barberError } = await supabaseAdmin
+        const { data: barber, error: barberError } = await getSupabaseAdmin()
             .from('barbers')
             .select('avg_time_minutes, tenant_id')
             .eq('id', selectedBarberId)
@@ -128,7 +128,7 @@ export async function POST(req: Request) {
         }
 
         // 4. Buscar maior posição na fila
-        const { data: lastInQueue } = await supabaseAdmin
+        const { data: lastInQueue } = await getSupabaseAdmin()
             .from('client_queue')
             .select('position')
             .eq('barber_id', selectedBarberId)
@@ -140,7 +140,7 @@ export async function POST(req: Request) {
         const estimatedTime = nextPosition * barber.avg_time_minutes;
 
         // 5. Inserir na fila
-        const { data: queueEntry, error: insertError } = await supabaseAdmin
+        const { data: queueEntry, error: insertError } = await getSupabaseAdmin()
             .from('client_queue')
             .insert({
                 tenant_id: barber.tenant_id,
@@ -160,7 +160,7 @@ export async function POST(req: Request) {
 
         // 6. Atualizar FCM Token do cliente se fornecido
         if (body.fcm_token) {
-            await supabaseAdmin
+            await getSupabaseAdmin()
                 .from('clients')
                 .update({ fcm_token: body.fcm_token })
                 .eq('id', client.id);

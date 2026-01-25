@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { addCorsHeaders, resolveTenantId } from '@/lib/server-utils';
 
 export async function OPTIONS(req: Request) {
@@ -20,7 +20,7 @@ export async function GET(req: Request) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Barbearia não encontrada' }, { status: 404 }));
         }
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('services')
             .select('*')
             .eq('tenant_id', tenantId)

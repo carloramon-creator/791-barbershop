@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function GET() {
@@ -10,7 +10,7 @@ export async function GET() {
             return NextResponse.json({ error: 'Acesso negado. Apenas administradores do sistema.' }, { status: 403 });
         }
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('support_tickets')
             .select(`
                 *,
@@ -36,7 +36,7 @@ export async function GET() {
         // Fallback TOTAL: Se qualquer coisa falhar (Join, Cache, Permissão, etc.), tenta busca bruta
         try {
             console.warn('[ADMIN_SUPPORT_GET] Fallback mode: Fetching raw tickets');
-            const { data: rawData, error: rawError } = await supabaseAdmin
+            const { data: rawData, error: rawError } = await getSupabaseAdmin()
                 .from('support_tickets')
                 .select('*')
                 .order('created_at', { ascending: false });
@@ -77,7 +77,7 @@ export async function PATCH(req: Request) {
             updates.resolved_at = new Date().toISOString();
         }
 
-        const { error } = await supabaseAdmin
+        const { error } = await getSupabaseAdmin()
             .from('support_tickets')
             .update(updates)
             .eq('id', id);

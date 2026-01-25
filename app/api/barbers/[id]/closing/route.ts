@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -10,7 +10,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
-    const { data: sales, error: salesError } = await supabaseAdmin
+    const { data: sales, error: salesError } = await getSupabaseAdmin()
         .from('sales')
         .select(`
             *,
@@ -26,7 +26,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     // Fetch sale_items for these sales
     if (sales && sales.length > 0) {
         const saleIds = sales.map(s => s.id);
-        const { data: items } = await supabaseAdmin
+        const { data: items } = await getSupabaseAdmin()
             .from('sale_items')
             .select('*')
             .in('sale_id', saleIds);
@@ -36,10 +36,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
         const [productsData, servicesData] = await Promise.all([
             productIds.length > 0
-                ? supabaseAdmin.from('products').select('id, name').in('id', productIds)
+                ? getSupabaseAdmin().from('products').select('id, name').in('id', productIds)
                 : Promise.resolve({ data: [] }),
             serviceIds.length > 0
-                ? supabaseAdmin.from('services').select('id, name').in('id', serviceIds)
+                ? getSupabaseAdmin().from('services').select('id, name').in('id', serviceIds)
                 : Promise.resolve({ data: [] })
         ]);
 
@@ -57,7 +57,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     // Fetch Barber Info with User Name and Nickname
-    const { data: barberData } = await supabaseAdmin
+    const { data: barberData } = await getSupabaseAdmin()
         .from('barbers')
         .select('name, nickname, commission_percentage, users(name, nickname, commission_value)')
         .eq('id', id)
@@ -96,7 +96,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         console.log('[CLOSING] Tenant ID:', tenant.id);
 
         // 1. Create a finance record (expense) FIRST to get the ID
-        const { data: financeData, error: financeError } = await supabaseAdmin
+        const { data: financeData, error: financeError } = await getSupabaseAdmin()
             .from('finance')
             .insert({
                 tenant_id: tenant.id,
@@ -119,7 +119,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
         // 2. Mark sales as paid and link to finance record (ONLY if there are sales)
         if (body.saleIds && body.saleIds.length > 0) {
-            const { error: updateError } = await supabaseAdmin
+            const { error: updateError } = await getSupabaseAdmin()
                 .from('sales')
                 .update({
                     barber_commission_paid: true,
@@ -131,7 +131,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             if (updateError) {
                 console.error('[CLOSING] Sales update error:', updateError);
                 // Rollback finance if sales update fails
-                await supabaseAdmin.from('finance').delete().eq('id', financeData.id);
+                await getSupabaseAdmin().from('finance').delete().eq('id', financeData.id);
                 throw updateError;
             }
             console.log('[CLOSING] Success! Sales updated:', body.saleIds.length);
@@ -163,7 +163,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     }
 
     // 1. Verify and Get Finance Record
-    const { data: financeRec, error: fetchError } = await supabaseAdmin
+    const { data: financeRec, error: fetchError } = await getSupabaseAdmin()
         .from('finance')
         .select('*')
         .eq('id', financeId)
@@ -173,7 +173,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     if (fetchError || !financeRec) return NextResponse.json({ error: 'Fechamento não encontrado' }, { status: 404 });
 
     // 2. Revert Sales (Set commission paid = false, finance_id = null)
-    const { error: salesError } = await supabaseAdmin
+    const { error: salesError } = await getSupabaseAdmin()
         .from('sales')
         .update({ barber_commission_paid: false, finance_id: null })
         .eq('finance_id', financeId)
@@ -182,7 +182,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     if (salesError) throw salesError;
 
     // 3. Delete Finance Record
-    const { error: deleteError } = await supabaseAdmin
+    const { error: deleteError } = await getSupabaseAdmin()
         .from('finance')
         .delete()
         .eq('id', financeId);

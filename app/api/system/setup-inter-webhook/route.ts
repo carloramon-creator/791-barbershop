@@ -2,14 +2,14 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 import { InterAPIV3 } from '@/lib/inter-api-v3';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export async function GET(req: Request) {
     try {
         const { user } = await getCurrentUserAndTenant();
 
         // Verificar se é super admin no banco de dados
-        const { data: userData } = await supabaseAdmin
+        const { data: userData } = await getSupabaseAdmin()
             .from('users')
             .select('is_system_admin')
             .eq('id', user.id)
@@ -20,7 +20,7 @@ export async function GET(req: Request) {
         }
 
         // Fetch config from DB first
-        const { data: settingsData } = await supabaseAdmin
+        const { data: settingsData } = await getSupabaseAdmin()
             .from('system_settings')
             .select('value')
             .eq('key', 'inter_config')
@@ -66,7 +66,7 @@ export async function GET(req: Request) {
         console.log('[SETUP] Registering Webhook:', webhookUrl);
 
         // Fetch Pix Key from settings
-        const { data: settings } = await supabaseAdmin
+        const { data: settings } = await getSupabaseAdmin()
             .from('system_settings')
             .select('value')
             .eq('key', 'inter_config')

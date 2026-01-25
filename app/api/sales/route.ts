@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 /**
@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     try {
         const { tenant } = await getCurrentUserAndTenant();
 
-        const { data: sales, error } = await supabaseAdmin
+        const { data: sales, error } = await getSupabaseAdmin()
             .from('sales')
             .select(`
                 *,
@@ -30,7 +30,7 @@ export async function GET(req: Request) {
         // Fetch sale_items separately to avoid polymorphic join issues
         if (sales && sales.length > 0) {
             const saleIds = sales.map(s => s.id);
-            const { data: items } = await supabaseAdmin
+            const { data: items } = await getSupabaseAdmin()
                 .from('sale_items')
                 .select('*')
                 .in('sale_id', saleIds);
@@ -41,10 +41,10 @@ export async function GET(req: Request) {
 
             const [productsData, servicesData] = await Promise.all([
                 productIds.length > 0
-                    ? supabaseAdmin.from('products').select('id, name').in('id', productIds)
+                    ? getSupabaseAdmin().from('products').select('id, name').in('id', productIds)
                     : Promise.resolve({ data: [] }),
                 serviceIds.length > 0
-                    ? supabaseAdmin.from('services').select('id, name').in('id', serviceIds)
+                    ? getSupabaseAdmin().from('services').select('id, name').in('id', serviceIds)
                     : Promise.resolve({ data: [] })
             ]);
 

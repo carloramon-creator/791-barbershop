@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { addCorsHeaders, resolveTenantId } from '@/lib/server-utils';
 
 export async function OPTIONS(req: Request) {
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
         let clientId = null;
         if (client_phone) {
             const phoneClean = client_phone.replace(/\D/g, '');
-            const { data: existingClient } = await supabaseAdmin
+            const { data: existingClient } = await getSupabaseAdmin()
                 .from('clients')
                 .select('id')
                 .eq('tenant_id', tenantId)
@@ -45,9 +45,9 @@ export async function POST(req: Request) {
             if (existingClient) {
                 clientId = existingClient.id;
                 // Atualizar dados se necessário
-                await supabaseAdmin.from('clients').update({ name: client_name, cpf, photo_url }).eq('id', clientId);
+                await getSupabaseAdmin().from('clients').update({ name: client_name, cpf, photo_url }).eq('id', clientId);
             } else {
-                const { data: newClient } = await supabaseAdmin
+                const { data: newClient } = await getSupabaseAdmin()
                     .from('clients')
                     .insert({ tenant_id: tenantId, name: client_name, phone: phoneClean, cpf, photo_url })
                     .select('id')
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
         }
 
         // 2. Criar Agendamento
-        const { data: appointment, error: aptError } = await supabaseAdmin
+        const { data: appointment, error: aptError } = await getSupabaseAdmin()
             .from('appointments')
             .insert({
                 tenant_id: tenantId,
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
 
         // 3. Atualizar FCM Token do cliente se fornecido
         if (body.fcm_token && clientId) {
-            await supabaseAdmin
+            await getSupabaseAdmin()
                 .from('clients')
                 .update({ fcm_token: body.fcm_token })
                 .eq('id', clientId);
@@ -108,7 +108,7 @@ export async function GET(req: Request) {
         // Limpa telefone para garantir apenas números
         const phoneClean = phone.replace(/\D/g, '');
 
-        let query = supabaseAdmin
+        let query = getSupabaseAdmin()
             .from('appointments')
             .select(`
                 *,
@@ -147,7 +147,7 @@ export async function GET(req: Request) {
         if (appointments && appointments.length > 0) {
             const allServiceIds = Array.from(new Set(appointments.flatMap(a => a.service_ids || [])));
             if (allServiceIds.length > 0) {
-                const { data: services } = await supabaseAdmin
+                const { data: services } = await getSupabaseAdmin()
                     .from('services')
                     .select('id, name, price, duration_minutes')
                     .in('id', allServiceIds);

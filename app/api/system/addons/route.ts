@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
 
 export async function OPTIONS(req: Request) {
@@ -12,7 +12,7 @@ export async function GET(req: Request) {
         // Permitir que qualquer pessoa veja os addons (público)
         // await getCurrentUserAndTenant();
 
-        const { data: addons, error } = await supabaseAdmin
+        const { data: addons, error } = await getSupabaseAdmin()
             .from('system_addons')
             .select('*')
             .order('price', { ascending: true });
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('system_addons')
             .insert([body])
             .select()
@@ -57,7 +57,7 @@ export async function PATCH(req: Request) {
         const body = await req.json();
         const { id, ...updates } = body;
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('system_addons')
             .update(updates)
             .eq('id', id)

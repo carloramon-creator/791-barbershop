@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import AsaasClient from '@/lib/asaas-client';
 
 export async function OPTIONS(req: Request) {
@@ -24,7 +24,7 @@ export async function GET(req: Request) {
         }
 
         // Buscar configuração do Asaas
-        const { data: settingsData } = await supabaseAdmin
+        const { data: settingsData } = await getSupabaseAdmin()
             .from('system_settings')
             .select('value')
             .eq('key', 'asaas_config')
@@ -80,7 +80,7 @@ export async function GET(req: Request) {
         // Tenta pelo checkoutId OU pelo paymentId
         let financeRecord = null;
         if (checkoutId) {
-            const { data } = await supabaseAdmin
+            const { data } = await getSupabaseAdmin()
                 .from('finance')
                 .select('*')
                 .eq('metadata->>asaas_checkout_id', checkoutId)
@@ -90,7 +90,7 @@ export async function GET(req: Request) {
         }
 
         if (!financeRecord) {
-            const { data } = await supabaseAdmin
+            const { data } = await getSupabaseAdmin()
                 .from('finance')
                 .select('*')
                 .eq('metadata->>asaas_checkout_id', paymentId)
@@ -104,7 +104,7 @@ export async function GET(req: Request) {
             console.log('[POLLING ASAAS] 🔥 Pagamento detectado via Polling (Frontend Check)! Atualizando...');
 
             // 1. Marcar fatura como paga
-            await supabaseAdmin.from('finance').update({
+            await getSupabaseAdmin().from('finance').update({
                 is_paid: true,
                 metadata: {
                     ...financeRecord.metadata,
@@ -125,7 +125,7 @@ export async function GET(req: Request) {
                 const newEndDate = new Date(now);
                 newEndDate.setMonth(newEndDate.getMonth() + interval);
 
-                await supabaseAdmin.from('tenants').update({
+                await getSupabaseAdmin().from('tenants').update({
                     plan: planSlug,
                     subscription_status: 'active',
                     subscription_current_period_end: newEndDate.toISOString(),
@@ -133,7 +133,7 @@ export async function GET(req: Request) {
             }
 
             if (addonSlug) {
-                const { data: tData } = await supabaseAdmin
+                const { data: tData } = await getSupabaseAdmin()
                     .from('tenants')
                     .select('active_addons')
                     .eq('id', tenant.id)
@@ -142,7 +142,7 @@ export async function GET(req: Request) {
                 const activeAddons = tData?.active_addons || [];
                 if (!activeAddons.includes(addonSlug)) {
                     activeAddons.push(addonSlug);
-                    await supabaseAdmin.from('tenants').update({ active_addons: activeAddons }).eq('id', tenant.id);
+                    await getSupabaseAdmin().from('tenants').update({ active_addons: activeAddons }).eq('id', tenant.id);
                 }
             }
         }

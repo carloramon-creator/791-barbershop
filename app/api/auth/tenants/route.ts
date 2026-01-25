@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase, supabaseAdmin } from '@/lib/supabase-server';
+import { supabase, getSupabaseAdmin } from '@/lib/supabase-server';
 
 /**
  * Registra uma nova barbearia (tenant) e define o usuário logado como dono.
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
 
         // 1. Criar o tenant
         // Usamos admin para garantir a criação mesmo se o RLS restringir por tenant_id (que ainda não temos no JWT)
-        const { data: tenant, error: tenantError } = await supabaseAdmin
+        const { data: tenant, error: tenantError } = await getSupabaseAdmin()
             .from('tenants')
             .insert({
                 name,
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
         if (tenantError) throw tenantError;
 
         // 2. Vincular o usuário como dono no banco operacional (users)
-        const { error: userError } = await supabaseAdmin
+        const { error: userError } = await getSupabaseAdmin()
             .from('users')
             .insert({
                 id: user.id,

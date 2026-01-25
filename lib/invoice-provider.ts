@@ -6,7 +6,7 @@
 
 import nfseService from './nfse/nfse-service';
 
-import { supabaseAdmin } from './supabase-server';
+import { getSupabaseAdmin } from './supabase-server';
 
 export interface InvoiceData {
     id: string;
@@ -53,7 +53,7 @@ class InvoiceProvider {
 
         try {
             // 0. Buscar configurações no DB
-            const { data: settings } = await supabaseAdmin
+            const { data: settings } = await getSupabaseAdmin()
                 .from('system_settings')
                 .select('value')
                 .eq('key', 'nfse_config')

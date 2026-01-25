@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 /**
  * Endpoint PÚBLICO para barbeiro finalizar um atendimento.
@@ -9,7 +9,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ ticketId
 
     try {
         // 1. Buscar o ticket para pegar o barber_id
-        const { data: ticket, error: fetchError } = await supabaseAdmin
+        const { data: ticket, error: fetchError } = await getSupabaseAdmin()
             .from('client_queue')
             .select('barber_id')
             .eq('id', ticketId)
@@ -20,7 +20,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ ticketId
         }
 
         // 2. Finalizar o atendimento
-        const { data: updatedTicket, error: updateError } = await supabaseAdmin
+        const { data: updatedTicket, error: updateError } = await getSupabaseAdmin()
             .from('client_queue')
             .update({
                 status: 'finished',
@@ -33,7 +33,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ ticketId
         if (updateError) throw updateError;
 
         // 3. Atualizar barbeiro para 'available'
-        await supabaseAdmin
+        await getSupabaseAdmin()
             .from('barbers')
             .update({ status: 'available' })
             .eq('id', ticket.barber_id);

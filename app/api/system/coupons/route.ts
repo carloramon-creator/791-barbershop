@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
 import Stripe from 'stripe';
 
 async function getStripeClient() {
-    const { data: settingsData } = await supabaseAdmin
+    const { data: settingsData } = await getSupabaseAdmin()
         .from('system_settings')
         .select('value')
         .eq('key', 'stripe_config')
@@ -33,7 +33,7 @@ export async function GET(req: Request) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Acesso negado' }, { status: 403 }));
         }
 
-        const { data: coupons, error } = await supabaseAdmin
+        const { data: coupons, error } = await getSupabaseAdmin()
             .from('system_coupons')
             .select('*')
             .order('created_at', { ascending: false });
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
         }
 
         // 2. Criar no DB
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('system_coupons')
             .insert([body])
             .select()
@@ -100,7 +100,7 @@ export async function PATCH(req: Request) {
         const body = await req.json();
         const { id, ...updates } = body;
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('system_coupons')
             .update(updates)
             .eq('id', id)
@@ -130,7 +130,7 @@ export async function DELETE(req: Request) {
         }
 
         // Buscar o código antes de deletar para remover do Stripe
-        const { data: coupon } = await supabaseAdmin
+        const { data: coupon } = await getSupabaseAdmin()
             .from('system_coupons')
             .select('code')
             .eq('id', id)
@@ -145,7 +145,7 @@ export async function DELETE(req: Request) {
             }
         }
 
-        const { error } = await supabaseAdmin
+        const { error } = await getSupabaseAdmin()
             .from('system_coupons')
             .delete()
             .eq('id', id);

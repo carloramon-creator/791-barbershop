@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export async function OPTIONS(req: Request) {
     return addCorsHeaders(req, new NextResponse(null, { status: 200 }));
@@ -16,7 +16,7 @@ export async function GET(req: Request) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Acesso negado' }, { status: 403 }));
         }
 
-        const { data: settings, error } = await supabaseAdmin
+        const { data: settings, error } = await getSupabaseAdmin()
             .from('system_settings')
             .select('value')
             .eq('key', 'nfse_config')
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
         const { environment, pfxBase64, passphrase, auto_emit } = body;
 
         // Busca configuração existente
-        const { data: existing } = await supabaseAdmin
+        const { data: existing } = await getSupabaseAdmin()
             .from('system_settings')
             .select('value')
             .eq('key', 'nfse_config')
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
         if (pfxBase64) newValue.pfxBase64 = pfxBase64;
         if (passphrase) newValue.passphrase = passphrase;
 
-        const { error } = await supabaseAdmin
+        const { error } = await getSupabaseAdmin()
             .from('system_settings')
             .upsert({
                 key: 'nfse_config',

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function PUT(
@@ -10,8 +10,8 @@ export async function PUT(
     const { tenant } = await getCurrentUserAndTenant();
     const { id: ticketId } = await params;
 
-    // Usar supabaseAdmin para by-passar RLS (permissões de linha)
-    const client = supabaseAdmin;
+    // Usar getSupabaseAdmin() para by-passar RLS (permissões de linha)
+    const client = getSupabaseAdmin();
 
     // 1. Busca o ticket atual e verifica o tenant manualmente
     const { data: ticket, error: ticketError } = await client

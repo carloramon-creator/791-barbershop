@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import AsaasClient from '@/lib/asaas-client';
 
 export async function OPTIONS(req: Request) {
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
         let discountPercent = 0;
 
         if (addonSlug) {
-            const { data: addon } = await supabaseAdmin
+            const { data: addon } = await getSupabaseAdmin()
                 .from('system_addons')
                 .select('*')
                 .eq('slug', addonSlug)
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
             itemName = addon.name;
             isAddon = true;
         } else {
-            const { data: planData } = await supabaseAdmin
+            const { data: planData } = await getSupabaseAdmin()
                 .from('system_plans')
                 .select('*')
                 .eq('slug', planSlug)
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
 
         if (coupon && coupon.trim() !== '') {
             const code = String(coupon).trim().toUpperCase();
-            const { data: couponData } = await supabaseAdmin
+            const { data: couponData } = await getSupabaseAdmin()
                 .from('system_coupons')
                 .select('*')
                 .eq('code', code)
@@ -109,7 +109,7 @@ export async function POST(req: Request) {
         finalAmount = Math.max(0, finalAmount - discountFromCoupon);
 
         // 4. Configurar Asaas
-        const { data: settingsData } = await supabaseAdmin
+        const { data: settingsData } = await getSupabaseAdmin()
             .from('system_settings')
             .select('value')
             .eq('key', 'asaas_config')
@@ -188,7 +188,7 @@ export async function POST(req: Request) {
         const payment = await asaas.createPayment(paymentData);
 
         // 7. Salvar no banco
-        await supabaseAdmin
+        await getSupabaseAdmin()
             .from('finance')
             .insert({
                 tenant_id: tenant.id,

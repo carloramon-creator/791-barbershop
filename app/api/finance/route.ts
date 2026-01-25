@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 import { addDays, addWeeks, addMonths, parseISO, format } from 'date-fns';
 
@@ -17,7 +17,7 @@ export async function GET() {
         console.log('[FINANCE API] Fetching for tenant:', tenantId);
 
         // Fetch finance records without joins to avoid filtering
-        const { data: financeData, error } = await supabaseAdmin
+        const { data: financeData, error } = await getSupabaseAdmin()
             .from('finance')
             .select('*')
             .eq('tenant_id', tenantId)
@@ -46,10 +46,10 @@ export async function GET() {
 
         const [categoriesData, barbersData] = await Promise.all([
             categoryIds.length > 0
-                ? supabaseAdmin.from('finance_categories').select('id, name, type').in('id', categoryIds)
+                ? getSupabaseAdmin().from('finance_categories').select('id, name, type').in('id', categoryIds)
                 : Promise.resolve({ data: [] }),
             barberIds.length > 0
-                ? supabaseAdmin.from('barbers').select('id, name').in('id', barberIds)
+                ? getSupabaseAdmin().from('barbers').select('id, name').in('id', barberIds)
                 : Promise.resolve({ data: [] })
         ]);
 
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
             }
         }
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('finance')
             .insert(recordsToInsert)
             .select();

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { firebaseAdmin } from '@/lib/firebase-admin';
 
 export const dynamic = 'force-dynamic';
@@ -25,7 +25,7 @@ export async function GET(req: Request) {
         const target24hStart = new Date(now.getTime() + (24 * 60 - 10) * 60000);
         const target24hEnd = new Date(now.getTime() + (24 * 60 + 10) * 60000);
 
-        const { data: apts24h } = await supabaseAdmin
+        const { data: apts24h } = await getSupabaseAdmin()
             .from('appointments')
             .select('*, clients(fcm_token), tenants(name)')
             .eq('status', 'scheduled')
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
                             title: `Lembrete: Amanhã na ${apt.tenants?.name}`,
                             body: `Seu agendamento está confirmado para amanhã às ${formatTime(apt.start_time)}. Te esperamos!`,
                         });
-                        await supabaseAdmin.from('appointments').update({ notified_24h: true }).eq('id', apt.id);
+                        await getSupabaseAdmin().from('appointments').update({ notified_24h: true }).eq('id', apt.id);
                         results['24h']++;
                     } catch (e: any) { results.errors.push(`24h-${apt.id}: ${e.message}`); }
                 }
@@ -53,7 +53,7 @@ export async function GET(req: Request) {
         const target1hStart = new Date(now.getTime() + (60 - 10) * 60000);
         const target1hEnd = new Date(now.getTime() + (60 + 10) * 60000);
 
-        const { data: apts1h } = await supabaseAdmin
+        const { data: apts1h } = await getSupabaseAdmin()
             .from('appointments')
             .select('*, clients(fcm_token), tenants(name)')
             .eq('status', 'scheduled')
@@ -70,7 +70,7 @@ export async function GET(req: Request) {
                             title: `Falta pouco! 1 hora para seu horário`,
                             body: `Lembrete: Você tem um agendamento na ${apt.tenants?.name} às ${formatTime(apt.start_time)}.`,
                         });
-                        await supabaseAdmin.from('appointments').update({ notified_1h: true }).eq('id', apt.id);
+                        await getSupabaseAdmin().from('appointments').update({ notified_1h: true }).eq('id', apt.id);
                         results['1h']++;
                     } catch (e: any) { results.errors.push(`1h-${apt.id}: ${e.message}`); }
                 }
@@ -81,7 +81,7 @@ export async function GET(req: Request) {
         const target30mStart = new Date(now.getTime() + (30 - 10) * 60000);
         const target30mEnd = new Date(now.getTime() + (30 + 10) * 60000);
 
-        const { data: apts30m } = await supabaseAdmin
+        const { data: apts30m } = await getSupabaseAdmin()
             .from('appointments')
             .select('*, clients(fcm_token), tenants(name)')
             .eq('status', 'scheduled')
@@ -98,7 +98,7 @@ export async function GET(req: Request) {
                             title: `Seu agendamento é daqui a 30 min`,
                             body: `Estamos te aguardando na ${apt.tenants?.name}. Até logo!`,
                         });
-                        await supabaseAdmin.from('appointments').update({ notified_30m: true }).eq('id', apt.id);
+                        await getSupabaseAdmin().from('appointments').update({ notified_30m: true }).eq('id', apt.id);
                         results['30m']++;
                     } catch (e: any) { results.errors.push(`30m-${apt.id}: ${e.message}`); }
                 }

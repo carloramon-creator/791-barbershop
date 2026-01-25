@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { InterAPIV3 } from '@/lib/inter-api-v3';
 import AsaasClient from '@/lib/asaas-client';
 
@@ -19,7 +19,7 @@ export async function GET(req: Request) {
 
         if (!seuNumero) return addCorsHeaders(req, NextResponse.json({ error: 'seu_numero ausente' }, { status: 400 }));
 
-        const { data: charge } = await supabaseAdmin
+        const { data: charge } = await getSupabaseAdmin()
             .from('finance')
             .select('*')
             .or(`metadata->>seu_numero.eq.${seuNumero},metadata->>asaas_checkout_id.eq.${seuNumero}`)
@@ -34,7 +34,7 @@ export async function GET(req: Request) {
             // --- Lógica ASAAS ---
             const asaasCheckoutId = charge.metadata?.asaas_checkout_id;
             if (asaasCheckoutId) {
-                const { data: asaasSettings } = await supabaseAdmin
+                const { data: asaasSettings } = await getSupabaseAdmin()
                     .from('system_settings')
                     .select('value')
                     .eq('key', 'asaas_config')
@@ -65,7 +65,7 @@ export async function GET(req: Request) {
 
                             if (isPaid && !charge.is_paid) {
                                 // Sincronizar
-                                await supabaseAdmin.from('finance').update({
+                                await getSupabaseAdmin().from('finance').update({
                                     is_paid: true,
                                     metadata: {
                                         ...charge.metadata,
@@ -82,7 +82,7 @@ export async function GET(req: Request) {
                                     const now = new Date();
                                     const periodEnd = new Date(now);
                                     periodEnd.setMonth(periodEnd.getMonth() + interval);
-                                    await supabaseAdmin.from('tenants').update({
+                                    await getSupabaseAdmin().from('tenants').update({
                                         plan: planSlug,
                                         subscription_status: 'active',
                                         subscription_current_period_end: periodEnd.toISOString()
@@ -101,7 +101,7 @@ export async function GET(req: Request) {
             }
 
             // --- Lógica INTER ---
-            const { data: settingsData } = await supabaseAdmin
+            const { data: settingsData } = await getSupabaseAdmin()
                 .from('system_settings')
                 .select('value')
                 .eq('key', 'inter_config')
@@ -176,14 +176,14 @@ export async function GET(req: Request) {
 
                         // Atualiza Metadata
                         if (meta.nosso_numero && meta.nosso_numero !== 'PENDING') {
-                            await supabaseAdmin.from('finance').update({
+                            await getSupabaseAdmin().from('finance').update({
                                 metadata: meta,
                                 is_paid: isPaid ? true : charge.is_paid
                             }).eq('id', charge.id);
                             charge.metadata = meta;
                             isReady = true;
                         } else if (isPix && meta.pix_payload) {
-                            await supabaseAdmin.from('finance').update({
+                            await getSupabaseAdmin().from('finance').update({
                                 metadata: meta,
                                 is_paid: isPaid ? true : charge.is_paid
                             }).eq('id', charge.id);
@@ -194,7 +194,7 @@ export async function GET(req: Request) {
                         // Se descobriu que foi CANCELADO, podemos opcionalmente marcar algo no banco
                         // Por ora, vamos garantir que o is_paid continue falso mas o metadata salve o status
                         if (isCanceled) {
-                            await supabaseAdmin.from('finance').update({
+                            await getSupabaseAdmin().from('finance').update({
                                 metadata: { ...meta, status_inter: found.situacao || found.status }
                             }).eq('id', charge.id);
                             return addCorsHeaders(req, NextResponse.json({ ready: false, statusUpdated: true }));
@@ -218,7 +218,7 @@ export async function GET(req: Request) {
                                 console.log(`[POLLING] Atualizando plano: ${planSlug}, expira em: ${periodEnd.toISOString()}`);
 
                                 if (charge.metadata.tenant_id) {
-                                    await supabaseAdmin.from('tenants').update({
+                                    await getSupabaseAdmin().from('tenants').update({
                                         plan: planSlug,
                                         subscription_status: 'active',
                                         subscription_current_period_end: periodEnd.toISOString()
@@ -229,7 +229,7 @@ export async function GET(req: Request) {
                             // 2. Atualizar Addons se houver
                             if (addonSlug && charge.metadata.tenant_id) {
                                 console.log(`[POLLING] Ativando addon: ${addonSlug}`);
-                                const { data: tData } = await supabaseAdmin
+                                const { data: tData } = await getSupabaseAdmin()
                                     .from('tenants')
                                     .select('active_addons')
                                     .eq('id', charge.metadata.tenant_id)
@@ -238,7 +238,7 @@ export async function GET(req: Request) {
                                 const activeAddons = tData?.active_addons || [];
                                 if (!activeAddons.includes(addonSlug)) {
                                     activeAddons.push(addonSlug);
-                                    await supabaseAdmin.from('tenants').update({
+                                    await getSupabaseAdmin().from('tenants').update({
                                         active_addons: activeAddons
                                     }).eq('id', charge.metadata.tenant_id);
                                 }
@@ -255,7 +255,7 @@ export async function GET(req: Request) {
                                 periodEnd.setDate(periodEnd.getDate() + 31);
 
                                 if (charge.metadata.tenant_id) {
-                                    await supabaseAdmin.from('tenants').update({
+                                    await getSupabaseAdmin().from('tenants').update({
                                         plan: plan,
                                         subscription_status: 'active',
                                         subscription_current_period_end: periodEnd.toISOString()
@@ -264,7 +264,7 @@ export async function GET(req: Request) {
                             }
 
                             // Garante atualização final da fatura
-                            await supabaseAdmin.from('finance').update({ is_paid: true }).eq('id', charge.id);
+                            await getSupabaseAdmin().from('finance').update({ is_paid: true }).eq('id', charge.id);
                         }
                     }
                 } catch (e) {

@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../lib/supabase-server';
+import { getSupabaseAdmin } from '../lib/supabase-server';
 import AsaasClient from '../lib/asaas-client';
 
 async function testAsaas() {
@@ -6,7 +6,7 @@ async function testAsaas() {
         console.log('--- DIAGNÓSTICO ASAAS ---');
 
         // 1. Buscar configurações
-        const { data: settingsData } = await supabaseAdmin
+        const { data: settingsData } = await getSupabaseAdmin()
             .from('system_settings')
             .select('value')
             .eq('key', 'asaas_config')

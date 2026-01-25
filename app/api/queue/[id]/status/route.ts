@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id: ticketId } = await params;
 
     try {
         // 1. Buscar o ticket e o barbeiro associado
-        const { data: ticket, error: ticketError } = await supabaseAdmin
+        const { data: ticket, error: ticketError } = await getSupabaseAdmin()
             .from('client_queue')
             .select(`
                 *,
@@ -29,7 +29,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         let estimatedWait = 0;
 
         if (ticket.status === 'waiting') {
-            const { count, error: countError } = await supabaseAdmin
+            const { count, error: countError } = await getSupabaseAdmin()
                 .from('client_queue')
                 .select('*', { count: 'exact', head: true })
                 .eq('barber_id', ticket.barber_id)

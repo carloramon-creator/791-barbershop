@@ -1,10 +1,10 @@
-import { supabaseAdmin } from '../lib/supabase-server';
+import { getSupabaseAdmin } from '../lib/supabase-server';
 
 async function test() {
     console.log('--- Testing Database ---');
 
     // Check support tickets with Joins
-    const { data: tickets, error: ticketErr } = await supabaseAdmin
+    const { data: tickets, error: ticketErr } = await getSupabaseAdmin()
         .from('support_tickets')
         .select(`
             *,
@@ -21,7 +21,7 @@ async function test() {
     }
 
     // Check barbers
-    const { data: barbers, error: barberErr } = await supabaseAdmin
+    const { data: barbers, error: barberErr } = await getSupabaseAdmin()
         .from('barbers')
         .select('id, user_id, tenant_id')
         .limit(5);
@@ -33,7 +33,7 @@ async function test() {
     }
 
     // Check users
-    const { data: users, error: userErr } = await supabaseAdmin
+    const { data: users, error: userErr } = await getSupabaseAdmin()
         .from('users')
         .select('id, email, roles')
         .limit(5);

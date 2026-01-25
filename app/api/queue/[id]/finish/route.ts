@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 /**
@@ -13,9 +13,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
         }
 
-        // Usar supabaseAdmin para by-passar RLS se necessário,
+        // Usar getSupabaseAdmin() para by-passar RLS se necessário,
         // garantindo a segurança pelo tenant_id abaixo
-        const client = supabaseAdmin;
+        const client = getSupabaseAdmin();
 
         // 1. Buscar a entrada da fila para saber quem é o barbeiro e validar tenant
         const { data: queueEntry, error: fetchError } = await client

@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function GET() {
     try {
         const { tenant } = await getCurrentUserAndTenant();
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('finance_categories')
             .select('*')
             .eq('tenant_id', tenant.id)
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Nome e tipo são obrigatórios' }, { status: 400 });
         }
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('finance_categories')
             .insert({
                 tenant_id: tenant.id,

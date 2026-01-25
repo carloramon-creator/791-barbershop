@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { addCorsHeaders, resolveTenantId } from '@/lib/server-utils';
 
 export async function OPTIONS(req: Request) {
@@ -20,7 +20,7 @@ export async function GET(req: Request) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Barbearia não encontrada' }, { status: 404 }));
         }
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('barbers')
             .select('*, users(photo_url, name, nickname), barber_services(service_id)')
             .eq('tenant_id', tenantId)
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
 
         // Formatar para resposta limpa
         // Buscar contagem da fila para cada barbeiro
-        const { data: queueCounts, error: queueError } = await supabaseAdmin
+        const { data: queueCounts, error: queueError } = await getSupabaseAdmin()
             .from('client_queue')
             .select('barber_id')
             .eq('status', 'waiting')

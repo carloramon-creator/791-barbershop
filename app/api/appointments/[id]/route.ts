@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 /**
@@ -11,7 +11,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         const { tenant } = await getCurrentUserAndTenant();
         const payload = await req.json();
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('appointments')
             .update(payload)
             .eq('id', id)
@@ -36,7 +36,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     try {
         const { tenant } = await getCurrentUserAndTenant();
 
-        const { error } = await supabaseAdmin
+        const { error } = await getSupabaseAdmin()
             .from('appointments')
             .delete()
             .eq('id', id)

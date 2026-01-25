@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { InterAPIV3 } from '@/lib/inter-api-v3';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export async function GET(req: Request) {
     try {
@@ -19,7 +19,7 @@ export async function GET(req: Request) {
         }
 
         // 1. Configurar Inter
-        const { data: settingsData } = await supabaseAdmin
+        const { data: settingsData } = await getSupabaseAdmin()
             .from('system_settings')
             .select('value')
             .eq('key', 'inter_config')

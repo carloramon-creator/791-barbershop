@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export async function POST(req: Request) {
     try {
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
         }
 
         // 1. Buscar Add-on e verificar se já possui
-        const { data: addon } = await supabaseAdmin
+        const { data: addon } = await getSupabaseAdmin()
             .from('system_addons')
             .select('*')
             .eq('slug', addonSlug)
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Add-on não encontrado' }, { status: 404 }));
         }
 
-        const { data: existing } = await supabaseAdmin
+        const { data: existing } = await getSupabaseAdmin()
             .from('tenant_addons')
             .select('*')
             .eq('tenant_id', tenant.id)
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
         }
 
         // 3. Obter Configuração Stripe (Dinâmico do Banco)
-        const { data: settingsData } = await supabaseAdmin
+        const { data: settingsData } = await getSupabaseAdmin()
             .from('system_settings')
             .select('value')
             .eq('key', 'stripe_config')
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
                     console.warn(`[ADDON] Subscription ${activeSubscriptionId} não existe no Stripe. Limpando...`);
                     activeSubscriptionId = null;
                     // Limpa no banco para não tentar de novo
-                    await supabaseAdmin.from('tenants').update({ stripe_subscription_id: null }).eq('id', tenant.id);
+                    await getSupabaseAdmin().from('tenants').update({ stripe_subscription_id: null }).eq('id', tenant.id);
                 } else {
                     throw err;
                 }
@@ -98,7 +98,7 @@ export async function POST(req: Request) {
                 });
 
                 // Salvar no banco para futuras compras
-                await supabaseAdmin
+                await getSupabaseAdmin()
                     .from('system_addons')
                     .update({ stripe_price_id: price.id })
                     .eq('id', addon.id);
@@ -132,7 +132,7 @@ export async function POST(req: Request) {
         }
 
         // 6. Criar registro em tenant_addons
-        const { error: activateError } = await supabaseAdmin
+        const { error: activateError } = await getSupabaseAdmin()
             .from('tenant_addons')
             .insert({
                 tenant_id: tenant.id,

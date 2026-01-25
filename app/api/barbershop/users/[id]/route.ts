@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -14,7 +14,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         if (!newRole) return NextResponse.json({ error: 'Nova função obrigatória' }, { status: 400 });
 
         // Update user
-        let { data, error } = await supabaseAdmin
+        let { data, error } = await getSupabaseAdmin()
             .from('users')
             .update({ role: newRole })
             .eq('id', id)
@@ -25,7 +25,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         // Retry logic for 'staff' constraint
         if (error && error.message.includes('check constraint') && newRole === 'staff') {
             console.warn('[PUT USER] Constraint violation for staff role. Falling back to barber.');
-            const retry = await supabaseAdmin
+            const retry = await getSupabaseAdmin()
                 .from('users')
                 .update({ role: 'barber' })
                 .eq('id', id)
@@ -61,7 +61,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
         }
 
         // Delete from public.users
-        const { error } = await supabaseAdmin
+        const { error } = await getSupabaseAdmin()
             .from('users')
             .delete()
             .eq('id', id)

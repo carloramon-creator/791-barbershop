@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 /**
@@ -14,7 +14,7 @@ export async function GET(req: Request) {
         const startDate = searchParams.get('startDate');
         const endDate = searchParams.get('endDate');
 
-        let query = supabaseAdmin
+        let query = getSupabaseAdmin()
             .from('appointments')
             .select('*, draft_items, barbers(name, nickname, user_id)')
             .eq('tenant_id', tenant.id)
@@ -55,7 +55,7 @@ export async function GET(req: Request) {
         // Fetch client photos for these appointments
         const phones = Array.from(new Set(flattened.map(a => a.client_phone).filter(Boolean)));
         if (phones.length > 0) {
-            const { data: clients } = await supabaseAdmin
+            const { data: clients } = await getSupabaseAdmin()
                 .from('clients')
                 .select('phone, photo_url')
                 .eq('tenant_id', tenant.id)
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
 
         // 2. Overlap Check (Strict Backend Guard)
         // Check for any appointment for the SAME barber that overlaps with the NEW one
-        const { data: overlaps, error: overlapError } = await supabaseAdmin
+        const { data: overlaps, error: overlapError } = await getSupabaseAdmin()
             .from('appointments')
             .select('id')
             .eq('tenant_id', tenant.id)
@@ -107,7 +107,7 @@ export async function POST(req: Request) {
         }
 
         // 3. Insert
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('appointments')
             .insert({
                 ...payload,

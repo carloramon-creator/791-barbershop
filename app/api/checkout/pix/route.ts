@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getSystemInterClient } from '@/lib/inter-api';
 
 export async function OPTIONS(req: Request) {
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
         if (coupon) {
             console.log(`[CHECKOUT PIX] Validating: ${coupon}`);
             const code = String(coupon).trim().toUpperCase();
-            const { data: couponData } = await supabaseAdmin
+            const { data: couponData } = await getSupabaseAdmin()
                 .from('system_coupons')
                 .select('*')
                 .eq('code', code)
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
         }
 
         // 1. Get Inter Settings for SaaS
-        const { data: setting } = await supabaseAdmin
+        const { data: setting } = await getSupabaseAdmin()
             .from('system_settings')
             .select('*')
             .eq('key', 'inter_config')
@@ -92,7 +92,7 @@ export async function POST(req: Request) {
         const interCharge = await inter.createImmediateCharge(payload as any);
 
         // 3. Save to our database
-        const { data: charge, error: chargeError } = await supabaseAdmin
+        const { data: charge, error: chargeError } = await getSupabaseAdmin()
             .from('saas_pix_charges')
             .insert({
                 txid: interCharge.txid,

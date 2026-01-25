@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant, assertPlanAtLeast } from '@/lib/server-utils';
 import { Plan } from '@/lib/backend-types';
 
@@ -13,7 +13,7 @@ export async function GET() {
         }
 
         // Fetch movements with product info
-        const { data: movements, error } = await supabaseAdmin
+        const { data: movements, error } = await getSupabaseAdmin()
             .from('product_movements')
             .select(`
                 *,
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
         }
 
         // 1. Get current product to update stock
-        const { data: product, error: productError } = await supabaseAdmin
+        const { data: product, error: productError } = await getSupabaseAdmin()
             .from('products')
             .select('stock_quantity, price')
             .eq('id', product_id)
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
         if (newQuantity < 0) throw new Error('Estoque insuficiente');
 
         // 2. Insert movement
-        const { data: movement, error: movementError } = await supabaseAdmin
+        const { data: movement, error: movementError } = await getSupabaseAdmin()
             .from('product_movements')
             .insert({
                 tenant_id: tenant.id,
@@ -97,7 +97,7 @@ export async function POST(req: Request) {
             updates.cost_price = cost_price;
         }
 
-        await supabaseAdmin
+        await getSupabaseAdmin()
             .from('products')
             .update(updates)
             .eq('id', product_id);

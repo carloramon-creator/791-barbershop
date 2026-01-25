@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function GET(
@@ -17,7 +17,7 @@ export async function GET(
         // However, barber_services linking table might not have tenant_id.
         // BUT, the services themselves have tenant_id and the user has tenant_id.
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('barber_services')
             .select('service_id')
             .eq('barber_id', barberId);
@@ -45,7 +45,7 @@ export async function PUT(
         }
 
         // 1. Delete all existing links
-        const { error: deleteError } = await supabaseAdmin
+        const { error: deleteError } = await getSupabaseAdmin()
             .from('barber_services')
             .delete()
             .eq('barber_id', barberId);
@@ -59,7 +59,7 @@ export async function PUT(
                 service_id: id
             }));
 
-            const { error: insertError } = await supabaseAdmin
+            const { error: insertError } = await getSupabaseAdmin()
                 .from('barber_services')
                 .insert(inserts);
 

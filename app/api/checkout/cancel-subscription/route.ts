@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export async function OPTIONS(req: Request) {
     const response = new NextResponse(null, { status: 200 });
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
 
         // Se não tem ID no banco, apenas atualiza localmente para garantir consistência
         if (!tenant.stripe_subscription_id) {
-            await supabaseAdmin
+            await getSupabaseAdmin()
                 .from('tenants')
                 .update({ subscription_status: 'canceled' })
                 .eq('id', tenant.id);
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
         }
 
         // 0. Obter Configuração Stripe (Dinâmico do Banco)
-        const { data: settingsData } = await supabaseAdmin
+        const { data: settingsData } = await getSupabaseAdmin()
             .from('system_settings')
             .select('value')
             .eq('key', 'stripe_config')
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
         }
 
         // Atualizar status no banco
-        await supabaseAdmin
+        await getSupabaseAdmin()
             .from('tenants')
             .update({ subscription_status: 'canceled' })
             .eq('id', tenant.id);

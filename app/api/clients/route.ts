@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function GET(req: Request) {
@@ -8,7 +8,7 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url);
         const search = searchParams.get('search');
 
-        let query = supabaseAdmin
+        let query = getSupabaseAdmin()
             .from('clients')
             .select('*')
             .eq('tenant_id', tenant.id)
@@ -25,13 +25,13 @@ export async function GET(req: Request) {
         const clientIds = clients.map(c => c.id);
 
         const [queueRes, appoRes] = await Promise.all([
-            supabaseAdmin
+            getSupabaseAdmin()
                 .from('client_queue')
                 .select('client_id, finished_at')
                 .in('client_id', clientIds)
                 .eq('status', 'finished')
                 .order('finished_at', { ascending: false }),
-            supabaseAdmin
+            getSupabaseAdmin()
                 .from('appointments')
                 .select('client_id, date, start_time')
                 .in('client_id', clientIds)
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
         const { tenant } = await getCurrentUserAndTenant();
         const payload = await req.json();
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('clients')
             .insert({
                 ...payload,
@@ -103,7 +103,7 @@ export async function PUT(req: Request) {
 
         if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('clients')
             .update(payload)
             .eq('id', id)
@@ -131,26 +131,26 @@ export async function DELETE(req: Request) {
         // Em vez de deletar da fila (o que apagaria o histórico de atendimentos), 
         // vamos apenas anular o client_id para manter os registros de atendimento 
         // para fins estatísticos nas barbearias.
-        await supabaseAdmin
+        await getSupabaseAdmin()
             .from('client_queue')
             .update({ client_id: null })
             .eq('client_id', id)
             .eq('tenant_id', tenant.id);
 
-        await supabaseAdmin
+        await getSupabaseAdmin()
             .from('appointments')
             .update({ client_id: null })
             .eq('client_id', id)
             .eq('tenant_id', tenant.id);
 
-        await supabaseAdmin
+        await getSupabaseAdmin()
             .from('sales')
             .update({ client_id: null })
             .eq('client_id', id)
             .eq('tenant_id', tenant.id);
 
         // 2. Agora excluir o cliente
-        const { error } = await supabaseAdmin
+        const { error } = await getSupabaseAdmin()
             .from('clients')
             .delete()
             .eq('id', id)

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { invoiceProvider } from '@/lib/invoice-provider';
 
 /**
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
                 } else if (isCanceled) {
                     console.log(`[INTER WEBHOOK] Cobrança ${notif.nossoNumero} marcada como ${situacao}. REMOVENDO registro local.`);
                     // Em vez de apenas atualizar o metadado, vamos remover para limpar o histórico do usuário
-                    await supabaseAdmin.from('finance')
+                    await getSupabaseAdmin().from('finance')
                         .delete()
                         .eq('metadata->>nosso_numero', notif.nossoNumero);
                     processedCount++;
@@ -77,7 +77,7 @@ async function processPayment(params: { identifier: string, identifierType: 'txi
 
     // Busca na tabela FINANCE (SaaS)
     // 1. Tenta pelo identificador principal (txid ou nosso_numero)
-    let { data: charge } = await supabaseAdmin
+    let { data: charge } = await getSupabaseAdmin()
         .from('finance')
         .select('*')
         .eq('is_paid', false) // Otimização: buscar apenas não pagos primeiro
@@ -87,7 +87,7 @@ async function processPayment(params: { identifier: string, identifierType: 'txi
     // 2. Se não achou e tem secundário (seu_numero), tenta por ele
     if (!charge && params.secondaryIdentifier) {
         console.log(`[INTER WEBHOOK] Tentando buscar backup por seu_numero: ${params.secondaryIdentifier}`);
-        const { data: chargeSecondary } = await supabaseAdmin
+        const { data: chargeSecondary } = await getSupabaseAdmin()
             .from('finance')
             .select('*')
             .eq('is_paid', false)
@@ -99,7 +99,7 @@ async function processPayment(params: { identifier: string, identifierType: 'txi
     // 3. Verifica se já não foi pago anteriormente (caso tenhamos removido filtro is_paid acima para debug)
     if (!charge) {
         // Tenta buscar mesmo se já pago, só pra logar
-        const { data: alreadyPaid } = await supabaseAdmin
+        const { data: alreadyPaid } = await getSupabaseAdmin()
             .from('finance')
             .select('*')
             // OR logic manual via application code or simpler query
@@ -137,7 +137,7 @@ async function processPayment(params: { identifier: string, identifierType: 'txi
         if (tenantId) {
             if (isAddon && addonSlug) {
                 // É UM ADD-ON: Buscar ID do add-on
-                const { data: addonData } = await supabaseAdmin
+                const { data: addonData } = await getSupabaseAdmin()
                     .from('system_addons')
                     .select('id')
                     .eq('slug', addonSlug)
@@ -145,7 +145,7 @@ async function processPayment(params: { identifier: string, identifierType: 'txi
 
                 if (addonData) {
                     // Ativar addon para o tenant
-                    await supabaseAdmin
+                    await getSupabaseAdmin()
                         .from('tenant_addons')
                         .upsert({
                             tenant_id: tenantId,
@@ -159,7 +159,7 @@ async function processPayment(params: { identifier: string, identifierType: 'txi
                 const periodEnd = new Date();
                 periodEnd.setDate(periodEnd.getDate() + 31);
 
-                const { error: tenantError } = await supabaseAdmin
+                const { error: tenantError } = await getSupabaseAdmin()
                     .from('tenants')
                     .update({
                         plan: finalPlan,
@@ -174,7 +174,7 @@ async function processPayment(params: { identifier: string, identifierType: 'txi
         }
 
         // Marcar Finance como Pago
-        const { error: financeError } = await supabaseAdmin
+        const { error: financeError } = await getSupabaseAdmin()
             .from('finance')
             .update({
                 is_paid: true,
@@ -190,7 +190,7 @@ async function processPayment(params: { identifier: string, identifierType: 'txi
         // 4. Emissão Automática de NFS-e
         if (tenantId) {
             try {
-                const { data: tenantObj } = await supabaseAdmin
+                const { data: tenantObj } = await getSupabaseAdmin()
                     .from('tenants')
                     .select('id, name, cnpj, cpf')
                     .eq('id', tenantId)
@@ -210,7 +210,7 @@ async function processPayment(params: { identifier: string, identifierType: 'txi
                     const result = await invoiceProvider.emitSaaSInvoice(invoiceData, false);
 
                     if (result.success) {
-                        await supabaseAdmin.from('finance').update({
+                        await getSupabaseAdmin().from('finance').update({
                             metadata: {
                                 ...charge.metadata,
                                 nfe_id: result.invoiceId,

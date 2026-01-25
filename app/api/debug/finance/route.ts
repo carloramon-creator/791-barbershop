@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 /**
@@ -10,40 +10,40 @@ export async function GET() {
         const { tenant } = await getCurrentUserAndTenant();
 
         // Get ALL finance records (ignore tenant filter)
-        const { data: allFinance, error: allError } = await supabaseAdmin
+        const { data: allFinance, error: allError } = await getSupabaseAdmin()
             .from('finance')
             .select('id, tenant_id, type, description, value, date, is_paid')
             .order('created_at', { ascending: false })
             .limit(50);
 
         // Get finance records for this tenant
-        const { data: tenantFinance, error: tenantError } = await supabaseAdmin
+        const { data: tenantFinance, error: tenantError } = await getSupabaseAdmin()
             .from('finance')
             .select('id, tenant_id, type, description, value, date, is_paid')
             .eq('tenant_id', tenant.id)
             .order('created_at', { ascending: false });
 
         // Get finance records without tenant_id
-        const { data: orphanFinance, error: orphanError } = await supabaseAdmin
+        const { data: orphanFinance, error: orphanError } = await getSupabaseAdmin()
             .from('finance')
             .select('id, tenant_id, type, description, value, date, is_paid')
             .is('tenant_id', null);
 
         // Get product movements
-        const { data: movements, error: movError } = await supabaseAdmin
+        const { data: movements, error: movError } = await getSupabaseAdmin()
             .from('product_movements')
             .select('id, tenant_id, product_id, type, quantity')
             .eq('tenant_id', tenant.id)
             .limit(20);
 
-        const { data: orphanMovements } = await supabaseAdmin
+        const { data: orphanMovements } = await getSupabaseAdmin()
             .from('product_movements')
             .select('id, tenant_id, product_id, type, quantity')
             .is('tenant_id', null)
             .limit(20);
 
         // Get table columns to verify schema
-        const { data: columns } = await supabaseAdmin.rpc('get_table_columns', { table_name_input: 'finance' });
+        const { data: columns } = await getSupabaseAdmin().rpc('get_table_columns', { table_name_input: 'finance' });
 
         return NextResponse.json({
             tenant_id: tenant.id,

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 /**
@@ -10,7 +10,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     try {
         const { tenant } = await getCurrentUserAndTenant();
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('service_products')
             .select('product_id, products(id, name, price, category_id)')
             .eq('service_id', serviceId);
@@ -34,7 +34,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         const { productIds } = await req.json();
 
         // Verificar se o serviço pertence ao tenant
-        const { data: service } = await supabaseAdmin
+        const { data: service } = await getSupabaseAdmin()
             .from('services')
             .select('id')
             .eq('id', serviceId)
@@ -46,7 +46,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         }
 
         // Remover produtos antigos
-        await supabaseAdmin
+        await getSupabaseAdmin()
             .from('service_products')
             .delete()
             .eq('service_id', serviceId);
@@ -58,7 +58,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                 product_id: productId
             }));
 
-            const { error } = await supabaseAdmin
+            const { error } = await getSupabaseAdmin()
                 .from('service_products')
                 .insert(inserts);
 

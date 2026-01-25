@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
 
 export async function GET(req: Request) {
@@ -10,7 +10,7 @@ export async function GET(req: Request) {
         }
 
         // Buscar todos os tenants e seus usuários
-        const { data: tenants, error: tenantsError } = await supabaseAdmin
+        const { data: tenants, error: tenantsError } = await getSupabaseAdmin()
             .from('tenants')
             .select(`
                 *,
@@ -23,7 +23,7 @@ export async function GET(req: Request) {
         // Processar para identificar o dono (owner) e adicionar estatísticas
         const tenantsWithStats = await Promise.all(tenants.map(async (tenant: any) => {
             const owner = tenant.users?.find((u: any) => u.role === 'owner') || tenant.users?.[0];
-            const { data: stats } = await supabaseAdmin.rpc('get_tenant_stats', { tenant_uuid: tenant.id });
+            const { data: stats } = await getSupabaseAdmin().rpc('get_tenant_stats', { tenant_uuid: tenant.id });
 
             return {
                 ...tenant,

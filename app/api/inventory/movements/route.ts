@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,7 @@ export async function GET(req: Request) {
         const start = searchParams.get('start');
         const end = searchParams.get('end');
 
-        let query = supabaseAdmin
+        let query = getSupabaseAdmin()
             .from('product_movements')
             .select('*')
             .eq('tenant_id', tenant.id)
@@ -36,10 +36,10 @@ export async function GET(req: Request) {
 
         const [productsData, usersData] = await Promise.all([
             productIds.length > 0
-                ? supabaseAdmin.from('products').select('id, name').in('id', productIds)
+                ? getSupabaseAdmin().from('products').select('id, name').in('id', productIds)
                 : Promise.resolve({ data: [] }),
             userIds.length > 0
-                ? supabaseAdmin.from('users').select('id, name').in('id', userIds)
+                ? getSupabaseAdmin().from('users').select('id, name').in('id', userIds)
                 : Promise.resolve({ data: [] })
         ]);
 

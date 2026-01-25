@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function GET(req: Request) {
@@ -14,7 +14,7 @@ export async function GET(req: Request) {
         const endDate = searchParams.get('endDate');
         const businessUnit = searchParams.get('businessUnit');
 
-        let query = supabaseAdmin
+        let query = getSupabaseAdmin()
             .from('system_finance_records')
             .select('*')
             .order('date', { ascending: false });
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
 
         const payload = await req.json();
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('system_finance_records')
             .insert({
                 ...payload,
@@ -79,13 +79,13 @@ export async function DELETE(req: Request) {
         // For efficiency, we can just trust the client params if we passed recurrenceId directly, but let's stick to ID for safety or fetch it.
         // Let's assume the frontend passes the ID of the record being clicked.
 
-        let query = supabaseAdmin.from('system_finance_records').delete();
+        let query = getSupabaseAdmin().from('system_finance_records').delete();
 
         if (deleteMode === 'single') {
             query = query.eq('id', id);
         } else {
             // Fetch the record first to get the recurrence_id
-            const { data: record, error: fetchError } = await supabaseAdmin
+            const { data: record, error: fetchError } = await getSupabaseAdmin()
                 .from('system_finance_records')
                 .select('metadata, date')
                 .eq('id', id)
@@ -135,7 +135,7 @@ export async function PATCH(req: Request) {
 
         const payload = await req.json();
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('system_finance_records')
             .update({
                 ...payload,
