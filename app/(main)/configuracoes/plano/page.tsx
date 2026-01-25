@@ -351,10 +351,8 @@ export default function PlanPage() {
                     }));
                 }
 
-                // Abrir modal com checkout integrado (Asaas - Cartão)
-                setCheckoutUrl(data.checkoutUrl);
-                setShowCheckoutModal(true);
-                setOpenDialog(false);
+                // REDIRECIONAR NA MESMA ABA (Evita abas órfãs)
+                window.location.href = data.checkoutUrl;
             } else if (data.seu_numero || data.pending || data.pixPayload || data.pdfUrl) {
                 // Resposta do Banco Inter (Pix ou Boleto)
                 if (paymentMethod === 'pix') {
@@ -620,8 +618,8 @@ export default function PlanPage() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {dynamicAddons
                                             .filter(addon => {
-                                                // Premium: TUDO INCLUSO (não mostrar turbinar)
-                                                if (currentPlan === 'premium') return false;
+                                                // Premium real e Ativo: TUDO INCLUSO (não mostrar turbinar)
+                                                if (currentPlan === 'premium' && subscriptionStatus === 'active') return false;
 
                                                 const currentPlanData = dynamicPlans.find(p => p.slug === currentPlan);
                                                 if (!currentPlanData) return true;
@@ -636,6 +634,10 @@ export default function PlanPage() {
 
                                                     return f.includes(addonName) || f.includes(addon.slug);
                                                 });
+
+                                                // Se for trial ou expidado/não-pago, mostramos todos os add-ons para ele planejar a assinatura
+                                                const isFirstSub = !tenantObject?.asaas_subscription_id || ['trial', 'trialing', 'trial_expired'].includes(subscriptionStatus || '');
+                                                if (isFirstSub) return true;
 
                                                 return !hasFeature;
                                             })
@@ -1438,30 +1440,43 @@ export default function PlanPage() {
 
             {/* BARRA DE SELEÇÃO FIXA NO RODAPÉ */}
             {(selectedPlan || selectedAddon) && !openDialog && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-slate-900/90 backdrop-blur-xl border border-blue-500/30 p-4 rounded-3xl shadow-2xl flex items-center justify-between z-50 animate-in slide-in-from-bottom-10 pointer-events-auto">
-                    <div className="flex flex-col">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Pacote Selecionado</span>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-xl font-black text-white">
-                                R$ {(() => {
-                                    const plan = dynamicPlans.find(p => p.slug === selectedPlan);
-                                    const planTotal = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
-                                    const addonTotal = selectedAddon ? Number(selectedAddon.price) * selectedInterval : 0;
-                                    return (planTotal + addonTotal).toFixed(2).replace('.', ',');
-                                })()}
-                            </span>
-                            <span className="text-[10px] text-slate-500 font-bold uppercase">/ {selectedInterval === 1 ? 'mês' : `${selectedInterval} meses`}</span>
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 p-4 rounded-3xl shadow-2xl flex flex-col gap-4 z-50 animate-in slide-in-from-bottom-10 pointer-events-auto">
+
+                    {/* UPSELL HINT (Se selecionou apenas o plano) */}
+                    {selectedPlan && !selectedAddon && (
+                        <div className="bg-amber-500/10 border border-amber-500/20 p-2 rounded-xl flex items-center justify-between gap-3 animate-pulse">
+                            <div className="flex items-center gap-2">
+                                <Zap size={14} className="text-amber-500" />
+                                <p className="text-[10px] font-bold text-amber-200 uppercase tracking-tighter">🚀 Potencialize seu plano com Módulos Adicionais acima!</p>
+                            </div>
                         </div>
+                    )}
+
+                    <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Pacote Selecionado</span>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-xl font-black text-white">
+                                    R$ {(() => {
+                                        const plan = dynamicPlans.find(p => p.slug === selectedPlan);
+                                        const planTotal = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
+                                        const addonTotal = selectedAddon ? Number(selectedAddon.price) * selectedInterval : 0;
+                                        return (planTotal + addonTotal).toFixed(2).replace('.', ',');
+                                    })()}
+                                </span>
+                                <span className="text-[10px] text-slate-500 font-bold uppercase">/ {selectedInterval === 1 ? 'mês' : `${selectedInterval} meses`}</span>
+                            </div>
+                        </div>
+                        <Button
+                            onClick={() => {
+                                setPaymentMethod('card');
+                                setOpenDialog(true);
+                            }}
+                            className="bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest px-8 rounded-xl shadow-lg shadow-blue-900/40"
+                        >
+                            Finalizar e Pagar <ArrowRight size={16} className="ml-2" />
+                        </Button>
                     </div>
-                    <Button
-                        onClick={() => {
-                            setPaymentMethod('card');
-                            setOpenDialog(true);
-                        }}
-                        className="bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest px-8 rounded-xl shadow-lg shadow-blue-900/40"
-                    >
-                        Checkout Agora <ArrowRight size={16} className="ml-2" />
-                    </Button>
                 </div>
             )}
 

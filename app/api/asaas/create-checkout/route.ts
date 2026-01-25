@@ -134,14 +134,35 @@ export async function POST(req: Request) {
         let customer = await asaas.getCustomerByEmail(customerData.email);
         if (!customer) {
             customer = await asaas.createCustomer(customerData);
+        } else if (customer.name !== (tenant.name || 'Cliente 791')) {
+            console.log('[ASAAS 2.0] Cliente já existe mas nome mudou. Prosseguindo com ID:', customer.id);
+            // Nota: O ideal seria um updateCustomer aqui, mas usaremos o ID existente.
         }
 
-        // 4. Preparar referências
+        // 4. Preparar referências e Itens Seguros (Asaas tem limite de 30 chars no item.name)
         const externalReference = crypto.randomUUID();
         const baseUrl = 'https://791barber.com';
 
         // 5. Calcular valor final do PRIMEIRO PAGAMENTO (com desconto de 10% se aplicável)
         const firstPaymentValue = applyWelcomeDiscount ? Number((totalAmount * 0.9).toFixed(2)) : totalAmount;
+
+        // Criar lista de itens para o Asaas (com nomes encurtados e desconto explícito)
+        const finalCheckoutItems = checkoutItems.map(item => ({
+            name: item.name.length > 30 ? item.name.substring(0, 27) + '...' : item.name,
+            value: item.value,
+            quantity: 1
+        }));
+
+        if (applyWelcomeDiscount) {
+            const discountValue = Number((totalAmount - firstPaymentValue).toFixed(2));
+            if (discountValue > 0) {
+                finalCheckoutItems.push({
+                    name: "Desconto Boas-vindas (10%)",
+                    value: -discountValue, // Asaas aceita valor negativo para desconto em itens de checkout
+                    quantity: 1
+                });
+            }
+        }
 
         // 6. CRIAÇÃO DA COBRANÇA (Checkouts)
         // Se for Crédito + Mensal, gerar RECORRENTE
@@ -154,7 +175,7 @@ export async function POST(req: Request) {
                 billingTypes: ['CREDIT_CARD'],
                 chargeTypes: ['RECURRENT'],
                 description: itemDescription,
-                observations: itemDescription, // Forçar em observações para garantir visibilidade
+                observations: itemDescription,
                 externalReference: externalReference,
                 totalValue: firstPaymentValue,
                 subscription: {
@@ -168,7 +189,7 @@ export async function POST(req: Request) {
                     successUrl: `${baseUrl}/asaas/checkout/success`,
                     cancelUrl: `${baseUrl}/asaas/checkout/cancel`
                 },
-                items: checkoutItems
+                items: finalCheckoutItems
             };
 
             console.log('[ASAAS 2.0] Criando Checkout Recorrente Consolidado:', itemDescription);
@@ -217,7 +238,7 @@ export async function POST(req: Request) {
                 successUrl: `${baseUrl}/asaas/checkout/success`,
                 cancelUrl: `${baseUrl}/asaas/checkout/cancel`
             },
-            items: checkoutItems
+            items: finalCheckoutItems
         };
 
         if (paymentMethod === 'CREDIT_CARD' && interval > 1) {
