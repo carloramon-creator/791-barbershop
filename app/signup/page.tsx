@@ -164,9 +164,9 @@ export default function SignupPage() {
 
         try {
             // Enforce production-ready redirect
-            const origin = window.location.origin;
-            const redirectUrl = `${origin}/auth/callback`;
-            console.log('[Signup] Redirect URL:', redirectUrl);
+            // PRIORIDADE ABSOLUTA: Hardcoded para produção
+            const redirectUrl = `https://791barber.com/auth/callback`;
+            console.log('[Register] FORCE Production Redirect URL:', redirectUrl);
 
             // 1. Create Account via API (Passando endereço agora)
             const response = await fetch('/api/auth/signup', {

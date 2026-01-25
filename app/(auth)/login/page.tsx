@@ -32,12 +32,17 @@ export default function LoginPage() {
                 setView('updatePassword');
                 setUserEmail(session?.user?.email ?? null);
             }
-            // Se já tiver uma sessão válida
+
+            // Se já tiver uma sessão válida (ex: via hash fragment de link de email)
             if (session) {
-                // Checar se o hash do URL sugere um convite ou recuperação
-                if (window.location.hash.includes('type=recovery') || window.location.hash.includes('type=invite')) {
+                // Se for recuperação ou convite, mantém na view de senha
+                if (window.location.hash.includes('type=recovery') || window.location.hash.includes('type=invite') || view === 'updatePassword') {
                     setView('updatePassword');
                     setUserEmail(session?.user?.email ?? null);
+                } else if (!loading) {
+                    // SEAMLESS REDIRECT: Se logado e sem erro de senha, vai para dashboard
+                    console.log('[Login] Sessão ativa detectada, redirecionando...');
+                    redirectUser(session.user.id);
                 }
             }
         });

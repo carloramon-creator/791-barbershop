@@ -8,6 +8,9 @@ export async function GET(request: Request) {
     // if "next" is in param, use it as the redirect address
     const next = searchParams.get('next') ?? '/dashboard'
 
+    // PRIORIDADE ABSOLUTA: Hardcoded para produção
+    const baseUrl = 'https://791barber.com';
+
     if (code) {
         const cookieStore = await cookies()
         const supabase = createServerClient(
@@ -29,10 +32,10 @@ export async function GET(request: Request) {
         )
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (!error) {
-            return NextResponse.redirect(`${origin}${next}`)
+            return NextResponse.redirect(`${baseUrl}${next}`)
         }
     }
 
-    // return the user to an error page with instructions
-    return NextResponse.redirect(`${origin}/(auth)/login?error=auth-callback-error`)
+    // Retorna para login sem o prefixo da pasta interna (auth)
+    return NextResponse.redirect(`${baseUrl}/login?error=auth-callback-error`)
 }
