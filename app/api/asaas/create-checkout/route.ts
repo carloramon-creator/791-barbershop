@@ -140,7 +140,10 @@ export async function POST(req: Request) {
         const externalReference = crypto.randomUUID();
         const baseUrl = 'https://791barber.com';
 
-        // 5. CRIAÇÃO DA COBRANÇA (Checkouts)
+        // 5. Calcular valor final do PRIMEIRO PAGAMENTO (com desconto de 10% se aplicável)
+        const firstPaymentValue = applyWelcomeDiscount ? Number((totalAmount * 0.9).toFixed(2)) : totalAmount;
+
+        // 6. CRIAÇÃO DA COBRANÇA (Checkouts)
         // Se for Crédito + Mensal, gerar RECORRENTE
         if (paymentMethod === 'CREDIT_CARD' && interval === 1) {
             const nextDueDate = new Date();
@@ -151,14 +154,14 @@ export async function POST(req: Request) {
                 billingTypes: ['CREDIT_CARD'],
                 chargeTypes: ['RECURRENT'],
                 description: itemDescription,
+                observations: itemDescription, // Forçar em observações para garantir visibilidade
                 externalReference: externalReference,
-                // totalValue é o valor de HOJE (com os 10% se for 1ª vez)
-                totalValue: applyWelcomeDiscount ? Number((totalAmount * 0.9).toFixed(2)) : totalAmount,
+                totalValue: firstPaymentValue,
                 subscription: {
                     cycle: 'MONTHLY',
                     value: totalAmount, // Valor cheio para o futuro
                     nextDueDate: nextDueDate.toISOString().split('T')[0],
-                    description: itemDescription // Tentar passar aqui também
+                    description: itemDescription
                 },
                 callback: {
                     successUrl: `${baseUrl}/asaas/checkout/success`,
@@ -167,14 +170,14 @@ export async function POST(req: Request) {
                 items: checkoutItems
             };
 
-            console.log('[ASAAS 2.0] Criando Checkout Consolidado:', itemDescription);
+            console.log('[ASAAS 2.0] Criando Checkout Recorrente Consolidado:', itemDescription);
             const checkout = await asaas.createCheckout(checkoutPayload);
 
             // Registro no banco
             await supabaseAdmin.from('finance').insert({
                 tenant_id: tenant.id,
                 type: 'expense',
-                value: totalAmount,
+                value: firstPaymentValue,
                 description: itemDescription,
                 date: new Date().toISOString().split('T')[0],
                 is_paid: false,
@@ -184,7 +187,9 @@ export async function POST(req: Request) {
                     external_reference: externalReference,
                     payment_method: paymentMethod,
                     plan: planSlug,
-                    addon: addonSlug
+                    addon: addonSlug,
+                    is_first_payment: true,
+                    original_value: totalAmount
                 }
             });
 
@@ -193,18 +198,19 @@ export async function POST(req: Request) {
                 success: true,
                 checkoutId: checkout.id,
                 checkoutUrl: `${asaasPortalUrl}/checkoutSession/show?id=${checkout.id}`,
-                amount: applyWelcomeDiscount ? Number((totalAmount * 0.9).toFixed(2)) : totalAmount
+                amount: firstPaymentValue
             }));
         }
 
-        // FALLBACK: createCheckout (Detached/Installments)
+        // FALLBACK: createCheckout (Pix, Boleto, Parcelados)
         const checkoutPayload: any = {
             customer: customer.id,
             billingTypes: [paymentMethod],
             chargeTypes: ['DETACHED'],
             description: itemDescription,
+            observations: itemDescription,
             externalReference: externalReference,
-            totalValue: totalAmount,
+            totalValue: firstPaymentValue,
             minutesToExpire: 60,
             callback: {
                 successUrl: `${baseUrl}/asaas/checkout/success`,
@@ -226,7 +232,7 @@ export async function POST(req: Request) {
         await supabaseAdmin.from('finance').insert({
             tenant_id: tenant.id,
             type: 'expense',
-            value: totalAmount,
+            value: firstPaymentValue,
             description: itemDescription,
             date: new Date().toISOString().split('T')[0],
             is_paid: false,
@@ -238,7 +244,9 @@ export async function POST(req: Request) {
                 payment_method: paymentMethod,
                 plan: planSlug,
                 addon: addonSlug,
-                interval: interval
+                interval: interval,
+                is_first_payment: true,
+                original_value: totalAmount
             }
         });
 
@@ -248,7 +256,7 @@ export async function POST(req: Request) {
             success: true,
             checkoutId: checkout.id,
             checkoutUrl: `${asaasPortalUrl}/checkoutSession/show?id=${checkout.id}`,
-            amount: totalAmount
+            amount: firstPaymentValue
         }));
 
     } catch (error: any) {
