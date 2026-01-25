@@ -120,9 +120,9 @@ export async function getCurrentUserAndTenant() {
             throw new Error('Perfil do sistema não localizado.');
         }
 
-        // Blindagem Total Ramon: Apenas o e-mail mestre tem acesso global ao SaaS
+        // Blindagem Total Ramon: Apenas ele é o ROOT, mas permite admins promovidos por ele no banco
         const userEmail = (userData.email || '').toLowerCase();
-        const isSystemAdmin = userEmail === 'ramon@791solucoes.com.br';
+        const isSystemAdmin = userEmail === 'ramon@791solucoes.com.br' || userData.is_system_admin === true;
 
         let tenantIdToUse = userData.tenant_id;
 
