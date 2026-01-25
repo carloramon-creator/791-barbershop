@@ -85,7 +85,7 @@ export async function POST(req: Request) {
         }
 
         let totalAmount = Number((totalPlanAmount + totalAddonAmount).toFixed(2));
-        const itemDescription = `Plataforma 791 Barber: ${itemNames.join(' + ')}`;
+        const itemDescription = `791 Barber: ${itemNames.join(' + ')}`;
 
         // Aplicar cupom se fornecido (fora o desconto de 10% automático)
         let couponDiscount = 0;
@@ -161,7 +161,8 @@ export async function POST(req: Request) {
                     cycle: 'MONTHLY',
                     value: totalAmount, // Valor cheio para o futuro
                     nextDueDate: nextDueDate.toISOString().split('T')[0],
-                    description: itemDescription
+                    description: itemDescription,
+                    observations: itemDescription
                 },
                 callback: {
                     successUrl: `${baseUrl}/asaas/checkout/success`,

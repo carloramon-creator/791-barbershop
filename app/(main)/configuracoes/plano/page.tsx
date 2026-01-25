@@ -903,7 +903,7 @@ export default function PlanPage() {
                                             const isTrialOrUnpaid = (!['active', 'active_paid', 'paid'].includes(subscriptionStatus || '') || ['trial', 'trialing'].includes(subscriptionStatus || ''));
                                             const isFirstSub = !tenantObject?.asaas_subscription_id || isTrialOrUnpaid;
 
-                                            if (isFirstSub) {
+                                            if (isFirstSub && (selectedPlan || selectedAddon)) {
                                                 const plan = dynamicPlans.find(p => p.slug === selectedPlan);
                                                 const planTotal = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
                                                 const addonTotal = selectedAddon ? Number(selectedAddon.price) * selectedInterval : 0;
@@ -913,7 +913,7 @@ export default function PlanPage() {
                                                 return (
                                                     <div className="bg-emerald-500/10 border border-emerald-500/20 p-2 rounded-lg mt-1">
                                                         <span className="text-emerald-500 font-black text-[10px] md:text-xs uppercase tracking-wider animate-pulse flex items-center gap-1">
-                                                            <span>🎉</span> Boas-vindas: 1º mês por R$ {discounted.toFixed(2).replace('.', ',')}
+                                                            <span>🎉</span> Boas-vindas: 1º pagamento por apenas R$ {discounted.toFixed(2).replace('.', ',')}
                                                         </span>
                                                     </div>
                                                 );
