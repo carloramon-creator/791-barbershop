@@ -18,12 +18,19 @@ export async function POST(req: Request) {
         const body = await req.json();
         const {
             plan: planSlug,
-            addon: addonSlug,
+            addon: addonSlug, // Legado: manter por compatibilidade se enviado sozinho
+            addons: addonsSlugs = [], // Novo: array de slugs
             coupon,
             interval = 1,
             paymentMethod = 'CREDIT_CARD',
             installments = 1
         } = body;
+
+        // Consolidar addonsSlugs se houver addonSlug singular
+        let finalAddonsSlugs = [...addonsSlugs];
+        if (addonSlug && !finalAddonsSlugs.includes(addonSlug)) {
+            finalAddonsSlugs.push(addonSlug);
+        }
 
         // 1. Obter Configurações Asaas
         const { data: settingsData } = await supabaseAdmin
@@ -66,16 +73,17 @@ export async function POST(req: Request) {
             });
         }
 
-        // 2.2 Processar Add-on
-        if (addonSlug) {
-            const { data: addon } = await supabaseAdmin.from('system_addons').select('*').eq('slug', addonSlug).single();
-            if (!addon) throw new Error('Add-on não encontrado');
+        // 2.2 Processar Add-ons
+        for (const slug of finalAddonsSlugs) {
+            const { data: addon } = await supabaseAdmin.from('system_addons').select('*').eq('slug', slug).single();
+            if (!addon) continue;
 
-            totalAddonAmount = Number((Number(addon.price) * interval).toFixed(2));
+            const addonAmount = Number((Number(addon.price) * interval).toFixed(2));
+            totalAddonAmount += addonAmount;
             itemNames.push(`Módulo ${addon.name}`);
             checkoutItems.push({
                 name: `Adicional: Módulo ${addon.name}`,
-                value: totalAddonAmount,
+                value: addonAmount,
                 quantity: 1
             });
         }
@@ -135,8 +143,12 @@ export async function POST(req: Request) {
         if (!customer) {
             customer = await asaas.createCustomer(customerData);
         } else if (customer.name !== (tenant.name || 'Cliente 791')) {
-            console.log('[ASAAS 2.0] Cliente já existe mas nome mudou. Prosseguindo com ID:', customer.id);
-            // Nota: O ideal seria um updateCustomer aqui, mas usaremos o ID existente.
+            console.log('[ASAAS 2.0] Cliente já existe mas nome mudou. Sincronizando:', customer.id);
+            try {
+                await asaas.updateCustomer(customer.id, { name: tenant.name || 'Cliente 791' });
+            } catch (e) {
+                console.error('[ASAAS 2.0] Erro ao sincronizar nome do cliente:', e);
+            }
         }
 
         // 4. Preparar referências e Itens Seguros (Asaas tem limite de 30 chars no item.name)

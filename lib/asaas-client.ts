@@ -90,6 +90,11 @@ export class AsaasClient {
         return response.data;
     }
 
+    async updateCustomer(customerId: string, customer: Partial<AsaasCustomer>) {
+        const response = await this.client.post(`/customers/${customerId}`, customer);
+        return response.data;
+    }
+
     async getCustomer(customerId: string) {
         const response = await this.client.get(`/customers/${customerId}`);
         return response.data;

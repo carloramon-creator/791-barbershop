@@ -55,7 +55,7 @@ export default function PlanPage() {
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-    const [selectedAddon, setSelectedAddon] = useState<any>(null);
+    const [selectedAddonsSlugs, setSelectedAddonsSlugs] = useState<string[]>([]);
     const [saving, setSaving] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix' | 'boleto-inter' | 'boleto-result' | 'pix-result'>('card');
     const [couponCode, setCouponCode] = useState('');
@@ -292,8 +292,14 @@ export default function PlanPage() {
 
     const [installments, setInstallments] = useState(1);
 
+    const toggleAddon = (slug: string) => {
+        setSelectedAddonsSlugs(prev =>
+            prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]
+        );
+    };
+
     async function handleChangePlan() {
-        if (!selectedPlan && !selectedAddon) return;
+        if (!selectedPlan && selectedAddonsSlugs.length === 0) return;
 
         try {
             setSaving(true);
@@ -322,7 +328,7 @@ export default function PlanPage() {
 
             const payload = {
                 plan: selectedPlan,
-                addon: selectedAddon?.slug,
+                addons: selectedAddonsSlugs,
                 coupon: couponCode,
                 interval: selectedInterval,
                 paymentMethod: paymentMethodMap[paymentMethod as keyof typeof paymentMethodMap] || 'CREDIT_CARD',
@@ -507,7 +513,7 @@ export default function PlanPage() {
                             onClick={() => {
                                 const targetPlan = (currentPlan && currentPlan !== 'trial') ? currentPlan : 'basic';
                                 setSelectedPlan(targetPlan);
-                                setSelectedAddon(null);
+                                setSelectedAddonsSlugs([]);
                                 setPaymentMethod('card');
                                 setOpenDialog(true);
                             }}
@@ -668,21 +674,15 @@ export default function PlanPage() {
                                                                 </div>
                                                                 <Button
                                                                     size="sm"
-                                                                    variant={isActive ? "outline" : (selectedAddon?.id === addon.id ? "default" : "outline")}
+                                                                    variant={isActive ? "outline" : (selectedAddonsSlugs.includes(addon.slug) ? "default" : "outline")}
                                                                     disabled={isActive || saving}
-                                                                    onClick={() => {
-                                                                        if (selectedAddon?.id === addon.id) {
-                                                                            setSelectedAddon(null);
-                                                                        } else {
-                                                                            setSelectedAddon(addon);
-                                                                        }
-                                                                    }}
+                                                                    onClick={() => toggleAddon(addon.slug)}
                                                                     className={cn(
                                                                         "h-9 text-[10px] font-black uppercase tracking-widest px-4 shadow-lg active:scale-95 transition-all text-white",
-                                                                        isActive ? "border-emerald-500/50 text-emerald-500 bg-transparent" : (selectedAddon?.id === addon.id ? "bg-amber-600 border-amber-600" : "border-slate-700 hover:border-amber-500")
+                                                                        isActive ? "border-emerald-500/50 text-emerald-500 bg-transparent" : (selectedAddonsSlugs.includes(addon.slug) ? "bg-amber-600 border-amber-600" : "border-slate-700 hover:border-amber-500")
                                                                     )}
                                                                 >
-                                                                    {isActive ? 'Ativo' : (selectedAddon?.id === addon.id ? 'Selecionado' : 'Adicionar')}
+                                                                    {isActive ? 'Ativo' : (selectedAddonsSlugs.includes(addon.slug) ? 'Selecionado' : 'Adicionar')}
                                                                 </Button>
                                                             </div>
                                                         </CardContent>
@@ -864,41 +864,86 @@ export default function PlanPage() {
                             <DialogHeader>
                                 <DialogTitle className="font-black text-xl md:text-2xl tracking-tighter uppercase">Confirmar Contratação</DialogTitle>
                                 <DialogDescription className="text-slate-400 light:text-slate-500 font-bold">
-                                    <div className="flex flex-col gap-2">
+                                    <div className="flex flex-col gap-3">
                                         {selectedPlan && (
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] uppercase text-slate-500">Plano Selecionado</span>
-                                                <span>
-                                                    <span className="text-blue-600 capitalize">{selectedPlan}</span> —
-                                                    {(() => {
-                                                        const plan = dynamicPlans.find(p => p.slug === selectedPlan);
-                                                        if (!plan) return '';
-                                                        const basePrice = plan.price || 0;
-                                                        const discount = selectedInterval === 6 ? 10 : selectedInterval === 12 ? 20 : 0;
-                                                        const totalPrice = (basePrice * selectedInterval) * (1 - (discount / 100));
-                                                        return ` R$ ${(totalPrice || 0).toFixed(2).replace('.', ',')} (${selectedInterval} ${selectedInterval === 1 ? 'mês' : 'meses'})`;
-                                                    })()}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {selectedAddon && (
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] uppercase text-slate-500">Módulo Adicional</span>
-                                                <span>
-                                                    <span className="text-amber-500 uppercase">{selectedAddon.name}</span> —
-                                                    R$ {(Number(selectedAddon.price) || 0).toFixed(2).replace('.', ',')}/mês
-                                                </span>
+                                            <div className="flex flex-col bg-slate-950/50 p-3 rounded-xl border border-slate-800/50">
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Plano Selecionado</span>
+                                                    <span className="text-[10px] font-bold text-blue-500 uppercase">{selectedInterval === 1 ? 'Mensal' : selectedInterval === 6 ? 'Semestral' : 'Anual'}</span>
+                                                </div>
+                                                <div className="flex justify-between items-baseline">
+                                                    <span className="text-sm font-black text-slate-200 capitalize">{selectedPlan}</span>
+                                                    <span className="text-sm font-black text-slate-100">
+                                                        {(() => {
+                                                            const plan = dynamicPlans.find(p => p.slug === selectedPlan);
+                                                            if (!plan) return '';
+                                                            const basePrice = plan.price || 0;
+                                                            const discount = selectedInterval === 6 ? 10 : selectedInterval === 12 ? 20 : 0;
+                                                            const totalPrice = (basePrice * selectedInterval) * (1 - (discount / 100));
+                                                            return ` R$ ${(totalPrice || 0).toFixed(2).replace('.', ',')}`;
+                                                        })()}
+                                                    </span>
+                                                </div>
                                             </div>
                                         )}
 
-                                        <div className="mt-2 pt-2 border-t border-slate-800 flex justify-between items-center">
-                                            <span className="text-xs uppercase text-slate-300">Total Mensal</span>
-                                            <span className="text-xl font-black text-slate-100">
+                                        {/* SELEÇÃO INTERATIVA DE ADD-ONS NO MODAL */}
+                                        <div className="space-y-2">
+                                            <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Turbinar com Módulos</span>
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {dynamicAddons.filter(addon => {
+                                                    // Filtrar add-ons que já estão no plano
+                                                    const plan = dynamicPlans.find(p => p.slug === selectedPlan);
+                                                    if (!plan) return true;
+                                                    const addonName = (addon.name || '').toLowerCase().replace('módulo ', '').trim();
+                                                    const features = (plan.features || []).map((f: any) => String(f || '').toLowerCase());
+                                                    return !features.some((f: string) => f.includes(addonName));
+                                                }).map(addon => {
+                                                    const isSelected = selectedAddonsSlugs.includes(addon.slug);
+                                                    return (
+                                                        <button
+                                                            key={addon.slug}
+                                                            onClick={() => toggleAddon(addon.slug)}
+                                                            className={cn(
+                                                                "flex items-center justify-between p-3 rounded-xl border transition-all text-left",
+                                                                isSelected
+                                                                    ? "bg-amber-500/10 border-amber-500/50 text-slate-100"
+                                                                    : "bg-slate-950/20 border-slate-800 text-slate-500 hover:border-slate-700"
+                                                            )}
+                                                        >
+                                                            <div className="flex flex-col">
+                                                                <span className="text-[11px] font-black uppercase tracking-tight leading-none">{addon.name}</span>
+                                                                <span className="text-[9px] font-bold opacity-60 mt-1">R$ {Number(addon.price).toFixed(2).replace('.', ',')}/mês</span>
+                                                            </div>
+                                                            <div className={cn(
+                                                                "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                                                                isSelected ? "bg-amber-500 border-amber-500" : "border-slate-700"
+                                                            )}>
+                                                                {isSelected && <Check size={12} className="text-slate-900 font-bold" />}
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-2 pt-3 border-t border-slate-800 flex justify-between items-center">
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Total do período</span>
+                                                <span className="text-[9px] text-slate-500 font-bold">({selectedInterval} {selectedInterval === 1 ? 'mês' : 'meses'})</span>
+                                            </div>
+                                            <span className="text-2xl font-black text-white">
                                                 R$ {(() => {
                                                     const plan = dynamicPlans.find(p => p.slug === selectedPlan);
                                                     const planPrice = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
-                                                    const addonPrice = selectedAddon ? Number(selectedAddon.price) * selectedInterval : 0;
-                                                    return (planPrice + addonPrice).toFixed(2).replace('.', ',');
+
+                                                    let addonsPrice = 0;
+                                                    selectedAddonsSlugs.forEach(slug => {
+                                                        const addon = dynamicAddons.find(a => a.slug === slug);
+                                                        if (addon) addonsPrice += Number(addon.price) * selectedInterval;
+                                                    });
+
+                                                    return (planPrice + addonsPrice).toFixed(2).replace('.', ',');
                                                 })()}
                                             </span>
                                         </div>
@@ -908,17 +953,29 @@ export default function PlanPage() {
                                             const isTrialOrUnpaid = (!['active', 'active_paid', 'paid'].includes(subscriptionStatus || '') || ['trial', 'trialing'].includes(subscriptionStatus || ''));
                                             const isFirstSub = !tenantObject?.asaas_subscription_id || isTrialOrUnpaid;
 
-                                            if (isFirstSub && (selectedPlan || selectedAddon)) {
+                                            if (isFirstSub && (selectedPlan || selectedAddonsSlugs.length > 0)) {
                                                 const plan = dynamicPlans.find(p => p.slug === selectedPlan);
                                                 const planTotal = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
-                                                const addonTotal = selectedAddon ? Number(selectedAddon.price) * selectedInterval : 0;
-                                                const grandTotal = planTotal + addonTotal;
+
+                                                let addonsTotal = 0;
+                                                selectedAddonsSlugs.forEach(slug => {
+                                                    const addon = dynamicAddons.find(a => a.slug === slug);
+                                                    if (addon) addonsTotal += Number(addon.price) * selectedInterval;
+                                                });
+
+                                                const grandTotal = planTotal + addonsTotal;
                                                 const discounted = grandTotal * 0.9;
 
                                                 return (
-                                                    <div className="bg-emerald-500/10 border border-emerald-500/20 p-2 rounded-lg mt-1">
-                                                        <span className="text-emerald-500 font-black text-[10px] md:text-xs uppercase tracking-wider animate-pulse flex items-center gap-1">
-                                                            <span>🎉</span> Boas-vindas: 1º pagamento por apenas R$ {discounted.toFixed(2).replace('.', ',')}
+                                                    <div className="bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-xl flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-6 h-6 bg-emerald-500/20 rounded-full flex items-center justify-center animate-bounce">
+                                                                <span className="text-[10px]">🎉</span>
+                                                            </div>
+                                                            <span className="text-emerald-500 font-black text-[10px] uppercase tracking-wider">Boas-vindas (10% OFF)</span>
+                                                        </div>
+                                                        <span className="text-sm font-black text-emerald-400 leading-none">
+                                                            R$ {discounted.toFixed(2).replace('.', ',')}
                                                         </span>
                                                     </div>
                                                 );
@@ -1018,7 +1075,7 @@ export default function PlanPage() {
                                     <div className="text-center bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl w-full">
                                         <p className="text-[10px] text-emerald-500 uppercase font-black tracking-widest">Valor do Pix</p>
                                         <p className="text-2xl font-black text-slate-100">
-                                            R$ {((pixData.amount || Number((selectedAddon ? selectedAddon.price : dynamicPlans.find(p => p.slug === selectedPlan)?.price) || 0)) || 0).toFixed(2).replace('.', ',')}
+                                            R$ {(pixData.amount || 0).toFixed(2).replace('.', ',')}
                                         </p>
                                     </div>
 
@@ -1081,7 +1138,7 @@ export default function PlanPage() {
                                         <div className="pt-4 flex justify-around border-t border-blue-500/10">
                                             <div className="text-center">
                                                 <p className="text-[10px] text-slate-500 uppercase font-bold">Valor</p>
-                                                <p className="text-sm font-black text-slate-100">R$ {((boletoData.amount || Number((selectedAddon ? selectedAddon.price : dynamicPlans.find(p => p.slug === selectedPlan)?.price) || 0)) || 0).toFixed(2).replace('.', ',')}</p>
+                                                <p className="text-sm font-black text-slate-100">R$ {(boletoData.amount || 0).toFixed(2).replace('.', ',')}</p>
                                             </div>
                                             <div className="text-center">
                                                 <p className="text-[10px] text-slate-500 uppercase font-bold">Vencimento</p>
@@ -1439,11 +1496,11 @@ export default function PlanPage() {
             )}
 
             {/* BARRA DE SELEÇÃO FIXA NO RODAPÉ */}
-            {(selectedPlan || selectedAddon) && !openDialog && (
+            {(selectedPlan || selectedAddonsSlugs.length > 0) && !openDialog && (
                 <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 p-4 rounded-3xl shadow-2xl flex flex-col gap-4 z-50 animate-in slide-in-from-bottom-10 pointer-events-auto">
 
                     {/* UPSELL HINT (Se selecionou apenas o plano) */}
-                    {selectedPlan && !selectedAddon && (
+                    {selectedPlan && selectedAddonsSlugs.length === 0 && (
                         <div className="bg-amber-500/10 border border-amber-500/20 p-2 rounded-xl flex items-center justify-between gap-3 animate-pulse">
                             <div className="flex items-center gap-2">
                                 <Zap size={14} className="text-amber-500" />
@@ -1460,8 +1517,14 @@ export default function PlanPage() {
                                     R$ {(() => {
                                         const plan = dynamicPlans.find(p => p.slug === selectedPlan);
                                         const planTotal = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
-                                        const addonTotal = selectedAddon ? Number(selectedAddon.price) * selectedInterval : 0;
-                                        return (planTotal + addonTotal).toFixed(2).replace('.', ',');
+
+                                        let addonsTotal = 0;
+                                        selectedAddonsSlugs.forEach(slug => {
+                                            const addon = dynamicAddons.find(a => a.slug === slug);
+                                            if (addon) addonsTotal += Number(addon.price) * selectedInterval;
+                                        });
+
+                                        return (planTotal + addonsTotal).toFixed(2).replace('.', ',');
                                     })()}
                                 </span>
                                 <span className="text-[10px] text-slate-500 font-bold uppercase">/ {selectedInterval === 1 ? 'mês' : `${selectedInterval} meses`}</span>
@@ -1474,7 +1537,7 @@ export default function PlanPage() {
                             }}
                             className="bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest px-8 rounded-xl shadow-lg shadow-blue-900/40"
                         >
-                            Finalizar e Pagar <ArrowRight size={16} className="ml-2" />
+                            {selectedAddonsSlugs.length > 0 ? 'Finalizar e Pagar' : 'Confirmar & Personalizar'} <ArrowRight size={16} className="ml-2" />
                         </Button>
                     </div>
                 </div>
