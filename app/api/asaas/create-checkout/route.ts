@@ -45,6 +45,7 @@ export async function POST(req: Request) {
         // 2. Definir Itens e Calcular Valores
         let totalPlanAmount = 0;
         let totalAddonAmount = 0;
+        let checkoutItems: any[] = [];
         let itemNames: string[] = [];
 
         // 2.1 Processar Plano
@@ -58,6 +59,11 @@ export async function POST(req: Request) {
 
             totalPlanAmount = Number((planBase * interval).toFixed(2));
             itemNames.push(`Plano ${plan.name}`);
+            checkoutItems.push({
+                name: `Assinatura: Plano ${plan.name}`,
+                value: totalPlanAmount,
+                quantity: 1
+            });
         }
 
         // 2.2 Processar Add-on
@@ -67,14 +73,19 @@ export async function POST(req: Request) {
 
             totalAddonAmount = Number((Number(addon.price) * interval).toFixed(2));
             itemNames.push(`Módulo ${addon.name}`);
+            checkoutItems.push({
+                name: `Adicional: Módulo ${addon.name}`,
+                value: totalAddonAmount,
+                quantity: 1
+            });
         }
 
-        if (itemNames.length === 0) {
+        if (checkoutItems.length === 0) {
             throw new Error('Nenhum plano ou add-on selecionado');
         }
 
         let totalAmount = Number((totalPlanAmount + totalAddonAmount).toFixed(2));
-        const itemDescription = `Assinatura 791 Barber: ${itemNames.join(' + ')}`;
+        const itemDescription = `Plataforma 791 Barber: ${itemNames.join(' + ')}`;
 
         // Aplicar cupom se fornecido (fora o desconto de 10% automático)
         let couponDiscount = 0;
@@ -103,9 +114,7 @@ export async function POST(req: Request) {
         const isNotActive = !tenant.subscription_status ||
             ['trial', 'trial_expired', 'past_due', 'unpaid', 'incomplete'].includes(tenant.subscription_status || '');
         const isFirstSubscription = !tenant.asaas_subscription_id || isNotActive;
-        const hasWelcomeCoupon = coupon?.toUpperCase() === 'WELCOME791';
-
-        const applyWelcomeDiscount = isFirstSubscription || hasWelcomeCoupon;
+        const applyWelcomeDiscount = isFirstSubscription || (coupon?.toUpperCase() === 'WELCOME791');
 
         // 3. Garantir Cliente no Asaas
         const cpfCnpj = (tenant.cnpj || tenant.cpf || tenant.document || '').replace(/\D/g, '');
@@ -155,14 +164,10 @@ export async function POST(req: Request) {
                     successUrl: `${baseUrl}/asaas/checkout/success`,
                     cancelUrl: `${baseUrl}/asaas/checkout/cancel`
                 },
-                items: [{
-                    name: (itemDescription.length > 60 ? itemDescription.substring(0, 57) + '...' : itemDescription),
-                    value: totalAmount,
-                    quantity: 1
-                }]
+                items: checkoutItems
             };
 
-            console.log('[ASAAS 2.0] Criando Checkout Recorrente Consolidado:', itemDescription);
+            console.log('[ASAAS 2.0] Criando Checkout Consolidado:', itemDescription);
             const checkout = await asaas.createCheckout(checkoutPayload);
 
             // Registro no banco
@@ -205,11 +210,7 @@ export async function POST(req: Request) {
                 successUrl: `${baseUrl}/asaas/checkout/success`,
                 cancelUrl: `${baseUrl}/asaas/checkout/cancel`
             },
-            items: [{
-                name: (itemDescription.length > 60 ? itemDescription.substring(0, 57) + '...' : itemDescription),
-                value: totalAmount,
-                quantity: 1
-            }]
+            items: checkoutItems
         };
 
         if (paymentMethod === 'CREDIT_CARD' && interval > 1) {

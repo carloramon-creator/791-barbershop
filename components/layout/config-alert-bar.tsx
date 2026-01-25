@@ -71,7 +71,6 @@ export function ConfigAlert() {
             // Check address fields - assuming new tenants via wizard have these, but old ones might not or user might want to check
             if (!tenant.street || !tenant.city) missing.push('Endereço Completo');
             if (!tenant.pix_key) missing.push('Chave Pix');
-            if (!tenant.lunch_start || !tenant.lunch_end) missing.push('Horário de Almoço');
 
             setMissingFields(missing);
         }
