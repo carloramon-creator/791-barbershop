@@ -887,19 +887,28 @@ export default function PlanPage() {
                                         {/* SELEÇÃO INTERATIVA DE ADD-ONS NO MODAL */}
                                         <div className="space-y-2">
                                             <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Turbinar com Módulos</span>
-                                            <div className="grid grid-cols-1 gap-2">
-                                                {dynamicAddons.filter(addon => {
-                                                    // Se for Trial ou não tiver assinatura paga ativa, SEMPRE mostramos os add-ons para ele contratar
+                                            {(() => {
+                                                const filtered = dynamicAddons.filter(addon => {
+                                                    // Se for Trial ou não tiver assinatura paga ativa, SEMPRE mostramos
                                                     const isPaidActive = subscriptionStatus === 'active' && !!tenantObject?.asaas_subscription_id;
                                                     if (!isPaidActive) return true;
 
-                                                    // Se for pago e ativo, filtramos o que já está no plano dele
                                                     const plan = dynamicPlans.find(p => p.slug === selectedPlan);
                                                     if (!plan) return true;
                                                     const addonName = (addon.name || '').toLowerCase().replace('módulo ', '').trim();
                                                     const features = (plan.features || []).map((f: any) => String(f || '').toLowerCase());
                                                     return !features.some((f: string) => f.includes(addonName));
-                                                }).map(addon => {
+                                                });
+
+                                                if (filtered.length === 0) {
+                                                    return (
+                                                        <div className="p-4 bg-slate-950/40 rounded-xl border border-dashed border-slate-800 text-center">
+                                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Todos os módulos inclusos no plano</p>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                return filtered.map(addon => {
                                                     const isSelected = selectedAddonsSlugs.includes(addon.slug);
                                                     return (
                                                         <button
@@ -924,8 +933,8 @@ export default function PlanPage() {
                                                             </div>
                                                         </button>
                                                     );
-                                                })}
-                                            </div>
+                                                });
+                                            })()}
                                         </div>
 
                                         <div className="mt-2 pt-3 border-t border-slate-800 flex justify-between items-center">
@@ -1494,84 +1503,89 @@ export default function PlanPage() {
                         </div>
                     </div>
                 </>
-            )}
+            )
+            }
 
             {/* BARRA DE SELEÇÃO FIXA NO RODAPÉ */}
-            {(selectedPlan || selectedAddonsSlugs.length > 0) && !openDialog && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 p-4 rounded-3xl shadow-2xl flex flex-col gap-4 z-50 animate-in slide-in-from-bottom-10 pointer-events-auto">
+            {
+                (selectedPlan || selectedAddonsSlugs.length > 0) && !openDialog && (
+                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 p-4 rounded-3xl shadow-2xl flex flex-col gap-4 z-50 animate-in slide-in-from-bottom-10 pointer-events-auto">
 
-                    {/* UPSELL HINT (Se selecionou apenas o plano) */}
-                    {selectedPlan && selectedAddonsSlugs.length === 0 && (
-                        <div className="bg-amber-500/10 border border-amber-500/20 p-2 rounded-xl flex items-center justify-between gap-3 animate-pulse">
-                            <div className="flex items-center gap-2">
-                                <Zap size={14} className="text-amber-500" />
-                                <p className="text-[10px] font-bold text-amber-200 uppercase tracking-tighter">🚀 Potencialize seu plano com Módulos Adicionais acima!</p>
+                        {/* UPSELL HINT (Se selecionou apenas o plano) */}
+                        {selectedPlan && selectedAddonsSlugs.length === 0 && (
+                            <div className="bg-amber-500/10 border border-amber-500/20 p-2 rounded-xl flex items-center justify-between gap-3 animate-pulse">
+                                <div className="flex items-center gap-2">
+                                    <Zap size={14} className="text-amber-500" />
+                                    <p className="text-[10px] font-bold text-amber-200 uppercase tracking-tighter">🚀 Potencialize seu plano com Módulos Adicionais acima!</p>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    <div className="flex items-center justify-between">
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Pacote Selecionado</span>
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-xl font-black text-white">
-                                    R$ {(() => {
-                                        const plan = dynamicPlans.find(p => p.slug === selectedPlan);
-                                        const planTotal = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
+                        <div className="flex items-center justify-between">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Pacote Selecionado</span>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-xl font-black text-white">
+                                        R$ {(() => {
+                                            const plan = dynamicPlans.find(p => p.slug === selectedPlan);
+                                            const planTotal = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
 
-                                        let addonsTotal = 0;
-                                        selectedAddonsSlugs.forEach(slug => {
-                                            const addon = dynamicAddons.find(a => a.slug === slug);
-                                            if (addon) addonsTotal += Number(addon.price) * selectedInterval;
-                                        });
+                                            let addonsTotal = 0;
+                                            selectedAddonsSlugs.forEach(slug => {
+                                                const addon = dynamicAddons.find(a => a.slug === slug);
+                                                if (addon) addonsTotal += Number(addon.price) * selectedInterval;
+                                            });
 
-                                        return (planTotal + addonsTotal).toFixed(2).replace('.', ',');
-                                    })()}
-                                </span>
-                                <span className="text-[10px] text-slate-500 font-bold uppercase">/ {selectedInterval === 1 ? 'mês' : `${selectedInterval} meses`}</span>
+                                            return (planTotal + addonsTotal).toFixed(2).replace('.', ',');
+                                        })()}
+                                    </span>
+                                    <span className="text-[10px] text-slate-500 font-bold uppercase">/ {selectedInterval === 1 ? 'mês' : `${selectedInterval} meses`}</span>
+                                </div>
                             </div>
+                            <Button
+                                onClick={() => {
+                                    setPaymentMethod('card');
+                                    setOpenDialog(true);
+                                }}
+                                className="bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest px-8 rounded-xl shadow-lg shadow-blue-900/40"
+                            >
+                                {selectedAddonsSlugs.length > 0 ? 'Finalizar e Pagar' : 'Confirmar & Personalizar'} <ArrowRight size={16} className="ml-2" />
+                            </Button>
                         </div>
-                        <Button
-                            onClick={() => {
-                                setPaymentMethod('card');
-                                setOpenDialog(true);
-                            }}
-                            className="bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest px-8 rounded-xl shadow-lg shadow-blue-900/40"
-                        >
-                            {selectedAddonsSlugs.length > 0 ? 'Finalizar e Pagar' : 'Confirmar & Personalizar'} <ArrowRight size={16} className="ml-2" />
-                        </Button>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Modal de Checkout Integrado do Asaas */}
-            {checkoutUrl && (
-                <AsaasCheckoutModal
-                    checkoutUrl={checkoutUrl}
-                    isOpen={showCheckoutModal}
-                    boletoData={boletoData ? {
-                        identificationField: boletoData.linhaDigitavel,
-                        barCode: boletoData.codigoBarras,
-                        value: boletoData.amount || 0,
-                        dueDate: (boletoData as any).dueDate,
-                        bankSlipUrl: boletoData.pdfUrl
-                    } : null}
-                    pixData={pixData ? {
-                        encodedImage: (pixData as any).encodedImage,
-                        payload: pixData.pixPayload,
-                        expirationDate: pixData.expiresAt
-                    } : null}
-                    onClose={() => {
-                        setShowCheckoutModal(false);
-                        setCheckoutUrl(null);
-                        setBoletoData(null);
-                        setPixData(null);
-                        // Atualizar dados após fechar modal
-                        fetchCurrentPlan();
-                        fetchInvoices();
-                    }}
-                />
-            )}
-        </div>
+            {
+                checkoutUrl && (
+                    <AsaasCheckoutModal
+                        checkoutUrl={checkoutUrl}
+                        isOpen={showCheckoutModal}
+                        boletoData={boletoData ? {
+                            identificationField: boletoData.linhaDigitavel,
+                            barCode: boletoData.codigoBarras,
+                            value: boletoData.amount || 0,
+                            dueDate: (boletoData as any).dueDate,
+                            bankSlipUrl: boletoData.pdfUrl
+                        } : null}
+                        pixData={pixData ? {
+                            encodedImage: (pixData as any).encodedImage,
+                            payload: pixData.pixPayload,
+                            expirationDate: pixData.expiresAt
+                        } : null}
+                        onClose={() => {
+                            setShowCheckoutModal(false);
+                            setCheckoutUrl(null);
+                            setBoletoData(null);
+                            setPixData(null);
+                            // Atualizar dados após fechar modal
+                            fetchCurrentPlan();
+                            fetchInvoices();
+                        }}
+                    />
+                )
+            }
+        </div >
     );
 }
