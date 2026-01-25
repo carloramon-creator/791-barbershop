@@ -15,62 +15,62 @@ export async function POST(req: Request) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Não autenticado' }, { status: 401 }));
         }
 
-        const { plan: planSlug, addon: addonSlug, coupon, tempId, interval = 1 } = await req.json();
+        const { plan: planSlug, addon: addonSlug, addons: addonsSlugs = [], coupon, tempId, interval = 1 } = await req.json();
 
-        // 1. Buscar Preço Dinâmico e Descontos
-        let baseAmount = 0;
-        let itemName = '';
-        let isAddon = false;
+        // Consolidar addonsSlugs se houver addonSlug singular (compatibilidade)
+        let finalAddonsSlugs = [...addonsSlugs];
+        if (addonSlug && !finalAddonsSlugs.includes(addonSlug)) {
+            finalAddonsSlugs.push(addonSlug);
+        }
+
+        // 1. Calcular Valores Consolidados (Harmonizado com Asaas)
+        let totalPlanAmount = 0;
+        let totalAddonAmount = 0;
+        let itemNames: string[] = [];
         let discountPercent = 0;
 
-        if (addonSlug) {
-            const { data: addon } = await getSupabaseAdmin()
-                .from('system_addons')
-                .select('*')
-                .eq('slug', addonSlug)
-                .single();
+        // 1.1 Processar Plano
+        if (planSlug) {
+            const { data: planData } = await getSupabaseAdmin().from('system_plans').select('*').eq('slug', planSlug).single();
+            if (!planData) throw new Error('Plano inválido');
 
-            if (!addon) return addCorsHeaders(req, NextResponse.json({ error: 'Add-on inválido' }, { status: 400 }));
-
-            baseAmount = Number(addon.price);
-            itemName = addon.name;
-            isAddon = true;
-        } else {
-            const { data: planData } = await getSupabaseAdmin()
-                .from('system_plans')
-                .select('*')
-                .eq('slug', planSlug)
-                .single();
-
-            if (!planData) return addCorsHeaders(req, NextResponse.json({ error: 'Plano inválido' }, { status: 400 }));
-
-            baseAmount = Number(planData.price);
-            itemName = planData.name;
-
-            // Definir desconto baseado no intervalo
+            let planBase = Number(planData.price);
             if (interval === 6) {
                 discountPercent = Number(planData.discount_semiannual || 10);
             } else if (interval === 12) {
                 discountPercent = Number(planData.discount_annual || 20);
             }
+
+            if (discountPercent > 0) planBase = planBase * (1 - (discountPercent / 100));
+            totalPlanAmount = Number((planBase * interval).toFixed(2));
+            itemNames.push(planData.name);
         }
 
-        // Calcular valor total baseado no período
-        let totalAmount = baseAmount * interval;
-        if (discountPercent > 0) {
-            totalAmount = totalAmount * (1 - (discountPercent / 100));
+        // 1.2 Processar Add-ons (Array)
+        for (const slug of finalAddonsSlugs) {
+            const { data: addon } = await getSupabaseAdmin().from('system_addons').select('*').eq('slug', slug).single();
+            if (!addon) continue;
+
+            const addonAmount = Number((Number(addon.price) * interval).toFixed(2));
+            totalAddonAmount += addonAmount;
+            itemNames.push(addon.name);
         }
+
+        let totalAmount = Number((totalPlanAmount + totalAddonAmount).toFixed(2));
+        const itemNameLabel = itemNames.join(' + ');
+        const isAddonOnly = !planSlug && finalAddonsSlugs.length > 0;
 
         // --- LÓGICA DE PRO-RATA (INTER) ---
         // Se for um Add-on MENSAL sendo adicionado a um plano existente no meio do mês
         let finalAmount = totalAmount;
-        if (interval === 1 && isAddon && tenant.plan && tenant.plan !== 'trial') {
+        if (interval === 1 && isAddonOnly && tenant.plan && tenant.plan !== 'trial') {
             const now = new Date();
             const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
             const remainingDays = lastDayOfMonth - now.getDate() + 1;
 
             // Pro-rata: (Preço / Dias no Mês) * Dias Restantes
-            finalAmount = (baseAmount / lastDayOfMonth) * remainingDays;
+            // Se for addon-only, o totalAmount já é o valor dos addons.
+            finalAmount = (totalAmount / lastDayOfMonth) * remainingDays;
             if (finalAmount < 1) finalAmount = 1; // Mínimo R$ 1,00 para evitar erros bancários
         }
 
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
         }
 
         // 3. Desconto de Boas-Vindas (10% para novos cadastros até 5 dias)
-        if (discountFromCoupon === 0 && interval === 1 && !isAddon) {
+        if (discountFromCoupon === 0 && interval === 1 && !isAddonOnly) {
             const isTrial = tenant.plan === 'trial' || tenant.subscription_status === 'trialing' || !tenant.stripe_subscription_id;
             const tenantCreated = new Date(tenant.created_at || new Date());
             const now = new Date();
@@ -191,7 +191,7 @@ export async function POST(req: Request) {
             valorNominal: (amount || 0).toFixed(2),
             dataEmissao: currentDate,
             mensagem: {
-                linha1: `791 Barber - ${itemName}`.substring(0, 80),
+                linha1: `791 Barber - ${itemNameLabel}`.substring(0, 80),
                 linha2: `${interval} meses${couponApplied ? ' - Cupom ' + couponApplied : ''}`.substring(0, 80)
             }
         };
@@ -264,7 +264,7 @@ export async function POST(req: Request) {
                 tenant_id: tenant.id,
                 type: 'expense',
                 value: amount,
-                description: `SaaS - ${itemName}`,
+                description: `SaaS - ${itemNameLabel}`,
                 date: currentDate,
                 is_paid: false,
                 metadata: {
@@ -274,8 +274,8 @@ export async function POST(req: Request) {
                     method: 'pix_inter',
                     pix_payload: pixCopiaECola,
                     expires_at: dueDate.toISOString(),
-                    [isAddon ? 'addon' : 'plan']: addonSlug || planSlug,
-                    is_addon: isAddon,
+                    [isAddonOnly ? 'addons' : 'plan']: isAddonOnly ? finalAddonsSlugs : planSlug,
+                    is_addon: isAddonOnly,
                     interval: interval
                 }
             });

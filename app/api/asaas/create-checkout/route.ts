@@ -160,22 +160,22 @@ export async function POST(req: Request) {
         // 5. Calcular valor final do PRIMEIRO PAGAMENTO (com desconto de 10% se aplicável)
         const firstPaymentValue = applyWelcomeDiscount ? Number((totalAmount * 0.9).toFixed(2)) : totalAmount;
 
-        // Criar lista de itens para o Asaas (com nomes encurtados e desconto explícito)
-        const finalCheckoutItems = checkoutItems.map(item => ({
-            name: item.name.length > 30 ? item.name.substring(0, 27) + '...' : item.name,
-            value: item.value,
-            quantity: 1
-        }));
+        // Criar lista de itens para o Asaas (com nomes encurtados e desconto aplicado proporcionalmente)
+        // RADICAL FIX RAMON: Agora aplicamos o desconto diretamente no valor do item em vez de enviar um item negativo.
+        const finalCheckoutItems = checkoutItems.map(item => {
+            const finalItemValue = applyWelcomeDiscount ? Number((item.value * 0.9).toFixed(2)) : item.value;
+            return {
+                name: item.name.length > 30 ? item.name.substring(0, 27) + '...' : item.name,
+                value: finalItemValue,
+                quantity: 1
+            };
+        });
 
-        if (applyWelcomeDiscount) {
-            const discountValue = Number((totalAmount - firstPaymentValue).toFixed(2));
-            if (discountValue > 0) {
-                finalCheckoutItems.push({
-                    name: "Desconto Boas-vindas (10%)",
-                    value: -discountValue, // Asaas aceita valor negativo para desconto em itens de checkout
-                    quantity: 1
-                });
-            }
+        // Ajuste de arredondamento: Garantir que a soma dos itens seja exatamente igual ao firstPaymentValue
+        const itemsSum = Number(finalCheckoutItems.reduce((acc, it) => acc + it.value, 0).toFixed(2));
+        if (itemsSum !== firstPaymentValue && finalCheckoutItems.length > 0) {
+            const diff = Number((firstPaymentValue - itemsSum).toFixed(2));
+            finalCheckoutItems[0].value = Number((finalCheckoutItems[0].value + diff).toFixed(2));
         }
 
         // 6. CRIAÇÃO DA COBRANÇA (Checkouts)
