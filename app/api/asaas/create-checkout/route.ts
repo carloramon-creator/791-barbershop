@@ -152,7 +152,8 @@ export async function POST(req: Request) {
                 subscription: {
                     cycle: 'MONTHLY',
                     value: totalAmount, // Valor recorrente FULL R$ 49,90 ou 99,90
-                    nextDueDate: nextDueDate.toISOString().split('T')[0]
+                    nextDueDate: nextDueDate.toISOString().split('T')[0],
+                    description: itemDescription
                 },
                 callback: {
                     successUrl: `${baseUrl}/asaas/checkout/success`,
@@ -225,7 +226,8 @@ export async function POST(req: Request) {
                 nextDate.setMonth(nextDate.getMonth() + 1);
                 checkoutPayload.subscription = {
                     cycle: 'MONTHLY',
-                    nextDueDate: nextDate.toISOString().split('T')[0]
+                    nextDueDate: nextDate.toISOString().split('T')[0],
+                    description: itemDescription
                 };
             } else if (interval > 1) {
                 checkoutPayload.chargeTypes = ['DETACHED', 'INSTALLMENT'];
