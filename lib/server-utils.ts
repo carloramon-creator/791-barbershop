@@ -1,6 +1,6 @@
 import { cookies, headers } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { supabase, supabaseAdmin, getSupabaseAdmin } from './supabase-server';
+import { supabase, getSupabaseAdmin } from './supabase-server';
 import { Plan } from './backend-types';
 
 /**
@@ -20,7 +20,7 @@ export async function getCurrentUserAndTenant() {
         const authHeader = headerStore.get('authorization');
         if (authHeader?.startsWith('Bearer ')) {
             const token = authHeader.substring(7);
-            const { data: { user: adminUser }, error: adminError } = await supabaseAdmin.auth.getUser(token);
+            const { data: { user: adminUser }, error: adminError } = await getSupabaseAdmin().auth.getUser(token);
             if (adminUser && !adminError) {
                 userAuthId = adminUser.id;
                 userObj = adminUser;
@@ -92,7 +92,7 @@ export async function getCurrentUserAndTenant() {
                     }
 
                     if (token && token.split('.').length === 3) {
-                        const { data: { user: adminUser }, error: adminError } = await supabaseAdmin.auth.getUser(token);
+                        const { data: { user: adminUser }, error: adminError } = await getSupabaseAdmin().auth.getUser(token);
                         if (adminUser && !adminError) {
                             console.log(`[AUTH] Sucesso via Fallback Manual [${baseName}] (Usuário: ${adminUser.email})`);
                             userAuthId = adminUser.id;
@@ -109,7 +109,7 @@ export async function getCurrentUserAndTenant() {
         }
 
         // 3. Buscar Perfil no Banco
-        const { data: userData, error: profileError } = await supabaseAdmin
+        const { data: userData, error: profileError } = await getSupabaseAdmin()
             .from('users')
             .select('*')
             .eq('id', userAuthId)
@@ -137,7 +137,7 @@ export async function getCurrentUserAndTenant() {
 
         if (!tenantIdToUse && isSystemAdmin) {
             console.log('[AUTH] Admin without tenant_id, attempting fallback...');
-            const { data: fallback } = await supabaseAdmin.from('tenants').select('id').limit(1).maybeSingle();
+            const { data: fallback } = await getSupabaseAdmin().from('tenants').select('id').limit(1).maybeSingle();
             tenantIdToUse = fallback?.id;
         }
 
@@ -149,7 +149,7 @@ export async function getCurrentUserAndTenant() {
         let tenantData = null;
         if (tenantIdToUse) {
             // Primeiro busca o tenant básico (sempre funciona)
-            const { data: tenant } = await supabaseAdmin
+            const { data: tenant } = await getSupabaseAdmin()
                 .from('tenants')
                 .select('*')
                 .eq('id', tenantIdToUse)
@@ -159,7 +159,7 @@ export async function getCurrentUserAndTenant() {
                 // Tenta buscar o plano do sistema separadamente
                 let systemPlan = null;
                 if (tenant.plan) {
-                    const { data: sPlan } = await supabaseAdmin
+                    const { data: sPlan } = await getSupabaseAdmin()
                         .from('system_plans')
                         .select('menu_permissions, staff_limit')
                         .eq('slug', tenant.plan)
@@ -167,7 +167,7 @@ export async function getCurrentUserAndTenant() {
                     systemPlan = sPlan;
                 }
                 // Carregar Add-ons Ativos
-                const { data: addons } = await supabaseAdmin
+                const { data: addons } = await getSupabaseAdmin()
                     .from('tenant_addons')
                     .select('id, addon_id, system_addons(slug)')
                     .eq('tenant_id', tenantIdToUse)
@@ -240,7 +240,7 @@ export function getStatusColor(status: string) {
 /** Cálculo de Médias Dinâmicas */
 export async function getDynamicBarberAverages(tenantId: string) {
     try {
-        const { data } = await supabaseAdmin.from('barbers').select('id, avg_time_minutes').eq('tenant_id', tenantId);
+        const { data } = await getSupabaseAdmin().from('barbers').select('id, avg_time_minutes').eq('tenant_id', tenantId);
         const averages: Record<string, number> = {};
         (data || []).forEach(b => averages[b.id] = b.avg_time_minutes || 30);
         return averages;

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import AsaasClient from '@/lib/asaas-client';
 
 export async function OPTIONS(req: Request) {
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         }
 
         // 1. Obter Configurações Asaas
-        const { data: settingsData } = await supabaseAdmin
+        const { data: settingsData } = await getSupabaseAdmin()
             .from('system_settings')
             .select('value')
             .eq('key', 'asaas_config')
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
 
         // 2.1 Processar Plano
         if (planSlug) {
-            const { data: plan } = await supabaseAdmin.from('system_plans').select('*').eq('slug', planSlug).single();
+            const { data: plan } = await getSupabaseAdmin().from('system_plans').select('*').eq('slug', planSlug).single();
             if (!plan) throw new Error('Plano não encontrado');
 
             let planBase = Number(plan.price);
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
 
         // 2.2 Processar Add-ons
         for (const slug of finalAddonsSlugs) {
-            const { data: addon } = await supabaseAdmin.from('system_addons').select('*').eq('slug', slug).single();
+            const { data: addon } = await getSupabaseAdmin().from('system_addons').select('*').eq('slug', slug).single();
             if (!addon) continue;
 
             const addonAmount = Number((Number(addon.price) * interval).toFixed(2));
@@ -98,7 +98,7 @@ export async function POST(req: Request) {
         // Aplicar cupom se fornecido (fora o desconto de 10% automático)
         let couponDiscount = 0;
         if (coupon) {
-            const { data: dbCoupon } = await supabaseAdmin
+            const { data: dbCoupon } = await getSupabaseAdmin()
                 .from('system_coupons')
                 .select('*')
                 .eq('code', coupon.toUpperCase())
@@ -125,6 +125,8 @@ export async function POST(req: Request) {
         const applyWelcomeDiscount = isFirstSubscription || (coupon?.toUpperCase() === 'WELCOME791');
 
         // 3. Garantir Cliente no Asaas
+        console.log(`[ASAAS 2.0 SECURITY] Tenant ID: ${tenant.id} | User: ${user.email} | Target Name: ${tenant.name}`);
+
         const cpfCnpj = (tenant.cnpj || tenant.cpf || tenant.document || '').replace(/\D/g, '');
         const phone = (tenant.phone || '').replace(/\D/g, '');
 
@@ -208,7 +210,7 @@ export async function POST(req: Request) {
             const checkout = await asaas.createCheckout(checkoutPayload);
 
             // Registro no banco
-            await supabaseAdmin.from('finance').insert({
+            await getSupabaseAdmin().from('finance').insert({
                 tenant_id: tenant.id,
                 type: 'expense',
                 value: firstPaymentValue,
@@ -263,7 +265,7 @@ export async function POST(req: Request) {
         const checkout = await asaas.createCheckout(checkoutPayload);
 
         // 5. Salvar Registro de Auditoria no Banco para o Webhook encontrar
-        await supabaseAdmin.from('finance').insert({
+        await getSupabaseAdmin().from('finance').insert({
             tenant_id: tenant.id,
             type: 'expense',
             value: firstPaymentValue,

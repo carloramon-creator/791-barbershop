@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import AsaasClient from '@/lib/asaas-client';
 
 export async function POST(req: Request) {
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 
     // 1. Idempotência: Evitar processar o mesmo evento duas vezes (OPCIONAL - não bloqueia se tabela não existir)
     try {
-        const { data: existingEvent } = await supabaseAdmin
+        const { data: existingEvent } = await getSupabaseAdmin()
             .from('system_audit_logs')
             .select('id')
             .eq('action', 'asaas_webhook_processed')
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
 
         if (extRef) {
             console.log('[ASAAS WEBHOOK 2.0] 🔍 Buscando por externalReference:', extRef);
-            const { data } = await supabaseAdmin
+            const { data } = await getSupabaseAdmin()
                 .from('finance')
                 .select('*, tenants(*)')
                 .eq('metadata->>external_reference', extRef)
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
             if (!financeRecord) {
                 console.log('[ASAAS WEBHOOK 2.0] ⏳ Registro não encontrado por ExternalRef. Aguardando 2s...');
                 await sleep(2000);
-                const { data: retryData } = await supabaseAdmin
+                const { data: retryData } = await getSupabaseAdmin()
                     .from('finance')
                     .select('*, tenants(*)')
                     .eq('metadata->>external_reference', extRef)
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
             const searchId = payment.checkoutId || payment.checkout_id || payment.checkoutSession || payment.checkout_session || payment.subscription || payment.subscription_id || body.subscriptionId || body.checkoutId;
             if (searchId) {
                 console.log('[ASAAS WEBHOOK 2.0] 🔍 Buscando por Checkout/Subscription ID:', searchId);
-                const { data } = await supabaseAdmin
+                const { data } = await getSupabaseAdmin()
                     .from('finance')
                     .select('*, tenants(*)')
                     .or(`metadata->>asaas_checkout_id.eq."${searchId}",metadata->>asaas_subscription_id.eq."${searchId}",metadata->>asaas_payment_id.eq."${searchId}"`)
@@ -84,7 +84,7 @@ export async function POST(req: Request) {
         // Estratégia B2: Pelo valor e proximidade temporal (para pagamentos sem ID vinculado)
         if (!financeRecord && payment?.value) {
             console.log('[ASAAS WEBHOOK 2.0] 🔍 Buscando por valor e proximidade temporal:', payment.value);
-            const { data } = await supabaseAdmin
+            const { data } = await getSupabaseAdmin()
                 .from('finance')
                 .select('*, tenants(*)')
                 .eq('value', payment.value)
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
             const customerId = payment?.customer || body.customer;
             console.log('[ASAAS WEBHOOK 2.0] 🔍 Tentando buscar por Customer ID:', customerId);
 
-            const { data: settings } = await supabaseAdmin.from('system_settings').select('value').eq('key', 'asaas_config').single();
+            const { data: settings } = await getSupabaseAdmin().from('system_settings').select('value').eq('key', 'asaas_config').single();
             const asaas = new AsaasClient({
                 apiKey: settings?.value?.api_key || process.env.ASAAS_API_KEY as string,
                 environment: (settings?.value?.environment || 'sandbox') as 'sandbox' | 'production'
@@ -113,7 +113,7 @@ export async function POST(req: Request) {
 
                 if (cpfCnpj) {
                     // Buscar tenant pelo CPF/CNPJ (Pode haver múltiplos, pegamos o que teve atividade recente)
-                    const { data: tenants } = await supabaseAdmin
+                    const { data: tenants } = await getSupabaseAdmin()
                         .from('tenants')
                         .select('id, name')
                         .or(`cnpj.ilike.%${cpfCnpj}%,cpf.ilike.%${cpfCnpj}%,document.ilike.%${cpfCnpj}%`)
@@ -121,7 +121,7 @@ export async function POST(req: Request) {
 
                     if (tenants && tenants.length > 0) {
                         for (const t of tenants) {
-                            const { data: recentFinance } = await supabaseAdmin
+                            const { data: recentFinance } = await getSupabaseAdmin()
                                 .from('finance')
                                 .select('*')
                                 .eq('tenant_id', t.id)
@@ -178,7 +178,7 @@ export async function POST(req: Request) {
 
             try {
                 // Buscar ID do Add-on pelo slug
-                const { data: addonData } = await supabaseAdmin
+                const { data: addonData } = await getSupabaseAdmin()
                     .from('system_addons')
                     .select('id')
                     .eq('slug', addonSlug)
@@ -186,7 +186,7 @@ export async function POST(req: Request) {
 
                 if (addonData) {
                     // Upsert na tabela tenant_addons
-                    const { error: addonError } = await supabaseAdmin
+                    const { error: addonError } = await getSupabaseAdmin()
                         .from('tenant_addons')
                         .upsert({
                             tenant_id: tenant.id,
@@ -218,8 +218,8 @@ export async function POST(req: Request) {
 
         // Atualizar Tenant e Finance (CRÍTICO)
         await Promise.all([
-            supabaseAdmin.from('tenants').update(updateData).eq('id', tenant.id),
-            supabaseAdmin.from('finance').update({
+            getSupabaseAdmin().from('tenants').update(updateData).eq('id', tenant.id),
+            getSupabaseAdmin().from('finance').update({
                 is_paid: true,
                 date: new Date().toISOString().split('T')[0],
                 metadata: { ...metadata, asaas_payment_id: payment.id, webhook_processed_at: new Date().toISOString() }
@@ -228,7 +228,7 @@ export async function POST(req: Request) {
 
         // Log de Auditoria (OPCIONAL - não bloqueia se falhar)
         try {
-            await supabaseAdmin.from('system_audit_logs').insert({
+            await getSupabaseAdmin().from('system_audit_logs').insert({
                 action: 'asaas_webhook_processed',
                 tenant_id: tenant.id,
                 metadata: { webhook_event_id: body.id, payment_id: payment.id, event: event }

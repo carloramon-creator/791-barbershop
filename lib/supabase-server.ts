@@ -36,6 +36,7 @@ export const supabase = async () => {
   });
 };
 
+// Função factory para obter instância administrativa limpa
 export const getSupabaseAdmin = () => {
   return createClient(
     (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_URL).trim(),
@@ -48,6 +49,3 @@ export const getSupabaseAdmin = () => {
     }
   );
 };
-
-// Mantendo para compatibilidade, mas agora usa factory
-export const supabaseAdmin = getSupabaseAdmin();

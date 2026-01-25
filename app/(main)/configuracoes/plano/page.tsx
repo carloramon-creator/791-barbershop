@@ -624,7 +624,11 @@ export default function PlanPage() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {dynamicAddons
                                             .filter(addon => {
-                                                // Premium real e Ativo: TUDO INCLUSO (não mostrar turbinar)
+                                                // Se for trial ou expidado/não-pago, mostramos todos os add-ons para ele planejar a assinatura
+                                                const isFirstSub = !tenantObject?.asaas_subscription_id || ['trial', 'trialing', 'trial_expired'].includes(subscriptionStatus || '');
+                                                if (isFirstSub) return true;
+
+                                                // Premium real e Ativo (Pago): TUDO INCLUSO (não mostrar turbinar)
                                                 if (currentPlan === 'premium' && subscriptionStatus === 'active') return false;
 
                                                 const currentPlanData = dynamicPlans.find(p => p.slug === currentPlan);
@@ -640,10 +644,6 @@ export default function PlanPage() {
 
                                                     return f.includes(addonName) || f.includes(addon.slug);
                                                 });
-
-                                                // Se for trial ou expidado/não-pago, mostramos todos os add-ons para ele planejar a assinatura
-                                                const isFirstSub = !tenantObject?.asaas_subscription_id || ['trial', 'trialing', 'trial_expired'].includes(subscriptionStatus || '');
-                                                if (isFirstSub) return true;
 
                                                 return !hasFeature;
                                             })
@@ -892,7 +892,11 @@ export default function PlanPage() {
                                             <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Turbinar com Módulos</span>
                                             <div className="grid grid-cols-1 gap-2">
                                                 {dynamicAddons.filter(addon => {
-                                                    // Filtrar add-ons que já estão no plano
+                                                    // Se estiver no trial, permite ver tudo para montar o carrinho
+                                                    const isFirstSub = !tenantObject?.asaas_subscription_id || ['trial', 'trialing', 'trial_expired'].includes(subscriptionStatus || '');
+                                                    if (isFirstSub) return true;
+
+                                                    // Filtrar add-ons que já estão no plano selecionado
                                                     const plan = dynamicPlans.find(p => p.slug === selectedPlan);
                                                     if (!plan) return true;
                                                     const addonName = (addon.name || '').toLowerCase().replace('módulo ', '').trim();

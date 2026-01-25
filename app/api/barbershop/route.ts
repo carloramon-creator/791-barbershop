@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function GET(req: Request) {
@@ -67,7 +67,7 @@ export async function PUT(req: Request) {
 
         console.log('[BARBERSHOP PUT] Final updates to DB:', JSON.stringify(updates, null, 2));
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await getSupabaseAdmin()
             .from('tenants')
             .update(updates)
             .eq('id', tenant.id)

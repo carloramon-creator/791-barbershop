@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
 
 export async function OPTIONS(req: Request) {
@@ -30,7 +30,7 @@ export async function GET(req: Request) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Tenant ID required and no session found' }, { status: 400 }));
         }
 
-        const { data: tenant, error } = await supabaseAdmin
+        const { data: tenant, error } = await getSupabaseAdmin()
             .from('tenants')
             .select('id, plan, stripe_subscription_id, subscription_status, stripe_customer_id')
             .eq('id', tenantId)
@@ -51,7 +51,7 @@ export async function GET(req: Request) {
 
         if (stripeSubscriptionId) {
             try {
-                const { data: settingsData } = await supabaseAdmin
+                const { data: settingsData } = await getSupabaseAdmin()
                     .from('system_settings')
                     .select('value')
                     .eq('key', 'stripe_config')
@@ -71,14 +71,14 @@ export async function GET(req: Request) {
                     // Sincroniza status se houver divergência
                     if (sub.status !== subscriptionStatus) {
                         subscriptionStatus = sub.status;
-                        await supabaseAdmin.from('tenants').update({ subscription_status: sub.status }).eq('id', tenant.id);
+                        await getSupabaseAdmin().from('tenants').update({ subscription_status: sub.status }).eq('id', tenant.id);
                     }
                 }
             } catch (err: any) {
                 console.warn(`[PLAN API] Assinatura ${stripeSubscriptionId} inválida ou erro no Stripe. Limpando local...`);
                 stripeSubscriptionId = null;
                 subscriptionStatus = 'canceled';
-                await supabaseAdmin.from('tenants').update({
+                await getSupabaseAdmin().from('tenants').update({
                     stripe_subscription_id: null,
                     subscription_status: 'canceled'
                 }).eq('id', tenant.id);
@@ -86,7 +86,7 @@ export async function GET(req: Request) {
         }
 
         // 3. Buscar Add-ons Ativos
-        const { data: addons } = await supabaseAdmin
+        const { data: addons } = await getSupabaseAdmin()
             .from('tenant_addons')
             .select('system_addons(slug)')
             .eq('tenant_id', tenantId)
@@ -102,7 +102,7 @@ export async function GET(req: Request) {
                 const sevenDaysAgo = new Date();
                 sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-                const { data: paidRecent } = await supabaseAdmin
+                const { data: paidRecent } = await getSupabaseAdmin()
                     .from('finance')
                     .select('*')
                     .eq('tenant_id', tenantId)
@@ -123,7 +123,7 @@ export async function GET(req: Request) {
                     const periodEnd = new Date(now);
                     periodEnd.setMonth(periodEnd.getMonth() + interval);
 
-                    await supabaseAdmin.from('tenants').update({
+                    await getSupabaseAdmin().from('tenants').update({
                         plan: planSlug,
                         subscription_status: 'active',
                         subscription_current_period_end: periodEnd.toISOString()
@@ -133,7 +133,7 @@ export async function GET(req: Request) {
                     tenant.plan = planSlug;
                 } else {
                     // 2. Se não achou pago, verifica se tem PENDENTES recentes do Asaas pra conferir no ato
-                    const { data: pendingAsaas } = await supabaseAdmin
+                    const { data: pendingAsaas } = await getSupabaseAdmin()
                         .from('finance')
                         .select('*')
                         .eq('tenant_id', tenantId)
@@ -144,7 +144,7 @@ export async function GET(req: Request) {
                         .limit(3);
 
                     if (pendingAsaas && pendingAsaas.length > 0) {
-                        const { data: asaasSettings } = await supabaseAdmin
+                        const { data: asaasSettings } = await getSupabaseAdmin()
                             .from('system_settings')
                             .select('value')
                             .eq('key', 'asaas_config')
@@ -170,7 +170,7 @@ export async function GET(req: Request) {
                                             console.log(`[PLAN API HEALING] Asaas confirmou pagamento ${paymentId} em tempo real. Ativando...`);
 
                                             // Atualiza fatura
-                                            await supabaseAdmin.from('finance').update({
+                                            await getSupabaseAdmin().from('finance').update({
                                                 is_paid: true,
                                                 metadata: { ...charge.metadata, asaas_status: payment.status, asaas_payment_id: paymentId, sync_type: 'plan_api_healing' }
                                             }).eq('id', charge.id);
@@ -183,7 +183,7 @@ export async function GET(req: Request) {
                                             const periodEnd = new Date(now);
                                             periodEnd.setMonth(periodEnd.getMonth() + interval);
 
-                                            await supabaseAdmin.from('tenants').update({
+                                            await getSupabaseAdmin().from('tenants').update({
                                                 plan: planSlug,
                                                 subscription_status: 'active',
                                                 subscription_current_period_end: periodEnd.toISOString()
@@ -242,7 +242,7 @@ export async function POST(req: Request) {
         }
 
         // Validação básica de existência do plano no banco
-        const { data: planExists } = await supabaseAdmin
+        const { data: planExists } = await getSupabaseAdmin()
             .from('system_plans')
             .select('id')
             .eq('slug', newPlan)
@@ -252,7 +252,7 @@ export async function POST(req: Request) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Plano inválido' }, { status: 400 }));
         }
 
-        const { data: updated, error } = await supabaseAdmin
+        const { data: updated, error } = await getSupabaseAdmin()
             .from('tenants')
             .update({ plan: newPlan })
             .eq('id', tenantId)

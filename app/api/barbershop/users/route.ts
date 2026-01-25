@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant, checkRolePermission } from '@/lib/server-utils';
 
 // Função auxiliar para garantir o URL correto de redirecionamento
@@ -16,7 +16,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const includeArchived = searchParams.get('include_archived') === 'true';
 
-    let query = supabaseAdmin
+    let query = getSupabaseAdmin()
       .from('users')
       .select(`
         *,
@@ -52,12 +52,12 @@ export async function POST(req: Request) {
     const primaryRole = finalRoles[0] || 'staff';
 
     if (userId && generateInvite) {
-      const { data: u } = await supabaseAdmin.from('users').select('email').eq('id', userId).single();
+      const { data: u } = await getSupabaseAdmin().from('users').select('email').eq('id', userId).single();
       if (u) targetEmail = u.email;
     }
 
     if (!userId && targetEmail) {
-      const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      const { data: created, error: createError } = await getSupabaseAdmin().auth.admin.createUser({
         email: targetEmail,
         email_confirm: true,
         user_metadata: { name }
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
 
       if (createError) {
         if (createError.message.includes('already been registered')) {
-          const { data: { users: authUsers } } = await supabaseAdmin.auth.admin.listUsers();
+          const { data: { users: authUsers } } = await getSupabaseAdmin().auth.admin.listUsers();
           const found = authUsers?.find(u => u.email?.toLowerCase() === targetEmail);
           userId = found?.id;
         } else {
@@ -104,7 +104,7 @@ export async function POST(req: Request) {
       };
 
       Object.keys(userPayload).forEach(key => userPayload[key] === undefined && delete userPayload[key]);
-      const { data: upserted, error: upsertError } = await supabaseAdmin.from('users').upsert(userPayload).select().single();
+      const { data: upserted, error: upsertError } = await getSupabaseAdmin().from('users').upsert(userPayload).select().single();
 
       if (upsertError) throw upsertError;
       finalUserRecord = upserted;
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
       // Sincronizar com a tabela de barbeiros se a role barber estiver presente
       if (finalRoles.includes('barber')) {
         console.log('[SYNC_BARBER_POST] Sincronizando barbeiro para user:', userId);
-        const { data: barberData, error: barberError } = await supabaseAdmin.from('barbers').upsert({
+        const { data: barberData, error: barberError } = await getSupabaseAdmin().from('barbers').upsert({
           tenant_id: tenant.id,
           user_id: userId,
           name: name || targetEmail.split('@')[0],
@@ -135,7 +135,7 @@ export async function POST(req: Request) {
         }
       }
     } else {
-      const { data: existing } = await supabaseAdmin.from('users').select('*').eq('id', userId).single();
+      const { data: existing } = await getSupabaseAdmin().from('users').select('*').eq('id', userId).single();
       finalUserRecord = existing;
     }
 
@@ -143,7 +143,7 @@ export async function POST(req: Request) {
     if (generateInvite && targetEmail) {
       const redirectTo = getRedirectUrl();
 
-      const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+      const { data: linkData, error: linkErr } = await getSupabaseAdmin().auth.admin.generateLink({
         type: 'invite',
         email: targetEmail,
         options: { redirectTo }
@@ -152,7 +152,7 @@ export async function POST(req: Request) {
       let rawLink = null;
       if (linkErr || !linkData.properties?.action_link) {
         // Fallback para recovery se invite falhar (usuário já existe?)
-        const { data: recoveryData, error: recoveryErr } = await supabaseAdmin.auth.admin.generateLink({
+        const { data: recoveryData, error: recoveryErr } = await getSupabaseAdmin().auth.admin.generateLink({
           type: 'recovery',
           email: targetEmail,
           options: { redirectTo }
@@ -219,7 +219,7 @@ export async function PUT(req: Request) {
     };
 
     Object.keys(updates).forEach(key => updates[key] === undefined && delete updates[key]);
-    const { data, error } = await supabaseAdmin.from('users').update(updates).eq('id', body.id).select().single();
+    const { data, error } = await getSupabaseAdmin().from('users').update(updates).eq('id', body.id).select().single();
 
     if (error) throw error;
 
@@ -227,7 +227,7 @@ export async function PUT(req: Request) {
     const currentRoles = data.roles || [];
     if (currentRoles.includes('barber')) {
       console.log('[SYNC_BARBER_PUT] Sincronizando barbeiro para user:', body.id);
-      const { data: barberData, error: barberError } = await supabaseAdmin.from('barbers').upsert({
+      const { data: barberData, error: barberError } = await getSupabaseAdmin().from('barbers').upsert({
         tenant_id: tenant.id,
         user_id: body.id,
         name: data.name,
@@ -250,7 +250,7 @@ export async function PUT(req: Request) {
       }
     } else {
       // Se não for mais barbeiro, desativar na tabela de barbeiros
-      await supabaseAdmin.from('barbers').update({ is_active: false }).eq('tenant_id', tenant.id).eq('user_id', body.id);
+      await getSupabaseAdmin().from('barbers').update({ is_active: false }).eq('tenant_id', tenant.id).eq('user_id', body.id);
     }
 
     return NextResponse.json(data);
@@ -270,24 +270,24 @@ export async function DELETE(req: Request) {
     // Se for exclusão permanente
     if (permanent) {
       // Desativar barbeiro associado antes de deletar o usuário
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from('barbers')
         .update({ is_active: false })
         .eq('user_id', id)
         .eq('tenant_id', tenant.id);
 
-      const { error } = await supabaseAdmin.from('users').delete().eq('id', id).eq('tenant_id', tenant.id);
+      const { error } = await getSupabaseAdmin().from('users').delete().eq('id', id).eq('tenant_id', tenant.id);
       if (error) throw error;
     } else {
       // Soft delete (Arquivar)
       // Desativar barbeiro associado
-      await supabaseAdmin
+      await getSupabaseAdmin()
         .from('barbers')
         .update({ is_active: false })
         .eq('user_id', id)
         .eq('tenant_id', tenant.id);
 
-      const { error } = await supabaseAdmin.from('users').update({ is_active: false }).eq('id', id).eq('tenant_id', tenant.id);
+      const { error } = await getSupabaseAdmin().from('users').update({ is_active: false }).eq('id', id).eq('tenant_id', tenant.id);
       if (error) throw error;
     }
 
