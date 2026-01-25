@@ -7,8 +7,10 @@ import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
 export function ExpirationAlert() {
-    const { tenant } = useAuth();
+    const { tenant, isSystemAdmin } = useAuth();
     const [isVisible, setIsVisible] = useState(false);
+
+    if (isSystemAdmin) return null;
     const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
 
     useEffect(() => {
@@ -57,8 +59,10 @@ export function ExpirationAlert() {
 }
 
 export function ConfigAlert() {
-    const { tenant } = useAuth();
+    const { tenant, isSystemAdmin } = useAuth();
     const [missingFields, setMissingFields] = useState<string[]>([]);
+
+    if (isSystemAdmin) return null;
 
     useEffect(() => {
         if (tenant) {
