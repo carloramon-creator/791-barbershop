@@ -149,7 +149,7 @@ export async function POST(req: Request) {
         }
 
         // 4.1 Criar registro na tabela barbers (Perfil do Barbeiro)
-        const { error: barberError } = await supabaseAdmin
+        const { data: barber, error: barberError } = await supabaseAdmin
             .from('barbers')
             .insert({
                 user_id: userId,
@@ -157,7 +157,9 @@ export async function POST(req: Request) {
                 name,
                 is_active: true,
                 status: 'available'
-            });
+            })
+            .select()
+            .single();
 
         if (barberError) {
             console.error('[API SIGNUP] Barber insertion error:', barberError);
@@ -181,20 +183,30 @@ export async function POST(req: Request) {
 
         // 6. Insert services (if any)
         if (services && services.length > 0) {
-            const { error: servicesError } = await supabaseAdmin.from('services').insert(
+            const { data: insertedServices, error: servicesError } = await supabaseAdmin.from('services').insert(
                 services.map((s: any) => ({
                     tenant_id: tenant.id,
                     name: s.name,
                     price: parseFloat(s.price) || 0,
                     duration_minutes: parseInt(s.duration_minutes) || 0,
                 }))
-            );
+            ).select();
 
             if (servicesError) {
                 console.error('[API SIGNUP] Services error:', servicesError);
                 // Continue anyway (non-critical)
             } else {
                 console.log('[API SIGNUP] Services criados:', services.length);
+
+                // NOVO: Vincular todos os serviços ao barbeiro (dono) automaticamente
+                if (barber && insertedServices && insertedServices.length > 0) {
+                    const links = insertedServices.map(s => ({
+                        barber_id: barber.id,
+                        service_id: s.id
+                    }));
+                    await supabaseAdmin.from('barber_services').insert(links);
+                    console.log('[API SIGNUP] Vínculo Barber-Services realizado');
+                }
             }
         }
 
