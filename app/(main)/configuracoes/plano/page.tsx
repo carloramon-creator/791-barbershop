@@ -624,12 +624,9 @@ export default function PlanPage() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {dynamicAddons
                                             .filter(addon => {
-                                                // Se for trial ou expidado/não-pago, mostramos todos os add-ons para ele planejar a assinatura
-                                                const isFirstSub = !tenantObject?.asaas_subscription_id || ['trial', 'trialing', 'trial_expired'].includes(subscriptionStatus || '');
-                                                if (isFirstSub) return true;
-
-                                                // Premium real e Ativo (Pago): TUDO INCLUSO (não mostrar turbinar)
-                                                if (currentPlan === 'premium' && subscriptionStatus === 'active') return false;
+                                                // Se não for Assinatura Paga e Ativa, mostramos todos os add-ons para ele planejar a assinatura
+                                                const isPaidActive = subscriptionStatus === 'active' && !!tenantObject?.asaas_subscription_id;
+                                                if (!isPaidActive) return true;
 
                                                 const currentPlanData = dynamicPlans.find(p => p.slug === currentPlan);
                                                 if (!currentPlanData) return true;
@@ -892,11 +889,11 @@ export default function PlanPage() {
                                             <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Turbinar com Módulos</span>
                                             <div className="grid grid-cols-1 gap-2">
                                                 {dynamicAddons.filter(addon => {
-                                                    // Se estiver no trial, permite ver tudo para montar o carrinho
-                                                    const isFirstSub = !tenantObject?.asaas_subscription_id || ['trial', 'trialing', 'trial_expired'].includes(subscriptionStatus || '');
-                                                    if (isFirstSub) return true;
+                                                    // Se for Trial ou não tiver assinatura paga ativa, SEMPRE mostramos os add-ons para ele contratar
+                                                    const isPaidActive = subscriptionStatus === 'active' && !!tenantObject?.asaas_subscription_id;
+                                                    if (!isPaidActive) return true;
 
-                                                    // Filtrar add-ons que já estão no plano selecionado
+                                                    // Se for pago e ativo, filtramos o que já está no plano dele
                                                     const plan = dynamicPlans.find(p => p.slug === selectedPlan);
                                                     if (!plan) return true;
                                                     const addonName = (addon.name || '').toLowerCase().replace('módulo ', '').trim();
