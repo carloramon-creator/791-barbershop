@@ -184,7 +184,7 @@ export async function POST(req: Request) {
             const nextDueDate = new Date();
             nextDueDate.setMonth(nextDueDate.getMonth() + 1);
 
-            const shortDescription = `Ativação: ${itemNames.join(' + ')}`.substring(0, 50) + (itemNames.join(' + ').length > 50 ? '...' : '');
+            const shortDescription = `Assinatura: ${itemNames.join(' + ')}`.substring(0, 100);
 
             const checkoutPayload: any = {
                 customer: customer.id,
@@ -193,7 +193,7 @@ export async function POST(req: Request) {
                 description: shortDescription,
                 observations: itemDescription, // Detalhes completos aqui
                 externalReference: externalReference,
-                totalValue: firstPaymentValue,
+                totalValue: firstPaymentValue, // Valor faturado hoje (com desconto)
                 subscription: {
                     cycle: 'MONTHLY',
                     value: totalAmount, // Valor cheio para o futuro (R$ 109,90)

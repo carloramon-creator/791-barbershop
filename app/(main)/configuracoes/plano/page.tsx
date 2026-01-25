@@ -1527,8 +1527,8 @@ export default function PlanPage() {
                                     Plano {selectedPlan}
                                 </span>
                             </div>
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-4xl font-black text-white tracking-tighter drop-shadow-sm">
+                            <div className="flex items-baseline gap-2 whitespace-nowrap">
+                                <span className="text-3xl md:text-4xl font-black text-white tracking-tighter drop-shadow-sm tabular-nums">
                                     R$ {(() => {
                                         const plan = dynamicPlans.find(p => p.slug === selectedPlan);
                                         const planTotal = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
@@ -1542,7 +1542,7 @@ export default function PlanPage() {
                                         return (planTotal + addonsTotal).toFixed(2).replace('.', ',');
                                     })()}
                                 </span>
-                                <span className="text-sm text-slate-400 font-bold uppercase">
+                                <span className="text-xs md:text-sm text-slate-400 font-bold uppercase shrink-0">
                                     / {selectedInterval === 1 ? 'mês' : `${selectedInterval} meses`}
                                 </span>
                             </div>
