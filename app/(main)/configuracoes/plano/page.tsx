@@ -624,25 +624,17 @@ export default function PlanPage() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {dynamicAddons
                                             .filter(addon => {
-                                                // Se não for Assinatura Paga e Ativa, mostramos todos os add-ons para ele planejar a assinatura
+                                                // RADICAL FIX RAMON: Se for Trial ou não for Assinatura Paga Ativa, MOSTRA SEMPRE.
+                                                // Isso garante que o usuário consiga montar o carrinho no teste.
                                                 const isPaidActive = subscriptionStatus === 'active' && !!tenantObject?.asaas_subscription_id;
                                                 if (!isPaidActive) return true;
 
+                                                // Logica de filtro para assinantes pagos (evitar duplicidade)
                                                 const currentPlanData = dynamicPlans.find(p => p.slug === currentPlan);
                                                 if (!currentPlanData) return true;
-
                                                 const addonName = (addon.name || '').toLowerCase().replace('módulo ', '').trim();
-
                                                 const features = (currentPlanData.features || []).map((f: any) => String(f || '').toLowerCase());
-
-                                                const hasFeature = features.some((f: string) => {
-                                                    // Ignorar features negativas (ex: "Sem Estoque")
-                                                    if (f.includes('sem ') || f.includes('não ') || f.includes('no ')) return false;
-
-                                                    return f.includes(addonName) || f.includes(addon.slug);
-                                                });
-
-                                                return !hasFeature;
+                                                return !features.some((f: string) => f.includes(addonName) || f.includes(addon.slug));
                                             })
                                             .map((addon) => {
                                                 const isActive = activeAddons.includes(addon.slug);
@@ -673,7 +665,11 @@ export default function PlanPage() {
                                                                     size="sm"
                                                                     variant={isActive ? "outline" : (selectedAddonsSlugs.includes(addon.slug) ? "default" : "outline")}
                                                                     disabled={isActive || saving}
-                                                                    onClick={() => toggleAddon(addon.slug)}
+                                                                    onClick={(e) => {
+                                                                        e.preventDefault();
+                                                                        e.stopPropagation();
+                                                                        toggleAddon(addon.slug);
+                                                                    }}
                                                                     className={cn(
                                                                         "h-9 text-[10px] font-black uppercase tracking-widest px-4 shadow-lg active:scale-95 transition-all text-white",
                                                                         isActive ? "border-emerald-500/50 text-emerald-500 bg-transparent" : (selectedAddonsSlugs.includes(addon.slug) ? "bg-amber-600 border-amber-600" : "border-slate-700 hover:border-amber-500")
@@ -889,7 +885,7 @@ export default function PlanPage() {
                                             <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Turbinar com Módulos</span>
                                             {(() => {
                                                 const filtered = dynamicAddons.filter(addon => {
-                                                    // Se for Trial ou não tiver assinatura paga ativa, SEMPRE mostramos
+                                                    // RADICAL FIX RAMON: No modal, se for Trial, MOSTRA TUDO.
                                                     const isPaidActive = subscriptionStatus === 'active' && !!tenantObject?.asaas_subscription_id;
                                                     if (!isPaidActive) return true;
 
@@ -913,11 +909,15 @@ export default function PlanPage() {
                                                     return (
                                                         <button
                                                             key={addon.slug}
-                                                            onClick={() => toggleAddon(addon.slug)}
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                toggleAddon(addon.slug);
+                                                            }}
                                                             className={cn(
-                                                                "flex items-center justify-between p-3 rounded-xl border transition-all text-left",
+                                                                "flex items-center justify-between p-3 rounded-xl border transition-all text-left pointer-events-auto",
                                                                 isSelected
-                                                                    ? "bg-amber-500/10 border-amber-500/50 text-slate-100"
+                                                                    ? "bg-amber-500/10 border-amber-500/50 text-slate-100 ring-1 ring-amber-500/20"
                                                                     : "bg-slate-950/20 border-slate-800 text-slate-500 hover:border-slate-700"
                                                             )}
                                                         >
