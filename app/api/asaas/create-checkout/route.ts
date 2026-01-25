@@ -134,10 +134,10 @@ export async function POST(req: Request) {
             // ... (Manter lógica de add-on existente) ...
         }
 
-        // 4. CRIAÇÃO DE ASSINATURA (PLANOS)
-        // Se for Crédito + Plano Mensal, usar createCheckout com valores distintos para o 1º ciclo
-        if (!isAddon && paymentMethod === 'CREDIT_CARD' && interval === 1) {
-            console.log('[ASAAS 2.0] Criando Checkout Recorrente com Desconto no 1º Ciclo');
+        // 4. CRIAÇÃO DE ASSINATURA (PLANOS E ADD-ONS)
+        // Se for Crédito + Mensal, usar createCheckout com valores distintos para o 1º ciclo
+        if (paymentMethod === 'CREDIT_CARD' && interval === 1) {
+            console.log(`[ASAAS 2.0] Criando Checkout Recorrente: ${itemName}`);
 
             const nextDueDate = new Date();
             nextDueDate.setMonth(nextDueDate.getMonth() + 1);
@@ -148,10 +148,11 @@ export async function POST(req: Request) {
                 chargeTypes: ['RECURRENT'],
                 description: itemDescription,
                 externalReference: externalReference,
-                totalValue: discountConfig ? totalAmount * 0.9 : totalAmount, // Valor do 1º pagamento (com desconto de boas-vindas)
+                // totalValue é o valor cobrado HOJE (Com o desconto se aplicável)
+                totalValue: discountConfig ? Number((totalAmount * 0.9).toFixed(2)) : totalAmount,
                 subscription: {
                     cycle: 'MONTHLY',
-                    value: totalAmount, // Valor recorrente FULL R$ 49,90 ou 99,90
+                    value: totalAmount, // VALOR CHEIO para as próximas faturas
                     nextDueDate: nextDueDate.toISOString().split('T')[0],
                     description: itemDescription
                 },
@@ -161,7 +162,7 @@ export async function POST(req: Request) {
                 },
                 items: [{
                     name: (itemName.length > 30 ? itemName.substring(0, 27) + '...' : itemName),
-                    value: discountConfig ? totalAmount * 0.9 : totalAmount,
+                    value: totalAmount, // VALOR CHEIO (O Asaas usa isso como base do template)
                     quantity: 1
                 }]
             };
