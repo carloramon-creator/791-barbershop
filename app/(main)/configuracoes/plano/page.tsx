@@ -1513,106 +1513,128 @@ export default function PlanPage() {
             )
             }
 
-            {/* BARRA DE SELEÇÃO FIXA NO RODAPÉ */}
-            {
-                (selectedPlan || selectedAddonsSlugs.length > 0) && !openDialog && (
-                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 p-4 rounded-3xl shadow-2xl flex flex-col gap-4 z-50 animate-in slide-in-from-bottom-10 pointer-events-auto">
+            {/* BARRA DE SELEÇÃO FIXA NO RODAPÉ (ESCANDALOSA) */}
+            {(selectedPlan || selectedAddonsSlugs.length > 0) && !openDialog && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-4xl bg-slate-900/98 backdrop-blur-2xl border-2 border-blue-500/50 p-6 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col gap-4 z-50 animate-in slide-in-from-bottom-10 pointer-events-auto ring-1 ring-white/10">
+                    <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-8">
 
-                        {/* UPSELL HINT (Se selecionou apenas o plano) */}
-                        {selectedPlan && selectedAddonsSlugs.length === 0 && (
-                            <div className="bg-amber-500/10 border border-amber-500/20 p-2 rounded-xl flex items-center justify-between gap-3 animate-pulse">
-                                <div className="flex items-center gap-2">
-                                    <Zap size={14} className="text-amber-500" />
-                                    <p className="text-[10px] font-bold text-amber-200 uppercase tracking-tighter">🚀 Potencialize seu plano com Módulos Adicionais acima!</p>
-                                </div>
+                        {/* ESQUERDA: Plano e Preço */}
+                        <div className="flex flex-col gap-1.5 min-w-0">
+                            <div className="flex items-center gap-2">
+                                <Activity size={14} className="text-blue-400 animate-pulse" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Pacote em Seleção</span>
+                                <span className="px-2 py-0.5 bg-blue-500/20 text-[9px] font-black text-blue-400 rounded-lg border border-blue-500/30 uppercase tracking-tighter">
+                                    Plano {selectedPlan}
+                                </span>
                             </div>
-                        )}
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-4xl font-black text-white tracking-tighter drop-shadow-sm">
+                                    R$ {(() => {
+                                        const plan = dynamicPlans.find(p => p.slug === selectedPlan);
+                                        const planTotal = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
 
-                        <div className="flex items-center justify-between gap-4">
-                            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Pacote Selecionado</span>
-                                    {selectedAddonsSlugs.length > 0 && (
-                                        <div className="flex gap-1 overflow-x-auto no-scrollbar pb-0.5">
-                                            {selectedAddonsSlugs.map(slug => {
-                                                const addon = dynamicAddons.find(a => a.slug === slug);
-                                                return (
-                                                    <span key={slug} className="px-2 py-0.5 bg-amber-500 text-[8px] font-black text-slate-900 rounded-md uppercase whitespace-nowrap shadow-sm animate-in zoom-in-50">
-                                                        {addon?.name?.replace('Módulo ', '') || slug}
-                                                    </span>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-xl font-black text-white">
-                                        R$ {(() => {
-                                            const plan = dynamicPlans.find(p => p.slug === selectedPlan);
-                                            const planTotal = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
+                                        let addonsTotal = 0;
+                                        selectedAddonsSlugs.forEach(slug => {
+                                            const addon = dynamicAddons.find(a => a.slug === slug);
+                                            if (addon) addonsTotal += Number(addon.price) * selectedInterval;
+                                        });
 
-                                            let addonsTotal = 0;
-                                            selectedAddonsSlugs.forEach(slug => {
-                                                const addon = dynamicAddons.find(a => a.slug === slug);
-                                                if (addon) addonsTotal += Number(addon.price) * selectedInterval;
-                                            });
-
-                                            return (planTotal + addonsTotal).toFixed(2).replace('.', ',');
-                                        })()}
-                                    </span>
-                                    <span className="text-[10px] text-slate-500 font-bold uppercase truncate">/ {selectedInterval === 1 ? 'mês' : `${selectedInterval} meses`}</span>
-                                </div>
+                                        return (planTotal + addonsTotal).toFixed(2).replace('.', ',');
+                                    })()}
+                                </span>
+                                <span className="text-sm text-slate-400 font-bold uppercase">
+                                    / {selectedInterval === 1 ? 'mês' : `${selectedInterval} meses`}
+                                </span>
                             </div>
-                            <Button
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setPaymentMethod('card');
-                                    setOpenDialog(true);
-                                }}
-                                className="bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest px-6 md:px-8 rounded-xl shadow-lg shadow-blue-900/40 shrink-0 h-12"
-                            >
-                                {selectedAddonsSlugs.length > 0 ? (
-                                    <span className="flex items-center gap-2">Pagar <ArrowRight size={16} /></span>
-                                ) : (
-                                    <span className="flex items-center gap-2">Personalizar <ArrowRight size={16} /></span>
-                                )}
-                            </Button>
                         </div>
+
+                        {/* CENTRO: Seleção de Módulos (Escandalosa) */}
+                        <div className="flex items-center gap-3 flex-1 justify-center py-2 border-y border-slate-800/50 md:border-0">
+                            {dynamicAddons
+                                .filter(addon => {
+                                    const isPaidActive = subscriptionStatus === 'active' && !!tenantObject?.asaas_subscription_id;
+                                    if (!isPaidActive) return true;
+                                    const currentPlanData = dynamicPlans.find(p => p.slug === currentPlan);
+                                    if (!currentPlanData) return true;
+                                    const addonName = (addon.name || '').toLowerCase().replace('módulo ', '').trim();
+                                    const features = (currentPlanData.features || []).map((f: any) => String(f || '').toLowerCase());
+                                    return !features.some((f: string) => f.includes(addonName) || f.includes(addon.slug));
+                                })
+                                .map(addon => {
+                                    const isSelected = selectedAddonsSlugs.includes(addon.slug);
+                                    return (
+                                        <button
+                                            key={addon.slug}
+                                            onClick={() => toggleAddon(addon.slug)}
+                                            className={cn(
+                                                "flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all duration-300 min-w-[120px] h-20 group relative overflow-hidden",
+                                                isSelected
+                                                    ? "bg-amber-500 border-amber-400 text-slate-900 shadow-[0_0_25px_rgba(245,158,11,0.5)] scale-105 active:scale-95"
+                                                    : "bg-slate-800/40 border-slate-700/50 text-slate-400 hover:border-amber-500/50 hover:bg-slate-800 hover:scale-102 active:scale-95"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Zap size={12} className={cn(isSelected ? "text-slate-900" : "text-amber-500", "animate-pulse")} />
+                                                <span className="text-[10px] font-black uppercase tracking-tight">
+                                                    {addon.name.replace('Módulo ', '')}
+                                                </span>
+                                            </div>
+                                            <span className="text-xs font-bold opacity-90">
+                                                + R$ {Number(addon.price).toFixed(2).replace('.', ',')}
+                                            </span>
+                                            {isSelected && (
+                                                <div className="absolute top-1 right-1 bg-slate-900 rounded-full p-0.5 shadow-sm">
+                                                    <Check size={10} className="text-amber-500 stroke-[4px]" />
+                                                </div>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                        </div>
+
+                        {/* DIREITA: Botão de Ação */}
+                        <Button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setPaymentMethod('card');
+                                setOpenDialog(true);
+                            }}
+                            className="bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest px-12 rounded-2xl shadow-2xl shadow-blue-900/40 shrink-0 h-16 text-md group transition-all duration-500 hover:scale-[1.03]"
+                        >
+                            <span className="flex items-center gap-3">IR PARA PAGAMENTO <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" /></span>
+                        </Button>
                     </div>
-                )
-            }
+                </div>
+            )}
 
             {/* Modal de Checkout Integrado do Asaas */}
-            {
-                checkoutUrl && (
-                    <AsaasCheckoutModal
-                        checkoutUrl={checkoutUrl}
-                        isOpen={showCheckoutModal}
-                        boletoData={boletoData ? {
-                            identificationField: boletoData.linhaDigitavel,
-                            barCode: boletoData.codigoBarras,
-                            value: boletoData.amount || 0,
-                            dueDate: (boletoData as any).dueDate,
-                            bankSlipUrl: boletoData.pdfUrl
-                        } : null}
-                        pixData={pixData ? {
-                            encodedImage: (pixData as any).encodedImage,
-                            payload: pixData.pixPayload,
-                            expirationDate: pixData.expiresAt
-                        } : null}
-                        onClose={() => {
-                            setShowCheckoutModal(false);
-                            setCheckoutUrl(null);
-                            setBoletoData(null);
-                            setPixData(null);
-                            // Atualizar dados após fechar modal
-                            fetchCurrentPlan();
-                            fetchInvoices();
-                        }}
-                    />
-                )
-            }
-        </div >
+            {checkoutUrl && (
+                <AsaasCheckoutModal
+                    checkoutUrl={checkoutUrl}
+                    isOpen={showCheckoutModal}
+                    boletoData={boletoData ? {
+                        identificationField: boletoData.linhaDigitavel,
+                        barCode: boletoData.codigoBarras,
+                        value: boletoData.amount || 0,
+                        dueDate: (boletoData as any).dueDate,
+                        bankSlipUrl: boletoData.pdfUrl
+                    } : null}
+                    pixData={pixData ? {
+                        encodedImage: (pixData as any).encodedImage,
+                        payload: pixData.pixPayload,
+                        expirationDate: pixData.expiresAt
+                    } : null}
+                    onClose={() => {
+                        setShowCheckoutModal(false);
+                        setCheckoutUrl(null);
+                        setBoletoData(null);
+                        setPixData(null);
+                        fetchCurrentPlan();
+                        fetchInvoices();
+                    }}
+                />
+            )}
+        </div>
     );
 }

@@ -184,19 +184,21 @@ export async function POST(req: Request) {
             const nextDueDate = new Date();
             nextDueDate.setMonth(nextDueDate.getMonth() + 1);
 
+            const shortDescription = `Ativação: ${itemNames.join(' + ')}`.substring(0, 50) + (itemNames.join(' + ').length > 50 ? '...' : '');
+
             const checkoutPayload: any = {
                 customer: customer.id,
                 billingTypes: ['CREDIT_CARD'],
                 chargeTypes: ['RECURRENT'],
-                description: itemDescription,
-                observations: itemDescription,
+                description: shortDescription,
+                observations: itemDescription, // Detalhes completos aqui
                 externalReference: externalReference,
                 totalValue: firstPaymentValue,
                 subscription: {
                     cycle: 'MONTHLY',
                     value: totalAmount, // Valor cheio para o futuro (R$ 109,90)
                     nextDueDate: nextDueDate.toISOString().split('T')[0],
-                    description: itemDescription,
+                    description: shortDescription,
                     observations: itemDescription,
                     discount: applyWelcomeDiscount ? {
                         value: Number((totalAmount * 0.1).toFixed(2)),
@@ -211,7 +213,7 @@ export async function POST(req: Request) {
                 items: finalCheckoutItems
             };
 
-            console.log('[ASAAS 2.0] Criando Checkout Recorrente Consolidado:', itemDescription);
+            console.log('[ASAAS 2.0] Criando Checkout Recorrente Consolidado:', shortDescription);
             const checkout = await asaas.createCheckout(checkoutPayload);
 
             // Registro no banco
@@ -243,12 +245,14 @@ export async function POST(req: Request) {
             }));
         }
 
+        const shortDescription = `Pagamento: ${itemNames.join(' + ')}`.substring(0, 50) + (itemNames.join(' + ').length > 50 ? '...' : '');
+
         // FALLBACK: createCheckout (Pix, Boleto, Parcelados)
         const checkoutPayload: any = {
             customer: customer.id,
             billingTypes: [paymentMethod],
             chargeTypes: ['DETACHED'],
-            description: itemDescription,
+            description: shortDescription,
             observations: itemDescription,
             externalReference: externalReference,
             totalValue: firstPaymentValue,
