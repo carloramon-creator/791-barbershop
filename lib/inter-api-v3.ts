@@ -43,7 +43,9 @@ export class InterAPIV3 {
         const params = new URLSearchParams();
         params.append('client_id', this.config.clientId);
         params.append('client_secret', this.config.clientSecret);
-        params.append('scope', 'pix.read pix.write webhook.read webhook.write boleto-cobranca.read boleto-cobranca.write');
+        // Escopos completos (incluindo Recorrência/Pix Automático conforme confirmado)
+        const scopes = 'pix.read pix.write webhook.read webhook.write boleto-cobranca.read boleto-cobranca.write rec.read rec.write cobr.read cobr.write';
+        params.append('scope', scopes);
         params.append('grant_type', 'client_credentials');
 
         const body = params.toString();
@@ -124,6 +126,70 @@ export class InterAPIV3 {
             timeout: 10000
         };
 
+        return await this.makeRequest(options);
+    }
+
+    /**
+     * Pix Automático: Cria uma location para QR Code
+     */
+    async createLocation(tipo: 'cob' | 'cobv' | 'rec' = 'rec') {
+        const token = await this.getAccessToken();
+        const body = JSON.stringify({ tipo });
+        const options: https.RequestOptions = {
+            hostname: 'cdpj.partners.bancointer.com.br',
+            port: 443,
+            path: '/pix/v2/loc',
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(body)
+            },
+            cert: this.config.cert,
+            key: this.config.key,
+            rejectUnauthorized: false
+        };
+        return await this.makeRequest(options, body);
+    }
+
+    /**
+     * Pix Automático: Cria um acordo de recorrência
+     */
+    async createRecurrenceAgreement(payload: any) {
+        const token = await this.getAccessToken();
+        const body = JSON.stringify(payload);
+        const options: https.RequestOptions = {
+            hostname: 'cdpj.partners.bancointer.com.br',
+            port: 443,
+            path: '/pix/v2/rec',
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(body)
+            },
+            cert: this.config.cert,
+            key: this.config.key,
+            rejectUnauthorized: false
+        };
+        return await this.makeRequest(options, body);
+    }
+
+    /**
+     * Pix Automático: Consulta acordo de recorrência
+     */
+    async getRecurrenceAgreement(idRec: string) {
+        const token = await this.getAccessToken();
+        const options: https.RequestOptions = {
+            hostname: 'cdpj.partners.bancointer.com.br',
+            port: 443,
+            path: `/pix/v2/rec/${idRec}`,
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` },
+            cert: this.config.cert,
+            key: this.config.key,
+            rejectUnauthorized: false
+        };
         return await this.makeRequest(options);
     }
 

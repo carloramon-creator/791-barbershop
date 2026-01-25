@@ -1022,15 +1022,26 @@ export default function BarbershopSettingsPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-slate-200 text-xs uppercase font-bold">Tipo da Chave</Label>
-                                    <Select value={pixKeyType} onValueChange={setPixKeyType} disabled={!isEditing}>
+                                    <Select
+                                        value={pixKeyType}
+                                        onValueChange={(val) => {
+                                            setPixKeyType(val);
+                                            // Herança de dados automática conforme solicitado
+                                            if (val === 'cpf' && !hasCnpj && cnpj) setPixKey(cnpj.replace(/\D/g, ''));
+                                            if (val === 'cnpj' && hasCnpj && cnpj) setPixKey(cnpj.replace(/\D/g, ''));
+                                            if (val === 'phone' && phone) setPixKey(phone.replace(/\D/g, ''));
+                                            if (val === 'email' && email) setPixKey(email);
+                                        }}
+                                        disabled={!isEditing}
+                                    >
                                         <SelectTrigger className="bg-slate-900 border-slate-700 h-11">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent className="bg-slate-800 border-slate-700">
-                                            <SelectItem value="cpf">CPF</SelectItem>
-                                            <SelectItem value="cnpj">CNPJ</SelectItem>
-                                            <SelectItem value="email">E-mail</SelectItem>
-                                            <SelectItem value="phone">Telefone (Celular)</SelectItem>
+                                            <SelectItem value="cpf">CPF (Herdar)</SelectItem>
+                                            <SelectItem value="cnpj">CNPJ (Herdar)</SelectItem>
+                                            <SelectItem value="email">E-mail (Herdar)</SelectItem>
+                                            <SelectItem value="phone">Telefone (Herdar)</SelectItem>
                                             <SelectItem value="random">Chave Aleatória</SelectItem>
                                         </SelectContent>
                                     </Select>

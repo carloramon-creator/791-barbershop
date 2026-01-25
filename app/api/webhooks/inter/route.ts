@@ -62,6 +62,21 @@ export async function POST(req: Request) {
                     console.log(`[INTER WEBHOOK] Ignorando status intermediário: ${situacao}`);
                 }
             }
+            // --- 3. Payload Pix Automático / Recorrência ---
+            else if (notif.idRec) {
+                console.log(`[INTER WEBHOOK] Recv Recorrência idRec=${notif.idRec}, status=${notif.status}`);
+                // Aqui podemos tratar a autorização ou o pagamento recorrente
+                // Se for um pagamento (tem valor e txid), processamos como pagamento
+                if (notif.pix && notif.pix.txid) {
+                    await processPayment({
+                        identifier: notif.idRec,
+                        identifierType: 'id_rec' as any,
+                        amount: notif.pix.valor,
+                        paidAt: notif.pix.horario,
+                        raw: notif
+                    });
+                }
+            }
         }
 
         return NextResponse.json({ success: true, processed: processedCount });
@@ -168,8 +183,11 @@ async function processPayment(params: { identifier: string, identifierType: 'txi
                     })
                     .eq('id', tenantId);
 
-                if (tenantError) throw tenantError;
-                console.log(`[INTER WEBHOOK] Plano ${finalPlan} liberado para tenant ${tenantId}`);
+                if (tenantError) {
+                    console.error(`[INTER WEBHOOK] ❌ Erro ao atualizar tenant ${tenantId}:`, tenantError);
+                    throw tenantError;
+                }
+                console.log(`[INTER WEBHOOK] ✅ Plano ${finalPlan} liberado para tenant ${tenantId}`);
             }
         }
 
@@ -183,7 +201,10 @@ async function processPayment(params: { identifier: string, identifierType: 'txi
             })
             .eq('id', charge.id);
 
-        if (financeError) throw financeError;
+        if (financeError) {
+            console.error(`[INTER WEBHOOK] ❌ Erro ao atualizar finance ${charge.id}:`, financeError);
+            throw financeError;
+        }
 
         console.log('[INTER WEBHOOK] Sucesso Absoluto! Tenant liberado e financeiro quitado.');
 

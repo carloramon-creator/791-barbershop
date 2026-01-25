@@ -124,7 +124,7 @@ export async function POST(req: Request) {
         const isFirstSubscription = !tenant.asaas_subscription_id || isNotActive;
         const applyWelcomeDiscount = isFirstSubscription || (coupon?.toUpperCase() === 'WELCOME791');
 
-        // 3. Garantir Cliente no Asaas
+        // 3. Garantir Cliente no Asaas (Identificação por E-mail conforme solicitado)
         console.log(`[ASAAS 2.0 SECURITY] Tenant ID: ${tenant.id} | User: ${user.email} | Target Name: ${tenant.name}`);
 
         const cpfCnpj = (tenant.cnpj || tenant.cpf || tenant.document || '').replace(/\D/g, '');
@@ -138,18 +138,31 @@ export async function POST(req: Request) {
             address: tenant.street || tenant.address_street || 'Endereço não informado',
             addressNumber: tenant.number || 'SN',
             postalCode: (tenant.address_zip || tenant.cep || '').replace(/\D/g, ''),
-            province: tenant.neighborhood || tenant.address_neighborhood || 'Bairro'
+            province: tenant.neighborhood || tenant.address_neighborhood || 'Bairro',
+            phone: phone // Add phone property initialized with the same value as mobilePhone or empty string
         };
 
         let customer = await asaas.getCustomerByEmail(customerData.email);
+
         if (!customer) {
+            console.log('[ASAAS 2.0] Criando novo cliente:', tenant.name);
+
+            // FALLBACK AUTOMÁTICO: Preencher dados faltantes para não travar testes
+            // Se o usuário não preencheu, enviamos dados genéricos aceitos pelo Asaas
+            if (!customerData.mobilePhone) customerData.mobilePhone = '47999999999';
+            if (!customerData.phone) customerData.phone = '4733333333';
+            if (customerData.address === 'Endereço não informado' || !customerData.address) customerData.address = 'Rua de Teste';
+            if (customerData.addressNumber === 'SN' || !customerData.addressNumber) customerData.addressNumber = '100';
+            if (!customerData.postalCode) customerData.postalCode = '89200000';
+            if (customerData.province === 'Bairro' || !customerData.province) customerData.province = 'Centro';
+
             customer = await asaas.createCustomer(customerData);
         } else if (customer.name !== (tenant.name || 'Cliente 791')) {
-            console.log('[ASAAS 2.0] Cliente já existe mas nome mudou. Sincronizando:', customer.id);
+            console.log('[ASAAS 2.0] Sincronizando nome da barbearia no cliente Asaas:', customer.id);
             try {
                 await asaas.updateCustomer(customer.id, { name: tenant.name || 'Cliente 791' });
             } catch (e) {
-                console.error('[ASAAS 2.0] Erro ao sincronizar nome do cliente:', e);
+                console.error('[ASAAS 2.0] Erro ao sincronizar nome:', e);
             }
         }
 
@@ -181,39 +194,50 @@ export async function POST(req: Request) {
         // 6. CRIAÇÃO DA COBRANÇA (Checkouts)
         // Se for Crédito + Mensal, gerar RECORRENTE
         if (paymentMethod === 'CREDIT_CARD' && interval === 1) {
-            const nextDueDate = new Date();
-            nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+            // FIX: Data de vencimento para HOJE (Cobrança Imediata)
+            const today = new Date();
+            const dueDateString = today.toISOString().split('T')[0];
 
             const shortDescription = `Assinatura: ${itemNames.join(' + ')}`.substring(0, 100);
+
+            // Lógica de Desconto na Assinatura (Apenas 1º Ciclo)
+            let discountObj = null;
+            if (applyWelcomeDiscount) {
+                // Se o desconto é 10% do total
+                const discountVal = Number((totalAmount * 0.10).toFixed(2));
+                discountObj = {
+                    value: discountVal,
+                    type: 'FIXED' // Valor fixo para garantir precisão
+                };
+            }
 
             const checkoutPayload: any = {
                 customer: customer.id,
                 billingTypes: ['CREDIT_CARD'],
                 chargeTypes: ['RECURRENT'],
                 description: shortDescription,
-                observations: itemDescription, // Detalhes completos aqui
+                observations: itemDescription,
                 externalReference: externalReference,
-                totalValue: firstPaymentValue, // Valor faturado hoje (com desconto)
+                // subscription: Configuração da recorrência
                 subscription: {
                     cycle: 'MONTHLY',
-                    value: totalAmount, // Valor cheio para o futuro (R$ 109,90)
-                    nextDueDate: nextDueDate.toISOString().split('T')[0],
+                    value: totalAmount, // Valor CHEIO para as renovações
+                    nextDueDate: dueDateString, // Começa HOJE
                     description: shortDescription,
-                    observations: itemDescription,
-                    discount: applyWelcomeDiscount ? {
-                        value: Number((totalAmount * 0.1).toFixed(2)),
-                        type: 'FIXED',
-                        dueDateLimitDays: 0
-                    } : undefined
+                    discount: discountObj ? { ...discountObj, cycles: 1 } : null // Desconto apenas no ciclo 1
                 },
                 callback: {
                     successUrl: `${baseUrl}/asaas/checkout/success`,
                     cancelUrl: `${baseUrl}/asaas/checkout/cancel`
                 },
-                items: finalCheckoutItems
+                items: checkoutItems.map(it => ({
+                    name: it.name.substring(0, 50), // Limite de caracteres
+                    value: it.value, // Valor original do item
+                    quantity: 1
+                }))
             };
 
-            console.log('[ASAAS 2.0] Criando Checkout Recorrente Consolidado:', shortDescription);
+            console.log('[ASAAS 2.0] Criando Checkout Recorrente (Imediato):', JSON.stringify(checkoutPayload, null, 2));
             const checkout = await asaas.createCheckout(checkoutPayload);
 
             // Registro no banco

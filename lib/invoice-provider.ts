@@ -93,15 +93,47 @@ class InvoiceProvider {
                 }
             };
 
-            // 2. Chamar o serviço interno diretamente
-            const result = await nfseService.emitNfse(dpsData, pfxBase64, passphrase);
+            // 2. Chamar o microserviço de NFS-e
+            console.log(`[INVOICE-PROVIDER] Delegando emissão para o microserviço: http://localhost:3333/nfse/emit`);
+
+            // Extrair chaves para o microserviço (que espera privateKey e publicCert separados)
+            const { privateKey, certificate: publicCert } = (await import('./nfse/signature-service')).default.extractFromPfx(pfxBase64, passphrase);
+
+            const providerUrl = process.env.NFSE_PROVIDER_URL || 'http://localhost:3333';
+            const providerSecret = process.env.NFSE_PROVIDER_SECRET || 'sua_chave_secreta_aqui';
+
+            // Gerar token simples para o microserviço
+            const jwt = (await import('jsonwebtoken')).default;
+            const token = jwt.sign({ service: 'frontend-owner' }, providerSecret);
+
+            const response = await fetch(`${providerUrl}/nfse/emit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    dpsData,
+                    privateKey,
+                    publicCert,
+                    pfxBase64,
+                    passphrase
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erro na comunicação com o microserviço de NFS-e');
+            }
+
+            const result = await response.json();
 
             return {
                 success: true,
-                invoiceId: result?.id || dpsData.numero,
+                invoiceId: result.invoiceId || dpsData.numero,
                 status: 'authorized',
-                pdfUrl: `/api/nfse/pdf`, // Rota interna
-                message: 'Nota Fiscal autorizada com sucesso pelo Padrão Nacional.'
+                pdfUrl: `/api/nfse/pdf`, // A rota de download ainda pode ser via proxy ou direta
+                message: 'Nota Fiscal autorizada com sucesso via Microserviço 791.'
             };
         } catch (error: any) {
             console.error('[INVOICE-PROVIDER ERROR]', error);

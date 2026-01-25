@@ -158,7 +158,7 @@ export async function POST(req: Request) {
         const tenant = financeRecord.tenants;
 
         // 4. Ativar Plano e Atualizar Financeiro
-        console.log(`[ASAAS WEBHOOK 2.0] 🚀 Ativando plano para: ${tenant.name}`);
+        console.log(`[ASAAS WEBHOOK 2.0] 🚀 Ativando plano para: ${tenant.name} | Status atual: ${tenant.subscription_status}`);
 
         const metadata = financeRecord.metadata || {};
         const planSlug = metadata.plan;
@@ -221,7 +221,8 @@ export async function POST(req: Request) {
         }
 
         // Atualizar Tenant e Finance (CRÍTICO)
-        await Promise.all([
+        console.log(`[ASAAS WEBHOOK 2.0] 💾 Salvando alterações no DB para Tenant ID: ${tenant.id}`);
+        const [tenantRes, financeRes] = await Promise.all([
             getSupabaseAdmin().from('tenants').update(updateData).eq('id', tenant.id),
             getSupabaseAdmin().from('finance').update({
                 is_paid: true,
@@ -229,6 +230,9 @@ export async function POST(req: Request) {
                 metadata: { ...metadata, asaas_payment_id: payment.id, webhook_processed_at: new Date().toISOString() }
             }).eq('id', financeRecord.id)
         ]);
+
+        if (tenantRes.error) console.error('[ASAAS WEBHOOK 2.0] ❌ Erro ao atualizar tenant:', tenantRes.error);
+        if (financeRes.error) console.error('[ASAAS WEBHOOK 2.0] ❌ Erro ao atualizar finance:', financeRes.error);
 
         // Log de Auditoria (OPCIONAL - não bloqueia se falhar)
         try {
