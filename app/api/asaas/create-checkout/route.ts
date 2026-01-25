@@ -42,27 +42,41 @@ export async function POST(req: Request) {
 
         const asaas = new AsaasClient({ apiKey, environment });
 
-        // 2. Definir Item e Valor
-        let baseAmount = 0;
-        let itemName = '';
-        let isAddon = !!addonSlug;
+        // 2. Definir Itens e Calcular Valores
+        let totalPlanAmount = 0;
+        let totalAddonAmount = 0;
+        let itemNames: string[] = [];
 
-        if (isAddon) {
-            const { data: addon } = await supabaseAdmin.from('system_addons').select('*').eq('slug', addonSlug).single();
-            if (!addon) throw new Error('Add-on não encontrado');
-            baseAmount = Number(addon.price);
-            itemName = addon.name;
-        } else {
+        // 2.1 Processar Plano
+        if (planSlug) {
             const { data: plan } = await supabaseAdmin.from('system_plans').select('*').eq('slug', planSlug).single();
             if (!plan) throw new Error('Plano não encontrado');
-            baseAmount = Number(plan.price);
-            itemName = plan.name;
 
+            let planBase = Number(plan.price);
             const disc = interval === 12 ? (plan.discount_annual || 20) : interval === 6 ? (plan.discount_semiannual || 10) : 0;
-            if (disc > 0) baseAmount = baseAmount * (1 - (disc / 100));
+            if (disc > 0) planBase = planBase * (1 - (disc / 100));
+
+            totalPlanAmount = Number((planBase * interval).toFixed(2));
+            itemNames.push(`Plano ${plan.name}`);
         }
 
-        // Aplicar cupom se fornecido
+        // 2.2 Processar Add-on
+        if (addonSlug) {
+            const { data: addon } = await supabaseAdmin.from('system_addons').select('*').eq('slug', addonSlug).single();
+            if (!addon) throw new Error('Add-on não encontrado');
+
+            totalAddonAmount = Number((Number(addon.price) * interval).toFixed(2));
+            itemNames.push(`Módulo ${addon.name}`);
+        }
+
+        if (itemNames.length === 0) {
+            throw new Error('Nenhum plano ou add-on selecionado');
+        }
+
+        let totalAmount = Number((totalPlanAmount + totalAddonAmount).toFixed(2));
+        const itemDescription = `Assinatura 791 Barber: ${itemNames.join(' + ')}`;
+
+        // Aplicar cupom se fornecido (fora o desconto de 10% automático)
         let couponDiscount = 0;
         if (coupon) {
             const { data: dbCoupon } = await supabaseAdmin
@@ -77,33 +91,21 @@ export async function POST(req: Request) {
                     throw new Error('Cupom expirado');
                 }
                 if (dbCoupon.discount_percent) {
-                    couponDiscount = baseAmount * (Number(dbCoupon.discount_percent) / 100);
+                    couponDiscount = totalAmount * (Number(dbCoupon.discount_percent) / 100);
                 } else if (dbCoupon.discount_value) {
                     couponDiscount = Number(dbCoupon.discount_value);
                 }
-                baseAmount = Math.max(0, baseAmount - couponDiscount);
+                totalAmount = Math.max(0, totalAmount - couponDiscount);
             }
         }
 
-        const totalAmount = Number(((baseAmount * interval) || 0).toFixed(2));
-        const itemDescription = isAddon ? `Módulo Adicional: ${itemName}` : `Assinatura Mensal: ${itemName}`;
-
-        // Lógica de Desconto de Boas-vindas (10% no primeiro ciclo para novos ou inativos)
+        // Lógica de Desconto de Boas-vindas (10% no primeiro ciclo sobre o TOTAL)
         const isNotActive = !tenant.subscription_status ||
             ['trial', 'trial_expired', 'past_due', 'unpaid', 'incomplete'].includes(tenant.subscription_status || '');
         const isFirstSubscription = !tenant.asaas_subscription_id || isNotActive;
-
         const hasWelcomeCoupon = coupon?.toUpperCase() === 'WELCOME791';
 
-        let discountConfig = null;
-        if (isFirstSubscription || hasWelcomeCoupon) {
-            console.log(`[ASAAS 2.0] Aplicando Boas-Vindas (10% OFF): isFirst=${isFirstSubscription}, coupon=${hasWelcomeCoupon}`);
-            discountConfig = {
-                value: 10,
-                type: 'PERCENTAGE',
-                cycles: 1
-            };
-        }
+        const applyWelcomeDiscount = isFirstSubscription || hasWelcomeCoupon;
 
         // 3. Garantir Cliente no Asaas
         const cpfCnpj = (tenant.cnpj || tenant.cpf || tenant.document || '').replace(/\D/g, '');
@@ -125,20 +127,13 @@ export async function POST(req: Request) {
             customer = await asaas.createCustomer(customerData);
         }
 
-        // 3.5. Preparar referências
+        // 4. Preparar referências
         const externalReference = crypto.randomUUID();
-        const baseUrl = 'https://791barber.com'; // Hardcoded fix
+        const baseUrl = 'https://791barber.com';
 
-        // 3.6. ADD-ON RECORRENTE (Lógica mantida)
-        if (isAddon && tenant.asaas_subscription_id) {
-            // ... (Manter lógica de add-on existente) ...
-        }
-
-        // 4. CRIAÇÃO DE ASSINATURA (PLANOS E ADD-ONS)
-        // Se for Crédito + Mensal, usar createCheckout com valores distintos para o 1º ciclo
+        // 5. CRIAÇÃO DA COBRANÇA (Checkouts)
+        // Se for Crédito + Mensal, gerar RECORRENTE
         if (paymentMethod === 'CREDIT_CARD' && interval === 1) {
-            console.log(`[ASAAS 2.0] Criando Checkout Recorrente: ${itemName}`);
-
             const nextDueDate = new Date();
             nextDueDate.setMonth(nextDueDate.getMonth() + 1);
 
@@ -148,34 +143,34 @@ export async function POST(req: Request) {
                 chargeTypes: ['RECURRENT'],
                 description: itemDescription,
                 externalReference: externalReference,
-                // totalValue é o valor cobrado HOJE (Com o desconto se aplicável)
-                totalValue: discountConfig ? Number((totalAmount * 0.9).toFixed(2)) : totalAmount,
+                // totalValue é o valor de HOJE (com os 10% se for 1ª vez)
+                totalValue: applyWelcomeDiscount ? Number((totalAmount * 0.9).toFixed(2)) : totalAmount,
                 subscription: {
                     cycle: 'MONTHLY',
-                    value: totalAmount, // VALOR CHEIO para as próximas faturas
+                    value: totalAmount, // Valor cheio para o futuro
                     nextDueDate: nextDueDate.toISOString().split('T')[0],
-                    description: itemDescription
+                    description: itemDescription // Tentar passar aqui também
                 },
                 callback: {
                     successUrl: `${baseUrl}/asaas/checkout/success`,
                     cancelUrl: `${baseUrl}/asaas/checkout/cancel`
                 },
                 items: [{
-                    name: (itemName.length > 30 ? itemName.substring(0, 27) + '...' : itemName),
-                    value: totalAmount, // VALOR CHEIO (O Asaas usa isso como base do template)
+                    name: (itemDescription.length > 60 ? itemDescription.substring(0, 57) + '...' : itemDescription),
+                    value: totalAmount,
                     quantity: 1
                 }]
             };
 
+            console.log('[ASAAS 2.0] Criando Checkout Recorrente Consolidado:', itemDescription);
             const checkout = await asaas.createCheckout(checkoutPayload);
-            console.log('[ASAAS 2.0] Checkout recorrente criado:', checkout.id);
 
-            // Salvar no banco
+            // Registro no banco
             await supabaseAdmin.from('finance').insert({
                 tenant_id: tenant.id,
                 type: 'expense',
                 value: totalAmount,
-                description: `Assinatura SaaS - ${itemName}`,
+                description: itemDescription,
                 date: new Date().toISOString().split('T')[0],
                 is_paid: false,
                 metadata: {
@@ -183,7 +178,8 @@ export async function POST(req: Request) {
                     asaas_checkout_id: checkout.id,
                     external_reference: externalReference,
                     payment_method: paymentMethod,
-                    plan: planSlug
+                    plan: planSlug,
+                    addon: addonSlug
                 }
             });
 
@@ -192,14 +188,11 @@ export async function POST(req: Request) {
                 success: true,
                 checkoutId: checkout.id,
                 checkoutUrl: `${asaasPortalUrl}/checkoutSession/show?id=${checkout.id}`,
-                amount: discountConfig ? totalAmount * 0.9 : totalAmount
+                amount: applyWelcomeDiscount ? Number((totalAmount * 0.9).toFixed(2)) : totalAmount
             }));
         }
 
-        // FALLBACK: createCheckout (Para Add-ons avulsos, parcelamentos anuais, etc - Lógica legada)
-        // Truncar nome do item para 30 chars
-        const safeItemName = (itemName.length > 30 ? itemName.substring(0, 27) + '...' : itemName);
-
+        // FALLBACK: createCheckout (Detached/Installments)
         const checkoutPayload: any = {
             customer: customer.id,
             billingTypes: [paymentMethod],
@@ -213,32 +206,19 @@ export async function POST(req: Request) {
                 cancelUrl: `${baseUrl}/asaas/checkout/cancel`
             },
             items: [{
-                name: safeItemName,
+                name: (itemDescription.length > 60 ? itemDescription.substring(0, 57) + '...' : itemDescription),
                 value: totalAmount,
                 quantity: 1
             }]
         };
 
-        // Adicionar recorrência ou parcelamento
-        if (paymentMethod === 'CREDIT_CARD') {
-            if (interval === 1 && !isAddon) {
-                checkoutPayload.chargeTypes = ['RECURRENT'];
-                const nextDate = new Date();
-                nextDate.setMonth(nextDate.getMonth() + 1);
-                checkoutPayload.subscription = {
-                    cycle: 'MONTHLY',
-                    nextDueDate: nextDate.toISOString().split('T')[0],
-                    description: itemDescription
-                };
-            } else if (interval > 1) {
-                checkoutPayload.chargeTypes = ['DETACHED', 'INSTALLMENT'];
-                checkoutPayload.installment = {
-                    maxInstallmentCount: interval === 12 ? 12 : 6
-                };
-            }
+        if (paymentMethod === 'CREDIT_CARD' && interval > 1) {
+            checkoutPayload.chargeTypes = ['DETACHED', 'INSTALLMENT'];
+            checkoutPayload.installment = {
+                maxInstallmentCount: interval === 12 ? 12 : 6
+            };
         }
 
-        console.log('[ASAAS 2.0] Criando checkout (Legacy/Fallback):', externalReference);
         const checkout = await asaas.createCheckout(checkoutPayload);
 
         // 5. Salvar Registro de Auditoria no Banco para o Webhook encontrar
@@ -246,7 +226,7 @@ export async function POST(req: Request) {
             tenant_id: tenant.id,
             type: 'expense',
             value: totalAmount,
-            description: `Assinatura SaaS - ${itemName}`,
+            description: itemDescription,
             date: new Date().toISOString().split('T')[0],
             is_paid: false,
             metadata: {

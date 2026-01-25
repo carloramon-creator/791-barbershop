@@ -669,7 +669,7 @@ export default function PlanPage() {
                                                                     disabled={isActive || saving}
                                                                     onClick={() => {
                                                                         setSelectedAddon(addon);
-                                                                        setSelectedPlan(null);
+                                                                        // Não limpamos mais o plano aqui para permitir combo
                                                                         setPaymentMethod('card');
                                                                         setOpenDialog(true);
                                                                     }}
@@ -808,7 +808,7 @@ export default function PlanPage() {
                                                         disabled={currentPlan === plan.slug && subscriptionStatus === 'active'}
                                                         onClick={() => {
                                                             setSelectedPlan(plan.slug);
-                                                            setSelectedAddon(null);
+                                                            // Não limpamos o addon para permitir combo
                                                             setPaymentMethod('card');
                                                             setOpenDialog(true);
                                                         }}
@@ -859,41 +859,68 @@ export default function PlanPage() {
                             <DialogHeader>
                                 <DialogTitle className="font-black text-xl md:text-2xl tracking-tighter uppercase">Confirmar Contratação</DialogTitle>
                                 <DialogDescription className="text-slate-400 light:text-slate-500 font-bold">
-                                    {selectedAddon ? (
-                                        <>Módulo <span className="text-amber-500 uppercase">{selectedAddon.name}</span> — R$ {(Number(selectedAddon.price) || 0).toFixed(2).replace('.', ',')}/mês</>
-                                    ) : (
-                                        <div className="flex flex-col gap-1">
-                                            <span>
-                                                Plano <span className="text-blue-600 capitalize">{selectedPlan}</span> —
-                                                {(() => {
+                                    <div className="flex flex-col gap-2">
+                                        {selectedPlan && (
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] uppercase text-slate-500">Plano Selecionado</span>
+                                                <span>
+                                                    <span className="text-blue-600 capitalize">{selectedPlan}</span> —
+                                                    {(() => {
+                                                        const plan = dynamicPlans.find(p => p.slug === selectedPlan);
+                                                        if (!plan) return '';
+                                                        const basePrice = plan.price || 0;
+                                                        const discount = selectedInterval === 6 ? 10 : selectedInterval === 12 ? 20 : 0;
+                                                        const totalPrice = (basePrice * selectedInterval) * (1 - (discount / 100));
+                                                        return ` R$ ${(totalPrice || 0).toFixed(2).replace('.', ',')} (${selectedInterval} ${selectedInterval === 1 ? 'mês' : 'meses'})`;
+                                                    })()}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {selectedAddon && (
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] uppercase text-slate-500">Módulo Adicional</span>
+                                                <span>
+                                                    <span className="text-amber-500 uppercase">{selectedAddon.name}</span> —
+                                                    R$ {(Number(selectedAddon.price) || 0).toFixed(2).replace('.', ',')}/mês
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        <div className="mt-2 pt-2 border-t border-slate-800 flex justify-between items-center">
+                                            <span className="text-xs uppercase text-slate-300">Total Mensal</span>
+                                            <span className="text-xl font-black text-slate-100">
+                                                R$ {(() => {
                                                     const plan = dynamicPlans.find(p => p.slug === selectedPlan);
-                                                    if (!plan) return '';
-                                                    const basePrice = plan.price || 0;
-                                                    const discount = selectedInterval === 6 ? 10 : selectedInterval === 12 ? 20 : 0;
-                                                    const totalPrice = (basePrice * selectedInterval) * (1 - (discount / 100));
-                                                    return ` R$ ${(totalPrice || 0).toFixed(2).replace('.', ',')} (${selectedInterval} ${selectedInterval === 1 ? 'mês' : 'meses'})`;
+                                                    const planPrice = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
+                                                    const addonPrice = selectedAddon ? Number(selectedAddon.price) * selectedInterval : 0;
+                                                    return (planPrice + addonPrice).toFixed(2).replace('.', ',');
                                                 })()}
                                             </span>
-                                            {/* VISUALIZAÇÃO DO DESCONTO 10% (Apenas se cadastrado há menos de 5 dias) */}
-                                            {(() => {
-                                                const created = new Date(tenantCreatedAt || new Date());
-                                                const now = new Date();
-                                                const diffDays = Math.ceil(Math.abs(now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
-
-                                                const isNewAccount = diffDays <= 5;
-                                                const isTrialOrUnpaid = (!['active', 'active_paid'].includes(subscriptionStatus || '') || ['trial', 'trialing'].includes(subscriptionStatus || ''));
-
-                                                if (tenantCreatedAt && isNewAccount && isTrialOrUnpaid) {
-                                                    return (
-                                                        <span className="text-emerald-500 font-black text-[10px] md:text-xs uppercase tracking-wider animate-pulse flex items-center gap-1">
-                                                            <span>🎉</span> Desconto de 10% na 1ª fatura aplicado!
-                                                        </span>
-                                                    );
-                                                }
-                                                return null;
-                                            })()}
                                         </div>
-                                    )}
+
+                                        {/* VISUALIZAÇÃO DO DESCONTO 10% (Boas-vindas) */}
+                                        {(() => {
+                                            const isTrialOrUnpaid = (!['active', 'active_paid', 'paid'].includes(subscriptionStatus || '') || ['trial', 'trialing'].includes(subscriptionStatus || ''));
+                                            const isFirstSub = !tenantObject?.asaas_subscription_id || isTrialOrUnpaid;
+
+                                            if (isFirstSub) {
+                                                const plan = dynamicPlans.find(p => p.slug === selectedPlan);
+                                                const planTotal = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
+                                                const addonTotal = selectedAddon ? Number(selectedAddon.price) * selectedInterval : 0;
+                                                const grandTotal = planTotal + addonTotal;
+                                                const discounted = grandTotal * 0.9;
+
+                                                return (
+                                                    <div className="bg-emerald-500/10 border border-emerald-500/20 p-2 rounded-lg mt-1">
+                                                        <span className="text-emerald-500 font-black text-[10px] md:text-xs uppercase tracking-wider animate-pulse flex items-center gap-1">
+                                                            <span>🎉</span> Boas-vindas: 1º mês por R$ {discounted.toFixed(2).replace('.', ',')}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
+                                    </div>
                                 </DialogDescription>
                             </DialogHeader>
 
