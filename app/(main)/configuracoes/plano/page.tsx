@@ -513,7 +513,6 @@ export default function PlanPage() {
                             onClick={() => {
                                 const targetPlan = (currentPlan && currentPlan !== 'trial') ? currentPlan : 'basic';
                                 setSelectedPlan(targetPlan);
-                                setSelectedAddonsSlugs([]);
                                 setPaymentMethod('card');
                                 setOpenDialog(true);
                             }}
@@ -850,7 +849,7 @@ export default function PlanPage() {
                         }
                     }}>
                         <DialogContent
-                            className="border-slate-800 light:border-slate-200 bg-slate-900 light:bg-white text-slate-100 light:text-slate-900 max-w-md rounded-2xl md:rounded-3xl"
+                            className="border-slate-800 light:border-slate-200 bg-slate-900 light:bg-white text-slate-100 light:text-slate-900 max-w-md rounded-2xl md:rounded-3xl max-h-[95vh] overflow-y-auto"
                             onPointerDownOutside={() => fetchInvoices()}
                             onEscapeKeyDown={() => fetchInvoices()}
                         >
@@ -1521,9 +1520,23 @@ export default function PlanPage() {
                             </div>
                         )}
 
-                        <div className="flex items-center justify-between">
-                            <div className="flex flex-col">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Pacote Selecionado</span>
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Pacote Selecionado</span>
+                                    {selectedAddonsSlugs.length > 0 && (
+                                        <div className="flex gap-1 overflow-x-auto no-scrollbar pb-0.5">
+                                            {selectedAddonsSlugs.map(slug => {
+                                                const addon = dynamicAddons.find(a => a.slug === slug);
+                                                return (
+                                                    <span key={slug} className="px-2 py-0.5 bg-amber-500 text-[8px] font-black text-slate-900 rounded-md uppercase whitespace-nowrap shadow-sm animate-in zoom-in-50">
+                                                        {addon?.name?.replace('Módulo ', '') || slug}
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-xl font-black text-white">
                                         R$ {(() => {
@@ -1539,17 +1552,23 @@ export default function PlanPage() {
                                             return (planTotal + addonsTotal).toFixed(2).replace('.', ',');
                                         })()}
                                     </span>
-                                    <span className="text-[10px] text-slate-500 font-bold uppercase">/ {selectedInterval === 1 ? 'mês' : `${selectedInterval} meses`}</span>
+                                    <span className="text-[10px] text-slate-500 font-bold uppercase truncate">/ {selectedInterval === 1 ? 'mês' : `${selectedInterval} meses`}</span>
                                 </div>
                             </div>
                             <Button
-                                onClick={() => {
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
                                     setPaymentMethod('card');
                                     setOpenDialog(true);
                                 }}
-                                className="bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest px-8 rounded-xl shadow-lg shadow-blue-900/40"
+                                className="bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest px-6 md:px-8 rounded-xl shadow-lg shadow-blue-900/40 shrink-0 h-12"
                             >
-                                {selectedAddonsSlugs.length > 0 ? 'Finalizar e Pagar' : 'Confirmar & Personalizar'} <ArrowRight size={16} className="ml-2" />
+                                {selectedAddonsSlugs.length > 0 ? (
+                                    <span className="flex items-center gap-2">Pagar <ArrowRight size={16} /></span>
+                                ) : (
+                                    <span className="flex items-center gap-2">Personalizar <ArrowRight size={16} /></span>
+                                )}
                             </Button>
                         </div>
                     </div>
