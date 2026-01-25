@@ -89,7 +89,7 @@ export function ConfigAlert() {
                     Faltam {missingFields.length} itens: {missingFields.slice(0, 3).join(', ')}{missingFields.length > 3 ? '...' : ''}
                 </span>
             </div>
-            <Link href="/geral/configuracoes">
+            <Link href="/configuracoes/barbearia">
                 <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-orange-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-orange-400 transition-colors shadow-lg shadow-orange-900/20">
                     Completar Perfil <ArrowRight size={12} />
                 </div>
