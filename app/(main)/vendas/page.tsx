@@ -211,7 +211,8 @@ export default function VendasPage() {
                     if (pixResult.success) {
                         setPixData({
                             qrCode: pixResult.qrCode,
-                            payload: pixResult.payload
+                            payload: pixResult.payload,
+                            total: data.total
                         });
                         setShowPixModal(true);
                     } else {
@@ -577,7 +578,7 @@ export default function VendasPage() {
                             <div className="text-center">
                                 <p className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Valor do Pagamento</p>
                                 <p className="text-3xl font-black text-emerald-400">
-                                    {formatCurrency(total - (total * (descontoPercentual / 100)))}
+                                    {formatCurrency((pixData as any).total || 0)}
                                 </p>
                             </div>
                             <p className="text-sm text-slate-400 text-center">

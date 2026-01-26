@@ -206,7 +206,7 @@ export default function FinanceiroPage() {
         .filter(s => s.created_at.split('T')[0] <= todayStr)
         .reduce((acc, s) => acc + Number(s.total_amount), 0) +
         financeRecords
-            .filter(r => r.type === 'revenue' && r.is_paid && r.date <= todayStr)
+            .filter(r => (r.type === 'revenue' || r.type === 'income') && r.is_paid && r.date <= todayStr)
             .reduce((acc, r) => acc + Number(r.value), 0);
 
     // Total Expenses: ALL paid expenses in current month (not just until today)
@@ -228,6 +228,7 @@ export default function FinanceiroPage() {
         barber_id?: string;
         is_recurring: boolean;
         is_paid: boolean;
+        metadata?: any;
     };
 
     const filteredRecords: FinanceItem[] = view === 'main'
@@ -256,7 +257,8 @@ export default function FinanceiroPage() {
                 barber: r.barbers?.name || '-',
                 barber_id: r.barber_id,
                 is_recurring: !!r.is_recurring,
-                is_paid: true
+                is_paid: true,
+                metadata: r.metadata
             }))
         ].sort((a, b) => b.date.localeCompare(a.date))
         : financeRecords.filter(r => !r.is_paid && r.type === 'expense').map(r => ({
