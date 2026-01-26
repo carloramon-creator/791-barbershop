@@ -183,72 +183,86 @@ export async function POST(req: Request) {
         // FIX CRÍTICO: Restaurando firstPaymentValue para lógica de comparação e fallback
         const firstPaymentValue = applyWelcomeDiscount ? Number((totalFullValue * 0.9).toFixed(2)) : totalFullValue;
 
-        // FIM DO BLOCO DE ASSINATURA DIRETA
+        const shortDescription = `Pagamento: ${itemNames.join(' + ')}`.substring(0, 50) + (itemNames.join(' + ').length > 50 ? '...' : '');
 
-        // 6. CRIAÇÃO DA COBRANÇA (Checkouts)
-        // NOVA LÓGICA: Criar Assinatura Diretamente e Redirecionar para Fatura (Invoice)
-        // Isso garante que o cliente veja "Valor Original - Desconto = Total" na tela de pagamento.
+        // 6. CRIAÇÃO DA COBRANÇA (Checkouts ou Assinatura Direta)
 
-        const subscriptionPayload = {
-            customer: customer.id,
-            billingType: 'CREDIT_CARD',
-            value: totalAmount, // Valor CHEIO
-            nextDueDate: dueDateString,
-            cycle: 'MONTHLY',
-            description: shortDescription,
-            discount: discountObj ? { ...discountObj, cycles: 1 } : undefined,
-            externalReference: externalReference
-        };
+        // SE FOR CARTÃO + MENSAL: Usar CREATE SUBSCRIPTION direto para garantir visualização correta na Fatura
+        if (paymentMethod === 'CREDIT_CARD' && interval === 1) {
+            const today = new Date();
+            const dueDateString = today.toISOString().split('T')[0];
 
-        console.log('[ASAAS 2.0] Criando Assinatura Direta:', JSON.stringify(subscriptionPayload, null, 2));
-
-        // 1. Criar Assinatura
-        const subscription = await asaas.createSubscription(subscriptionPayload);
-
-        if (!subscription || !subscription.id) {
-            throw new Error('Falha ao criar assinatura no Asaas');
-        }
-
-        // 2. Buscar a primeira cobrança gerada para obter o Link de Pagamento da Fatura
-        // A assinatura gera a cobrança imediatamente se a data for próxima/hoje.
-        const payments = await asaas.getPaymentsBySubscription(subscription.id);
-        const firstPayment = payments.data?.[0]; // Pega a primeira (mais recente/pendente)
-
-        if (!firstPayment) {
-            throw new Error('Assinatura criada, mas nenhuma cobrança foi gerada imediatamente.');
-        }
-
-        // 3. Registrar no Banco
-        await getSupabaseAdmin().from('finance').insert({
-            tenant_id: tenant.id,
-            type: 'expense',
-            value: firstPaymentValue,
-            description: itemDescription, // Descrição completa com itens
-            date: new Date().toISOString().split('T')[0],
-            is_paid: false,
-            metadata: {
-                is_saas_payment: true,
-                asaas_checkout_id: null, // Não é checkout session
-                asaas_subscription_id: subscription.id,
-                asaas_payment_id: firstPayment.id,
-                external_reference: externalReference,
-                payment_method: paymentMethod,
-                plan: planSlug,
-                addons: finalAddonsSlugs,
-                is_first_payment: true,
-                original_value: totalAmount
+            // Lógica de Desconto na Assinatura (Apenas 1º Ciclo)
+            let discountObj = null;
+            if (applyWelcomeDiscount) {
+                // Se o desconto é 10% do total
+                const discountVal = Number((totalAmount * 0.10).toFixed(2));
+                discountObj = {
+                    value: discountVal,
+                    type: 'FIXED' // Valor fixo para garantir precisão
+                };
             }
-        });
 
-        // 4. Retornar URL da Fatura (Invoice)
-        // A visualização de Fatura do Asaas mostra claramente: Valor, Desconto, Juros, Total.
-        return addCorsHeaders(req, NextResponse.json({
-            success: true,
-            checkoutId: subscription.id, // Para tracking frontend
-            checkoutUrl: firstPayment.invoiceUrl, // REDIRECT PARA A FATURA
-            amount: firstPaymentValue
-        }));
+            const subscriptionPayload = {
+                customer: customer.id,
+                billingType: 'CREDIT_CARD' as 'CREDIT_CARD' | 'BOLETO' | 'UNDEFINED',
+                value: totalAmount, // Valor CHEIO
+                nextDueDate: dueDateString,
+                cycle: 'MONTHLY' as 'MONTHLY' | 'WEEKLY' | 'BIWEEKLY' | 'QUARTERLY' | 'SEMIANNUALLY' | 'YEARLY',
+                description: shortDescription,
+                discount: discountObj ? { ...discountObj, cycles: 1 } : undefined,
+                externalReference: externalReference
+            };
 
+            console.log('[ASAAS 2.0] Criando Assinatura Direta:', JSON.stringify(subscriptionPayload, null, 2));
+
+            // 1. Criar Assinatura
+            const subscription = await asaas.createSubscription(subscriptionPayload);
+
+            if (!subscription || !subscription.id) {
+                throw new Error('Falha ao criar assinatura no Asaas');
+            }
+
+            // 2. Buscar a primeira cobrança gerada para obter o Link de Pagamento da Fatura
+            // A assinatura gera a cobrança imediatamente se a data for próxima/hoje.
+            const payments = await asaas.getPaymentsBySubscription(subscription.id);
+            const firstPayment = payments.data?.[0]; // Pega a primeira (mais recente/pendente)
+
+            if (!firstPayment) {
+                throw new Error('Assinatura criada, mas busca de cobrança falhou (delay Asaas?).');
+            }
+
+            // 3. Registrar no Banco
+            await getSupabaseAdmin().from('finance').insert({
+                tenant_id: tenant.id,
+                type: 'expense',
+                value: firstPaymentValue,
+                description: itemDescription, // Descrição completa com itens
+                date: new Date().toISOString().split('T')[0],
+                is_paid: false,
+                metadata: {
+                    is_saas_payment: true,
+                    asaas_checkout_id: null, // Não é checkout session
+                    asaas_subscription_id: subscription.id,
+                    asaas_payment_id: firstPayment.id,
+                    external_reference: externalReference,
+                    payment_method: paymentMethod,
+                    plan: planSlug,
+                    addons: finalAddonsSlugs,
+                    is_first_payment: true,
+                    original_value: totalAmount
+                }
+            });
+
+            // 4. Retornar URL da Fatura (Invoice)
+            // A visualização de Fatura do Asaas mostra claramente: Valor, Desconto, Juros, Total.
+            return addCorsHeaders(req, NextResponse.json({
+                success: true,
+                checkoutId: subscription.id, // Para tracking frontend
+                checkoutUrl: firstPayment.invoiceUrl, // REDIRECT PARA A FATURA
+                amount: firstPaymentValue
+            }));
+        }
         // FIM DO BLOCO DE ASSINATURA DIRETA
 
         // FALLBACK: createCheckout (Pix, Boleto, Parcelados)
