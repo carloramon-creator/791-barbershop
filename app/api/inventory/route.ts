@@ -6,7 +6,16 @@ import { Plan } from '@/lib/backend-types';
 export async function GET() {
     try {
         const { tenant, roles } = await getCurrentUserAndTenant();
-        assertPlanAtLeast(tenant.plan as Plan, 'premium');
+
+        // Verificar se tem plano Premium ou addon de estoque
+        const hasInventoryAddon = tenant?.active_addons?.includes('inventory');
+        const isPremium = tenant?.plan === 'premium';
+
+        if (!isPremium && !hasInventoryAddon) {
+            return NextResponse.json({
+                error: 'Módulo de estoque requer Plano Premium ou Add-on de Estoque'
+            }, { status: 403 });
+        }
 
         if (!roles.includes('owner') && !roles.includes('staff')) {
             return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
@@ -36,7 +45,16 @@ export async function GET() {
 export async function POST(req: Request) {
     try {
         const { tenant, roles } = await getCurrentUserAndTenant();
-        assertPlanAtLeast(tenant.plan as Plan, 'premium');
+
+        // Verificar se tem plano Premium ou addon de estoque
+        const hasInventoryAddon = tenant?.active_addons?.includes('inventory');
+        const isPremium = tenant?.plan === 'premium';
+
+        if (!isPremium && !hasInventoryAddon) {
+            return NextResponse.json({
+                error: 'Módulo de estoque requer Plano Premium ou Add-on de Estoque'
+            }, { status: 403 });
+        }
 
         if (!roles.includes('owner') && !roles.includes('staff')) {
             return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
