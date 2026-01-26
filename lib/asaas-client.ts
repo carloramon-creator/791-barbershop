@@ -256,6 +256,7 @@ export class AsaasClient {
             value?: number;
             dueDateLimitDays?: number;
             type?: 'FIXED' | 'PERCENTAGE';
+            cycles?: number;
         };
     }) {
         try {

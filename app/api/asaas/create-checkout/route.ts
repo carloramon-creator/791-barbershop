@@ -199,7 +199,7 @@ export async function POST(req: Request) {
                 const discountVal = Number((totalAmount * 0.10).toFixed(2));
                 discountObj = {
                     value: discountVal,
-                    type: 'FIXED' // Valor fixo para garantir precisão
+                    type: 'FIXED' as 'FIXED' | 'PERCENTAGE' // Valor fixo para garantir precisão
                 };
             }
 
