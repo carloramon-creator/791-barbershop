@@ -232,11 +232,30 @@ export async function POST(req: Request) {
             }));
         }
 
-        // CREDIT_CARD - Retorna URL de checkout
+        // CREDIT_CARD - Criar checkout com successUrl
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://791barber.com';
+        const checkoutPayload = {
+            name: `791 Barber - ${itemName}`,
+            description: `Pagamento de ${itemName} (${interval} ${interval === 1 ? 'mês' : 'meses'})`,
+            billingType: 'CREDIT_CARD',
+            chargeType: 'DETACHED',
+            endDate: dueDateStr,
+            value: finalAmount,
+            dueDateDays: 3,
+            maxInstallmentCount: paymentData.installmentCount || 1,
+            externalReference: paymentData.externalReference,
+            callbackSuccessUrl: `${baseUrl}/pagamento/sucesso`,
+            callbackAutoRedirect: true,
+            customer: asaasCustomer.id
+        };
+
+        const checkout = await asaas.createCheckout(checkoutPayload);
+
         return addCorsHeaders(req, NextResponse.json({
             success: true,
             paymentId: payment.id,
-            checkoutUrl: payment.invoiceUrl,
+            checkoutId: checkout.id,
+            checkoutUrl: checkout.url,
             amount: finalAmount,
             installments: paymentData.installmentCount || 1
         }));
