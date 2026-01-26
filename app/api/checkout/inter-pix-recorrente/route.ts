@@ -1,101 +1,98 @@
-import { NextResponse } from 'next/server';
-import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
-import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { InterAPIV3 } from '@/lib/inter-api-v3';
+import { NextRequest, NextResponse } from 'next/server';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { InterAPIV3 } from '@/lib/payment/inter-api-v3';
 
-export async function OPTIONS(req: Request) {
-    const response = new NextResponse(null, { status: 200 });
-    return addCorsHeaders(req, response);
+// Helper to add CORS headers
+function addCorsHeaders(req: NextRequest, res: NextResponse) {
+    res.headers.set('Access-Control-Allow-Origin', '*');
+    res.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return res;
 }
 
-export async function POST(req: Request) {
+export async function OPTIONS(req: NextRequest) {
+    return addCorsHeaders(req, NextResponse.json({}, { status: 200 }));
+}
+
+export async function POST(req: NextRequest) {
     try {
-        const { tenant, user } = await getCurrentUserAndTenant();
-        if (!tenant || !user) {
-            return addCorsHeaders(req, NextResponse.json({ error: 'Não autenticado' }, { status: 401 }));
+        const authHeader = req.headers.get('Authorization');
+        if (!authHeader) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'Auth header missing' }, { status: 401 }));
+        }
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user }, error: authError } = await getSupabaseAdmin().auth.getUser(token);
+        if (authError || !user) {
+            console.error('[INTER PIX AUTO] Auth error:', authError);
+            return addCorsHeaders(req, NextResponse.json({ error: 'Unauthorized' }, { status: 401 }));
         }
 
-        const { plan: planSlug, addons: addonsSlugs = [], coupon, interval = 1, tempId } = await req.json();
+        const body = await req.json();
+        const { plan, addons, interval, tempId } = body;
+        const planSlug = plan || 'basic';
+        const addonsSlugs = addons || [];
 
-        // 1. Calcular Valores (Cópia da lógica do Checkout Padrão)
-        let totalPlanAmount = 0;
-        let totalAddonAmount = 0;
-        let itemNames: string[] = [];
+        // 1. Fetch Tenant & Configs
+        const { data: tenant, error: tErr } = await getSupabaseAdmin()
+            .from('tenants')
+            .select('*')
+            .eq('owner_id', user.id)
+            .single();
 
-        // 1.1 Processar Plano
+        if (tErr || !tenant) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'Tenant non-existent' }, { status: 404 }));
+        }
+
+        const { data: dbConfig } = await getSupabaseAdmin()
+            .from('payment_gateways')
+            .select('*')
+            .eq('tenant_id', tenant.id)
+            .eq('gateway_name', 'inter')
+            .single();
+
+        const cert = dbConfig?.cert_content;
+        const key = dbConfig?.key_content;
+
+        if (!cert || !key) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'Inter certificates not configured' }, { status: 400 }));
+        }
+
+        // 2. Load Plan Data to calculate values
         const { data: planData } = await getSupabaseAdmin()
-            .from('system_plans')
+            .from('plans')
             .select('*')
             .eq('slug', planSlug)
             .single();
 
-        if (!planData) throw new Error('Plano inválido');
-
-        // Para recorrência mensal, usamos o preço base sem desconto de anualidade
-        totalPlanAmount = Number(planData.price);
-        itemNames.push(planData.name);
-
-        // 1.2 Processar Add-ons
-        for (const slug of addonsSlugs) {
-            const { data: addon } = await getSupabaseAdmin()
-                .from('system_addons')
-                .select('*')
-                .eq('slug', slug)
-                .single();
-            if (!addon) continue;
-
-            totalAddonAmount += Number(addon.price);
-            itemNames.push(addon.name);
+        if (!planData) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'Invalid plan' }, { status: 400 }));
         }
 
-        let totalAmount = Number((totalPlanAmount + totalAddonAmount).toFixed(2));
-        const itemNameLabel = itemNames.join(' + ');
+        let totalAmount = Number(planData.price);
+        const { data: addonsData } = await getSupabaseAdmin()
+            .from('addons')
+            .select('*')
+            .in('slug', addonsSlugs);
 
-        // 2. Processar Cupom
-        let discountFromCoupon = 0;
+        if (addonsData) {
+            addonsData.forEach(a => totalAmount += Number(a.price));
+        }
+
+        // Apply Boas Vindas Discount (10%) for first subscription
+        const isTrialOrUnpaid = (!['active', 'active_paid', 'paid'].includes(tenant.subscription_status || '') || ['trial', 'trialing'].includes(tenant.subscription_status || ''));
+        const isFirstSub = !tenant.asaas_subscription_id || isTrialOrUnpaid;
+
+        let amount = totalAmount;
         let couponApplied = null;
-
-        if (coupon && coupon.trim() !== '') {
-            const code = String(coupon).trim().toUpperCase();
-            const { data: couponData } = await getSupabaseAdmin()
-                .from('system_coupons')
-                .select('*')
-                .eq('code', code)
-                .eq('is_active', true)
-                .single();
-
-            if (couponData) {
-                couponApplied = code;
-                if (couponData.discount_percent) {
-                    discountFromCoupon = (totalAmount * Number(couponData.discount_percent)) / 100;
-                } else if (couponData.discount_value) {
-                    discountFromCoupon = Number(couponData.discount_value);
-                }
-            }
+        if (isFirstSub) {
+            amount = totalAmount * 0.9;
+            couponApplied = 'BOAS_VINDAS_10';
         }
 
-        const amount = Math.max(0, totalAmount - discountFromCoupon);
+        const itemNameLabel = `${planData.name} + ${addonsSlugs.length} módulos`;
 
-        // 2. Configurações Inter
-        const { data: settingsData } = await getSupabaseAdmin()
-            .from('system_settings')
-            .select('value')
-            .eq('key', 'inter_config')
-            .single();
-
-        const dbConfig = settingsData?.value;
-        const clientId = dbConfig?.client_id || process.env.INTER_CLIENT_ID;
-        const clientSecret = dbConfig?.client_secret || process.env.INTER_CLIENT_SECRET || '';
-        const cert = (dbConfig?.crt || process.env.INTER_CERT_CONTENT || '').replace(/\\n/g, '\n');
-        const key = (dbConfig?.key || process.env.INTER_KEY_CONTENT || '').replace(/\\n/g, '\n');
-
-        if (!clientId || !cert || !key) {
-            return addCorsHeaders(req, NextResponse.json({ error: 'Configuração do Inter incompleta.' }, { status: 400 }));
-        }
-
+        // --- INTER API V3 ---
         const inter = new InterAPIV3({
-            clientId,
-            clientSecret,
             cert,
             key,
             accountNumber: dbConfig?.account_number || dbConfig?.accountNumber
@@ -128,10 +125,9 @@ export async function POST(req: Request) {
         console.log(`[INTER PIX AUTO] Location criada: ${locId}`);
 
         // --- PASSO 2: Criar Cobrança Imediata (Primeira Parcela com Desconto) ---
-        // TxId deve ser único, sem modificadores especiais se possível.
         const txid = tempId || new Date().getTime().toString(36) + Math.random().toString(36).substring(2, 6);
 
-        // Vencimento da imediata: agora + 24h (para dar tempo de pagar)
+        // Vencimento da imediata: agora + 24h
         const immediateDueDate = new Date();
         immediateDueDate.setSeconds(immediateDueDate.getSeconds() + 3600 * 24);
 
@@ -145,40 +141,24 @@ export async function POST(req: Request) {
                 nome: tenant.name.substring(0, 200)
             },
             valor: {
-                original: amount.toFixed(2) // Valor COM desconto (se houver)
+                original: amount.toFixed(2)
             },
             chave: pixKey,
             solicitacaoPagador: `1a Mês - ${itemNameLabel}`.substring(0, 140),
-            txid: txid,
+            txid,
             loc: {
                 id: locId
             }
         };
 
-        // NOTA: A documentação J3 diz "Cria uma cobrança imediata que será usada...".
-        // Devemos passar 'loc' aqui? O user diz: "Incluindo no body de criação os parâmetros loc e txid".
-        // Mas a criação de Cobrança Imediata V2 (/pix/v2/cob) aceita 'loc'.
-
         const cobImediata = await inter.createPixImmediateBilling(immediatePayload);
-        console.log(`[INTER PIX AUTO] Cobrança Imediata criada. TxId: ${txid}`);
+        console.log(`[INTER PIX AUTO] Passo 2: Cobrança Imediata OK. TxId: ${txid}`, JSON.stringify(cobImediata, null, 2));
 
         // --- PASSO 3: Criar Recorrência (Jornada 3) ---
-        // Valor da Recorrência: Deve ser o valor cheio ("Cobrança diferente imediata").
-        // Se aplicamos desconto de Trial ou Cupom apenas na 1a, aqui usamos o totalAmount (sem desconto).
-        // Se o desconto for permanente (ex: cupom vitalicio), usamos amount.
-        // O user disse: "10 dias antes... valor integral". Assumindo que o desconto é só na 1a (Boas vindas).
-        // Mas para simplificar e não criar surpresas, vamos manter a lógica atual de amount (que já descontou). 
-        // Se quisermos "Full Price" na sequencia, teriamos que recalcular sem desconto.
-        // VAMOS RECALCULAR O FULL PRICE SE HOUVER DESCONTO DE PRIMEIRA MENSALIDADE.
-
-        let recurrenceValue = totalAmount; // Valor sem desconto
-
-        // Se o desconto foi por cupom recorrente (ex: PARCEIRO10), mantemos o desconto.
-        // Se foi BOAS_VINDAS_10 (automático), removemos.
-        if (couponApplied === 'BOAS_VINDAS_10' || couponApplied === 'TRIAL_WELCOME_10') {
-            recurrenceValue = totalAmount; // Volta ao preço cheio
+        let recurrenceValue = totalAmount;
+        if (couponApplied === 'BOAS_VINDAS_10') {
+            recurrenceValue = totalAmount;
         } else {
-            // Se tem cupom explicito, assumimos que vale sempre (ou não? Melhor manter com desconto pra nao gerar reclamacao).
             recurrenceValue = amount;
         }
 
@@ -193,10 +173,7 @@ export async function POST(req: Request) {
                 contrato: `CTR-${tenant.id.slice(0, 8)}`
             },
             calendario: {
-                dataInicial: new Date().toISOString().split('T')[0], // Começa hoje? Ou mês que vem?
-                // J3: "Cria a cobrança recorrente referente à uma recorrência aceita."
-                // A imediata paga o mes 1. A recorrência deve começar mes 2?
-                // Se pagou hoje, próxima é daqui a 30 dias.
+                dataInicial: new Date().toISOString().split('T')[0],
                 periodicidade: 'MENSAL'
             },
             valor: {
@@ -207,28 +184,33 @@ export async function POST(req: Request) {
                 id: locId
             },
             cob: {
-                txid: txid // Vínculo com a cobrança imediata
+                txid: txid
             }
         };
 
+        console.log(`[INTER PIX AUTO] Passo 3: Criando Recorrência com locId=${locId} e txid=${txid}...`);
         const agreement = await inter.createRecurrenceAgreement(recurrencePayload);
         const idRec = agreement.idRec || agreement.identificador;
         console.log(`[INTER PIX AUTO] Recorrência criada: ${idRec}`);
 
         // --- PASSO 4: Consultar Recorrência para pegar QRCode ---
-        // J3: "Consultar a recorrência informando o idRec gerado no passo 3, e o txid gerado no passo 2. Só assim será gerado um QrCode de Jornada 3."
-
-        let pixCopiaECola = agreement.pixCopiaECola;
+        let pixCopiaECola = agreement.pixCopiaECola || (agreement as any).pixCopiaECola;
 
         if (!pixCopiaECola && idRec) {
             console.log(`[INTER PIX AUTO] Buscando detalhes da recorrência ${idRec} com txid ${txid} para obter QR Code J3...`);
             try {
                 const details = await inter.getRecurrenceAgreement(idRec, txid);
-                pixCopiaECola = details.pixCopiaECola || details.rec?.pixCopiaECola;
-                console.log(`[INTER PIX AUTO] QR Code J3 obtido: ${pixCopiaECola ? 'SIM' : 'NÃO'}`);
-            } catch (err) {
-                console.error('[INTER PIX AUTO] Falha ao buscar QR Code J3:', err);
+                console.log('[INTER PIX AUTO] Detalhes (Passo 4) recebidos:', JSON.stringify(details, null, 2));
+
+                pixCopiaECola = details.pixCopiaECola || details.rec?.pixCopiaECola || details.cobranca?.pixCopiaECola;
+                console.log(`[INTER PIX AUTO] QR Code J3 extraído: ${pixCopiaECola ? 'SUCESSO' : 'FALHA'}`);
+            } catch (err: any) {
+                console.error('[INTER PIX AUTO] Erro ao buscar QR Code J3 via GET:', err.message, err.body);
             }
+        }
+
+        if (!pixCopiaECola) {
+            console.warn('[INTER PIX AUTO] Alerta: Não foi possível obter o pixCopiaECola. Verifique se a Jornada 3 foi ativada corretamente na conta.');
         }
 
         // 4. Salvar no Banco
@@ -237,27 +219,28 @@ export async function POST(req: Request) {
             .insert({
                 tenant_id: tenant.id,
                 type: 'expense',
-                value: amount, // Valor da cobrança Imediata
+                value: amount,
                 description: `Pix Automático (Adesão) - ${itemNameLabel}`,
                 date: new Date().toISOString().split('T')[0],
                 is_paid: false,
                 metadata: {
                     is_saas_payment: true,
                     method: 'pix_automatico_j3',
-                    id_rec: agreement.idRec, // Salvar ID Recorrência
+                    id_rec: idRec,
                     txid_imediato: txid,
                     plan: planSlug,
                     addons: addonsSlugs,
                     interval: 1,
                     coupon: couponApplied,
-                    recurrence_value: recurrenceValue
+                    recurrence_value: recurrenceValue,
+                    pix_payload: pixCopiaECola
                 }
             });
 
         return addCorsHeaders(req, NextResponse.json({
             success: true,
-            idRec: agreement.idRec,
-            pixPayload: pixCopiaECola || agreement.rec?.pixCopiaECola || agreement.pixCopiaECola,
+            idRec: idRec,
+            pixPayload: pixCopiaECola,
             txid: txid,
             amount: amount,
             status: 'AGUARDANDO_PAGAMENTO'

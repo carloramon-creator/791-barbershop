@@ -925,9 +925,9 @@ export default function PlanPage() {
                             onPointerDownOutside={() => fetchInvoices()}
                             onEscapeKeyDown={() => fetchInvoices()}
                         >
-                            <div className="flex-1 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-800/50">
-                                {/* COLUNA ESQUERDA: RESUMO */}
-                                <div className="flex-1 p-6 md:p-8 space-y-6 bg-slate-950/20">
+                            <div className="flex-1 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-800/50 min-h-0 overflow-hidden">
+                                {/* COLUNA ESQUERDA: RESUMO (Mais larga) */}
+                                <div className="md:w-[57%] p-6 md:p-10 space-y-8 bg-slate-950/20 overflow-y-auto custom-scrollbar">
                                     <DialogHeader className="p-0 text-left">
                                         <DialogTitle className="font-black text-2xl tracking-tighter uppercase text-slate-100">Contratação</DialogTitle>
                                         <DialogDescription className="text-slate-500 text-[10px] font-bold uppercase tracking-widest leading-none">
@@ -958,9 +958,9 @@ export default function PlanPage() {
                                             </div>
                                         )}
 
-                                        <div className="space-y-2">
+                                        <div className="space-y-3">
                                             <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Módulos Extras</span>
-                                            <div className="grid grid-cols-2 gap-2">
+                                            <div className="grid grid-cols-2 gap-2.5">
                                                 {(() => {
                                                     const filtered = dynamicAddons.filter(addon => {
                                                         const isPaidActive = subscriptionStatus === 'active' && !!tenantObject?.asaas_subscription_id;
@@ -981,14 +981,14 @@ export default function PlanPage() {
                                                                 key={addon.slug}
                                                                 onClick={() => toggleAddon(addon.slug)}
                                                                 className={cn(
-                                                                    "flex items-center gap-2 p-2 rounded-xl border transition-all truncate text-left",
+                                                                    "flex items-center gap-2.5 p-3 rounded-2xl border transition-all truncate text-left",
                                                                     isSelected
-                                                                        ? "bg-amber-500/10 border-amber-500/30 text-slate-100"
+                                                                        ? "bg-amber-500/10 border-amber-500/50 text-slate-100 shadow-[0_0_15px_rgba(245,158,11,0.05)]"
                                                                         : "bg-slate-900/50 border-slate-800/50 text-slate-500 hover:border-slate-700"
                                                                 )}
                                                             >
-                                                                <div className={cn("w-2 h-2 rounded-full", isSelected ? "bg-amber-500" : "bg-slate-800")} />
-                                                                <span className="text-[9px] font-bold uppercase truncate">{addon.name.replace('Módulo ', '')}</span>
+                                                                <div className={cn("w-2 h-2 rounded-full", isSelected ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" : "bg-slate-800")} />
+                                                                <span className="text-[10px] font-bold uppercase truncate">{addon.name.replace('Módulo ', '')}</span>
                                                             </button>
                                                         );
                                                     });
@@ -996,138 +996,150 @@ export default function PlanPage() {
                                             </div>
                                         </div>
 
-                                        <div className="pt-4 border-t border-slate-800/50 flex justify-between items-center">
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest leading-none">Investimento Total</span>
-                                                <span className="text-[9px] text-slate-600 font-bold uppercase">({selectedInterval} {selectedInterval === 1 ? 'mês' : 'meses'})</span>
+                                        <div className="pt-8 border-t border-slate-800/50 flex justify-between items-end gap-6 w-full">
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] leading-none mb-2 whitespace-nowrap">Investimento Total</span>
+                                                <span className="text-[10px] text-slate-600 font-bold uppercase bg-slate-950/50 px-2 py-0.5 rounded-md border border-slate-800/50 w-fit">
+                                                    {selectedInterval} {selectedInterval === 1 ? 'mês' : 'meses'}
+                                                </span>
                                             </div>
-                                            <span className="text-3xl font-black text-white italic tracking-tighter">
-                                                R$ {(() => {
+                                            <div className="flex flex-col items-end shrink-0">
+                                                <span className="text-4xl md:text-5xl font-black text-white italic tracking-tighter leading-none">
+                                                    R$ {(() => {
+                                                        const plan = dynamicPlans.find(p => p.slug === selectedPlan);
+                                                        const planPrice = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
+                                                        let addonsPrice = 0;
+                                                        selectedAddonsSlugs.forEach(slug => {
+                                                            const addon = dynamicAddons.find(a => a.slug === slug);
+                                                            if (addon) addonsPrice += Number(addon.price) * selectedInterval;
+                                                        });
+                                                        return (planPrice + addonsPrice).toFixed(2).replace('.', ',');
+                                                    })()}
+                                                </span>
+                                            </div>
+
+                                            {/* DESCONTO BOAS VINDAS */}
+                                            {(() => {
+                                                const isTrialOrUnpaid = (!['active', 'active_paid', 'paid'].includes(subscriptionStatus || '') || ['trial', 'trialing'].includes(subscriptionStatus || ''));
+                                                const isFirstSub = !tenantObject?.asaas_subscription_id || isTrialOrUnpaid;
+                                                if (isFirstSub && (selectedPlan || selectedAddonsSlugs.length > 0)) {
                                                     const plan = dynamicPlans.find(p => p.slug === selectedPlan);
-                                                    const planPrice = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
-                                                    let addonsPrice = 0;
+                                                    const planTotal = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
+                                                    let addonsTotal = 0;
                                                     selectedAddonsSlugs.forEach(slug => {
                                                         const addon = dynamicAddons.find(a => a.slug === slug);
-                                                        if (addon) addonsPrice += Number(addon.price) * selectedInterval;
+                                                        if (addon) addonsTotal += Number(addon.price) * selectedInterval;
                                                     });
-                                                    return (planPrice + addonsPrice).toFixed(2).replace('.', ',');
-                                                })()}
-                                            </span>
+                                                    const discounted = (planTotal + addonsTotal) * 0.9;
+                                                    return (
+                                                        <div className="bg-emerald-500/10 border border-emerald-500/20 p-2 rounded-xl flex items-center justify-between">
+                                                            <span className="text-emerald-500 font-black text-[9px] uppercase tracking-wider">Boas-vindas (10% OFF)</span>
+                                                            <span className="text-xs font-black text-emerald-400">R$ {discounted.toFixed(2).replace('.', ',')}</span>
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
                                         </div>
-
-                                        {/* DESCONTO BOAS VINDAS */}
-                                        {(() => {
-                                            const isTrialOrUnpaid = (!['active', 'active_paid', 'paid'].includes(subscriptionStatus || '') || ['trial', 'trialing'].includes(subscriptionStatus || ''));
-                                            const isFirstSub = !tenantObject?.asaas_subscription_id || isTrialOrUnpaid;
-                                            if (isFirstSub && (selectedPlan || selectedAddonsSlugs.length > 0)) {
-                                                const plan = dynamicPlans.find(p => p.slug === selectedPlan);
-                                                const planTotal = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
-                                                let addonsTotal = 0;
-                                                selectedAddonsSlugs.forEach(slug => {
-                                                    const addon = dynamicAddons.find(a => a.slug === slug);
-                                                    if (addon) addonsTotal += Number(addon.price) * selectedInterval;
-                                                });
-                                                const discounted = (planTotal + addonsTotal) * 0.9;
-                                                return (
-                                                    <div className="bg-emerald-500/10 border border-emerald-500/20 p-2 rounded-xl flex items-center justify-between">
-                                                        <span className="text-emerald-500 font-black text-[9px] uppercase tracking-wider">Boas-vindas (10% OFF)</span>
-                                                        <span className="text-xs font-black text-emerald-400">R$ {discounted.toFixed(2).replace('.', ',')}</span>
+                                    </div>
+                                    {/* COLUNA DIREITA: PAGAMENTO */}
+                                    <div className="md:w-[43%] p-6 md:p-10 space-y-8 bg-slate-900 overflow-y-auto custom-scrollbar">
+                                        {!pixData && !boletoData && !pendingData ? (
+                                            <>
+                                                <div className="space-y-6">
+                                                    <Label className="text-[10px] text-slate-500 uppercase tracking-widest font-black ml-1">Forma de Pagamento</Label>
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        <button
+                                                            onClick={() => setPaymentMethod('card')}
+                                                            className={cn(
+                                                                "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2 h-24",
+                                                                paymentMethod === 'card' ? "border-blue-500 bg-blue-500/10 text-slate-100 shadow-[0_0_20px_rgba(59,130,246,0.1)]" : "border-slate-800 bg-slate-950 text-slate-600 hover:border-slate-700"
+                                                            )}
+                                                        >
+                                                            <CreditCard className="w-5 h-5" />
+                                                            <span className="text-[10px] font-black uppercase">Cartão</span>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setPaymentMethod('pix')}
+                                                            className={cn(
+                                                                "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2 h-24",
+                                                                paymentMethod === 'pix' ? "border-emerald-500 bg-emerald-500/10 text-slate-100 shadow-[0_0_20px_rgba(16,185,129,0.1)]" : "border-slate-800 bg-slate-950 text-slate-600 hover:border-slate-700"
+                                                            )}
+                                                        >
+                                                            <Zap className="w-5 h-5" />
+                                                            <span className="text-[10px] font-black uppercase">Pix</span>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setPaymentMethod('boleto-inter')}
+                                                            className={cn(
+                                                                "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2 h-24",
+                                                                paymentMethod === 'boleto-inter' ? "border-blue-400 bg-blue-400/10 text-slate-100 shadow-[0_0_20px_rgba(96,165,250,0.1)]" : "border-slate-800 bg-slate-950 text-slate-600 hover:border-slate-700"
+                                                            )}
+                                                        >
+                                                            <FileText className="w-5 h-5" />
+                                                            <span className="text-[10px] font-black uppercase">Boleto</span>
+                                                        </button>
                                                     </div>
-                                                );
-                                            }
-                                            return null;
-                                        })()}
+
+                                                    <div className="space-y-1">
+                                                        <Label className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Cupom de Desconto</Label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="CÓDIGO DO CUPOM"
+                                                            value={couponCode}
+                                                            onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setError(null); }}
+                                                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder:text-slate-700 focus:border-blue-500 transition-all outline-none"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="pt-2 space-y-3">
+                                                    {error && <p className="text-[10px] font-bold text-red-500 uppercase text-center animate-pulse">{error}</p>}
+                                                    <div className="flex flex-col gap-2">
+                                                        <Button onClick={handleChangePlan} disabled={saving} className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-tight shadow-xl shadow-blue-600/20">
+                                                            {saving ? 'Processando...' : 'Finalizar e Ativar'}
+                                                        </Button>
+                                                        <Button variant="ghost" onClick={() => setOpenDialog(false)} className="text-slate-500 text-[10px] uppercase font-bold hover:text-slate-300">
+                                                            Voltar
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="h-full flex flex-col justify-center">
+                                                {pendingData && (
+                                                    <div className="text-center space-y-4">
+                                                        <div className="bg-amber-500/10 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto border border-amber-500/20">
+                                                            <Activity className="animate-spin text-amber-500 w-8 h-8" />
+                                                        </div>
+                                                        <h3 className="text-xl font-bold text-slate-100">Gerando Cobrança...</h3>
+                                                        <p className="text-slate-400 text-xs px-4">{pendingData.message}</p>
+                                                    </div>
+                                                )}
+
+                                                {pixData && !pendingData && (
+                                                    <div className="flex flex-col items-center space-y-4">
+                                                        <div className="text-center bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl w-full">
+                                                            <p className="text-[10px] text-emerald-500 uppercase font-black tracking-widest">Valor do Pix</p>
+                                                            <p className="text-3xl font-black text-slate-100">R$ {(pixData.amount || 0).toFixed(2).replace('.', ',')}</p>
+                                                        </div>
+                                                        <div className="bg-white p-2 rounded-xl border-4 border-emerald-500 shadow-xl">
+                                                            <QRCodeCanvas value={pixData.pixPayload} size={150} level="H" includeMargin={true} />
+                                                        </div>
+                                                        <div className="w-full space-y-1">
+                                                            <Label className="text-[10px] text-slate-600 uppercase font-black">Copia e Cola</Label>
+                                                            <div className="flex gap-2">
+                                                                <input readOnly value={pixData.pixPayload} className="flex-1 bg-slate-950 border border-slate-800 rounded px-3 py-2 text-[9px] font-mono text-slate-500" />
+                                                                <Button size="sm" variant="outline" className="h-auto border-slate-700 text-xs" onClick={() => { navigator.clipboard.writeText(pixData.pixPayload); alert('PIX Copiado!'); }}>Copiar</Button>
+                                                            </div>
+                                                        </div>
+                                                        <Button onClick={() => setOpenDialog(false)} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold uppercase text-xs h-12 rounded-xl tracking-widest">Concluído</Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-
-                                {/* COLUNA DIREITA: PAGAMENTO */}
-                                <div className="flex-1 p-6 md:p-8 space-y-6">
-                                    {!pixData && !boletoData && !pendingData ? (
-                                        <>
-                                            <div className="space-y-4">
-                                                <Label className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Pagamento</Label>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <button
-                                                        onClick={() => setPaymentMethod('card')}
-                                                        className={cn(
-                                                            "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2",
-                                                            paymentMethod === 'card' ? "border-blue-500 bg-blue-500/10 text-slate-100" : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
-                                                        )}
-                                                    >
-                                                        <CreditCard className="w-5 h-5" />
-                                                        <span className="text-[10px] font-black uppercase">Cartão</span>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setPaymentMethod('pix')}
-                                                        className={cn(
-                                                            "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2",
-                                                            paymentMethod === 'pix' ? "border-emerald-500 bg-emerald-500/10 text-slate-100" : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
-                                                        )}
-                                                    >
-                                                        <Zap className="w-5 h-5" />
-                                                        <span className="text-[10px] font-black uppercase">Pix</span>
-                                                    </button>
-                                                </div>
-
-                                                <div className="space-y-1">
-                                                    <Label className="text-[10px] text-slate-500 uppercase tracking-widest font-black">Cupom de Desconto</Label>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="CÓDIGO DO CUPOM"
-                                                        value={couponCode}
-                                                        onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setError(null); }}
-                                                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder:text-slate-700 focus:border-blue-500 transition-all outline-none"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="pt-2 space-y-3">
-                                                {error && <p className="text-[10px] font-bold text-red-500 uppercase text-center animate-pulse">{error}</p>}
-                                                <div className="flex flex-col gap-2">
-                                                    <Button onClick={handleChangePlan} disabled={saving} className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-tight shadow-xl shadow-blue-600/20">
-                                                        {saving ? 'Processando...' : 'Finalizar e Ativar'}
-                                                    </Button>
-                                                    <Button variant="ghost" onClick={() => setOpenDialog(false)} className="text-slate-500 text-[10px] uppercase font-bold hover:text-slate-300">
-                                                        Voltar
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="h-full flex flex-col justify-center">
-                                            {pendingData && (
-                                                <div className="text-center space-y-4">
-                                                    <div className="bg-amber-500/10 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto border border-amber-500/20">
-                                                        <Activity className="animate-spin text-amber-500 w-8 h-8" />
-                                                    </div>
-                                                    <h3 className="text-xl font-bold text-slate-100">Gerando Cobrança...</h3>
-                                                    <p className="text-slate-400 text-xs px-4">{pendingData.message}</p>
-                                                </div>
-                                            )}
-
-                                            {pixData && !pendingData && (
-                                                <div className="flex flex-col items-center space-y-4">
-                                                    <div className="text-center bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl w-full">
-                                                        <p className="text-[10px] text-emerald-500 uppercase font-black tracking-widest">Valor do Pix</p>
-                                                        <p className="text-3xl font-black text-slate-100">R$ {(pixData.amount || 0).toFixed(2).replace('.', ',')}</p>
-                                                    </div>
-                                                    <div className="bg-white p-2 rounded-xl border-4 border-emerald-500 shadow-xl">
-                                                        <QRCodeCanvas value={pixData.pixPayload} size={150} level="H" includeMargin={true} />
-                                                    </div>
-                                                    <div className="w-full space-y-1">
-                                                        <Label className="text-[10px] text-slate-600 uppercase font-black">Copia e Cola</Label>
-                                                        <div className="flex gap-2">
-                                                            <input readOnly value={pixData.pixPayload} className="flex-1 bg-slate-950 border border-slate-800 rounded px-3 py-2 text-[9px] font-mono text-slate-500" />
-                                                            <Button size="sm" variant="outline" className="h-auto border-slate-700 text-xs" onClick={() => { navigator.clipboard.writeText(pixData.pixPayload); alert('PIX Copiado!'); }}>Copiar</Button>
-                                                        </div>
-                                                    </div>
-                                                    <Button onClick={() => setOpenDialog(false)} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold uppercase text-xs h-10">Fechar</Button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
                         </DialogContent>
                     </Dialog>
 
@@ -1401,10 +1413,9 @@ export default function PlanPage() {
                                 </div>
                             )}
                         </div>
-                    </div >
+                    </div>
                 </>
-            )
-            }
+            )}
 
             {/* BARRA DE SELEÇÃO FIXA NO RODAPÉ (ESCANDALOSA) */}
             {
@@ -1500,38 +1511,39 @@ export default function PlanPage() {
                             </Button>
                         </div>
                     </div>
-                )
-            }
+                )}
 
             {/* Modal de Checkout Integrado do Asaas */}
-            {
-                checkoutUrl && (
-                    <AsaasCheckoutModal
-                        checkoutUrl={checkoutUrl}
-                        isOpen={showCheckoutModal}
-                        boletoData={boletoData ? {
-                            identificationField: boletoData.linhaDigitavel,
-                            barCode: boletoData.codigoBarras,
-                            value: boletoData.amount || 0,
-                            dueDate: (boletoData as any).dueDate,
-                            bankSlipUrl: boletoData.pdfUrl
-                        } : null}
-                        pixData={pixData ? {
-                            encodedImage: (pixData as any).encodedImage,
-                            payload: pixData.pixPayload,
-                            expirationDate: pixData.expiresAt
-                        } : null}
-                        onClose={() => {
-                            setShowCheckoutModal(false);
-                            setCheckoutUrl(null);
-                            setBoletoData(null);
-                            setPixData(null);
-                            fetchCurrentPlan();
-                            fetchInvoices();
-                        }}
-                    />
-                )
-            }
-        </div>
+            {checkoutUrl && (
+                <AsaasCheckoutModal
+                    checkoutUrl={checkoutUrl}
+                    isOpen={showCheckoutModal}
+                    boletoData={boletoData ? {
+                        identificationField: boletoData.linhaDigitavel,
+                        barCode: boletoData.codigoBarras,
+                        value: boletoData.amount || 0,
+                        dueDate: (boletoData as any).dueDate,
+                        bankSlipUrl: boletoData.pdfUrl
+                    } : null}
+                    pixData={pixData ? {
+                        encodedImage: (pixData as any).encodedImage,
+                        payload: pixData.pixPayload,
+                        expirationDate: pixData.expiresAt
+                    } : null}
+                    onClose={() => {
+                        setShowCheckoutModal(false);
+                        setCheckoutUrl(null);
+                        setBoletoData(null);
+                        setPixData(null);
+                        fetchCurrentPlan();
+                        fetchInvoices();
+                    }}
+                />
+            )}
+        </Dialog>
+                </>
+            )
+}
+        </div >
     );
 }
