@@ -24,7 +24,8 @@ import {
     Store,
     Ticket,
     Database,
-    FileText
+    FileText,
+    ShoppingCart
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -99,7 +100,8 @@ export function Sidebar() {
             const allowedByPlan = planPermissions.includes(item.permission);
             const allowedByAddon =
                 (item.permission === 'finance' && activeAddons.includes('finance_module')) ||
-                ((item.permission === 'inventory' || item.permission === 'products') && activeAddons.includes('inventory'));
+                ((item.permission === 'inventory' || item.permission === 'products') && activeAddons.includes('inventory')) ||
+                (item.permission === 'sales' && tenant?.plan === 'premium');
 
             if (!allowedByPlan && !allowedByAddon) return false;
         }
@@ -129,6 +131,7 @@ export function Sidebar() {
             items: [
                 { name: 'Produtos', href: '/produtos', icon: ShoppingBag, roles: ['owner', 'staff'], permission: 'products' },
                 { name: 'Estoque', href: '/estoque', icon: Briefcase, roles: ['owner', 'staff'], permission: 'inventory', module: 'inventory' },
+                { name: 'Vendas', href: '/vendas', icon: ShoppingCart, roles: ['owner', 'staff'], permission: 'sales' },
                 { name: 'Financeiro', href: '/financeiro', icon: BarChart3, roles: ['owner'], permission: 'finance', module: 'finance' },
             ]
         },
