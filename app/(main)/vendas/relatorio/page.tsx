@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar, DollarSign, FileText, Loader2, Printer } from 'lucide-react';
+import { ReportHeader, ReportFooter } from '@/components/reports/report-header';
 
 const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -122,6 +123,10 @@ export default function RelatorioVendasPage() {
             {/* Relatório */}
             {relatorio && (
                 <div className="space-y-6 print:bg-white print:text-black">
+                    <div className="hidden print:block">
+                        <ReportHeader />
+                    </div>
+
                     {/* Lista Detalhada de Transações */}
                     <Card className="bg-slate-900 border-slate-800 print:border print:border-black">
                         <CardHeader className="flex flex-row items-center justify-between">
@@ -249,6 +254,10 @@ export default function RelatorioVendasPage() {
                                 </div>
                             </CardContent>
                         </Card>
+                    </div>
+
+                    <div className="hidden print:block">
+                        <ReportFooter />
                     </div>
                 </div>
             )}
