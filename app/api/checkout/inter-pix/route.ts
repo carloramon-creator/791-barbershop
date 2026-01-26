@@ -204,58 +204,9 @@ export async function POST(req: Request) {
 
         console.log('[SAAS PIX] Resposta inicial:', { codigoSolicitacao, hasPix: !!pixCopiaECola });
 
-        // Se for assíncrono ou vier sem o pixCopiaECola, iniciamos busca
-        let isReady = !!pixCopiaECola;
-
-        if (!isReady && codigoSolicitacao) {
-            console.log(`[SAAS PIX] Cobrança assíncrona. Iniciando busca (Ticket: ${codigoSolicitacao})...`);
-            const maxRetries = 2; // Reduzido de 5 para 2 para evitar timeout
-            const delays = [2000, 3000]; // Delays mais curtos
-
-            for (let attempt = 0; attempt < maxRetries; attempt++) {
-                console.log(`[SAAS PIX] Tentativa ${attempt + 1}/${maxRetries} - Aguardando ${delays[attempt]}ms...`);
-                await new Promise(r => setTimeout(r, delays[attempt]));
-
-                try {
-                    let found: any = null;
-
-                    // Estratégia A: Consulta por Solicitação
-                    try {
-                        const solRes = await inter.getBillingBySolicitacao(codigoSolicitacao);
-                        const possiblePix = solRes.pix;
-                        if (possiblePix?.pixCopiaECola) {
-                            found = { ...solRes.cobranca, pixCopiaECola: possiblePix.pixCopiaECola };
-                        }
-                    } catch (e: any) {
-                        console.log('[SAAS PIX] Estratégia A falhou, pulando para B.');
-                    }
-
-                    // Estratégia B: Busca na Lista (+/- 1 dia)
-                    if (!found) {
-                        const now = new Date();
-                        const dInit = new Date(now); dInit.setDate(dInit.getDate() - 1);
-                        const dEnd = new Date(now); dEnd.setDate(dEnd.getDate() + 1);
-
-                        const listRes = await inter.listBillings(
-                            dInit.toISOString().split('T')[0],
-                            dEnd.toISOString().split('T')[0]
-                        );
-                        const items = listRes.cobrancas || listRes.content || [];
-                        found = items.find((it: any) => it.seuNumero === seuNumero);
-                    }
-
-                    if (found && (found.pixCopiaECola || found.pix?.pixCopiaECola)) {
-                        interRes = found;
-                        pixCopiaECola = found.pixCopiaECola || found.pix?.pixCopiaECola;
-                        isReady = true;
-                        console.log('[SAAS PIX] ✅ Pix localizado!');
-                        break;
-                    }
-                } catch (e: any) {
-                    console.error(`[SAAS PIX] Erro tentativa ${attempt + 1}:`, e.message);
-                }
-            }
-        }
+        // IMPORTANTE: Não fazemos polling aqui para evitar timeout em serverless
+        // O webhook do Inter vai notificar quando o PIX estiver pronto
+        const isReady = !!pixCopiaECola;
 
         // 5. Salvar registro local
         const { error: insertError } = await getSupabaseAdmin()
@@ -299,10 +250,11 @@ export async function POST(req: Request) {
             }));
         }
 
+        // Retorna pending - o webhook vai processar quando estiver pronto
         return addCorsHeaders(req, NextResponse.json({
             success: true,
             pending: true,
-            message: 'O Pix está sendo processado pelo banco.',
+            message: 'PIX está sendo gerado pelo banco. Você receberá uma notificação quando estiver pronto.',
             seu_numero: seuNumero,
             amount: amount
         }));
