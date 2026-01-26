@@ -857,11 +857,11 @@ export default function PlanPage() {
                         }
                     }}>
                         <DialogContent
-                            className="border-slate-800 light:border-slate-200 bg-slate-900 light:bg-white text-slate-100 light:text-slate-900 max-w-md rounded-2xl md:rounded-3xl max-h-[95vh] overflow-y-auto"
+                            className="border-slate-800 light:border-slate-200 bg-slate-900 light:bg-white text-slate-100 light:text-slate-900 max-w-md rounded-2xl md:rounded-3xl max-h-[90vh] overflow-hidden flex flex-col"
                             onPointerDownOutside={() => fetchInvoices()}
                             onEscapeKeyDown={() => fetchInvoices()}
                         >
-                            <DialogHeader>
+                            <DialogHeader className="flex-shrink-0">
                                 <DialogTitle className="font-black text-xl md:text-2xl tracking-tighter uppercase">Confirmar Contratação</DialogTitle>
                                 <DialogDescription className="text-slate-400 light:text-slate-500 font-bold">
                                     <div className="flex flex-col gap-3">
@@ -1003,212 +1003,213 @@ export default function PlanPage() {
                                 </DialogDescription>
                             </DialogHeader>
 
+                            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                                {!pixData && !boletoData && !pendingData && (
+                                    <>
+                                        <Label className="text-xs text-slate-500 uppercase tracking-wider">Forma de Pagamento</Label>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                            <button
+                                                onClick={() => setPaymentMethod('card')}
+                                                className={cn(
+                                                    "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
+                                                    paymentMethod === 'card'
+                                                        ? "border-amber-500 bg-amber-500/5 text-slate-100"
+                                                        : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
+                                                )}
+                                            >
+                                                <CreditCard className="w-5 h-5" />
+                                                <span className="text-[10px] font-black uppercase">Cartão</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setPaymentMethod('pix')}
+                                                className={cn(
+                                                    "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
+                                                    paymentMethod === 'pix'
+                                                        ? "border-emerald-500 bg-emerald-500/5 text-slate-100"
+                                                        : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
+                                                )}
+                                            >
+                                                <span className="text-lg font-black leading-none">PIX</span>
+                                                <span className="text-[10px] font-black uppercase">Instantâneo</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setPaymentMethod('boleto-inter')}
+                                                className={cn(
+                                                    "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
+                                                    paymentMethod === 'boleto-inter'
+                                                        ? "border-blue-500 bg-blue-500/5 text-slate-100"
+                                                        : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
+                                                )}
+                                            >
+                                                <FileText className="w-5 h-5" />
+                                                <span className="text-[10px] font-black uppercase">Boleto</span>
+                                            </button>
+                                        </div>
 
-                            {!pixData && !boletoData && !pendingData && (
-                                <div className="py-4 space-y-4">
-                                    <Label className="text-xs text-slate-500 uppercase tracking-wider">Forma de Pagamento</Label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                        <button
-                                            onClick={() => setPaymentMethod('card')}
-                                            className={cn(
-                                                "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
-                                                paymentMethod === 'card'
-                                                    ? "border-amber-500 bg-amber-500/5 text-slate-100"
-                                                    : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
-                                            )}
-                                        >
-                                            <CreditCard className="w-5 h-5" />
-                                            <span className="text-[10px] font-black uppercase">Cartão</span>
-                                        </button>
-                                        <button
-                                            onClick={() => setPaymentMethod('pix')}
-                                            className={cn(
-                                                "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
-                                                paymentMethod === 'pix'
-                                                    ? "border-emerald-500 bg-emerald-500/5 text-slate-100"
-                                                    : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
-                                            )}
-                                        >
-                                            <span className="text-lg font-black leading-none">PIX</span>
-                                            <span className="text-[10px] font-black uppercase">Instantâneo</span>
-                                        </button>
-                                        <button
-                                            onClick={() => setPaymentMethod('boleto-inter')}
-                                            className={cn(
-                                                "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
-                                                paymentMethod === 'boleto-inter'
-                                                    ? "border-blue-500 bg-blue-500/5 text-slate-100"
-                                                    : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
-                                            )}
-                                        >
-                                            <FileText className="w-5 h-5" />
-                                            <span className="text-[10px] font-black uppercase">Boleto</span>
-                                        </button>
-                                    </div>
+                                        {/* SELETOR DE PARCELAS REMOVIDO A PEDIDO DO USUÁRIO - O CLIENTE ESCOLHE NO ASAAS */}
 
-                                    {/* SELETOR DE PARCELAS REMOVIDO A PEDIDO DO USUÁRIO - O CLIENTE ESCOLHE NO ASAAS */}
-
-                                    <div className="space-y-2 pt-2">
-                                        <Label className="text-xs text-slate-500 uppercase tracking-wider">Possui um cupom?</Label>
-                                        <input
-                                            type="text"
-                                            placeholder="INSIRA SEU CUPOM"
-                                            value={couponCode}
-                                            onChange={(e) => {
-                                                setCouponCode(e.target.value.toUpperCase());
-                                                setError(null);
-                                            }}
-                                            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:border-amber-500 outline-none transition-all"
-                                        />
-                                        {paymentMethod === 'boleto-inter' && !tenantHasDocument && (
-                                            <p className="text-[10px] font-bold text-red-500 uppercase tracking-tight mt-2 animate-pulse leading-tight">
-                                                Para gerar boleto, é necessário cadastrar o CPF ou CNPJ em Configurações &gt; Barbearia.
-                                            </p>
-                                        )}
-                                        {error && (
-                                            <p className="text-[10px] font-bold text-red-500 uppercase tracking-tight mt-1 animate-pulse">
-                                                {error}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {pendingData && (
-                                <div className="py-8 text-center space-y-4">
-                                    <div className="bg-amber-500/10 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto border border-amber-500/20">
-                                        <Activity className="animate-spin text-amber-500 w-8 h-8" />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-slate-100">Gerando Cobrança...</h3>
-                                    <p className="text-slate-400 text-sm px-4">{pendingData.message || 'O banco está processando o documento. Isso pode levar alguns minutos devido à alta demanda.'}</p>
-                                    <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs text-slate-500 mt-4 mx-4">
-                                        Fique tranquilo, a cobrança já foi registrada. Assim que o banco liberar o PDF/QR Code, ele aparecerá aqui ou no seu e-mail.
-                                    </div>
-                                </div>
-                            )}
-
-                            {pixData && !pendingData && (
-                                <div className="py-4 flex flex-col items-center space-y-4">
-                                    <div className="text-center bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl w-full">
-                                        <p className="text-[10px] text-emerald-500 uppercase font-black tracking-widest">Valor do Pix</p>
-                                        <p className="text-2xl font-black text-slate-100">
-                                            R$ {(pixData.amount || 0).toFixed(2).replace('.', ',')}
-                                        </p>
-                                    </div>
-
-                                    <p className="text-center text-xs text-slate-400">
-                                        Escaneie o código abaixo para pagar via Pix. O acesso é liberado na hora!
-                                    </p>
-
-                                    <div className="bg-white p-3 rounded-xl border-4 border-emerald-500 shadow-xl">
-                                        <QRCodeCanvas
-                                            value={pixData.pixPayload}
-                                            size={160}
-                                            level="H"
-                                            includeMargin={true}
-                                        />
-                                    </div>
-
-                                    <div className="w-full space-y-2">
-                                        <Label className="text-[10px] text-slate-500 uppercase font-black">Copia e Cola</Label>
-                                        <div className="flex gap-2">
+                                        <div className="space-y-2 pt-2">
+                                            <Label className="text-xs text-slate-500 uppercase tracking-wider">Possui um cupom?</Label>
                                             <input
-                                                readOnly
-                                                value={pixData.pixPayload}
-                                                className="flex-1 bg-slate-950 border border-slate-800 rounded px-3 py-2 text-[10px] font-mono text-slate-400"
+                                                type="text"
+                                                placeholder="INSIRA SEU CUPOM"
+                                                value={couponCode}
+                                                onChange={(e) => {
+                                                    setCouponCode(e.target.value.toUpperCase());
+                                                    setError(null);
+                                                }}
+                                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:border-amber-500 outline-none transition-all"
                                             />
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="border-slate-700"
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(pixData.pixPayload);
-                                                    alert('Copiado!');
-                                                }}
-                                            >
-                                                Copiar
-                                            </Button>
+                                            {paymentMethod === 'boleto-inter' && !tenantHasDocument && (
+                                                <p className="text-[10px] font-bold text-red-500 uppercase tracking-tight mt-2 animate-pulse leading-tight">
+                                                    Para gerar boleto, é necessário cadastrar o CPF ou CNPJ em Configurações &gt; Barbearia.
+                                                </p>
+                                            )}
+                                            {error && (
+                                                <p className="text-[10px] font-bold text-red-500 uppercase tracking-tight mt-1 animate-pulse">
+                                                    {error}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
-
-                                    {pixData.pdfUrl && (
-                                        <Button
-                                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-tight py-6 rounded-xl"
-                                            onClick={() => window.open(pixData.pdfUrl, '_blank')}
-                                        >
-                                            <FileCheck className="w-5 h-5 mr-2" />
-                                            Baixar Comprovante / PDF
-                                        </Button>
-                                    )}
-                                </div>
                             )}
 
-                            {boletoData && !pendingData && (
-                                <div className="py-4 space-y-4">
-                                    <div className="bg-blue-600/10 border border-blue-500/20 p-4 rounded-2xl text-center space-y-2">
-                                        <div className="w-12 h-12 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                                            <FileText className="w-6 h-6 text-blue-500" />
+                                {pendingData && (
+                                    <div className="py-8 text-center space-y-4">
+                                        <div className="bg-amber-500/10 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto border border-amber-500/20">
+                                            <Activity className="animate-spin text-amber-500 w-8 h-8" />
                                         </div>
-                                        <h3 className="font-black text-slate-100 uppercase tracking-tight text-lg">Boleto Registrado</h3>
-                                        <p className="text-xs text-slate-400">Pague agora pelo seu banco e libere seu acesso.</p>
-
-                                        <div className="pt-4 flex justify-around border-t border-blue-500/10">
-                                            <div className="text-center">
-                                                <p className="text-[10px] text-slate-500 uppercase font-bold">Valor</p>
-                                                <p className="text-sm font-black text-slate-100">R$ {(boletoData.amount || 0).toFixed(2).replace('.', ',')}</p>
-                                            </div>
-                                            <div className="text-center">
-                                                <p className="text-[10px] text-slate-500 uppercase font-bold">Vencimento</p>
-                                                <p className="text-sm font-black text-slate-100">{new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}</p>
-                                            </div>
+                                        <h3 className="text-xl font-bold text-slate-100">Gerando Cobrança...</h3>
+                                        <p className="text-slate-400 text-sm px-4">{pendingData.message || 'O banco está processando o documento. Isso pode levar alguns minutos devido à alta demanda.'}</p>
+                                        <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs text-slate-500 mt-4 mx-4">
+                                            Fique tranquilo, a cobrança já foi registrada. Assim que o banco liberar o PDF/QR Code, ele aparecerá aqui ou no seu e-mail.
                                         </div>
                                     </div>
+                                )}
 
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Código de Barras / Linha Digitável</Label>
-                                        <div className="flex gap-2">
-                                            <div className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-[11px] font-mono text-blue-400 break-all leading-relaxed">
-                                                {boletoData.linhaDigitavel}
+                                {pixData && !pendingData && (
+                                    <div className="py-4 flex flex-col items-center space-y-4">
+                                        <div className="text-center bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl w-full">
+                                            <p className="text-[10px] text-emerald-500 uppercase font-black tracking-widest">Valor do Pix</p>
+                                            <p className="text-2xl font-black text-slate-100">
+                                                R$ {(pixData.amount || 0).toFixed(2).replace('.', ',')}
+                                            </p>
+                                        </div>
+
+                                        <p className="text-center text-xs text-slate-400">
+                                            Escaneie o código abaixo para pagar via Pix. O acesso é liberado na hora!
+                                        </p>
+
+                                        <div className="bg-white p-3 rounded-xl border-4 border-emerald-500 shadow-xl">
+                                            <QRCodeCanvas
+                                                value={pixData.pixPayload}
+                                                size={160}
+                                                level="H"
+                                                includeMargin={true}
+                                            />
+                                        </div>
+
+                                        <div className="w-full space-y-2">
+                                            <Label className="text-[10px] text-slate-500 uppercase font-black">Copia e Cola</Label>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    readOnly
+                                                    value={pixData.pixPayload}
+                                                    className="flex-1 bg-slate-950 border border-slate-800 rounded px-3 py-2 text-[10px] font-mono text-slate-400"
+                                                />
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="border-slate-700"
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(pixData.pixPayload);
+                                                        alert('Copiado!');
+                                                    }}
+                                                >
+                                                    Copiar
+                                                </Button>
                                             </div>
+                                        </div>
+
+                                        {pixData.pdfUrl && (
                                             <Button
-                                                size="icon"
-                                                variant="outline"
-                                                className="h-auto border-slate-800 bg-slate-950 hover:bg-slate-900 group"
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(boletoData.linhaDigitavel);
-                                                    alert('Linha digitável copiada!');
-                                                }}
+                                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-tight py-6 rounded-xl"
+                                                onClick={() => window.open(pixData.pdfUrl, '_blank')}
                                             >
-                                                <Copy className="w-4 h-4 text-slate-500 group-hover:text-blue-500" />
+                                                <FileCheck className="w-5 h-5 mr-2" />
+                                                Baixar Comprovante / PDF
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
+
+                                {boletoData && !pendingData && (
+                                    <div className="py-4 space-y-4">
+                                        <div className="bg-blue-600/10 border border-blue-500/20 p-4 rounded-2xl text-center space-y-2">
+                                            <div className="w-12 h-12 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                                                <FileText className="w-6 h-6 text-blue-500" />
+                                            </div>
+                                            <h3 className="font-black text-slate-100 uppercase tracking-tight text-lg">Boleto Registrado</h3>
+                                            <p className="text-xs text-slate-400">Pague agora pelo seu banco e libere seu acesso.</p>
+
+                                            <div className="pt-4 flex justify-around border-t border-blue-500/10">
+                                                <div className="text-center">
+                                                    <p className="text-[10px] text-slate-500 uppercase font-bold">Valor</p>
+                                                    <p className="text-sm font-black text-slate-100">R$ {(boletoData.amount || 0).toFixed(2).replace('.', ',')}</p>
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-[10px] text-slate-500 uppercase font-bold">Vencimento</p>
+                                                    <p className="text-sm font-black text-slate-100">{new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Código de Barras / Linha Digitável</Label>
+                                            <div className="flex gap-2">
+                                                <div className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-[11px] font-mono text-blue-400 break-all leading-relaxed">
+                                                    {boletoData.linhaDigitavel}
+                                                </div>
+                                                <Button
+                                                    size="icon"
+                                                    variant="outline"
+                                                    className="h-auto border-slate-800 bg-slate-950 hover:bg-slate-900 group"
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(boletoData.linhaDigitavel);
+                                                        alert('Linha digitável copiada!');
+                                                    }}
+                                                >
+                                                    <Copy className="w-4 h-4 text-slate-500 group-hover:text-blue-500" />
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-3">
+                                            <Button
+                                                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-tight shadow-lg shadow-blue-600/20"
+                                                onClick={() => window.open(boletoData.pdfUrl, '_blank')}
+                                            >
+                                                <ExternalLink className="w-4 h-4 mr-2" />
+                                                Imprimir / Ver PDF Completo
                                             </Button>
                                         </div>
-                                    </div>
 
-                                    <div className="grid grid-cols-1 gap-3">
-                                        <Button
-                                            className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-tight shadow-lg shadow-blue-600/20"
-                                            onClick={() => window.open(boletoData.pdfUrl, '_blank')}
-                                        >
-                                            <ExternalLink className="w-4 h-4 mr-2" />
-                                            Imprimir / Ver PDF Completo
-                                        </Button>
+                                        <div className="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 space-y-2">
+                                            <p className="text-[10px] text-amber-500 text-center uppercase tracking-widest leading-relaxed font-bold">
+                                                ⚠️ ATENÇÃO: O banco pode levar até 20 minutos para registrar o boleto.
+                                                <br />
+                                                Se o PDF não abrir ou der erro, aguarde alguns minutos e tente novamente pelo Histórico de Faturas.
+                                            </p>
+                                            <p className="text-[10px] text-slate-500 text-center uppercase tracking-widest leading-relaxed font-medium pt-2 border-t border-slate-800/50">
+                                                A compensação bancária ocorre em até 2 dias úteis.<br />
+                                                Dica: Use o Pix para liberação instantânea.
+                                            </p>
+                                        </div>
                                     </div>
+                                )}
+                            </div>
 
-                                    <div className="bg-slate-950/50 p-3 rounded-lg border border-slate-800/50 space-y-2">
-                                        <p className="text-[10px] text-amber-500 text-center uppercase tracking-widest leading-relaxed font-bold">
-                                            ⚠️ ATENÇÃO: O banco pode levar até 20 minutos para registrar o boleto.
-                                            <br />
-                                            Se o PDF não abrir ou der erro, aguarde alguns minutos e tente novamente pelo Histórico de Faturas.
-                                        </p>
-                                        <p className="text-[10px] text-slate-500 text-center uppercase tracking-widest leading-relaxed font-medium pt-2 border-t border-slate-800/50">
-                                            A compensação bancária ocorre em até 2 dias úteis.<br />
-                                            Dica: Use o Pix para liberação instantânea.
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-
-                            <DialogFooter>
+                            <DialogFooter className="flex-shrink-0 border-t border-slate-800 pt-4">
                                 {(() => {
                                     const isConfigIncomplete = !tenantObject?.cep || !tenantObject?.street || !tenantObject?.number || !tenantObject?.neighborhood || !tenantObject?.city || !tenantObject?.state || !tenantObject?.phone;
 
