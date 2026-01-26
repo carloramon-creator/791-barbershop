@@ -170,26 +170,18 @@ export async function POST(req: Request) {
         const externalReference = crypto.randomUUID();
         const baseUrl = 'https://791barber.com';
 
-        // 5. Calcular valor final do PRIMEIRO PAGAMENTO (com desconto de 10% se aplicável)
-        const firstPaymentValue = applyWelcomeDiscount ? Number((totalAmount * 0.9).toFixed(2)) : totalAmount;
+        // 5. Calcular valor final (TOTAL)
+        // RAMON FIX: Mantemos o valor dos itens CHEIO para exibição na fatura.
+        // O desconto será aplicado no objeto 'discount' ou 'payment' dependendo do tipo.
+        const finalCheckoutItems = checkoutItems.map(item => ({
+            name: item.name.length > 30 ? item.name.substring(0, 27) + '...' : item.name,
+            value: item.value, // Valor ORIGINAL (Cheio)
+            quantity: 1
+        }));
 
-        // Criar lista de itens para o Asaas (com nomes encurtados e desconto aplicado proporcionalmente)
-        // RADICAL FIX RAMON: Agora aplicamos o desconto diretamente no valor do item em vez de enviar um item negativo.
-        const finalCheckoutItems = checkoutItems.map(item => {
-            const finalItemValue = applyWelcomeDiscount ? Number((item.value * 0.9).toFixed(2)) : item.value;
-            return {
-                name: item.name.length > 30 ? item.name.substring(0, 27) + '...' : item.name,
-                value: finalItemValue,
-                quantity: 1
-            };
-        });
-
-        // Ajuste de arredondamento: Garantir que a soma dos itens seja exatamente igual ao firstPaymentValue
-        const itemsSum = Number(finalCheckoutItems.reduce((acc, it) => acc + it.value, 0).toFixed(2));
-        if (itemsSum !== firstPaymentValue && finalCheckoutItems.length > 0) {
-            const diff = Number((firstPaymentValue - itemsSum).toFixed(2));
-            finalCheckoutItems[0].value = Number((finalCheckoutItems[0].value + diff).toFixed(2));
-        }
+        const totalFullValue = finalCheckoutItems.reduce((acc, it) => acc + it.value, 0);
+        // FIX CRÍTICO: Restaurando firstPaymentValue para lógica de comparação e fallback
+        const firstPaymentValue = applyWelcomeDiscount ? Number((totalFullValue * 0.9).toFixed(2)) : totalFullValue;
 
         // 6. CRIAÇÃO DA COBRANÇA (Checkouts)
         // Se for Crédito + Mensal, gerar RECORRENTE
@@ -230,11 +222,8 @@ export async function POST(req: Request) {
                     successUrl: `${baseUrl}/asaas/checkout/success`,
                     cancelUrl: `${baseUrl}/asaas/checkout/cancel`
                 },
-                items: checkoutItems.map(it => ({
-                    name: it.name.substring(0, 30), // Limite de 30 caracteres (API Asaas)
-                    value: it.value, // Valor original do item
-                    quantity: 1
-                }))
+                items: finalCheckoutItems, // Itens com valor CHEIO
+                discount: discountObj // Desconto aplicado no TOTALda primeira parcela
             };
 
             console.log('[ASAAS 2.0] Criando Checkout Recorrente (Imediato):', JSON.stringify(checkoutPayload, null, 2));
