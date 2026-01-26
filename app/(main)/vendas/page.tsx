@@ -34,6 +34,30 @@ export default function VendasPage() {
     const [loadingData, setLoadingData] = useState(true);
     const [buscaCliente, setBuscaCliente] = useState('');
     const [buscaProduto, setBuscaProduto] = useState('');
+    const [searchingClients, setSearchingClients] = useState(false);
+
+    // Busca de clientes sob demanda
+    useEffect(() => {
+        const fetchClients = async () => {
+            if (buscaCliente.trim().length < 3) {
+                if (buscaCliente.length === 0) setClientes([]);
+                return;
+            }
+
+            try {
+                setSearchingClients(true);
+                const data = await Api.getClients(buscaCliente);
+                setClientes(data || []);
+            } catch (error) {
+                console.error('Erro ao buscar clientes:', error);
+            } finally {
+                setSearchingClients(false);
+            }
+        };
+
+        const timer = setTimeout(fetchClients, 300);
+        return () => clearTimeout(timer);
+    }, [buscaCliente]);
 
     // Estado do Modal de Cliente
     const [showClientModal, setShowClientModal] = useState(false);
@@ -59,11 +83,7 @@ export default function VendasPage() {
     const loadData = async () => {
         try {
             setLoadingData(true);
-            const [clientesData, produtosData] = await Promise.all([
-                Api.getClients(),
-                Api.getProducts()
-            ]);
-            setClientes(clientesData || []);
+            const produtosData = await Api.getProducts();
             setProdutos(produtosData || []);
         } catch (error) {
             console.error('Erro ao carregar dados:', error);

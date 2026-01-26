@@ -229,6 +229,7 @@ export default function FinanceiroPage() {
         is_recurring: boolean;
         is_paid: boolean;
         metadata?: any;
+        created_at?: string;
     };
 
     const filteredRecords: FinanceItem[] = view === 'main'
@@ -236,6 +237,7 @@ export default function FinanceiroPage() {
             ...sales.filter(s => s.created_at.split('T')[0] <= todayStr).map(s => ({
                 id: s.id,
                 date: s.created_at.split('T')[0],
+                created_at: s.created_at,
                 description: `Venda #${s.id.slice(-4)}`,
                 type: 'revenue',
                 method: s.payment_method,
@@ -249,6 +251,7 @@ export default function FinanceiroPage() {
             ...financeRecords.filter(r => r.is_paid && r.date.startsWith(currentMonth)).map(r => ({
                 id: r.id,
                 date: r.date,
+                created_at: r.created_at,
                 description: r.description,
                 type: r.type,
                 method: '-',
@@ -260,10 +263,11 @@ export default function FinanceiroPage() {
                 is_paid: true,
                 metadata: r.metadata
             }))
-        ].sort((a, b) => b.date.localeCompare(a.date))
+        ].sort((a, b) => (b.created_at || b.date).localeCompare(a.created_at || a.date))
         : financeRecords.filter(r => !r.is_paid && r.type === 'expense').map(r => ({
             id: r.id,
             date: r.date,
+            created_at: r.created_at,
             description: r.description,
             type: r.type,
             method: '-',
@@ -273,7 +277,7 @@ export default function FinanceiroPage() {
             barber_id: r.barber_id, // Add barber_id
             is_recurring: !!r.is_recurring, // Force boolean
             is_paid: false
-        })).sort((a, b) => a.date.localeCompare(b.date));
+        })).sort((a, b) => (a.created_at || a.date).localeCompare(b.created_at || b.date));
 
     console.log('[FINANCE PAGE] Total finance records:', financeRecords.length);
     console.log('[FINANCE PAGE] Filtered records:', filteredRecords.length);
@@ -540,7 +544,7 @@ export default function FinanceiroPage() {
                             ) : filteredRecords.map((r: FinanceItem) => (
                                 <TableRow key={r.id} className="border-slate-800 hover:bg-slate-800/30 transition-colors group">
                                     <TableCell className="text-slate-500 font-mono text-[11px] py-4">
-                                        {new Date(r.date).toLocaleDateString('pt-BR')}
+                                        {r.date.split('-').reverse().join('/')}
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex flex-col">
