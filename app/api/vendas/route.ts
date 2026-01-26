@@ -203,7 +203,7 @@ export async function GET(req: Request) {
             .from('vendas')
             .select(`
                 *,
-                cliente:clientes(id, name),
+                cliente:clients(id, name),
                 vendedor:usuarios(id, name),
                 itens:venda_itens(
                     id,

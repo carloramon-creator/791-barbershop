@@ -6,7 +6,7 @@
 CREATE TABLE IF NOT EXISTS vendas (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    cliente_id UUID REFERENCES clientes(id) ON DELETE SET NULL,
+    cliente_id UUID REFERENCES clients(id) ON DELETE SET NULL,
     
     -- Valores
     subtotal DECIMAL(10,2) NOT NULL DEFAULT 0,
