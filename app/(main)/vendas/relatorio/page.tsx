@@ -122,10 +122,56 @@ export default function RelatorioVendasPage() {
             {/* Relatório */}
             {relatorio && (
                 <div className="space-y-6 print:bg-white print:text-black">
-                    {/* Resumo por Forma de Pagamento */}
+                    {/* Lista Detalhada de Transações */}
+                    <Card className="bg-slate-900 border-slate-800 print:border print:border-black">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle className="text-slate-100 print:text-black">Detalhamento de Vendas</CardTitle>
+                            <p className="text-xs text-slate-500 font-bold uppercase">
+                                Período: {new Date(dataInicio).toLocaleDateString('pt-BR')} a {new Date(dataFim).toLocaleDateString('pt-BR')}
+                            </p>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b border-slate-800 print:border-black text-left">
+                                            <th className="py-3 px-2 text-slate-400 font-bold uppercase text-[10px] print:text-black">Data/Hora</th>
+                                            <th className="py-3 px-2 text-slate-400 font-bold uppercase text-[10px] print:text-black">Usuário</th>
+                                            <th className="py-3 px-2 text-slate-400 font-bold uppercase text-[10px] print:text-black">Cliente</th>
+                                            <th className="py-3 px-2 text-slate-400 font-bold uppercase text-[10px] print:text-black">Forma PGTO</th>
+                                            <th className="py-3 px-2 text-right text-slate-400 font-bold uppercase text-[10px] print:text-black text-right">Valor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {relatorio.vendas.map((venda: any) => (
+                                            <tr key={venda.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors print:border-gray-200">
+                                                <td className="py-3 px-2 text-slate-300 print:text-black text-xs">
+                                                    {new Date(venda.created_at).toLocaleString('pt-BR')}
+                                                </td>
+                                                <td className="py-3 px-2 text-slate-300 print:text-black text-xs font-medium">
+                                                    {venda.vendedor?.name || '---'}
+                                                </td>
+                                                <td className="py-3 px-2 text-slate-300 print:text-black text-xs font-medium">
+                                                    {venda.cliente?.name || 'Venda Avulsa'}
+                                                </td>
+                                                <td className="py-3 px-2 text-slate-400 print:text-black text-[10px] uppercase font-bold">
+                                                    {PAYMENT_METHODS[venda.metodo_pagamento as keyof typeof PAYMENT_METHODS] || venda.metodo_pagamento}
+                                                </td>
+                                                <td className="py-3 px-2 text-right text-emerald-400 print:text-black font-bold">
+                                                    {formatCurrency(venda.total)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Resumo por Forma de Pagamento - Agrupado no Final */}
                     <Card className="bg-slate-900 border-slate-800 print:border print:border-black">
                         <CardHeader>
-                            <CardTitle className="text-slate-100 print:text-black">Resumo por Forma de Pagamento</CardTitle>
+                            <CardTitle className="text-slate-100 print:text-black uppercase text-sm font-black">Resumo de Vendas por Forma de Pagamento</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="overflow-x-auto">
@@ -152,7 +198,7 @@ export default function RelatorioVendasPage() {
                                             </tr>
                                         ))}
                                         <tr className="border-t-2 border-slate-700 print:border-black">
-                                            <td className="py-3 px-4 text-slate-100 print:text-black font-black uppercase">TOTAL</td>
+                                            <td className="py-3 px-4 text-slate-100 print:text-black font-black uppercase">TOTAL GERAL</td>
                                             <td className="py-3 px-4 text-right text-slate-100 print:text-black font-black">
                                                 {relatorio.totais.quantidade}
                                             </td>
