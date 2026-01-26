@@ -17,8 +17,8 @@ export async function GET(req: Request) {
             .eq('tenant_id', tenant.id)
             .order('created_at', { ascending: false });
 
-        if (start) query = query.gte('created_at', dateToStartISO(start));
-        if (end) query = query.lte('created_at', dateToEndISO(end));
+        if (start) query = query.gte('created_at', `${start}T00:00:00`);
+        if (end) query = query.lte('created_at', `${end}T23:59:59`);
 
         const { data: movements, error } = await query;
 

@@ -254,11 +254,21 @@ export default function EstoquePage() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label>Data Inicial</Label>
-                                        <Input type="date" id="mvt-start" className="bg-slate-800 border-slate-700" />
+                                        <Input
+                                            type="date"
+                                            id="mvt-start"
+                                            className="bg-slate-800 border-slate-700"
+                                            defaultValue={new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]}
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Data Final</Label>
-                                        <Input type="date" id="mvt-end" className="bg-slate-800 border-slate-700" />
+                                        <Input
+                                            type="date"
+                                            id="mvt-end"
+                                            className="bg-slate-800 border-slate-700"
+                                            defaultValue={new Date().toISOString().split('T')[0]}
+                                        />
                                     </div>
                                 </div>
                                 <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => {
