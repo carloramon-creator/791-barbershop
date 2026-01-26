@@ -554,13 +554,13 @@ export default function FinanceiroPage() {
                                     <TableCell>
                                         <Badge variant="outline" className={cn(
                                             "text-[9px] font-bold uppercase border-slate-800",
-                                            (r.method === 'pix' || r.method === 'PIX' || (r as any).metodo_pagamento === 'pix') && "text-blue-400 border-blue-500/20 bg-blue-500/5",
-                                            (r.method === 'card' || r.method === 'cartao_credito' || r.method === 'cartao_debito') && "text-purple-400 border-purple-500/20 bg-purple-500/5",
-                                            (r.method === 'cash' || r.method === 'dinheiro') && "text-emerald-400 border-emerald-500/20 bg-emerald-500/5"
+                                            (r.method === 'pix' || r.method === 'PIX' || r.metadata?.metodo_pagamento === 'pix') && "text-blue-400 border-blue-500/20 bg-blue-500/5",
+                                            (r.method === 'card' || r.method === 'cartao_credito' || r.method === 'cartao_debito' || r.metadata?.metodo_pagamento === 'cartao_credito' || r.metadata?.metodo_pagamento === 'cartao_debito') && "text-purple-400 border-purple-500/20 bg-purple-500/5",
+                                            (r.method === 'cash' || r.method === 'dinheiro' || r.metadata?.metodo_pagamento === 'dinheiro') && "text-emerald-400 border-emerald-500/20 bg-emerald-500/5"
                                         )}>
-                                            {r.method === 'pix' || r.method === 'PIX' || (r as any).metodo_pagamento === 'pix' ? 'Pix' :
-                                                r.method === 'card' || r.method === 'cartao_credito' || r.method === 'cartao_debito' ? 'Cartão' :
-                                                    r.method === 'cash' || r.method === 'dinheiro' ? 'Dinheiro' : '-'}
+                                            {r.method === 'pix' || r.method === 'PIX' || r.metadata?.metodo_pagamento === 'pix' ? 'Pix' :
+                                                r.method === 'card' || r.method === 'cartao_credito' || r.method === 'cartao_debito' || r.metadata?.metodo_pagamento === 'cartao_credito' || r.metadata?.metodo_pagamento === 'cartao_debito' ? 'Cartão' :
+                                                    r.method === 'cash' || r.method === 'dinheiro' || r.metadata?.metodo_pagamento === 'dinheiro' ? 'Dinheiro' : '-'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell>

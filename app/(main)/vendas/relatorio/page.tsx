@@ -57,7 +57,7 @@ export default function RelatorioVendasPage() {
     };
 
     const imprimir = () => {
-        window.print();
+        window.open(`/reports/vendas?start=${dataInicio}&end=${dataFim}`, '_blank');
     };
 
     return (
