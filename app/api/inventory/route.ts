@@ -3,9 +3,12 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant, assertPlanAtLeast } from '@/lib/server-utils';
 import { Plan } from '@/lib/backend-types';
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
         const { tenant, roles } = await getCurrentUserAndTenant();
+        const { searchParams } = new URL(req.url);
+        const start = searchParams.get('start');
+        const end = searchParams.get('end');
 
         // Verificar se tem plano Premium ou addon de estoque
         const hasInventoryAddon = tenant?.active_addons?.includes('inventory');
@@ -22,7 +25,7 @@ export async function GET() {
         }
 
         // Fetch movements with product info
-        const { data: movements, error } = await getSupabaseAdmin()
+        let query = getSupabaseAdmin()
             .from('product_movements')
             .select(`
                 *,
@@ -31,8 +34,16 @@ export async function GET() {
                     price
                 )
             `)
-            .eq('tenant_id', tenant.id)
-            .order('created_at', { ascending: false });
+            .eq('tenant_id', tenant.id);
+
+        if (start) {
+            query = query.gte('created_at', `${start}T00:00:00`);
+        }
+        if (end) {
+            query = query.lte('created_at', `${end}T23:59:59`);
+        }
+
+        const { data: movements, error } = await query.order('created_at', { ascending: false });
 
         if (error) throw error;
 

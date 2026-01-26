@@ -215,7 +215,6 @@ export default function VendasPage() {
                             total: data.total
                         });
                         setShowPixModal(true);
-                        alert(`✅ Venda finalizada com sucesso!\nTotal: ${formatCurrency(data.total)}\n\nO QR Code PIX foi gerado abaixo.`);
                     } else {
                         alert(`✅ Venda finalizada!\nTotal: ${formatCurrency(data.total)}\n\n⚠️ Não foi possível gerar o QR Code PIX. Configure a chave PIX em Configurações.`);
                     }
@@ -610,13 +609,20 @@ export default function VendasPage() {
                     <DialogFooter>
                         <Button
                             onClick={() => {
+                                const totalAmount = (pixData as any).total || 0;
                                 setShowPixModal(false);
+
                                 // Limpar formulário
                                 setCarrinho([]);
                                 setClienteSelecionado(null);
                                 setDescontoPercentual(0);
                                 setMetodoPagamento('dinheiro');
                                 loadData();
+
+                                // Mostrar alerta após o modal fechar
+                                setTimeout(() => {
+                                    alert(`✅ Venda finalizada com sucesso!\nTotal: ${formatCurrency(totalAmount)}`);
+                                }, 100);
                             }}
                             className="w-full bg-emerald-600 hover:bg-emerald-700"
                         >
