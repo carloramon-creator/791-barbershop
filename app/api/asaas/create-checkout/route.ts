@@ -248,70 +248,69 @@ export async function POST(req: Request) {
             checkoutUrl: firstPayment.invoiceUrl, // REDIRECT PARA A FATURA
             amount: firstPaymentValue
         }));
-    }
 
         // FIM DO BLOCO DE ASSINATURA DIRETA
 
-    // FALLBACK: createCheckout (Pix, Boleto, Parcelados)
-    const checkoutPayload: any = {
-        customer: customer.id,
-        billingTypes: [paymentMethod],
-        chargeTypes: ['DETACHED'],
-        description: shortDescription,
-        observations: itemDescription,
-        externalReference: externalReference,
-        totalValue: firstPaymentValue,
-        minutesToExpire: 60,
-        callback: {
-            successUrl: `${baseUrl}/asaas/checkout/success`,
-            cancelUrl: `${baseUrl}/asaas/checkout/cancel`
-        },
-        items: finalCheckoutItems
-    };
-
-    if (paymentMethod === 'CREDIT_CARD' && interval > 1) {
-        checkoutPayload.chargeTypes = ['DETACHED', 'INSTALLMENT'];
-        checkoutPayload.installment = {
-            maxInstallmentCount: interval === 12 ? 12 : 6
+        // FALLBACK: createCheckout (Pix, Boleto, Parcelados)
+        const checkoutPayload: any = {
+            customer: customer.id,
+            billingTypes: [paymentMethod],
+            chargeTypes: ['DETACHED'],
+            description: shortDescription,
+            observations: itemDescription,
+            externalReference: externalReference,
+            totalValue: firstPaymentValue,
+            minutesToExpire: 60,
+            callback: {
+                successUrl: `${baseUrl}/asaas/checkout/success`,
+                cancelUrl: `${baseUrl}/asaas/checkout/cancel`
+            },
+            items: finalCheckoutItems
         };
-    }
 
-    const checkout = await asaas.createCheckout(checkoutPayload);
-
-    // 5. Salvar Registro de Auditoria no Banco para o Webhook encontrar
-    await getSupabaseAdmin().from('finance').insert({
-        tenant_id: tenant.id,
-        type: 'expense',
-        value: firstPaymentValue,
-        description: itemDescription,
-        date: new Date().toISOString().split('T')[0],
-        is_paid: false,
-        metadata: {
-            is_saas_payment: true,
-            asaas_checkout_id: checkout.id,
-            asaas_customer_id: customer.id,
-            external_reference: externalReference,
-            payment_method: paymentMethod,
-            plan: planSlug,
-            addons: finalAddonsSlugs,
-            interval: interval,
-            is_first_payment: true,
-            original_value: totalAmount
+        if (paymentMethod === 'CREDIT_CARD' && interval > 1) {
+            checkoutPayload.chargeTypes = ['DETACHED', 'INSTALLMENT'];
+            checkoutPayload.installment = {
+                maxInstallmentCount: interval === 12 ? 12 : 6
+            };
         }
-    });
 
-    const asaasPortalUrl = environment === 'sandbox' ? 'https://sandbox.asaas.com' : 'https://www.asaas.com';
+        const checkout = await asaas.createCheckout(checkoutPayload);
 
-    return addCorsHeaders(req, NextResponse.json({
-        success: true,
-        checkoutId: checkout.id,
-        checkoutUrl: `${asaasPortalUrl}/checkoutSession/show?id=${checkout.id}`,
-        amount: firstPaymentValue
-    }));
+        // 5. Salvar Registro de Auditoria no Banco para o Webhook encontrar
+        await getSupabaseAdmin().from('finance').insert({
+            tenant_id: tenant.id,
+            type: 'expense',
+            value: firstPaymentValue,
+            description: itemDescription,
+            date: new Date().toISOString().split('T')[0],
+            is_paid: false,
+            metadata: {
+                is_saas_payment: true,
+                asaas_checkout_id: checkout.id,
+                asaas_customer_id: customer.id,
+                external_reference: externalReference,
+                payment_method: paymentMethod,
+                plan: planSlug,
+                addons: finalAddonsSlugs,
+                interval: interval,
+                is_first_payment: true,
+                original_value: totalAmount
+            }
+        });
 
-} catch (error: any) {
-    console.error('[ASAAS 2.0 ERROR]', error);
-    const msg = error.response?.data?.errors?.[0]?.description || error.message || 'Erro interno';
-    return addCorsHeaders(req, NextResponse.json({ error: msg }, { status: 500 }));
-}
+        const asaasPortalUrl = environment === 'sandbox' ? 'https://sandbox.asaas.com' : 'https://www.asaas.com';
+
+        return addCorsHeaders(req, NextResponse.json({
+            success: true,
+            checkoutId: checkout.id,
+            checkoutUrl: `${asaasPortalUrl}/checkoutSession/show?id=${checkout.id}`,
+            amount: firstPaymentValue
+        }));
+
+    } catch (error: any) {
+        console.error('[ASAAS 2.0 ERROR]', error);
+        const msg = error.response?.data?.errors?.[0]?.description || error.message || 'Erro interno';
+        return addCorsHeaders(req, NextResponse.json({ error: msg }, { status: 500 }));
+    }
 }
