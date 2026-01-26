@@ -430,7 +430,7 @@ export default function PlanPage() {
                             seu_numero: data.seu_numero
                         });
                     }
-                    setSelectedAddonsSlugs([]); // Limpar ao gerar Pix Inter
+                    // setSelectedAddonsSlugs([]); // Limpar ao gerar Pix Inter
                     setOpenDialog(true);
                 } else if (paymentMethod === 'boleto-inter') {
                     if (data.pdfUrl && data.linhaDigitavel) {
@@ -449,7 +449,6 @@ export default function PlanPage() {
                             message: 'Registrando boleto no Banco Inter...',
                             seu_numero: data.seu_numero
                         });
-                        setSelectedAddonsSlugs([]); // Limpar ao gerar Boleto Inter
                         setOpenDialog(true);
                     }
                 }
@@ -474,13 +473,12 @@ export default function PlanPage() {
                     amount: data.amount || data.boletoData?.value
                 } as any);
                 setPaymentMethod('boleto-result');
-                setSelectedAddonsSlugs([]); // Limpar seleção local
+                // setSelectedAddonsSlugs([]); // Manter seleção visualmente
                 fetchInvoices();
             } else {
                 throw new Error('Retorno desconhecido do gateway');
             }
 
-            // Limpeza geral para cartões (se não houver redirecionamento imediato)
             if (paymentMethod === 'card') {
                 setSelectedAddonsSlugs([]);
             }
@@ -909,7 +907,7 @@ export default function PlanPage() {
                         }
                     }}>
                         <DialogContent
-                            className="border-slate-800 light:border-slate-200 bg-slate-900 light:bg-white text-slate-100 light:text-slate-900 max-w-md rounded-2xl md:rounded-3xl max-h-[90vh] overflow-hidden flex flex-col"
+                            className="border-slate-800 light:border-slate-200 bg-slate-900 light:bg-white text-slate-100 light:text-slate-900 max-w-md rounded-2xl md:rounded-3xl max-h-[90vh] overflow-y-auto flex flex-col"
                             onPointerDownOutside={() => fetchInvoices()}
                             onEscapeKeyDown={() => fetchInvoices()}
                         >
@@ -1567,7 +1565,7 @@ export default function PlanPage() {
             }
 
             {/* BARRA DE SELEÇÃO FIXA NO RODAPÉ (ESCANDALOSA) */}
-            {(selectedPlan || selectedAddonsSlugs.length > 0) && !openDialog && (
+            {(selectedPlan || selectedAddonsSlugs.length > 0) && !openDialog && !pendingData && !pixData && !boletoData && (
                 <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-4xl bg-slate-900/98 backdrop-blur-2xl border-2 border-blue-500/50 p-6 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col gap-4 z-50 animate-in slide-in-from-bottom-10 pointer-events-auto ring-1 ring-white/10">
                     <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-8">
 
