@@ -1038,10 +1038,10 @@ export default function BarbershopSettingsPage() {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent className="bg-slate-800 border-slate-700">
-                                            <SelectItem value="cpf">CPF (Herdar)</SelectItem>
-                                            <SelectItem value="cnpj">CNPJ (Herdar)</SelectItem>
-                                            <SelectItem value="email">E-mail (Herdar)</SelectItem>
-                                            <SelectItem value="phone">Telefone (Herdar)</SelectItem>
+                                            <SelectItem value="cpf">CPF</SelectItem>
+                                            <SelectItem value="cnpj">CNPJ</SelectItem>
+                                            <SelectItem value="email">E-mail</SelectItem>
+                                            <SelectItem value="phone">Telefone</SelectItem>
                                             <SelectItem value="random">Chave Aleatória</SelectItem>
                                         </SelectContent>
                                     </Select>
