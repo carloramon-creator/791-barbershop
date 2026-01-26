@@ -3,6 +3,14 @@
         {
             "path": "/api/cron/reminders",
             "schedule": "*/10 * * * *"
+        },
+        {
+            "path": "/api/cron/check-expirations",
+            "schedule": "0 10 * * *"
+        },
+        {
+            "path": "/api/cron/generate-billings",
+            "schedule": "0 6 * * *"
         }
     ]
 }
