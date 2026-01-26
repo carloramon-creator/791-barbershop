@@ -112,6 +112,10 @@ export async function POST(req: Request) {
         }
 
         const pixKey = dbConfig?.pix_key;
+        const accountNumber = dbConfig?.account_number || dbConfig?.accountNumber;
+
+        console.log(`[INTER PIX AUTO] Configs: Key=${pixKey}, Account=${accountNumber}`);
+
         if (!pixKey) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Chave Pix não configurada no sistema.' }, { status: 400 }));
         }

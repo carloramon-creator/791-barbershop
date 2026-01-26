@@ -136,16 +136,22 @@ export class InterAPIV3 {
     async createLocation(tipo: 'cob' | 'cobv' | 'rec' = 'rec') {
         const token = await this.getAccessToken();
         const body = JSON.stringify({ tipo });
+        const headers: any = {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body)
+        };
+
+        if (this.config.accountNumber) {
+            headers['x-conta-corrente'] = this.config.accountNumber;
+        }
+
         const options: https.RequestOptions = {
             hostname: 'cdpj.partners.bancointer.com.br',
             port: 443,
             path: '/pix/v2/loc',
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(body)
-            },
+            headers,
             cert: this.config.cert,
             key: this.config.key,
             rejectUnauthorized: false
@@ -162,16 +168,22 @@ export class InterAPIV3 {
     async createRecurrenceAgreement(payload: any) {
         const token = await this.getAccessToken();
         const body = JSON.stringify(payload);
+        const headers: any = {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body)
+        };
+
+        if (this.config.accountNumber) {
+            headers['x-conta-corrente'] = this.config.accountNumber;
+        }
+
         const options: https.RequestOptions = {
             hostname: 'cdpj.partners.bancointer.com.br',
             port: 443,
             path: '/pix/v2/rec',
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(body)
-            },
+            headers,
             cert: this.config.cert,
             key: this.config.key,
             rejectUnauthorized: false
@@ -185,16 +197,22 @@ export class InterAPIV3 {
     async createPixImmediateBilling(payload: any) {
         const token = await this.getAccessToken();
         const body = JSON.stringify(payload);
+        const headers: any = {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body)
+        };
+
+        if (this.config.accountNumber) {
+            headers['x-conta-corrente'] = this.config.accountNumber;
+        }
+
         const options: https.RequestOptions = {
             hostname: 'cdpj.partners.bancointer.com.br',
             port: 443,
             path: '/pix/v2/cob',
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(body)
-            },
+            headers,
             cert: this.config.cert,
             key: this.config.key,
             rejectUnauthorized: false
@@ -209,16 +227,22 @@ export class InterAPIV3 {
     async createRecurrenceCharge(txid: string, payload: any) {
         const token = await this.getAccessToken();
         const body = JSON.stringify(payload);
+        const headers: any = {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body)
+        };
+
+        if (this.config.accountNumber) {
+            headers['x-conta-corrente'] = this.config.accountNumber;
+        }
+
         const options: https.RequestOptions = {
             hostname: 'cdpj.partners.bancointer.com.br',
             port: 443,
             path: `/pix/v2/cob/${txid}`,
             method: 'PUT', // Jornada 4 menciona POST/cob ou PUT/cob/{txid}. PUT é idempotente.
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(body)
-            },
+            headers,
             cert: this.config.cert,
             key: this.config.key,
             rejectUnauthorized: false
@@ -234,12 +258,21 @@ export class InterAPIV3 {
         let path = `/pix/v2/rec/${idRec}`;
         if (txid) path += `?txid=${txid}`;
 
+        const headers: any = {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+        };
+
+        if (this.config.accountNumber) {
+            headers['x-conta-corrente'] = this.config.accountNumber;
+        }
+
         const options: https.RequestOptions = {
             hostname: 'cdpj.partners.bancointer.com.br',
             port: 443,
             path: path,
             method: 'GET',
-            headers: { 'Authorization': `Bearer ${token}` },
+            headers,
             cert: this.config.cert,
             key: this.config.key,
             rejectUnauthorized: false
