@@ -156,6 +156,9 @@ export class InterAPIV3 {
     /**
      * Pix Automático: Cria um acordo de recorrência
      */
+    /**
+     * Pix Automático: Cria um acordo de recorrência
+     */
     async createRecurrenceAgreement(payload: any) {
         const token = await this.getAccessToken();
         const body = JSON.stringify(payload);
@@ -164,6 +167,53 @@ export class InterAPIV3 {
             port: 443,
             path: '/pix/v2/rec',
             method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(body)
+            },
+            cert: this.config.cert,
+            key: this.config.key,
+            rejectUnauthorized: false
+        };
+        return await this.makeRequest(options, body);
+    }
+
+    /**
+     * Pix V2: Cobrança Imediata (Para Jornada 3)
+     */
+    async createPixImmediateBilling(payload: any) {
+        const token = await this.getAccessToken();
+        const body = JSON.stringify(payload);
+        const options: https.RequestOptions = {
+            hostname: 'cdpj.partners.bancointer.com.br',
+            port: 443,
+            path: '/pix/v2/cob',
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(body)
+            },
+            cert: this.config.cert,
+            key: this.config.key,
+            rejectUnauthorized: false
+        };
+        return await this.makeRequest(options, body);
+    }
+
+    /**
+     * Pix Recorrente: Cobrar parcela (Jornada 4)
+     * Cria uma cobrança vinculada à recorrência
+     */
+    async createRecurrenceCharge(txid: string, payload: any) {
+        const token = await this.getAccessToken();
+        const body = JSON.stringify(payload);
+        const options: https.RequestOptions = {
+            hostname: 'cdpj.partners.bancointer.com.br',
+            port: 443,
+            path: `/pix/v2/cob/${txid}`,
+            method: 'PUT', // Jornada 4 menciona POST/cob ou PUT/cob/{txid}. PUT é idempotente.
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
