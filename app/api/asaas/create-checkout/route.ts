@@ -183,144 +183,135 @@ export async function POST(req: Request) {
         // FIX CRÍTICO: Restaurando firstPaymentValue para lógica de comparação e fallback
         const firstPaymentValue = applyWelcomeDiscount ? Number((totalFullValue * 0.9).toFixed(2)) : totalFullValue;
 
+        // FIM DO BLOCO DE ASSINATURA DIRETA
+
         // 6. CRIAÇÃO DA COBRANÇA (Checkouts)
-        // Se for Crédito + Mensal, gerar RECORRENTE
-        if (paymentMethod === 'CREDIT_CARD' && interval === 1) {
-            // FIX: Data de vencimento para HOJE (Cobrança Imediata)
-            const today = new Date();
-            const dueDateString = today.toISOString().split('T')[0];
+        // NOVA LÓGICA: Criar Assinatura Diretamente e Redirecionar para Fatura (Invoice)
+        // Isso garante que o cliente veja "Valor Original - Desconto = Total" na tela de pagamento.
 
-            const shortDescription = `Assinatura: ${itemNames.join(' + ')}`.substring(0, 100);
-
-            // Lógica de Desconto na Assinatura (Apenas 1º Ciclo)
-            let discountObj = null;
-            if (applyWelcomeDiscount) {
-                // Se o desconto é 10% do total
-                const discountVal = Number((totalAmount * 0.10).toFixed(2));
-                discountObj = {
-                    value: discountVal,
-                    type: 'FIXED' // Valor fixo para garantir precisão
-                };
-            }
-
-            const checkoutPayload: any = {
-                customer: customer.id,
-                billingTypes: ['CREDIT_CARD'],
-                chargeTypes: ['RECURRENT'],
-                observations: itemDescription,
-                externalReference: externalReference,
-                // subscription: Configuração da recorrência
-                subscription: {
-                    cycle: 'MONTHLY',
-                    value: totalAmount, // Valor CHEIO para as renovações
-                    nextDueDate: dueDateString, // Começa HOJE
-                    description: shortDescription,
-                    discount: discountObj ? { ...discountObj, cycles: 1 } : null // Desconto apenas no ciclo 1
-                },
-                callback: {
-                    successUrl: `${baseUrl}/asaas/checkout/success`,
-                    cancelUrl: `${baseUrl}/asaas/checkout/cancel`
-                },
-                items: finalCheckoutItems, // RESTAURADO: Campo obrigatório que sumiu
-                // FIX DUPLICADO: Garantir que descrição e desconto estejam na raiz para o Checkout hosted
-                description: shortDescription,
-                discount: discountObj, // Tentar passar na raiz também para ver se pega na 1ª cobrança
-            };
-
-            console.log('[ASAAS 2.0] Criando Checkout Recorrente (Imediato):', JSON.stringify(checkoutPayload, null, 2));
-            const checkout = await asaas.createCheckout(checkoutPayload);
-
-            // Registro no banco
-            await getSupabaseAdmin().from('finance').insert({
-                tenant_id: tenant.id,
-                type: 'expense',
-                value: firstPaymentValue,
-                description: itemDescription,
-                date: new Date().toISOString().split('T')[0],
-                is_paid: false,
-                metadata: {
-                    is_saas_payment: true,
-                    asaas_checkout_id: checkout.id,
-                    external_reference: externalReference,
-                    payment_method: paymentMethod,
-                    plan: planSlug,
-                    addons: finalAddonsSlugs,
-                    is_first_payment: true,
-                    original_value: totalAmount
-                }
-            });
-
-            const asaasPortalUrl = environment === 'sandbox' ? 'https://sandbox.asaas.com' : 'https://www.asaas.com';
-            return addCorsHeaders(req, NextResponse.json({
-                success: true,
-                checkoutId: checkout.id,
-                checkoutUrl: `${asaasPortalUrl}/checkoutSession/show?id=${checkout.id}`,
-                amount: firstPaymentValue
-            }));
-        }
-
-        const shortDescription = `Pagamento: ${itemNames.join(' + ')}`.substring(0, 50) + (itemNames.join(' + ').length > 50 ? '...' : '');
-
-        // FALLBACK: createCheckout (Pix, Boleto, Parcelados)
-        const checkoutPayload: any = {
+        const subscriptionPayload = {
             customer: customer.id,
-            billingTypes: [paymentMethod],
-            chargeTypes: ['DETACHED'],
+            billingType: 'CREDIT_CARD',
+            value: totalAmount, // Valor CHEIO
+            nextDueDate: dueDateString,
+            cycle: 'MONTHLY',
             description: shortDescription,
-            observations: itemDescription,
-            externalReference: externalReference,
-            totalValue: firstPaymentValue,
-            minutesToExpire: 60,
-            callback: {
-                successUrl: `${baseUrl}/asaas/checkout/success`,
-                cancelUrl: `${baseUrl}/asaas/checkout/cancel`
-            },
-            items: finalCheckoutItems
+            discount: discountObj ? { ...discountObj, cycles: 1 } : undefined,
+            externalReference: externalReference
         };
 
-        if (paymentMethod === 'CREDIT_CARD' && interval > 1) {
-            checkoutPayload.chargeTypes = ['DETACHED', 'INSTALLMENT'];
-            checkoutPayload.installment = {
-                maxInstallmentCount: interval === 12 ? 12 : 6
-            };
+        console.log('[ASAAS 2.0] Criando Assinatura Direta:', JSON.stringify(subscriptionPayload, null, 2));
+
+        // 1. Criar Assinatura
+        const subscription = await asaas.createSubscription(subscriptionPayload);
+
+        if (!subscription || !subscription.id) {
+            throw new Error('Falha ao criar assinatura no Asaas');
         }
 
-        const checkout = await asaas.createCheckout(checkoutPayload);
+        // 2. Buscar a primeira cobrança gerada para obter o Link de Pagamento da Fatura
+        // A assinatura gera a cobrança imediatamente se a data for próxima/hoje.
+        const payments = await asaas.getPaymentsBySubscription(subscription.id);
+        const firstPayment = payments.data?.[0]; // Pega a primeira (mais recente/pendente)
 
-        // 5. Salvar Registro de Auditoria no Banco para o Webhook encontrar
+        if (!firstPayment) {
+            throw new Error('Assinatura criada, mas nenhuma cobrança foi gerada imediatamente.');
+        }
+
+        // 3. Registrar no Banco
         await getSupabaseAdmin().from('finance').insert({
             tenant_id: tenant.id,
             type: 'expense',
             value: firstPaymentValue,
-            description: itemDescription,
+            description: itemDescription, // Descrição completa com itens
             date: new Date().toISOString().split('T')[0],
             is_paid: false,
             metadata: {
                 is_saas_payment: true,
-                asaas_checkout_id: checkout.id,
-                asaas_customer_id: customer.id,
+                asaas_checkout_id: null, // Não é checkout session
+                asaas_subscription_id: subscription.id,
+                asaas_payment_id: firstPayment.id,
                 external_reference: externalReference,
                 payment_method: paymentMethod,
                 plan: planSlug,
                 addons: finalAddonsSlugs,
-                interval: interval,
                 is_first_payment: true,
                 original_value: totalAmount
             }
         });
 
-        const asaasPortalUrl = environment === 'sandbox' ? 'https://sandbox.asaas.com' : 'https://www.asaas.com';
-
+        // 4. Retornar URL da Fatura (Invoice)
+        // A visualização de Fatura do Asaas mostra claramente: Valor, Desconto, Juros, Total.
         return addCorsHeaders(req, NextResponse.json({
             success: true,
-            checkoutId: checkout.id,
-            checkoutUrl: `${asaasPortalUrl}/checkoutSession/show?id=${checkout.id}`,
+            checkoutId: subscription.id, // Para tracking frontend
+            checkoutUrl: firstPayment.invoiceUrl, // REDIRECT PARA A FATURA
             amount: firstPaymentValue
         }));
-
-    } catch (error: any) {
-        console.error('[ASAAS 2.0 ERROR]', error);
-        const msg = error.response?.data?.errors?.[0]?.description || error.message || 'Erro interno';
-        return addCorsHeaders(req, NextResponse.json({ error: msg }, { status: 500 }));
     }
+
+        // FIM DO BLOCO DE ASSINATURA DIRETA
+
+    // FALLBACK: createCheckout (Pix, Boleto, Parcelados)
+    const checkoutPayload: any = {
+        customer: customer.id,
+        billingTypes: [paymentMethod],
+        chargeTypes: ['DETACHED'],
+        description: shortDescription,
+        observations: itemDescription,
+        externalReference: externalReference,
+        totalValue: firstPaymentValue,
+        minutesToExpire: 60,
+        callback: {
+            successUrl: `${baseUrl}/asaas/checkout/success`,
+            cancelUrl: `${baseUrl}/asaas/checkout/cancel`
+        },
+        items: finalCheckoutItems
+    };
+
+    if (paymentMethod === 'CREDIT_CARD' && interval > 1) {
+        checkoutPayload.chargeTypes = ['DETACHED', 'INSTALLMENT'];
+        checkoutPayload.installment = {
+            maxInstallmentCount: interval === 12 ? 12 : 6
+        };
+    }
+
+    const checkout = await asaas.createCheckout(checkoutPayload);
+
+    // 5. Salvar Registro de Auditoria no Banco para o Webhook encontrar
+    await getSupabaseAdmin().from('finance').insert({
+        tenant_id: tenant.id,
+        type: 'expense',
+        value: firstPaymentValue,
+        description: itemDescription,
+        date: new Date().toISOString().split('T')[0],
+        is_paid: false,
+        metadata: {
+            is_saas_payment: true,
+            asaas_checkout_id: checkout.id,
+            asaas_customer_id: customer.id,
+            external_reference: externalReference,
+            payment_method: paymentMethod,
+            plan: planSlug,
+            addons: finalAddonsSlugs,
+            interval: interval,
+            is_first_payment: true,
+            original_value: totalAmount
+        }
+    });
+
+    const asaasPortalUrl = environment === 'sandbox' ? 'https://sandbox.asaas.com' : 'https://www.asaas.com';
+
+    return addCorsHeaders(req, NextResponse.json({
+        success: true,
+        checkoutId: checkout.id,
+        checkoutUrl: `${asaasPortalUrl}/checkoutSession/show?id=${checkout.id}`,
+        amount: firstPaymentValue
+    }));
+
+} catch (error: any) {
+    console.error('[ASAAS 2.0 ERROR]', error);
+    const msg = error.response?.data?.errors?.[0]?.description || error.message || 'Erro interno';
+    return addCorsHeaders(req, NextResponse.json({ error: msg }, { status: 500 }));
+}
 }
