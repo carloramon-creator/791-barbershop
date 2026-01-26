@@ -292,63 +292,91 @@ export default function VendasPage() {
                 {/* Coluna Esquerda: Seleção */}
                 <div className="lg:col-span-2 space-y-6">
                     {/* Cliente */}
-                    <Card className="bg-slate-900 border-slate-800">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-slate-100 text-lg">Cliente</CardTitle>
-                            <Button variant="outline" size="sm" onClick={() => setShowClientModal(true)} className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800">
-                                <UserPlus className="w-4 h-4 mr-2" /> Novo Cliente
+                    {/* Seleção de Cliente */}
+                    <Card className="bg-slate-900 border-slate-800 shadow-xl border-l-4 border-l-blue-500">
+                        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                            <CardTitle className="text-slate-100 flex items-center gap-2 font-bold tracking-tighter uppercase">
+                                <UserPlus className="w-5 h-5 text-blue-500" />
+                                <span>Cliente</span>
+                            </CardTitle>
+                            <Button
+                                size="sm"
+                                onClick={() => setShowClientModal(true)}
+                                className="bg-blue-600 hover:bg-blue-700 h-8 text-[10px] uppercase font-black tracking-widest"
+                            >
+                                <Plus className="w-3 h-3 mr-1" /> Novo Cliente
                             </Button>
                         </CardHeader>
-                        <CardContent className="space-y-3">
+                        <CardContent className="space-y-4 pt-2">
                             {!clienteSelecionado && (
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                     <Input
-                                        placeholder="Buscar cliente por nome ou telefone..."
+                                        placeholder="Buscar cliente por nome ou celular..."
                                         value={buscaCliente}
                                         onChange={(e) => setBuscaCliente(e.target.value)}
-                                        className="pl-10 bg-slate-950 border-slate-800 text-slate-100"
+                                        className="pl-10 bg-slate-950 border-slate-800 text-slate-100 h-11 font-medium"
                                     />
+                                    {searchingClients && (
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                            <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
                             {clienteSelecionado ? (
-                                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-between animate-in fade-in transition-all">
+                                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-between animate-in fade-in slide-in-from-top-1 transition-all">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold">
                                             {clienteSelecionado.name.charAt(0).toUpperCase()}
                                         </div>
                                         <div>
-                                            <p className="font-bold text-slate-100">{clienteSelecionado.name}</p>
-                                            <p className="text-xs text-slate-400">{clienteSelecionado.phone}</p>
+                                            <p className="text-sm font-black text-slate-100 uppercase tracking-tight">{clienteSelecionado.name}</p>
+                                            <p className="text-[10px] font-mono text-slate-500">{clienteSelecionado.phone}</p>
                                         </div>
                                     </div>
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => setClienteSelecionado(null)}
-                                        className="text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                                        onClick={() => {
+                                            setClienteSelecionado(null);
+                                            setBuscaCliente('');
+                                        }}
+                                        className="h-8 w-8 p-0 text-slate-400 hover:text-red-400 hover:bg-red-400/10"
                                     >
-                                        <X className="w-4 h-4 mr-1" /> Remover
+                                        <X className="w-4 h-4" />
                                     </Button>
                                 </div>
                             ) : (
-                                <div className="max-h-40 overflow-y-auto space-y-1 pr-2 custom-scrollbar">
-                                    {clientesFiltrados.slice(0, 5).map(cliente => (
-                                        <button
-                                            key={cliente.id}
-                                            onClick={() => setClienteSelecionado(cliente)}
-                                            className="w-full p-2 text-left bg-slate-950 hover:bg-slate-800 border border-slate-800/50 hover:border-slate-700 rounded-lg transition-all flex justify-between items-center group"
-                                        >
-                                            <div>
-                                                <p className="text-sm font-bold text-slate-200 group-hover:text-blue-400 transition-colors">{cliente.name}</p>
-                                                <p className="text-xs text-slate-500">{cliente.phone}</p>
+                                <div className="space-y-2 max-h-[150px] overflow-y-auto custom-scrollbar">
+                                    {clientes.length > 0 ? (
+                                        clientes.map((c) => (
+                                            <div
+                                                key={c.id}
+                                                onClick={() => {
+                                                    setClienteSelecionado(c);
+                                                    setClientes([]);
+                                                    setBuscaCliente('');
+                                                }}
+                                                className="p-3 hover:bg-slate-800 cursor-pointer rounded-lg border border-slate-800/50 flex items-center justify-between transition-all group active:scale-[0.98]"
+                                            >
+                                                <div className="flex-1">
+                                                    <p className="text-xs font-bold text-slate-300 uppercase group-hover:text-blue-400 transition-colors">{c.name}</p>
+                                                    <p className="text-[10px] text-slate-500 font-mono">{c.phone}</p>
+                                                </div>
+                                                <Plus size={14} className="text-slate-600 group-hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all" />
                                             </div>
-                                            <Plus className="w-4 h-4 text-slate-600 group-hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all" />
-                                        </button>
-                                    ))}
-                                    {clientesFiltrados.length === 0 && (
-                                        <p className="text-center text-slate-500 py-2 text-sm italic">Nenhum cliente encontrado</p>
+                                        ))
+                                    ) : buscaCliente.length >= 3 ? (
+                                        <p className="text-center text-xs text-slate-600 py-6 italic font-medium">Nenhum cliente para "{buscaCliente}"</p>
+                                    ) : buscaCliente.length > 0 ? (
+                                        <p className="text-center text-[10px] text-slate-600 py-6 uppercase font-bold tracking-widest opacity-30">Digite 3 letras ou mais...</p>
+                                    ) : (
+                                        <div className="py-8 flex flex-col items-center gap-2 opacity-20">
+                                            <Search size={24} />
+                                            <p className="text-[10px] uppercase font-black tracking-widest">Busque acima para selecionar</p>
+                                        </div>
                                     )}
                                 </div>
                             )}
