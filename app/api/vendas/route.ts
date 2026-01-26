@@ -136,7 +136,7 @@ export async function POST(req: Request) {
         await supabase
             .from('finance')
             .insert({
-                tenant_id: user.tenant_id,
+                tenant_id: userData.tenant_id,
                 type: 'income',
                 category: 'vendas_produtos',
                 value: total,
@@ -196,8 +196,6 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url);
         const limit = parseInt(searchParams.get('limit') || '50');
         const offset = parseInt(searchParams.get('offset') || '0');
-
-        const supabase = getSupabaseAdmin();
 
         const { data: vendas, error } = await supabase
             .from('vendas')
