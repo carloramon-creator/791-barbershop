@@ -327,6 +327,20 @@ export default function PlanPage() {
         };
     }, [pendingData]);
 
+    // --- NOVO: AUTO-POLLING PARA LISTA DE FATURAS ---
+    // Se houver alguma fatura pendente na lista, atualizamos a cada 8 segundos
+    useEffect(() => {
+        const hasPending = invoices.some(inv => !inv.is_paid && inv.type === 'expense');
+        if (!hasPending) return;
+
+        const interval = setInterval(() => {
+            console.log('[AUTO-REFRESH] Verificando faturas pendentes...');
+            fetchInvoices();
+        }, 8000); // 8 segundos
+
+        return () => clearInterval(interval);
+    }, [invoices]);
+
     const [installments, setInstallments] = useState(1);
 
     const toggleAddon = (slug: string) => {
@@ -1410,14 +1424,14 @@ export default function PlanPage() {
                                                                                         const data = await res.json();
                                                                                         if (data.ready || data.statusUpdated) {
                                                                                             // O pooling já atualiza o is_paid se detectar
-                                                                                            alert('Status Atualizado!');
                                                                                             fetchInvoices();
                                                                                         } else {
-                                                                                            alert('Ainda consta como pendente no banco.');
+                                                                                            // Feedback sutil em vez de alert bloqueante
+                                                                                            // alert('Ainda consta como pendente no banco.');
                                                                                         }
                                                                                     }
                                                                                 } catch (e: any) {
-                                                                                    alert('Erro ao verificar: ' + e.message);
+                                                                                    console.error(e);
                                                                                 }
                                                                             }}
                                                                         >
