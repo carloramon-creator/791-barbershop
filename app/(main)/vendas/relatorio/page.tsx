@@ -25,8 +25,8 @@ const PAYMENT_METHODS = {
 export default function RelatorioVendasPage() {
     const { tenant } = useAuth();
     const [loading, setLoading] = useState(false);
-    const [dataInicio, setDataInicio] = useState('');
-    const [dataFim, setDataFim] = useState('');
+    const [dataInicio, setDataInicio] = useState(new Date().toISOString().split('T')[0]);
+    const [dataFim, setDataFim] = useState(new Date().toISOString().split('T')[0]);
     const [relatorio, setRelatorio] = useState<any>(null);
 
     const gerarRelatorio = async () => {
@@ -266,12 +266,17 @@ export default function RelatorioVendasPage() {
 
             <style jsx global>{`
                 @media print {
-                    body { background: white; }
-                    .print\\:hidden { display: none !important; }
-                    .print\\:bg-white { background: white !important; }
-                    .print\\:text-black { color: black !important; }
-                    .print\\:border { border: 1px solid black !important; }
-                    .print\\:border-black { border-color: black !important; }
+                    @page { margin: 1cm; }
+                    body { background: white !important; color: black !important; }
+                    .print\:hidden, aside, nav, button, .no-print { display: none !important; }
+                    main { margin: 0 !important; padding: 0 !important; width: 100% !important; max-width: none !important; }
+                    .Card, .CardContent { border: none !important; box-shadow: none !important; background: white !important; padding: 0 !important; }
+                    .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400, .text-emerald-400 { color: black !important; }
+                    table { width: 100% !important; border-collapse: collapse !important; }
+                    th { color: black !important; border-bottom: 2px solid black !important; font-size: 10px !important; }
+                    td { border-bottom: 1px solid #eee !important; font-size: 10px !important; color: black !important; }
+                    .font-black, .font-bold { color: black !important; }
+                    .bg-slate-900, .bg-slate-950 { background: white !important; }
                 }
             `}</style>
         </div>

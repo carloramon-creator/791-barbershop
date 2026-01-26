@@ -114,7 +114,7 @@ export async function POST(req: Request) {
             .from('finance')
             .insert({
                 tenant_id: tenant.id,
-                type: 'income',
+                type: 'revenue',
                 category: 'vendas_produtos',
                 value: total,
                 description: `Venda de produtos #${venda.id.substring(0, 8)}`,
