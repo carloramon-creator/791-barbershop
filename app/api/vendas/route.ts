@@ -56,7 +56,7 @@ export async function POST(req: Request) {
         const { data: venda, error: vendaError } = await supabase
             .from('vendas')
             .insert({
-                tenant_id: userData.tenant_id,
+                tenant_id: tenant.id,
                 cliente_id: cliente_id || null,
                 subtotal,
                 desconto_percentual,
@@ -113,7 +113,7 @@ export async function POST(req: Request) {
         await supabase
             .from('finance')
             .insert({
-                tenant_id: userData.tenant_id,
+                tenant_id: tenant.id,
                 type: 'income',
                 category: 'vendas_produtos',
                 value: total,
