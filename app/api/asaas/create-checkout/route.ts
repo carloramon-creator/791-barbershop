@@ -231,7 +231,7 @@ export async function POST(req: Request) {
                     cancelUrl: `${baseUrl}/asaas/checkout/cancel`
                 },
                 items: checkoutItems.map(it => ({
-                    name: it.name.substring(0, 50), // Limite de caracteres
+                    name: it.name.substring(0, 30), // Limite de 30 caracteres (API Asaas)
                     value: it.value, // Valor original do item
                     quantity: 1
                 }))
