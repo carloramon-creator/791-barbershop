@@ -209,8 +209,8 @@ export async function POST(req: Request) {
 
         if (!isReady && codigoSolicitacao) {
             console.log(`[SAAS PIX] Cobrança assíncrona. Iniciando busca (Ticket: ${codigoSolicitacao})...`);
-            const maxRetries = 5;
-            const delays = [3000, 3000, 4000, 5000, 5000];
+            const maxRetries = 2; // Reduzido de 5 para 2 para evitar timeout
+            const delays = [2000, 3000]; // Delays mais curtos
 
             for (let attempt = 0; attempt < maxRetries; attempt++) {
                 console.log(`[SAAS PIX] Tentativa ${attempt + 1}/${maxRetries} - Aguardando ${delays[attempt]}ms...`);

@@ -9,7 +9,7 @@ async function apiFetch(path: string, options: RequestInit = {}) {
 
     // Timeout de 30 segundos
     const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), 30000);
+    const id = setTimeout(() => controller.abort(), 60000);
 
     try {
         const res = await fetch(`${BACKEND_URL}${path}`, {

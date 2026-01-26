@@ -37,6 +37,7 @@ export default function VendasPage() {
     const [showClientModal, setShowClientModal] = useState(false);
     const [newClientName, setNewClientName] = useState('');
     const [newClientPhone, setNewClientPhone] = useState('');
+    const [newClientCpf, setNewClientCpf] = useState('');
     const [creatingClient, setCreatingClient] = useState(false);
 
     // Verificar plano/permissão (já verificado no sidebar, mas bom ter aqui)
@@ -72,7 +73,8 @@ export default function VendasPage() {
             setCreatingClient(true);
             const newClient = await Api.createClient({
                 name: newClientName,
-                phone: newClientPhone
+                phone: newClientPhone,
+                cpf: newClientCpf
             });
 
             // Atualizar lista e selecionar o novo cliente
@@ -83,6 +85,7 @@ export default function VendasPage() {
             setShowClientModal(false);
             setNewClientName('');
             setNewClientPhone('');
+            setNewClientCpf('');
 
         } catch (error: any) {
             alert('Erro ao criar cliente: ' + (error.message || 'Erro desconhecido'));
@@ -95,7 +98,7 @@ export default function VendasPage() {
         const itemExistente = carrinho.find(item => item.produto_id === produto.id);
 
         if (itemExistente) {
-            if (itemExistente.quantidade >= (produto.estoque_atual || 0)) {
+            if (itemExistente.quantidade >= (produto.stock_quantity || 0)) {
                 alert('Limite de estoque atingido para este item');
                 return;
             }
@@ -110,7 +113,7 @@ export default function VendasPage() {
                 nome: produto.name,
                 quantidade: 1,
                 preco_unitario: produto.price || 0,
-                estoque_disponivel: produto.estoque_atual || 0
+                estoque_disponivel: produto.stock_quantity || 0
             }]);
         }
     };
@@ -309,7 +312,7 @@ export default function VendasPage() {
 
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                                 {produtosFiltrados.map(produto => {
-                                    const semEstoque = (produto.estoque_atual || 0) <= 0;
+                                    const semEstoque = (produto.stock_quantity || 0) <= 0;
                                     return (
                                         <button
                                             key={produto.id}
@@ -329,7 +332,7 @@ export default function VendasPage() {
 
                                             <div>
                                                 <p className="text-sm font-bold text-slate-200 line-clamp-1 group-hover:text-blue-200 transition-colors">{produto.name}</p>
-                                                <p className="text-xs text-slate-500">Estoque: {produto.estoque_atual || 0}</p>
+                                                <p className="text-xs text-slate-500">Estoque: {produto.stock_quantity || 0}</p>
                                             </div>
 
                                             <div className="mt-auto pt-2 flex items-center justify-between border-t border-white/5">
@@ -448,8 +451,8 @@ export default function VendasPage() {
                                 onClick={finalizarVenda}
                                 disabled={loading || carrinho.length === 0}
                                 className={`w-full font-bold py-6 text-base transition-all ${carrinho.length === 0
-                                        ? 'bg-slate-800 text-slate-500'
-                                        : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/20 hover:scale-[1.02] active:scale-95'
+                                    ? 'bg-slate-800 text-slate-500'
+                                    : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/20 hover:scale-[1.02] active:scale-95'
                                     }`}
                             >
                                 {loading ? (
@@ -488,6 +491,16 @@ export default function VendasPage() {
                                 onChange={(e) => setNewClientPhone(e.target.value)}
                                 className="bg-slate-950 border-slate-800 text-slate-100"
                                 placeholder="(00) 00000-0000"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="cpf" className="text-slate-400">CPF (Opcional)</Label>
+                            <Input
+                                id="cpf"
+                                value={newClientCpf}
+                                onChange={(e) => setNewClientCpf(e.target.value)}
+                                className="bg-slate-950 border-slate-800 text-slate-100"
+                                placeholder="000.000.000-00"
                             />
                         </div>
                     </div>

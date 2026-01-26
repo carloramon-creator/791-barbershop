@@ -53,15 +53,19 @@ export async function POST(req: Request) {
         }
 
         // Verificar se tenant tem plano Premium
+        // Verificar se tenant tem plano Premium ou Add-on de Estoque
         const { data: tenant } = await supabase
             .from('tenants')
-            .select('id, plan')
+            .select('id, plan, active_addons')
             .eq('id', userData.tenant_id)
             .single();
 
-        if (!tenant || tenant.plan !== 'premium') {
+        const hasInventoryAddon = tenant?.active_addons?.includes('inventory');
+        const isPremium = tenant?.plan === 'premium';
+
+        if (!tenant || (!isPremium && !hasInventoryAddon)) {
             return NextResponse.json({
-                error: 'Módulo de vendas disponível apenas no Plano Premium'
+                error: 'Módulo de vendas requer Plano Premium ou Módulo de Estoque'
             }, { status: 403 });
         }
 

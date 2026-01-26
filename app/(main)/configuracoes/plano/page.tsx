@@ -394,18 +394,15 @@ export default function PlanPage() {
                     }));
                 }
 
-                // Abrir em NOVA ABA para permitir que usuário volte facilmente
-                window.open(data.checkoutUrl, '_blank');
+                // Abrir NA MESMA ABA (Evita bloqueios e travamentos)
+                window.location.href = data.checkoutUrl;
 
-                // Mostrar mensagem de aguardando pagamento
+                // (Opcional) Mostrar mensagem antes de redirecionar
                 setPendingData({
                     pending: true,
-                    message: 'Pagamento aberto em nova aba. Após pagar, volte aqui que validaremos automaticamente.',
+                    message: 'Redirecionando para o Asaas...',
                     checkoutId: data.checkoutId
                 });
-
-                // Iniciar polling de status
-                startPaymentPolling();
             } else if (data.seu_numero || data.pending || data.pixPayload || data.pdfUrl) {
                 // Resposta do Banco Inter (Pix ou Boleto)
                 if (paymentMethod === 'pix') {
