@@ -71,6 +71,8 @@ export function Sidebar() {
 
     const activeAddons = tenant?.active_addons || [];
 
+
+
     // Helper to check permissions
     const checkPermission = (item: MenuItem) => {
         // Super Admin Logic
@@ -101,6 +103,11 @@ export function Sidebar() {
             const allowedByAddon =
                 (item.permission === 'finance' && activeAddons.includes('finance_module')) ||
                 ((item.permission === 'inventory' || item.permission === 'products' || item.permission === 'sales') && activeAddons.includes('inventory'));
+
+            // Fallback explícito para Vendas
+            if (item.permission === 'sales' && activeAddons.includes('inventory')) {
+                return true;
+            }
 
             if (!allowedByPlan && !allowedByAddon) return false;
         }
