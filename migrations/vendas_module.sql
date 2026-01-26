@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS vendas (
     status VARCHAR(50) NOT NULL DEFAULT 'concluida', -- 'concluida', 'cancelada'
     
     -- Auditoria
-    vendedor_id UUID REFERENCES usuarios(id) ON DELETE SET NULL,
+    vendedor_id UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS vendas (
 CREATE TABLE IF NOT EXISTS venda_itens (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     venda_id UUID NOT NULL REFERENCES vendas(id) ON DELETE CASCADE,
-    produto_id UUID NOT NULL REFERENCES produtos(id) ON DELETE RESTRICT,
+    produto_id UUID NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
     
     -- Dados do item
     quantidade INTEGER NOT NULL CHECK (quantidade > 0),

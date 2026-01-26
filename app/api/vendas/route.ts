@@ -26,7 +26,7 @@ export async function POST(req: Request) {
 
         // Get user's tenant
         const { data: userData } = await supabase
-            .from('usuarios')
+            .from('users')
             .select('tenant_id')
             .eq('id', user.id)
             .single();
@@ -184,7 +184,7 @@ export async function GET(req: Request) {
         }
 
         const { data: userData } = await supabase
-            .from('usuarios')
+            .from('users')
             .select('tenant_id')
             .eq('id', user.id)
             .single();
@@ -204,13 +204,13 @@ export async function GET(req: Request) {
             .select(`
                 *,
                 cliente:clients(id, name),
-                vendedor:usuarios(id, name),
+                vendedor:users(id, name),
                 itens:venda_itens(
                     id,
                     quantidade,
                     preco_unitario,
                     subtotal,
-                    produto:produtos(id, name)
+                    produto:products(id, name)
                 )
             `)
             .eq('tenant_id', userData.tenant_id)
