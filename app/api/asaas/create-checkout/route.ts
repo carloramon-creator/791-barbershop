@@ -222,14 +222,78 @@ export async function POST(req: Request) {
                     successUrl: `${baseUrl}/asaas/checkout/success`,
                     cancelUrl: `${baseUrl}/asaas/checkout/cancel`
                 },
-                items: finalCheckoutItems, // Itens com valor CHEIO
-                discount: discountObj // Desconto aplicado no TOTALda primeira parcela
+                // FIX DUPLICADO: Garantir que descrição e desconto estejam na raiz para o Checkout hosted
+                description: shortDescription,
+                discount: discountObj, // Tentar passar na raiz também para ver se pega na 1ª cobrança
+                subscription: {
+                    cycle: 'MONTHLY',
+                    value: totalAmount,
+                    nextDueDate: dueDateString,
+                    description: shortDescription,
+                    discount: discountObj ? { ...discountObj, cycles: 1 } : null
+                },
+
+                console.log('[ASAAS 2.0] Criando Checkout Recorrente (Imediato):', JSON.stringify(checkoutPayload, null, 2));
+                const checkout = await asaas.createCheckout(checkoutPayload);
+
+                // Registro no banco
+                await getSupabaseAdmin().from('finance').insert({
+                    tenant_id: tenant.id,
+                    type: 'expense',
+                    value: firstPaymentValue,
+                    description: itemDescription,
+                    date: new Date().toISOString().split('T')[0],
+                    is_paid: false,
+                    metadata: {
+                        is_saas_payment: true,
+                        asaas_checkout_id: checkout.id,
+                        external_reference: externalReference,
+                        payment_method: paymentMethod,
+                        plan: planSlug,
+                        addons: finalAddonsSlugs,
+                        is_first_payment: true,
+                        original_value: totalAmount
+                    }
+                });
+
+                const asaasPortalUrl = environment === 'sandbox' ? 'https://sandbox.asaas.com' : 'https://www.asaas.com';
+                return addCorsHeaders(req, NextResponse.json({
+                    success: true,
+                    checkoutId: checkout.id,
+                    checkoutUrl: `${asaasPortalUrl}/checkoutSession/show?id=${checkout.id}`,
+                    amount: firstPaymentValue
+                }));
+            }
+
+            const shortDescription = `Pagamento: ${itemNames.join(' + ')}`.substring(0, 50) + (itemNames.join(' + ').length > 50 ? '...' : '');
+
+            // FALLBACK: createCheckout (Pix, Boleto, Parcelados)
+            const checkoutPayload: any = {
+                customer: customer.id,
+                billingTypes: [paymentMethod],
+                chargeTypes: ['DETACHED'],
+                description: shortDescription,
+                observations: itemDescription,
+                externalReference: externalReference,
+                totalValue: firstPaymentValue,
+                minutesToExpire: 60,
+                callback: {
+                    successUrl: `${baseUrl}/asaas/checkout/success`,
+                    cancelUrl: `${baseUrl}/asaas/checkout/cancel`
+                },
+                items: finalCheckoutItems
             };
 
-            console.log('[ASAAS 2.0] Criando Checkout Recorrente (Imediato):', JSON.stringify(checkoutPayload, null, 2));
+            if (paymentMethod === 'CREDIT_CARD' && interval > 1) {
+                checkoutPayload.chargeTypes = ['DETACHED', 'INSTALLMENT'];
+                checkoutPayload.installment = {
+                    maxInstallmentCount: interval === 12 ? 12 : 6
+                };
+            }
+
             const checkout = await asaas.createCheckout(checkoutPayload);
 
-            // Registro no banco
+            // 5. Salvar Registro de Auditoria no Banco para o Webhook encontrar
             await getSupabaseAdmin().from('finance').insert({
                 tenant_id: tenant.id,
                 type: 'expense',
@@ -240,86 +304,29 @@ export async function POST(req: Request) {
                 metadata: {
                     is_saas_payment: true,
                     asaas_checkout_id: checkout.id,
+                    asaas_customer_id: customer.id,
                     external_reference: externalReference,
                     payment_method: paymentMethod,
                     plan: planSlug,
                     addons: finalAddonsSlugs,
+                    interval: interval,
                     is_first_payment: true,
                     original_value: totalAmount
                 }
             });
 
             const asaasPortalUrl = environment === 'sandbox' ? 'https://sandbox.asaas.com' : 'https://www.asaas.com';
+
             return addCorsHeaders(req, NextResponse.json({
                 success: true,
                 checkoutId: checkout.id,
                 checkoutUrl: `${asaasPortalUrl}/checkoutSession/show?id=${checkout.id}`,
                 amount: firstPaymentValue
             }));
+
+        } catch (error: any) {
+            console.error('[ASAAS 2.0 ERROR]', error);
+            const msg = error.response?.data?.errors?.[0]?.description || error.message || 'Erro interno';
+            return addCorsHeaders(req, NextResponse.json({ error: msg }, { status: 500 }));
         }
-
-        const shortDescription = `Pagamento: ${itemNames.join(' + ')}`.substring(0, 50) + (itemNames.join(' + ').length > 50 ? '...' : '');
-
-        // FALLBACK: createCheckout (Pix, Boleto, Parcelados)
-        const checkoutPayload: any = {
-            customer: customer.id,
-            billingTypes: [paymentMethod],
-            chargeTypes: ['DETACHED'],
-            description: shortDescription,
-            observations: itemDescription,
-            externalReference: externalReference,
-            totalValue: firstPaymentValue,
-            minutesToExpire: 60,
-            callback: {
-                successUrl: `${baseUrl}/asaas/checkout/success`,
-                cancelUrl: `${baseUrl}/asaas/checkout/cancel`
-            },
-            items: finalCheckoutItems
-        };
-
-        if (paymentMethod === 'CREDIT_CARD' && interval > 1) {
-            checkoutPayload.chargeTypes = ['DETACHED', 'INSTALLMENT'];
-            checkoutPayload.installment = {
-                maxInstallmentCount: interval === 12 ? 12 : 6
-            };
-        }
-
-        const checkout = await asaas.createCheckout(checkoutPayload);
-
-        // 5. Salvar Registro de Auditoria no Banco para o Webhook encontrar
-        await getSupabaseAdmin().from('finance').insert({
-            tenant_id: tenant.id,
-            type: 'expense',
-            value: firstPaymentValue,
-            description: itemDescription,
-            date: new Date().toISOString().split('T')[0],
-            is_paid: false,
-            metadata: {
-                is_saas_payment: true,
-                asaas_checkout_id: checkout.id,
-                asaas_customer_id: customer.id,
-                external_reference: externalReference,
-                payment_method: paymentMethod,
-                plan: planSlug,
-                addons: finalAddonsSlugs,
-                interval: interval,
-                is_first_payment: true,
-                original_value: totalAmount
-            }
-        });
-
-        const asaasPortalUrl = environment === 'sandbox' ? 'https://sandbox.asaas.com' : 'https://www.asaas.com';
-
-        return addCorsHeaders(req, NextResponse.json({
-            success: true,
-            checkoutId: checkout.id,
-            checkoutUrl: `${asaasPortalUrl}/checkoutSession/show?id=${checkout.id}`,
-            amount: firstPaymentValue
-        }));
-
-    } catch (error: any) {
-        console.error('[ASAAS 2.0 ERROR]', error);
-        const msg = error.response?.data?.errors?.[0]?.description || error.message || 'Erro interno';
-        return addCorsHeaders(req, NextResponse.json({ error: msg }, { status: 500 }));
     }
-}
