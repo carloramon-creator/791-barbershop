@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ShoppingCart, Search, Plus, Trash2, DollarSign, Loader2, UserPlus, X, Box } from 'lucide-react';
+import { ShoppingCart, Search, Plus, Trash2, DollarSign, Loader2, UserPlus, X, Box, QrCode } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { QRCodeCanvas } from 'qrcode.react';
 
 // Formatador de moeda brasileira
 const formatCurrency = (value: number) => {
@@ -40,6 +41,10 @@ export default function VendasPage() {
     const [newClientPhone, setNewClientPhone] = useState('');
     const [newClientCpf, setNewClientCpf] = useState('');
     const [creatingClient, setCreatingClient] = useState(false);
+
+    // Estado do Modal PIX
+    const [showPixModal, setShowPixModal] = useState(false);
+    const [pixData, setPixData] = useState({ qrCode: '', payload: '' });
 
     // Verificar plano/permissão (já verificado no sidebar, mas bom ter aqui)
     useEffect(() => {
@@ -188,7 +193,36 @@ export default function VendasPage() {
                 throw new Error(data.error || 'Erro ao processar venda');
             }
 
-            alert(`✅ Venda finalizada com sucesso!\nTotal: ${formatCurrency(data.total)}`);
+            // Se for PIX, gerar QR Code
+            if (metodoPagamento === 'pix') {
+                try {
+                    const pixResponse = await fetch('/api/pix/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            value: data.total,
+                            description: `Venda #${data.venda_id.substring(0, 8)}`,
+                            name: tenant?.name || 'Barbearia'
+                        })
+                    });
+
+                    const pixResult = await pixResponse.json();
+                    if (pixResult.success) {
+                        setPixData({
+                            qrCode: pixResult.qrCode,
+                            payload: pixResult.payload
+                        });
+                        setShowPixModal(true);
+                    } else {
+                        alert(`✅ Venda finalizada!\nTotal: ${formatCurrency(data.total)}\n\n⚠️ Não foi possível gerar o QR Code PIX. Configure a chave PIX em Configurações.`);
+                    }
+                } catch (pixError) {
+                    console.error('Erro ao gerar PIX:', pixError);
+                    alert(`✅ Venda finalizada!\nTotal: ${formatCurrency(data.total)}\n\n⚠️ Erro ao gerar QR Code PIX.`);
+                }
+            } else {
+                alert(`✅ Venda finalizada com sucesso!\nTotal: ${formatCurrency(data.total)}`);
+            }
 
             // Limpar formulário
             setCarrinho([]);
@@ -515,6 +549,69 @@ export default function VendasPage() {
                         </Button>
                         <Button onClick={handleCreateClient} disabled={creatingClient} className="bg-blue-600 hover:bg-blue-700 text-white">
                             {creatingClient ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Cadastrar'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Modal PIX */}
+            <Dialog open={showPixModal} onOpenChange={setShowPixModal}>
+                <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <QrCode className="w-5 h-5 text-blue-500" />
+                            Pagamento via PIX
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-6 py-4">
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="bg-white p-4 rounded-xl">
+                                <QRCodeCanvas
+                                    value={pixData.payload}
+                                    size={256}
+                                    level="H"
+                                    includeMargin={true}
+                                />
+                            </div>
+                            <p className="text-sm text-slate-400 text-center">
+                                Escaneie o QR Code com o app do seu banco
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-slate-400 text-xs uppercase font-bold">Código PIX Copia e Cola</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    value={pixData.payload}
+                                    readOnly
+                                    className="bg-slate-950 border-slate-800 text-slate-100 font-mono text-xs"
+                                />
+                                <Button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(pixData.payload);
+                                        alert('Código PIX copiado!');
+                                    }}
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                    Copiar
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            onClick={() => {
+                                setShowPixModal(false);
+                                // Limpar formulário
+                                setCarrinho([]);
+                                setClienteSelecionado(null);
+                                setDescontoPercentual(0);
+                                setMetodoPagamento('dinheiro');
+                                loadData();
+                            }}
+                            className="w-full bg-emerald-600 hover:bg-emerald-700"
+                        >
+                            Concluir
                         </Button>
                     </DialogFooter>
                 </DialogContent>
