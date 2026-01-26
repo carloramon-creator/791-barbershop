@@ -1263,7 +1263,7 @@ export default function PlanPage() {
                                                 <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800" onClick={() => { setOpenDialog(false); fetchInvoices(); }} disabled={saving}>Cancelar</Button>
                                                 {isConfigIncomplete ? (
                                                     <Button
-                                                        onClick={() => router.push('/configuracoes/barbearia')}
+                                                        onClick={() => router.push('/configuracoes/barbearia?edit=true')}
                                                         className="bg-orange-600 hover:bg-orange-700 text-white font-bold"
                                                     >
                                                         Completar Perfil p/ Pagar

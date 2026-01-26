@@ -104,9 +104,13 @@ export function Sidebar() {
                 (item.permission === 'finance' && activeAddons.includes('finance_module')) ||
                 ((item.permission === 'inventory' || item.permission === 'products' || item.permission === 'sales') && activeAddons.includes('inventory'));
 
-            // Fallback explícito para Vendas
-            if (item.permission === 'sales' && activeAddons.includes('inventory')) {
-                return true;
+            // Fallback explícito para Vendas: aceita plano premium OU addon
+            if (item.permission === 'sales') {
+                const isPremium = tenant?.plan === 'premium';
+                const hasInventoryAddon = activeAddons.includes('inventory');
+                if (isPremium || hasInventoryAddon) {
+                    return true;
+                }
             }
 
             if (!allowedByPlan && !allowedByAddon) return false;

@@ -26,6 +26,14 @@ export default function BarbershopSettingsPage() {
     const [uploadError, setUploadError] = useState('');
     const [isEditing, setIsEditing] = useState(false);
 
+    // Auto-ativar edição se vier de "Completar Perfil"
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('edit') === 'true') {
+            setIsEditing(true);
+        }
+    }, []);
+
     // Form state
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -296,11 +304,14 @@ export default function BarbershopSettingsPage() {
                 <CardHeader>
                     <CardTitle className="text-slate-100 flex justify-between items-center">
                         <span>Dados da Barbearia</span>
-                        {!isEditing && (
-                            <Button onClick={() => setIsEditing(true)} variant="outline" size="sm" className="border-slate-700 hover:bg-slate-800">
-                                Editar
-                            </Button>
-                        )}
+                        <Button
+                            onClick={() => setIsEditing(!isEditing)}
+                            variant="outline"
+                            size="sm"
+                            className="border-slate-700 hover:bg-slate-800"
+                        >
+                            {isEditing ? 'Cancelar' : 'Editar'}
+                        </Button>
                     </CardTitle>
                     <CardDescription className="text-slate-500">
                         Informações visíveis no seu perfil e para clientes.
