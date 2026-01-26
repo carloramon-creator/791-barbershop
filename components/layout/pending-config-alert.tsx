@@ -55,7 +55,7 @@ export function PendingConfigAlert() {
                 </div>
             </div>
 
-            <Link href="/configuracoes/barbearia">
+            <Link href="/geral/configuracoes">
                 <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-500 text-slate-950 text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg shadow-orange-900/20 cursor-pointer hover:bg-orange-400">
                     Completar Perfil <ArrowRight size={12} />
                 </div>

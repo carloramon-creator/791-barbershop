@@ -94,7 +94,7 @@ export default function SystemSettingsPage() {
     if (loading) return <div className="p-20 text-center"><Loader2 className="animate-spin inline mr-2" /> Carregando configurações...</div>;
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-4xl mx-auto space-y-4">
             <div>
                 <h1 className="text-3xl font-black text-slate-100 tracking-tighter uppercase">Configurações Globais</h1>
                 <p className="text-slate-500 font-medium">Configure as chaves mestras utilizadas pela plataforma 791 Barber.</p>
@@ -114,9 +114,9 @@ export default function SystemSettingsPage() {
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-4 py-4">
                     {/* Asaas Section */}
-                    <div className="space-y-4 border-b border-slate-800 pb-8">
+                    <div className="space-y-3 border-b border-slate-800 pb-4">
                         <div className="flex items-center gap-2 mb-4">
                             <div className="w-8 h-8 rounded-lg bg-blue-900/50 flex items-center justify-center text-blue-400">
                                 <span className="font-bold text-xs">AS</span>
@@ -124,7 +124,7 @@ export default function SystemSettingsPage() {
                             <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">Asaas (Principal)</h3>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div className="space-y-2">
                                 <Label className="text-slate-400 text-xs uppercase font-bold">Ambiente</Label>
                                 <select
@@ -167,7 +167,7 @@ export default function SystemSettingsPage() {
                     </div>
 
                     {/* Asaas Branding Section */}
-                    <div className="space-y-4 border-b border-slate-800 pb-8 pt-4">
+                    <div className="space-y-3 border-b border-slate-800 pb-4 pt-3">
                         <div className="flex items-center gap-2 mb-4">
                             <div className="w-8 h-8 rounded-lg bg-blue-900/50 flex items-center justify-center text-blue-400">
                                 <span className="font-bold text-xs">🎨</span>
@@ -329,7 +329,7 @@ export default function SystemSettingsPage() {
                     </div>
 
                     {/* Stripe Section (Legacy/Backup) */}
-                    <div className="space-y-4 pt-4 opacity-50 hover:opacity-100 transition-opacity">
+                    <div className="space-y-3 pt-3 opacity-50 hover:opacity-100 transition-opacity">
                         <div className="flex items-center gap-2 mb-4">
                             <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400">
                                 <CreditCard size={14} />
@@ -396,7 +396,7 @@ export default function SystemSettingsPage() {
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-4 py-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <Label className="text-slate-400 text-xs uppercase font-bold">Client ID</Label>
@@ -493,7 +493,7 @@ export default function SystemSettingsPage() {
                     <CardTitle className="text-slate-100">Endpoints do Sistema</CardTitle>
                     <CardDescription className="text-slate-400">URLs que você deve configurar nos painéis externos.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-4 py-4">
                     <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-4">
                         <div className="flex items-center gap-3 text-amber-500 mb-2">
                             <Shield className="w-5 h-5" />
