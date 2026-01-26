@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { cookies } from 'next/headers';
+import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 /**
  * POST /api/vendas
@@ -8,33 +8,13 @@ import { cookies } from 'next/headers';
  */
 export async function POST(req: Request) {
     try {
-        const cookieStore = cookies();
+        const { tenant, user } = await getCurrentUserAndTenant();
+
+        if (!tenant || !user) {
+            return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+        }
+
         const supabase = getSupabaseAdmin();
-
-        // Get user from session
-        const authHeader = req.headers.get('authorization');
-        if (!authHeader) {
-            return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
-        }
-
-        const token = authHeader.replace('Bearer ', '');
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-        if (authError || !user) {
-            return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
-        }
-
-        // Get user's tenant
-        const { data: userData } = await supabase
-            .from('users')
-            .select('tenant_id')
-            .eq('id', user.id)
-            .single();
-
-        if (!userData?.tenant_id) {
-            return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 404 });
-        }
-
         const body = await req.json();
         const {
             cliente_id,
@@ -52,14 +32,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Método de pagamento obrigatório' }, { status: 400 });
         }
 
-        // Verificar se tenant tem plano Premium
         // Verificar se tenant tem plano Premium ou Add-on de Estoque
-        const { data: tenant } = await supabase
-            .from('tenants')
-            .select('id, plan, active_addons')
-            .eq('id', userData.tenant_id)
-            .single();
-
         const hasInventoryAddon = tenant?.active_addons?.includes('inventory');
         const isPremium = tenant?.plan === 'premium';
 

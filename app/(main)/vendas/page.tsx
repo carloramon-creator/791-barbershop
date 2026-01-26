@@ -30,6 +30,7 @@ export default function VendasPage() {
     const [descontoPercentual, setDescontoPercentual] = useState(0);
     const [metodoPagamento, setMetodoPagamento] = useState('dinheiro');
     const [loading, setLoading] = useState(false);
+    const [loadingData, setLoadingData] = useState(true);
     const [buscaCliente, setBuscaCliente] = useState('');
     const [buscaProduto, setBuscaProduto] = useState('');
 
@@ -52,6 +53,7 @@ export default function VendasPage() {
 
     const loadData = async () => {
         try {
+            setLoadingData(true);
             const [clientesData, produtosData] = await Promise.all([
                 Api.getClients(),
                 Api.getProducts()
@@ -60,6 +62,9 @@ export default function VendasPage() {
             setProdutos(produtosData || []);
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
+            alert('Erro ao carregar dados. Tente recarregar a página.');
+        } finally {
+            setLoadingData(false);
         }
     };
 
