@@ -221,6 +221,7 @@ export async function POST(req: Request) {
                     successUrl: `${baseUrl}/asaas/checkout/success`,
                     cancelUrl: `${baseUrl}/asaas/checkout/cancel`
                 },
+                items: finalCheckoutItems, // RESTAURADO: Campo obrigatório que sumiu
                 // FIX DUPLICADO: Garantir que descrição e desconto estejam na raiz para o Checkout hosted
                 description: shortDescription,
                 discount: discountObj, // Tentar passar na raiz também para ver se pega na 1ª cobrança
