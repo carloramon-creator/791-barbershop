@@ -40,8 +40,8 @@ export default function VendasPage() {
     const loadData = async () => {
         try {
             const [clientesData, produtosData] = await Promise.all([
-                Api.getClientes(),
-                Api.getProdutos()
+                Api.getClients(),
+                Api.getProducts()
             ]);
             setClientes(clientesData || []);
             setProdutos(produtosData || []);
