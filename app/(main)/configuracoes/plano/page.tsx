@@ -1003,22 +1003,22 @@ export default function PlanPage() {
                                 </DialogDescription>
                             </DialogHeader>
 
-                            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                            <div className="flex-1 overflow-y-auto px-6 py-2 space-y-2">
                                 {!pixData && !boletoData && !pendingData && (
                                     <>
-                                        <Label className="text-xs text-slate-500 uppercase tracking-wider">Forma de Pagamento</Label>
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <Label className="text-[10px] text-slate-500 uppercase tracking-wider">Forma de Pagamento</Label>
+                                        <div className="grid grid-cols-3 gap-2">
                                             <button
                                                 onClick={() => setPaymentMethod('card')}
                                                 className={cn(
-                                                    "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
+                                                    "flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all",
                                                     paymentMethod === 'card'
                                                         ? "border-amber-500 bg-amber-500/5 text-slate-100"
                                                         : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
                                                 )}
                                             >
-                                                <CreditCard className="w-5 h-5" />
-                                                <span className="text-[10px] font-black uppercase">Cartão</span>
+                                                <CreditCard className="w-4 h-4" />
+                                                <span className="text-[9px] font-black uppercase">Cartão</span>
                                             </button>
                                             <button
                                                 onClick={() => setPaymentMethod('pix')}
@@ -1029,8 +1029,8 @@ export default function PlanPage() {
                                                         : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
                                                 )}
                                             >
-                                                <span className="text-lg font-black leading-none">PIX</span>
-                                                <span className="text-[10px] font-black uppercase">Instantâneo</span>
+                                                <span className="text-sm font-black leading-none">PIX</span>
+                                                <span className="text-[9px] font-black uppercase">Rápido</span>
                                             </button>
                                             <button
                                                 onClick={() => setPaymentMethod('boleto-inter')}
@@ -1041,15 +1041,15 @@ export default function PlanPage() {
                                                         : "border-slate-800 bg-slate-950 text-slate-500 hover:border-slate-700"
                                                 )}
                                             >
-                                                <FileText className="w-5 h-5" />
-                                                <span className="text-[10px] font-black uppercase">Boleto</span>
+                                                <FileText className="w-4 h-4" />
+                                                <span className="text-[9px] font-black uppercase">Boleto</span>
                                             </button>
                                         </div>
 
                                         {/* SELETOR DE PARCELAS REMOVIDO A PEDIDO DO USUÁRIO - O CLIENTE ESCOLHE NO ASAAS */}
 
-                                        <div className="space-y-2 pt-2">
-                                            <Label className="text-xs text-slate-500 uppercase tracking-wider">Possui um cupom?</Label>
+                                        <div className="space-y-1 pt-1">
+                                            <Label className="text-[10px] text-slate-500 uppercase tracking-wider">Cupom</Label>
                                             <input
                                                 type="text"
                                                 placeholder="INSIRA SEU CUPOM"
@@ -1058,7 +1058,7 @@ export default function PlanPage() {
                                                     setCouponCode(e.target.value.toUpperCase());
                                                     setError(null);
                                                 }}
-                                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:border-amber-500 outline-none transition-all"
+                                                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-600 focus:border-amber-500 outline-none transition-all"
                                             />
                                             {paymentMethod === 'boleto-inter' && !tenantHasDocument && (
                                                 <p className="text-[10px] font-bold text-red-500 uppercase tracking-tight mt-2 animate-pulse leading-tight">
@@ -1071,8 +1071,8 @@ export default function PlanPage() {
                                                 </p>
                                             )}
                                         </div>
-                                    </div>
-                            )}
+                                    </>
+                                )}
 
                                 {pendingData && (
                                     <div className="py-8 text-center space-y-4">
