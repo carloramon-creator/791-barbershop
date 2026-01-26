@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { getUserFromRequest } from '@/lib/server-utils';
+import { cookies } from 'next/headers';
 
 /**
  * POST /api/vendas
@@ -8,9 +8,31 @@ import { getUserFromRequest } from '@/lib/server-utils';
  */
 export async function POST(req: Request) {
     try {
-        const user = await getUserFromRequest(req);
-        if (!user) {
+        const cookieStore = cookies();
+        const supabase = getSupabaseAdmin();
+
+        // Get user from session
+        const authHeader = req.headers.get('authorization');
+        if (!authHeader) {
             return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+        }
+
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+        }
+
+        // Get user's tenant
+        const { data: userData } = await supabase
+            .from('usuarios')
+            .select('tenant_id')
+            .eq('id', user.id)
+            .single();
+
+        if (!userData?.tenant_id) {
+            return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 404 });
         }
 
         const body = await req.json();
@@ -30,13 +52,11 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Método de pagamento obrigatório' }, { status: 400 });
         }
 
-        const supabase = getSupabaseAdmin();
-
         // Verificar se tenant tem plano Premium
         const { data: tenant } = await supabase
             .from('tenants')
             .select('id, plan')
-            .eq('id', user.tenant_id)
+            .eq('id', userData.tenant_id)
             .single();
 
         if (!tenant || tenant.plan !== 'premium') {
@@ -59,7 +79,7 @@ export async function POST(req: Request) {
         const { data: venda, error: vendaError } = await supabase
             .from('vendas')
             .insert({
-                tenant_id: user.tenant_id,
+                tenant_id: userData.tenant_id,
                 cliente_id: cliente_id || null,
                 subtotal,
                 desconto_percentual,
@@ -150,9 +170,27 @@ export async function POST(req: Request) {
  */
 export async function GET(req: Request) {
     try {
-        const user = await getUserFromRequest(req);
-        if (!user) {
+        const authHeader = req.headers.get('authorization');
+        if (!authHeader) {
             return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+        }
+
+        const supabase = getSupabaseAdmin();
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+        }
+
+        const { data: userData } = await supabase
+            .from('usuarios')
+            .select('tenant_id')
+            .eq('id', user.id)
+            .single();
+
+        if (!userData?.tenant_id) {
+            return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 404 });
         }
 
         const { searchParams } = new URL(req.url);
@@ -175,7 +213,7 @@ export async function GET(req: Request) {
                     produto:produtos(id, name)
                 )
             `)
-            .eq('tenant_id', user.tenant_id)
+            .eq('tenant_id', userData.tenant_id)
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
 
