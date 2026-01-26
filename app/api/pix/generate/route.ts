@@ -26,6 +26,7 @@ export async function POST(req: Request) {
         const payload = pix.payload();
 
         return NextResponse.json({
+            success: true,
             qrBase64,
             payload,
             copyText: payload,
