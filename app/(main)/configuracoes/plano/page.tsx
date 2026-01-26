@@ -170,13 +170,39 @@ export default function PlanPage() {
         // Verificar imediatamente (com overlay) ao carregar a página
         checkPendingAsaasPayment(false);
 
-        // Continuar verificando a cada 10 segundos (silenciosamente) se houver pagamento pendente
-        const interval = setInterval(() => {
+        // Polling Universal: monitorar tanto Asaas quanto status da assinatura direta (para Inter/PIX e outros)
+        const interval = setInterval(async () => {
+            // 1. Check Asaas (via localStorage)
             const pendingStr = localStorage.getItem('asaas_pending_payment');
             if (pendingStr) {
                 checkPendingAsaasPayment(true);
             }
-        }, 10000);
+
+            // 2. Check Subscription Status (Universal) - Resolve travamentos do Inter
+            const isProcessingInter = document.querySelector('[data-testid="inter-processing"]'); // Vou adicionar esse ID no elemento de loading depois
+            // Ou simplesmente checar sempre se não estiver ativo
+
+            try {
+                const res = await fetch('/api/tenant/subscription-status');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.subscription_status === 'active') {
+                        // Se ativou, limpar todos os estados pendentes
+                        if (localStorage.getItem('asaas_pending_payment') || document.body.innerText.includes('Gerando seu PIX')) {
+                            localStorage.removeItem('asaas_pending_payment');
+                            setCheckingAsaasPayment(false);
+                            setPendingData(null); // Fecha o motor girando do Inter
+                            alert('✅ Pagamento confirmado! Seu plano foi ativado.');
+                            await fetchCurrentPlan();
+                            await fetchInvoices();
+                        }
+                    }
+                }
+            } catch (err) {
+                // silêncio é ouro no polling
+            }
+
+        }, 5000); // 5 segundos para ser mais responsivo
 
         return () => clearInterval(interval);
     }, []);

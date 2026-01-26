@@ -100,8 +100,7 @@ export function Sidebar() {
             const allowedByPlan = planPermissions.includes(item.permission);
             const allowedByAddon =
                 (item.permission === 'finance' && activeAddons.includes('finance_module')) ||
-                ((item.permission === 'inventory' || item.permission === 'products') && activeAddons.includes('inventory')) ||
-                (item.permission === 'sales' && tenant?.plan === 'premium');
+                ((item.permission === 'inventory' || item.permission === 'products' || item.permission === 'sales') && activeAddons.includes('inventory'));
 
             if (!allowedByPlan && !allowedByAddon) return false;
         }
