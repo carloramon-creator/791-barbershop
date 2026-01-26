@@ -61,7 +61,7 @@ export default function PlanPage() {
     const [couponCode, setCouponCode] = useState('');
     const [pixData, setPixData] = useState<{ pixPayload: string; amount: number; expiresAt: string; pdfUrl?: string } | null>(null);
     const [boletoData, setBoletoData] = useState<{ nossoNumero: string; codigoBarras: string; linhaDigitavel: string; pdfUrl: string; amount?: number } | null>(null);
-    const [pendingData, setPendingData] = useState<{ message: string; pending: boolean; seu_numero?: string } | null>(null);
+    const [pendingData, setPendingData] = useState<{ message: string; pending: boolean; seu_numero?: string; checkoutId?: string } | null>(null);
     const [tenantHasDocument, setTenantHasDocument] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [invoices, setInvoices] = useState<any[]>([]);
@@ -180,6 +180,17 @@ export default function PlanPage() {
 
         return () => clearInterval(interval);
     }, []);
+
+    // Função para iniciar polling manualmente
+    const startPaymentPolling = () => {
+        // O polling já está rodando automaticamente no useEffect acima
+        // Esta função apenas força uma verificação imediata
+        const pendingStr = localStorage.getItem('asaas_pending_payment');
+        if (pendingStr) {
+            setCheckingAsaasPayment(true);
+            // O interval do useEffect vai pegar automaticamente
+        }
+    };
 
 
     async function fetchCurrentPlan(shouldSetLoading = true) {
@@ -357,8 +368,18 @@ export default function PlanPage() {
                     }));
                 }
 
-                // REDIRECIONAR NA MESMA ABA (Evita abas órfãs)
-                window.location.href = data.checkoutUrl;
+                // Abrir em NOVA ABA para permitir que usuário volte facilmente
+                window.open(data.checkoutUrl, '_blank');
+
+                // Mostrar mensagem de aguardando pagamento
+                setPendingData({
+                    pending: true,
+                    message: 'Pagamento aberto em nova aba. Após pagar, volte aqui que validaremos automaticamente.',
+                    checkoutId: data.checkoutId
+                });
+
+                // Iniciar polling de status
+                startPaymentPolling();
             } else if (data.seu_numero || data.pending || data.pixPayload || data.pdfUrl) {
                 // Resposta do Banco Inter (Pix ou Boleto)
                 if (paymentMethod === 'pix') {
