@@ -30,8 +30,11 @@ export default function RelatorioVendasPage() {
     const [relatorio, setRelatorio] = useState<any>(null);
 
     const gerarRelatorio = async () => {
+        // Log para debug
+        console.log('Gerando relatório:', { dataInicio, dataFim });
+
         if (!dataInicio || !dataFim) {
-            alert('Selecione o período');
+            alert('Selecione o período (Data Início e Data Fim)');
             return;
         }
 

@@ -202,7 +202,8 @@ export default function VendasPage() {
                         body: JSON.stringify({
                             value: data.total,
                             description: `Venda #${data.venda_id.substring(0, 8)}`,
-                            name: tenant?.name || 'Barbearia'
+                            name: tenant?.name || 'Barbearia',
+                            key: tenant?.pix_key || '791barber@pix.com'
                         })
                     });
 
