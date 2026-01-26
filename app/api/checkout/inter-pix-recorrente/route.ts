@@ -15,9 +15,14 @@ export async function POST(req: Request) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Não autenticado' }, { status: 401 }));
         }
 
-        const { plan: planSlug, coupon, interval = 1 } = await req.json();
+        const { plan: planSlug, addons: addonsSlugs = [], coupon, interval = 1, tempId } = await req.json();
 
-        // 1. Processar Plano
+        // 1. Calcular Valores (Cópia da lógica do Checkout Padrão)
+        let totalPlanAmount = 0;
+        let totalAddonAmount = 0;
+        let itemNames: string[] = [];
+
+        // 1.1 Processar Plano
         const { data: planData } = await getSupabaseAdmin()
             .from('system_plans')
             .select('*')
@@ -26,9 +31,50 @@ export async function POST(req: Request) {
 
         if (!planData) throw new Error('Plano inválido');
 
-        let amount = Number(planData.price);
-        // Descontos para Semestral/Anual não se aplicam bem a recorrência mensal automata? 
-        // O Pix Automático do Inter é geralmente mensal.
+        // Para recorrência mensal, usamos o preço base sem desconto de anualidade
+        totalPlanAmount = Number(planData.price);
+        itemNames.push(planData.name);
+
+        // 1.2 Processar Add-ons
+        for (const slug of addonsSlugs) {
+            const { data: addon } = await getSupabaseAdmin()
+                .from('system_addons')
+                .select('*')
+                .eq('slug', slug)
+                .single();
+            if (!addon) continue;
+
+            totalAddonAmount += Number(addon.price);
+            itemNames.push(addon.name);
+        }
+
+        let totalAmount = Number((totalPlanAmount + totalAddonAmount).toFixed(2));
+        const itemNameLabel = itemNames.join(' + ');
+
+        // 2. Processar Cupom
+        let discountFromCoupon = 0;
+        let couponApplied = null;
+
+        if (coupon && coupon.trim() !== '') {
+            const code = String(coupon).trim().toUpperCase();
+            const { data: couponData } = await getSupabaseAdmin()
+                .from('system_coupons')
+                .select('*')
+                .eq('code', code)
+                .eq('is_active', true)
+                .single();
+
+            if (couponData) {
+                couponApplied = code;
+                if (couponData.discount_percent) {
+                    discountFromCoupon = (totalAmount * Number(couponData.discount_percent)) / 100;
+                } else if (couponData.discount_value) {
+                    discountFromCoupon = Number(couponData.discount_value);
+                }
+            }
+        }
+
+        const amount = Math.max(0, totalAmount - discountFromCoupon);
 
         // 2. Configurações Inter
         const { data: settingsData } = await getSupabaseAdmin()
@@ -57,6 +103,10 @@ export async function POST(req: Request) {
 
         // 3. Garantir documento
         let doc = (tenant.cnpj || tenant.cpf || tenant.document || '').replace(/\D/g, '');
+        if (!doc) {
+            const { data: userData } = await getSupabaseAdmin().from('users').select('cpf').eq('id', user.id).single();
+            if (userData?.cpf) doc = userData.cpf.replace(/\D/g, '');
+        }
         if (!doc) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Perfil incompleto: CPF/CNPJ necessário.' }, { status: 400 }));
         }
@@ -104,7 +154,7 @@ export async function POST(req: Request) {
                 tenant_id: tenant.id,
                 type: 'expense',
                 value: amount,
-                description: `Pix Automático - Plano ${planData.name}`,
+                description: `Pix Automático - ${itemNameLabel}`,
                 date: new Date().toISOString().split('T')[0],
                 is_paid: false,
                 metadata: {
@@ -113,7 +163,9 @@ export async function POST(req: Request) {
                     id_rec: agreement.idRec,
                     loc_id: locId,
                     plan: planSlug,
-                    interval: 1
+                    addons: addonsSlugs,
+                    interval: 1,
+                    coupon: couponApplied
                 }
             });
 

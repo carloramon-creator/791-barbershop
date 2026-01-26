@@ -45,7 +45,7 @@ export class InterAPIV3 {
         params.append('client_secret', this.config.clientSecret);
         // TENTATIVA ROBUSTA: Pedir apenas o necessário para Recorrência se for esse o objetivo
         // 'rec.read rec.write' são essenciais. Se falhar, é bloqueio do banco.
-        const scopes = 'pix.read pix.write rec.read rec.write';
+        const scopes = 'pix.read pix.write rec.read rec.write boleto-cobranca.read boleto-cobranca.write';
         params.append('scope', scopes);
         params.append('grant_type', 'client_credentials');
 

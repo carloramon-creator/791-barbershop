@@ -356,11 +356,19 @@ export default function PlanPage() {
 
             let endpoint = '/api/asaas/create-checkout';
             if (paymentMethod === 'pix' || paymentMethod === 'boleto-inter') {
-                setPendingData({
-                    pending: true,
-                    message: paymentMethod === 'pix' ? 'Gerando seu PIX no Banco Inter...' : 'Gerando seu Boleto no Banco Inter...'
-                });
-                endpoint = paymentMethod === 'pix' ? '/api/checkout/inter-pix' : '/api/checkout/inter-boleto';
+                if (paymentMethod === 'pix' && selectedInterval === 1) {
+                    setPendingData({
+                        pending: true,
+                        message: 'Configurando Pix Automático (Recorrência)...'
+                    });
+                    endpoint = '/api/checkout/inter-pix-recorrente';
+                } else {
+                    setPendingData({
+                        pending: true,
+                        message: paymentMethod === 'pix' ? 'Gerando seu PIX no Banco Inter...' : 'Gerando seu Boleto no Banco Inter...'
+                    });
+                    endpoint = paymentMethod === 'pix' ? '/api/checkout/inter-pix' : '/api/checkout/inter-boleto';
+                }
             }
 
             const payload = {
