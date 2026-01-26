@@ -921,154 +921,154 @@ export default function PlanPage() {
                         }
                     }}>
                         <DialogContent
-                            className="border-slate-800 light:border-slate-200 bg-slate-900 light:bg-white text-slate-100 light:text-slate-900 max-w-md w-full rounded-2xl md:rounded-3xl max-h-[95vh] h-auto overflow-y-auto flex flex-col p-5"
+                            className="border-slate-800 light:border-slate-200 bg-slate-900 light:bg-white text-slate-100 light:text-slate-900 max-w-md w-full rounded-2xl md:rounded-3xl max-h-[95vh] flex flex-col p-0 overflow-hidden shadow-2xl"
                             onPointerDownOutside={() => fetchInvoices()}
                             onEscapeKeyDown={() => fetchInvoices()}
                         >
-                            <DialogHeader className="flex-shrink-0">
-                                <DialogTitle className="font-black text-xl md:text-2xl tracking-tighter uppercase">Confirmar Contratação</DialogTitle>
-                                <DialogDescription className="text-slate-400 light:text-slate-500 font-bold">
-                                    <div className="flex flex-col gap-3">
-                                        {selectedPlan && (
-                                            <div className="flex flex-col bg-slate-950/50 p-3 rounded-xl border border-slate-800/50">
-                                                <div className="flex justify-between items-center mb-1">
-                                                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Plano Selecionado</span>
-                                                    <span className="text-[10px] font-bold text-blue-500 uppercase">{selectedInterval === 1 ? 'Mensal' : selectedInterval === 6 ? 'Semestral' : 'Anual'}</span>
-                                                </div>
-                                                <div className="flex justify-between items-baseline">
-                                                    <span className="text-sm font-black text-slate-200 capitalize">{selectedPlan}</span>
-                                                    <span className="text-sm font-black text-slate-100">
-                                                        {(() => {
-                                                            const plan = dynamicPlans.find(p => p.slug === selectedPlan);
-                                                            if (!plan) return '';
-                                                            const basePrice = plan.price || 0;
-                                                            const discount = selectedInterval === 6 ? 10 : selectedInterval === 12 ? 20 : 0;
-                                                            const totalPrice = (basePrice * selectedInterval) * (1 - (discount / 100));
-                                                            return ` R$ ${(totalPrice || 0).toFixed(2).replace('.', ',')}`;
-                                                        })()}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* SELEÇÃO INTERATIVA DE ADD-ONS NO MODAL */}
-                                        <div className="space-y-1">
-                                            <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Turbinar com Módulos</span>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                {(() => {
-                                                    const filtered = dynamicAddons.filter(addon => {
-                                                        // RADICAL FIX RAMON: No modal, se for Trial, MOSTRA TUDO.
-                                                        const isPaidActive = subscriptionStatus === 'active' && !!tenantObject?.asaas_subscription_id;
-                                                        if (!isPaidActive) return true;
-
-                                                        const plan = dynamicPlans.find(p => p.slug === selectedPlan);
-                                                        if (!plan) return true;
-                                                        const addonName = (addon.name || '').toLowerCase().replace('módulo ', '').trim();
-                                                        const features = (plan.features || []).map((f: any) => String(f || '').toLowerCase());
-                                                        return !features.some((f: string) => f.includes(addonName) || f.includes(addon.slug));
-                                                    });
-
-                                                    if (filtered.length === 0) return <p className="col-span-2 text-xs text-slate-500 italic text-center py-2">Nenhum módulo extra disponível para este plano.</p>;
-
-                                                    return filtered.map(addon => {
-                                                        const isSelected = selectedAddonsSlugs.includes(addon.slug);
-                                                        return (
-                                                            <button
-                                                                key={addon.slug}
-                                                                onClick={() => toggleAddon(addon.slug)}
-                                                                className={cn(
-                                                                    "flex flex-col items-start justify-center p-3 rounded-xl border transition-all duration-200 group relative overflow-hidden text-left h-full",
-                                                                    isSelected
-                                                                        ? "bg-amber-500/10 border-amber-500/50 text-slate-100"
-                                                                        : "bg-slate-950/30 border-slate-800 text-slate-400 hover:border-slate-700"
-                                                                )}
-                                                            >
-                                                                <div className="flex items-center gap-2 mb-1 w-full">
-                                                                    <Zap size={10} className={cn(isSelected ? "text-amber-500" : "text-slate-600")} />
-                                                                    <span className="text-[9px] font-black uppercase tracking-tight truncate w-full">
-                                                                        {addon.name.replace('Módulo ', '')}
-                                                                    </span>
-                                                                </div>
-                                                                <span className="text-[10px] font-bold opacity-90 block">
-                                                                    + R$ {Number(addon.price).toFixed(2).replace('.', ',')}
-                                                                    <span className="text-[8px] font-normal text-slate-500 ml-1">/mês</span>
-                                                                </span>
-                                                                {isSelected && (
-                                                                    <div className="absolute top-2 right-2">
-                                                                        <div className="bg-amber-500 rounded-full p-0.5">
-                                                                            <Check size={8} className="text-slate-950 stroke-[4px]" />
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </button>
-                                                        );
-                                                    });
-                                                })()}
-                                            </div>
-                                        </div>
-
-
-
-                                        <div className="mt-2 pt-3 border-t border-slate-800 flex justify-between items-center">
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Total do período</span>
-                                                <span className="text-[9px] text-slate-500 font-bold">({selectedInterval} {selectedInterval === 1 ? 'mês' : 'meses'})</span>
-                                            </div>
-                                            <span className="text-2xl font-black text-white">
-                                                R$ {(() => {
-                                                    const plan = dynamicPlans.find(p => p.slug === selectedPlan);
-                                                    const planPrice = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
-
-                                                    let addonsPrice = 0;
-                                                    selectedAddonsSlugs.forEach(slug => {
-                                                        const addon = dynamicAddons.find(a => a.slug === slug);
-                                                        if (addon) addonsPrice += Number(addon.price) * selectedInterval;
-                                                    });
-
-                                                    return (planPrice + addonsPrice).toFixed(2).replace('.', ',');
-                                                })()}
-                                            </span>
-                                        </div>
-
-                                        {/* VISUALIZAÇÃO DO DESCONTO 10% (Boas-vindas) */}
-                                        {(() => {
-                                            const isTrialOrUnpaid = (!['active', 'active_paid', 'paid'].includes(subscriptionStatus || '') || ['trial', 'trialing'].includes(subscriptionStatus || ''));
-                                            const isFirstSub = !tenantObject?.asaas_subscription_id || isTrialOrUnpaid;
-
-                                            if (isFirstSub && (selectedPlan || selectedAddonsSlugs.length > 0)) {
-                                                const plan = dynamicPlans.find(p => p.slug === selectedPlan);
-                                                const planTotal = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
-
-                                                let addonsTotal = 0;
-                                                selectedAddonsSlugs.forEach(slug => {
-                                                    const addon = dynamicAddons.find(a => a.slug === slug);
-                                                    if (addon) addonsTotal += Number(addon.price) * selectedInterval;
-                                                });
-
-                                                const grandTotal = planTotal + addonsTotal;
-                                                const discounted = grandTotal * 0.9;
-
-                                                return (
-                                                    <div className="bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-xl flex items-center justify-between">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-6 h-6 bg-emerald-500/20 rounded-full flex items-center justify-center animate-bounce">
-                                                                <span className="text-[10px]">🎉</span>
-                                                            </div>
-                                                            <span className="text-emerald-500 font-black text-[10px] uppercase tracking-wider">Boas-vindas (10% OFF)</span>
-                                                        </div>
-                                                        <span className="text-sm font-black text-emerald-400 leading-none">
-                                                            R$ {discounted.toFixed(2).replace('.', ',')}
-                                                        </span>
-                                                    </div>
-                                                );
-                                            }
-                                            return null;
-                                        })()}
-                                    </div>
+                            <DialogHeader className="flex-shrink-0 pb-2 border-b border-slate-800/50">
+                                <DialogTitle className="font-black text-xl md:text-2xl tracking-tighter uppercase text-slate-100">Confirmar Contratação</DialogTitle>
+                                <DialogDescription className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">
                                 </DialogDescription>
                             </DialogHeader>
 
-                            <div className="flex-1 overflow-y-auto px-6 py-2 space-y-2">
+                            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 pb-20">
+                                <div className="flex flex-col gap-4">
+                                    {selectedPlan && (
+                                        <div className="flex flex-col bg-slate-950/50 p-3 rounded-xl border border-slate-800/50">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Plano Selecionado</span>
+                                                <span className="text-[10px] font-bold text-blue-500 uppercase">{selectedInterval === 1 ? 'Mensal' : selectedInterval === 6 ? 'Semestral' : 'Anual'}</span>
+                                            </div>
+                                            <div className="flex justify-between items-baseline">
+                                                <span className="text-sm font-black text-slate-200 capitalize">{selectedPlan}</span>
+                                                <span className="text-sm font-black text-slate-100">
+                                                    {(() => {
+                                                        const plan = dynamicPlans.find(p => p.slug === selectedPlan);
+                                                        if (!plan) return '';
+                                                        const basePrice = plan.price || 0;
+                                                        const discount = selectedInterval === 6 ? 10 : selectedInterval === 12 ? 20 : 0;
+                                                        const totalPrice = (basePrice * selectedInterval) * (1 - (discount / 100));
+                                                        return ` R$ ${(totalPrice || 0).toFixed(2).replace('.', ',')}`;
+                                                    })()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* SELEÇÃO INTERATIVA DE ADD-ONS NO MODAL */}
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Turbinar com Módulos</span>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {(() => {
+                                                const filtered = dynamicAddons.filter(addon => {
+                                                    // RADICAL FIX RAMON: No modal, se for Trial, MOSTRA TUDO.
+                                                    const isPaidActive = subscriptionStatus === 'active' && !!tenantObject?.asaas_subscription_id;
+                                                    if (!isPaidActive) return true;
+
+                                                    const plan = dynamicPlans.find(p => p.slug === selectedPlan);
+                                                    if (!plan) return true;
+                                                    const addonName = (addon.name || '').toLowerCase().replace('módulo ', '').trim();
+                                                    const features = (plan.features || []).map((f: any) => String(f || '').toLowerCase());
+                                                    return !features.some((f: string) => f.includes(addonName) || f.includes(addon.slug));
+                                                });
+
+                                                if (filtered.length === 0) return <p className="col-span-2 text-xs text-slate-500 italic text-center py-2">Nenhum módulo extra disponível para este plano.</p>;
+
+                                                return filtered.map(addon => {
+                                                    const isSelected = selectedAddonsSlugs.includes(addon.slug);
+                                                    return (
+                                                        <button
+                                                            key={addon.slug}
+                                                            onClick={() => toggleAddon(addon.slug)}
+                                                            className={cn(
+                                                                "flex flex-col items-start justify-center p-3 rounded-xl border transition-all duration-200 group relative overflow-hidden text-left h-full",
+                                                                isSelected
+                                                                    ? "bg-amber-500/10 border-amber-500/50 text-slate-100"
+                                                                    : "bg-slate-950/30 border-slate-800 text-slate-400 hover:border-slate-700"
+                                                            )}
+                                                        >
+                                                            <div className="flex items-center gap-2 mb-1 w-full">
+                                                                <Zap size={10} className={cn(isSelected ? "text-amber-500" : "text-slate-600")} />
+                                                                <span className="text-[9px] font-black uppercase tracking-tight truncate w-full">
+                                                                    {addon.name.replace('Módulo ', '')}
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-[10px] font-bold opacity-90 block">
+                                                                + R$ {Number(addon.price).toFixed(2).replace('.', ',')}
+                                                                <span className="text-[8px] font-normal text-slate-500 ml-1">/mês</span>
+                                                            </span>
+                                                            {isSelected && (
+                                                                <div className="absolute top-2 right-2">
+                                                                    <div className="bg-amber-500 rounded-full p-0.5">
+                                                                        <Check size={8} className="text-slate-950 stroke-[4px]" />
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                });
+                                            })()}
+                                        </div>
+                                    </div>
+
+
+
+                                    <div className="mt-2 pt-3 border-t border-slate-800 flex justify-between items-center">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Total do período</span>
+                                            <span className="text-[9px] text-slate-500 font-bold">({selectedInterval} {selectedInterval === 1 ? 'mês' : 'meses'})</span>
+                                        </div>
+                                        <span className="text-2xl font-black text-white">
+                                            R$ {(() => {
+                                                const plan = dynamicPlans.find(p => p.slug === selectedPlan);
+                                                const planPrice = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
+
+                                                let addonsPrice = 0;
+                                                selectedAddonsSlugs.forEach(slug => {
+                                                    const addon = dynamicAddons.find(a => a.slug === slug);
+                                                    if (addon) addonsPrice += Number(addon.price) * selectedInterval;
+                                                });
+
+                                                return (planPrice + addonsPrice).toFixed(2).replace('.', ',');
+                                            })()}
+                                        </span>
+                                    </div>
+
+                                    {/* VISUALIZAÇÃO DO DESCONTO 10% (Boas-vindas) */}
+                                    {(() => {
+                                        const isTrialOrUnpaid = (!['active', 'active_paid', 'paid'].includes(subscriptionStatus || '') || ['trial', 'trialing'].includes(subscriptionStatus || ''));
+                                        const isFirstSub = !tenantObject?.asaas_subscription_id || isTrialOrUnpaid;
+
+                                        if (isFirstSub && (selectedPlan || selectedAddonsSlugs.length > 0)) {
+                                            const plan = dynamicPlans.find(p => p.slug === selectedPlan);
+                                            const planTotal = plan ? (plan.price * (1 - ((selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100))) * selectedInterval : 0;
+
+                                            let addonsTotal = 0;
+                                            selectedAddonsSlugs.forEach(slug => {
+                                                const addon = dynamicAddons.find(a => a.slug === slug);
+                                                if (addon) addonsTotal += Number(addon.price) * selectedInterval;
+                                            });
+
+                                            const grandTotal = planTotal + addonsTotal;
+                                            const discounted = grandTotal * 0.9;
+
+                                            return (
+                                                <div className="bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-xl flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-6 h-6 bg-emerald-500/20 rounded-full flex items-center justify-center animate-bounce">
+                                                            <span className="text-[10px]">🎉</span>
+                                                        </div>
+                                                        <span className="text-emerald-500 font-black text-[10px] uppercase tracking-wider">Boas-vindas (10% OFF)</span>
+                                                    </div>
+                                                    <span className="text-sm font-black text-emerald-400 leading-none">
+                                                        R$ {discounted.toFixed(2).replace('.', ',')}
+                                                    </span>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+                                </div>
                                 {!pixData && !boletoData && !pendingData && (
                                     <>
                                         <Label className="text-[10px] text-slate-500 uppercase tracking-wider">Forma de Pagamento</Label>
@@ -1274,7 +1274,7 @@ export default function PlanPage() {
                                 )}
                             </div>
 
-                            <DialogFooter className="flex-shrink-0 border-t border-slate-800 pt-4">
+                            <DialogFooter className="flex-shrink-0 border-t border-slate-800 p-6 bg-slate-950/50">
                                 {(() => {
                                     const isConfigIncomplete = !tenantObject?.cep || !tenantObject?.street || !tenantObject?.number || !tenantObject?.neighborhood || !tenantObject?.city || !tenantObject?.state || !tenantObject?.phone;
 

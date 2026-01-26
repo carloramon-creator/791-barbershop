@@ -208,32 +208,23 @@ export async function POST(req: Request) {
         };
 
         const agreement = await inter.createRecurrenceAgreement(recurrencePayload);
-        console.log(`[INTER PIX AUTO] Recorrência criada: ${agreement.idRec}`); // idRec? Verificar retorno.
+        const idRec = agreement.idRec || agreement.identificador;
+        console.log(`[INTER PIX AUTO] Recorrência criada: ${idRec}`);
 
         // --- PASSO 4: Consultar Recorrência para pegar QRCode ---
-        // O endpoint de criação já retorna dados, mas J3 diz "Consultar... Só assim será gerado um QrCode de Jornada 3"
-        // Vamos fazer o GET por segurança.
+        // J3: "Consultar a recorrência informando o idRec gerado no passo 3, e o txid gerado no passo 2. Só assim será gerado um QrCode de Jornada 3."
 
-        // Nota: O retorno de createRecurrenceAgreement geralmente tem protocol.
-        // Se o user diz GET /rec, pode ser necessário.
-
-        /* 
-           O retorno do POST /pix/v2/rec costuma retornar 201 Created.
-           Vamos tentar assumir que precisamos do GET se não vier QrCode.
-        */
         let pixCopiaECola = agreement.pixCopiaECola;
 
-        if (!pixCopiaECola) {
-            console.log('[INTER PIX AUTO] Buscando detalhes da recorrência para obter QR Code (J3)...');
-            // Nota: O user disse "Endpoint: GET /rec". Geralmente é /pix/v2/rec/{id}.
-            // Mas precisamos saber ONDE está o idRec no retorno do POST.
-            // Geralmente vem em 'idRec' ou headers 'Location'.
-            // Vamos assumir que vem no body como idRec ou identificador. (Inter V2 não padronizado)
-
-            // FIXME: Se agreement não tiver idRec na resposta do POST, temos um problema.
-            // Mas vamos assumir que o retorno do POST traga algo.
-
-            // Se falhar, retornamos o que tiver.
+        if (!pixCopiaECola && idRec) {
+            console.log(`[INTER PIX AUTO] Buscando detalhes da recorrência ${idRec} com txid ${txid} para obter QR Code J3...`);
+            try {
+                const details = await inter.getRecurrenceAgreement(idRec, txid);
+                pixCopiaECola = details.pixCopiaECola || details.rec?.pixCopiaECola;
+                console.log(`[INTER PIX AUTO] QR Code J3 obtido: ${pixCopiaECola ? 'SIM' : 'NÃO'}`);
+            } catch (err) {
+                console.error('[INTER PIX AUTO] Falha ao buscar QR Code J3:', err);
+            }
         }
 
         // 4. Salvar no Banco

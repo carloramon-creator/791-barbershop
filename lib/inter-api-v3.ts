@@ -229,12 +229,15 @@ export class InterAPIV3 {
     /**
      * Pix Automático: Consulta acordo de recorrência
      */
-    async getRecurrenceAgreement(idRec: string) {
+    async getRecurrenceAgreement(idRec: string, txid?: string) {
         const token = await this.getAccessToken();
+        let path = `/pix/v2/rec/${idRec}`;
+        if (txid) path += `?txid=${txid}`;
+
         const options: https.RequestOptions = {
             hostname: 'cdpj.partners.bancointer.com.br',
             port: 443,
-            path: `/pix/v2/rec/${idRec}`,
+            path: path,
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` },
             cert: this.config.cert,
