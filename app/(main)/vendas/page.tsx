@@ -497,8 +497,8 @@ export default function VendasPage() {
                                         type="number"
                                         min="0"
                                         max="100"
-                                        value={descontoPercentual}
-                                        onChange={(e) => setDescontoPercentual(parseFloat(e.target.value) || 0)}
+                                        value={descontoPercentual || ''}
+                                        onChange={(e) => setDescontoPercentual(e.target.value === '' ? 0 : parseFloat(e.target.value))}
                                         className="bg-slate-950 border-slate-800 text-slate-100 pr-8"
                                     />
                                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-bold">%</span>
