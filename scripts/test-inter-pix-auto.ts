@@ -58,7 +58,7 @@ async function testInterPixAutomatico() {
         };
 
         const agreement = await inter.createRecurrenceAgreement(payloadRec);
-        console.log('✅ Acordo Criado!');
+        console.log('✅ Acordo Criado! RESPOSTA BRUTA:', JSON.stringify(agreement, null, 2)); // LOG COMPLETO
         console.log('🆔 idRec:', agreement.idRec);
         console.log('🔗 QR Code (Payload):', agreement.pixCopiaECola || agreement.rec?.pixCopiaECola);
         console.log('📊 Status:', agreement.status);

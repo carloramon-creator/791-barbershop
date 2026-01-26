@@ -43,8 +43,9 @@ export class InterAPIV3 {
         const params = new URLSearchParams();
         params.append('client_id', this.config.clientId);
         params.append('client_secret', this.config.clientSecret);
-        // Escopos completos (incluindo Recorrência/Pix Automático conforme confirmado)
-        const scopes = 'pix.read pix.write webhook.read webhook.write boleto-cobranca.read boleto-cobranca.write rec.read rec.write cobr.read cobr.write';
+        // TENTATIVA ROBUSTA: Pedir apenas o necessário para Recorrência se for esse o objetivo
+        // 'rec.read rec.write' são essenciais. Se falhar, é bloqueio do banco.
+        const scopes = 'pix.read pix.write rec.read rec.write';
         params.append('scope', scopes);
         params.append('grant_type', 'client_credentials');
 
