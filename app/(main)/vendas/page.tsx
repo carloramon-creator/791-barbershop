@@ -215,6 +215,7 @@ export default function VendasPage() {
                             total: data.total
                         });
                         setShowPixModal(true);
+                        alert(`✅ Venda finalizada com sucesso!\nTotal: ${formatCurrency(data.total)}\n\nO QR Code PIX foi gerado abaixo.`);
                     } else {
                         alert(`✅ Venda finalizada!\nTotal: ${formatCurrency(data.total)}\n\n⚠️ Não foi possível gerar o QR Code PIX. Configure a chave PIX em Configurações.`);
                     }

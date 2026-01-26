@@ -69,14 +69,29 @@ export async function POST(req: Request) {
             .select()
             .single();
 
-        if (vendaError) {
-            console.error('[VENDAS API] Erro ao criar venda:', vendaError);
-            throw vendaError;
+        // Buscar ou criar categoria de vendas no financeiro
+        let categoryId = null;
+        const { data: catData } = await supabase
+            .from('finance_categories')
+            .select('id')
+            .eq('tenant_id', tenant.id)
+            .eq('name', 'Vendas')
+            .single();
+
+        if (catData) {
+            categoryId = catData.id;
+        } else {
+            const { data: newCat } = await supabase
+                .from('finance_categories')
+                .insert({ tenant_id: tenant.id, name: 'Vendas', type: 'revenue' })
+                .select()
+                .single();
+            if (newCat) categoryId = newCat.id;
         }
 
-        // Criar itens da venda e baixar estoque
+        // Criar itens da venda, baixar estoque e registrar movimentação
         for (const item of produtos) {
-            // Inserir item
+            // Inserir item da venda
             const { error: itemError } = await supabase
                 .from('venda_itens')
                 .insert({
@@ -92,20 +107,32 @@ export async function POST(req: Request) {
                 throw itemError;
             }
 
-            // Baixar estoque
-            const { data: produto } = await supabase
-                .from('produtos')
-                .select('estoque_atual')
+            // Baixar estoque (Tabela correta: products, Coluna: stock_quantity)
+            const { data: product } = await supabase
+                .from('products')
+                .select('stock_quantity, price')
                 .eq('id', item.produto_id)
                 .single();
 
-            if (produto) {
-                const novoEstoque = (produto.estoque_atual || 0) - item.quantidade;
+            if (product) {
+                const novoEstoque = (product.stock_quantity || 0) - item.quantidade;
 
                 await supabase
-                    .from('produtos')
-                    .update({ estoque_atual: novoEstoque })
+                    .from('products')
+                    .update({ stock_quantity: novoEstoque })
                     .eq('id', item.produto_id);
+
+                // Registrar movimentação de saída
+                await supabase
+                    .from('product_movements')
+                    .insert({
+                        tenant_id: tenant.id,
+                        product_id: item.produto_id,
+                        type: 'exit',
+                        quantity: item.quantidade,
+                        price: product.price,
+                        description: `Venda #${venda.id.substring(0, 8)}`
+                    });
             }
         }
 
@@ -115,7 +142,7 @@ export async function POST(req: Request) {
             .insert({
                 tenant_id: tenant.id,
                 type: 'revenue',
-                category: 'vendas_produtos',
+                category_id: categoryId,
                 value: total,
                 description: `Venda de produtos #${venda.id.substring(0, 8)}`,
                 date: new Date().toISOString().split('T')[0],
