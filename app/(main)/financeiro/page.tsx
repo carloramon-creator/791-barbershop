@@ -206,7 +206,7 @@ export default function FinanceiroPage() {
         .filter(s => s.created_at.split('T')[0] <= todayStr)
         .reduce((acc, s) => acc + Number(s.total_amount), 0) +
         financeRecords
-            .filter(r => (r.type === 'revenue' || r.type === 'income') && r.is_paid && r.date <= todayStr)
+            .filter(r => (r.type === 'revenue' || (r.type as any) === 'income') && r.is_paid && r.date <= todayStr)
             .reduce((acc, r) => acc + Number(r.value), 0);
 
     // Total Expenses: ALL paid expenses in current month (not just until today)

@@ -44,7 +44,7 @@ export default function VendasPage() {
 
     // Estado do Modal PIX
     const [showPixModal, setShowPixModal] = useState(false);
-    const [pixData, setPixData] = useState({ qrCode: '', payload: '' });
+    const [pixData, setPixData] = useState({ qrCode: '', payload: '', total: 0 });
 
     // Verificar plano/permissão (já verificado no sidebar, mas bom ter aqui)
     useEffect(() => {
