@@ -1,176 +1,140 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { InterAPIV3 } from '@/lib/inter-api-v3';
-
-// Helper to add CORS headers
-function addCorsHeaders(req: NextRequest, res: NextResponse) {
-    res.headers.set('Access-Control-Allow-Origin', '*');
-    res.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    return res;
-}
+import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
 
 export async function OPTIONS(req: NextRequest) {
-    return addCorsHeaders(req, NextResponse.json({}, { status: 200 }));
+    const response = NextResponse.json({}, { status: 200 });
+    return addCorsHeaders(req as any, response);
 }
 
 export async function POST(req: NextRequest) {
     try {
-        const authHeader = req.headers.get('Authorization');
-        if (!authHeader) {
-            return addCorsHeaders(req, NextResponse.json({ error: 'Auth header missing' }, { status: 401 }));
-        }
-        const token = authHeader.replace('Bearer ', '');
-        const { data: { user }, error: authError } = await getSupabaseAdmin().auth.getUser(token);
-        if (authError || !user) {
-            console.error('[INTER PIX AUTO] Auth error:', authError);
-            return addCorsHeaders(req, NextResponse.json({ error: 'Unauthorized' }, { status: 401 }));
+        const { tenant, user } = await getCurrentUserAndTenant() as any;
+        if (!tenant || !user) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'Não autenticado' }, { status: 401 }));
         }
 
         const body = await req.json();
-        const { plan, addons, interval, tempId } = body;
-        const planSlug = plan || 'basic';
-        const addonsSlugs = addons || [];
+        const { plan: planSlug, addon: addonSlug, addons: addonsSlugs = [], coupon, tempId, interval = 1 } = body;
 
-        // 1. Fetch Tenant & Configs
-        const { data: tenant, error: tErr } = await getSupabaseAdmin()
-            .from('tenants')
-            .select('*')
-            .eq('owner_id', user.id)
-            .single();
-
-        if (tErr || !tenant) {
-            return addCorsHeaders(req, NextResponse.json({ error: 'Tenant non-existent' }, { status: 404 }));
+        // BLOQUEIO CRÍTICO: Pix Automático apenas para planos mensais
+        if (interval > 1) {
+            return addCorsHeaders(req, NextResponse.json({
+                error: 'Pix Automático disponível apenas para planos mensais. Para planos semestrais ou anuais, utilize Pix Imediato ou Cartão.'
+            }, { status: 400 }));
         }
 
-        const { data: dbConfig } = await getSupabaseAdmin()
-            .from('payment_gateways')
-            .select('*')
-            .eq('tenant_id', tenant.id)
-            .eq('gateway_name', 'inter')
-            .single();
-
-        const cert = dbConfig?.cert_content;
-        const key = dbConfig?.key_content;
-
-        if (!cert || !key) {
-            return addCorsHeaders(req, NextResponse.json({ error: 'Inter certificates not configured' }, { status: 400 }));
+        // Consolidar addonsSlugs se houver addonSlug singular (compatibilidade)
+        let finalAddonsSlugs = [...addonsSlugs];
+        if (addonSlug && !finalAddonsSlugs.includes(addonSlug)) {
+            finalAddonsSlugs.push(addonSlug);
         }
 
-        // 2. Load Plan Data to calculate values
-        const { data: planData } = await getSupabaseAdmin()
-            .from('plans')
-            .select('*')
-            .eq('slug', planSlug)
-            .single();
+        // 1. Calcular Valores (Sincronizado com inter-pix)
+        let totalPlanAmount = 0;
+        let totalAddonAmount = 0;
+        let itemNames: string[] = [];
 
-        if (!planData) {
-            return addCorsHeaders(req, NextResponse.json({ error: 'Invalid plan' }, { status: 400 }));
+        // 1.1 Processar Plano
+        if (planSlug) {
+            const { data: planData } = await getSupabaseAdmin().from('system_plans').select('*').eq('slug', planSlug).single();
+            if (!planData) throw new Error('Plano inválido');
+            totalPlanAmount = Number(planData.price);
+            itemNames.push(planData.name);
         }
 
-        let totalAmount = Number(planData.price);
-        const { data: addonsData } = await getSupabaseAdmin()
-            .from('addons')
-            .select('*')
-            .in('slug', addonsSlugs);
-
-        if (addonsData) {
-            addonsData.forEach(a => totalAmount += Number(a.price));
+        // 1.2 Processar Add-ons
+        for (const slug of finalAddonsSlugs) {
+            const { data: addon } = await getSupabaseAdmin().from('system_addons').select('*').eq('slug', slug).single();
+            if (!addon) continue;
+            totalAddonAmount += Number(addon.price);
+            itemNames.push(addon.name);
         }
 
-        // Apply Boas Vindas Discount (10%) for first subscription
-        const isTrialOrUnpaid = (!['active', 'active_paid', 'paid'].includes(tenant.subscription_status || '') || ['trial', 'trialing'].includes(tenant.subscription_status || ''));
-        const isFirstSub = !tenant.asaas_subscription_id || isTrialOrUnpaid;
+        const fullMonthlyValue = Number((totalPlanAmount + totalAddonAmount).toFixed(2));
+        const itemNameLabel = itemNames.join(' + ');
+        const isAddonOnly = !planSlug && finalAddonsSlugs.length > 0;
 
-        let amount = totalAmount;
+        // 2. Desconto de Boas-Vindas (10% sobre o 1º Mês)
+        let firstPaymentAmount = fullMonthlyValue;
         let couponApplied = null;
-        if (isFirstSub) {
-            amount = totalAmount * 0.9;
+
+        const isTrial = !tenant.stripe_subscription_id || ['trial', 'trial_expired'].includes(tenant.plan || '');
+        const tenantCreated = new Date(tenant.created_at || new Date());
+        const now = new Date();
+        const diffDays = Math.ceil(Math.abs(now.getTime() - tenantCreated.getTime()) / (1000 * 60 * 60 * 24));
+        const isNewAccount = diffDays <= 6;
+
+        if (isTrial && isNewAccount && !isAddonOnly) {
+            firstPaymentAmount = Number((fullMonthlyValue * 0.9).toFixed(2));
             couponApplied = 'BOAS_VINDAS_10';
+            console.log(`[INTER PIX AUTO] Aplicando Bônus 10% na adesão: R$ ${firstPaymentAmount}`);
         }
 
-        const itemNameLabel = `${planData.name} + ${addonsSlugs.length} módulos`;
+        // 3. Integrar com Inter (V3)
+        const { data: settingsData } = await getSupabaseAdmin().from('system_settings').select('value').eq('key', 'inter_config').single();
+        const dbConfig = settingsData?.value;
 
-        // --- INTER API V3 ---
+        const cert = (dbConfig?.crt || process.env.INTER_CERT_CONTENT || '').replace(/\\n/g, '\n');
+        const key = (dbConfig?.key || process.env.INTER_KEY_CONTENT || '').replace(/\\n/g, '\n');
+        const pixKey = dbConfig?.pix_key;
+
+        if (!pixKey || !cert || !key) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'Configuração do Inter incompleta (Chave Pix ou Certificados).' }, { status: 400 }));
+        }
+
         const inter = new InterAPIV3({
-            clientId: dbConfig?.client_id || '',
-            clientSecret: dbConfig?.client_secret || '',
+            clientId: dbConfig?.client_id || process.env.INTER_CLIENT_ID || '',
+            clientSecret: dbConfig?.client_secret || process.env.INTER_CLIENT_SECRET || '',
             cert,
             key,
             accountNumber: dbConfig?.account_number || dbConfig?.accountNumber
         });
 
-        // 3. Garantir documento
-        let doc = (tenant.cnpj || tenant.cpf || tenant.document || '').replace(/\D/g, '');
+        // 4. Garantir documento CPF/CNPJ
+        let doc = (tenant.cnpj || tenant.cpf || tenant.document || "").replace(/\D/g, '');
         if (!doc) {
             const { data: userData } = await getSupabaseAdmin().from('users').select('cpf').eq('id', user.id).single();
             if (userData?.cpf) doc = userData.cpf.replace(/\D/g, '');
         }
-        if (!doc) {
-            return addCorsHeaders(req, NextResponse.json({ error: 'Perfil incompleto: CPF/CNPJ necessário.' }, { status: 400 }));
+        if (!doc || doc.length < 11) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'CPF/CNPJ necessário para Pix Automático.' }, { status: 400 }));
         }
 
-        const pixKey = dbConfig?.pix_key;
-        const accountNumber = dbConfig?.account_number || dbConfig?.accountNumber;
-
-        console.log(`[INTER PIX AUTO] Configs: Key=${pixKey}, Account=${accountNumber}`);
-
-        if (!pixKey) {
-            return addCorsHeaders(req, NextResponse.json({ error: 'Chave Pix não configurada no sistema.' }, { status: 400 }));
-        }
-
-        console.log(`[INTER PIX AUTO] Iniciando Jornada 3 para ${tenant.name}`);
+        console.log(`[INTER PIX AUTO] Iniciando Jornada 3 (Adesão + Recorrência) para ${tenant.name}`);
 
         // --- PASSO 1: Criar Location (Recurrency) ---
         const loc = await inter.createLocation('rec');
         const locId = loc.id;
-        console.log(`[INTER PIX AUTO] Location criada: ${locId}`);
 
-        // --- PASSO 2: Criar Cobrança Imediata (Primeira Parcela com Desconto) ---
-        const txid = tempId || new Date().getTime().toString(36) + Math.random().toString(36).substring(2, 6);
-
-        // Vencimento da imediata: agora + 24h
-        const immediateDueDate = new Date();
-        immediateDueDate.setSeconds(immediateDueDate.getSeconds() + 3600 * 24);
-
+        // --- PASSO 2: Criar Cobrança Imediata (Adesão) ---
+        const txid = tempId || `REC${Date.now()}${Math.random().toString(36).substring(2, 5)}`.toUpperCase();
         const immediatePayload = {
-            calendario: {
-                expiracao: 86400 // 24h
-            },
+            calendario: { expiracao: 86400 },
             devedor: {
                 cpf: doc.length === 11 ? doc : undefined,
                 cnpj: doc.length > 11 ? doc : undefined,
-                nome: tenant.name.substring(0, 200)
+                nome: tenant.name.substring(0, 140)
             },
-            valor: {
-                original: amount.toFixed(2)
-            },
+            valor: { original: firstPaymentAmount.toFixed(2) },
             chave: pixKey,
-            solicitacaoPagador: `1a Mês - ${itemNameLabel}`.substring(0, 140),
+            solicitacaoPagador: `Adesão Mensal - ${itemNameLabel}`.substring(0, 140),
             txid,
-            loc: {
-                id: locId
-            }
+            loc: { id: locId }
         };
 
-        const cobImediata = await inter.createPixImmediateBilling(immediatePayload);
-        console.log(`[INTER PIX AUTO] Passo 2: Cobrança Imediata OK. TxId: ${txid}`, JSON.stringify(cobImediata, null, 2));
+        await inter.createPixImmediateBilling(immediatePayload);
 
         // --- PASSO 3: Criar Recorrência (Jornada 3) ---
-        let recurrenceValue = totalAmount;
-        if (couponApplied === 'BOAS_VINDAS_10') {
-            recurrenceValue = totalAmount;
-        } else {
-            recurrenceValue = amount;
-        }
-
+        // Valor da recorrência é o valor mensal CHEIO (sem o bônus de 10%)
         const recurrencePayload = {
             vinculo: {
-                objeto: `Assinatura ${planData.name}`,
+                objeto: `Assinatura: ${itemNameLabel}`.substring(0, 50),
                 devedor: {
                     cpf: doc.length === 11 ? doc : undefined,
                     cnpj: doc.length > 11 ? doc : undefined,
-                    nome: tenant.name.substring(0, 100)
+                    nome: tenant.name.substring(0, 140)
                 },
                 contrato: `CTR-${tenant.id.slice(0, 8)}`
             },
@@ -179,78 +143,59 @@ export async function POST(req: NextRequest) {
                 periodicidade: 'MENSAL'
             },
             valor: {
-                valorRec: recurrenceValue.toFixed(2)
+                valorRec: fullMonthlyValue.toFixed(2) // SEMPRE VALOR CHEIO NA RECORRÊNCIA
             },
             politicaRetentativa: 'PERMITE_3R_7D',
-            loc: {
-                id: locId
-            },
-            cob: {
-                txid: txid
-            }
+            loc: { id: locId },
+            cob: { txid: txid }
         };
 
-        console.log(`[INTER PIX AUTO] Passo 3: Criando Recorrência com locId=${locId} e txid=${txid}...`);
         const agreement = await inter.createRecurrenceAgreement(recurrencePayload);
         const idRec = agreement.idRec || agreement.identificador;
-        console.log(`[INTER PIX AUTO] Recorrência criada: ${idRec}`);
+        let pixCopiaECola = agreement.pixCopiaECola;
 
-        // --- PASSO 4: Consultar Recorrência para pegar QRCode ---
-        let pixCopiaECola = agreement.pixCopiaECola || (agreement as any).pixCopiaECola;
-
+        // --- PASSO 4: Consultar se necessário ---
         if (!pixCopiaECola && idRec) {
-            console.log(`[INTER PIX AUTO] Buscando detalhes da recorrência ${idRec} com txid ${txid} para obter QR Code J3...`);
             try {
                 const details = await inter.getRecurrenceAgreement(idRec, txid);
-                console.log('[INTER PIX AUTO] Detalhes (Passo 4) recebidos:', JSON.stringify(details, null, 2));
+                pixCopiaECola = details.pixCopiaECola || details.rec?.pixCopiaECola;
+            } catch (err) { }
+        }
 
-                pixCopiaECola = details.pixCopiaECola || details.rec?.pixCopiaECola || details.cobranca?.pixCopiaECola;
-                console.log(`[INTER PIX AUTO] QR Code J3 extraído: ${pixCopiaECola ? 'SUCESSO' : 'FALHA'}`);
-            } catch (err: any) {
-                console.error('[INTER PIX AUTO] Erro ao buscar QR Code J3 via GET:', err.message, err.body);
+        // 5. Salvar registro local
+        await getSupabaseAdmin().from('finance').insert({
+            tenant_id: tenant.id,
+            type: 'expense',
+            value: firstPaymentAmount,
+            description: `Pix Automático (Adesão): ${itemNameLabel}${couponApplied ? ' (Bônus 10%)' : ''}`,
+            date: new Date().toISOString().split('T')[0],
+            is_paid: false,
+            metadata: {
+                is_saas_payment: true,
+                method: 'pix_automatico_j3',
+                id_rec: idRec,
+                txid_imediato: txid,
+                plan: planSlug,
+                addons: finalAddonsSlugs,
+                interval: 1,
+                coupon: couponApplied,
+                recurrence_value: fullMonthlyValue,
+                pix_payload: pixCopiaECola
             }
-        }
-
-        if (!pixCopiaECola) {
-            console.warn('[INTER PIX AUTO] Alerta: Não foi possível obter o pixCopiaECola. Verifique se a Jornada 3 foi ativada corretamente na conta.');
-        }
-
-        // 4. Salvar no Banco
-        await getSupabaseAdmin()
-            .from('finance')
-            .insert({
-                tenant_id: tenant.id,
-                type: 'expense',
-                value: amount,
-                description: `Pix Automático (Adesão) - ${itemNameLabel}`,
-                date: new Date().toISOString().split('T')[0],
-                is_paid: false,
-                metadata: {
-                    is_saas_payment: true,
-                    method: 'pix_automatico_j3',
-                    id_rec: idRec,
-                    txid_imediato: txid,
-                    plan: planSlug,
-                    addons: addonsSlugs,
-                    interval: 1,
-                    coupon: couponApplied,
-                    recurrence_value: recurrenceValue,
-                    pix_payload: pixCopiaECola
-                }
-            });
+        });
 
         return addCorsHeaders(req, NextResponse.json({
             success: true,
             idRec: idRec,
             pixPayload: pixCopiaECola,
             txid: txid,
-            amount: amount,
+            amount: firstPaymentAmount,
             status: 'AGUARDANDO_PAGAMENTO'
         }));
 
     } catch (error: any) {
         console.error('[INTER PIX AUTO ERROR]', error);
-        if (error.body) console.error('[INTER PIX AUTO DETALHES]', error.body);
-        return addCorsHeaders(req, NextResponse.json({ error: error.message || 'Erro ao criar recorrência.', details: error.body }, { status: 500 }));
+        const msg = error.body?.title || error.body?.detail || error.message || 'Erro ao processar Pix Automático';
+        return addCorsHeaders(req, NextResponse.json({ error: msg, details: error.body }, { status: 500 }));
     }
 }
