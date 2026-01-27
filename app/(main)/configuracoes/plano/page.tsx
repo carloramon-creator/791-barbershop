@@ -627,12 +627,6 @@ export default function PlanPage() {
 
   const selectedPlanData = dynamicPlans.find((p) => p.slug === selectedPlan);
 
-  // Debug logs
-  console.log("selectedPlan:", selectedPlan);
-  console.log("selectedPlanData:", selectedPlanData);
-  console.log("selectedPlanData.price:", selectedPlanData?.price);
-  console.log("selectedInterval:", selectedInterval);
-
   // Lógica de Desconto de Primeira Assinatura (Banner 10%)
   let hasFirstSubscriptionDiscount = false;
   if (tenantCreatedAt) {
@@ -645,22 +639,18 @@ export default function PlanPage() {
     }
   }
 
+  const intervalDiscountPercent = selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0;
+  const intervalDiscountFactor = (1 - intervalDiscountPercent / 100);
+
   const planTotal = selectedPlanData
-    ? selectedPlanData.price *
-    (1 -
-      (selectedInterval === 12
-        ? 20
-        : selectedInterval === 6
-          ? 10
-          : 0) /
-      100) *
-    selectedInterval
+    ? selectedPlanData.price * intervalDiscountFactor * selectedInterval
     : 0;
 
   let addonsTotal = 0;
   selectedAddonsSlugs.forEach((slug) => {
     const addon = dynamicAddons.find((a) => a.slug === slug);
-    if (addon) addonsTotal += Number(addon.price) * selectedInterval;
+    // Aplicar o mesmo desconto de intervalo aos módulos
+    if (addon) addonsTotal += (Number(addon.price) * intervalDiscountFactor) * selectedInterval;
   });
 
   const rawTotal = planTotal + addonsTotal;
@@ -682,14 +672,6 @@ export default function PlanPage() {
                 </span>
                 <span className="px-2 py-0.5 bg-blue-500/10 text-[9px] font-black text-blue-400 rounded-lg border border-blue-500/20 uppercase">
                   {selectedPlanData?.name || selectedPlan}
-                </span>
-              </div>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl md:text-3xl font-black text-white tracking-tighter tabular-nums truncate">
-                  R$ {grandTotal.toFixed(2).replace(".", ",")}
-                </span>
-                <span className="text-[10px] text-slate-500 font-bold uppercase whitespace-nowrap">
-                  / {selectedInterval === 1 ? "mês" : `${selectedInterval} meses`}
                 </span>
               </div>
             </div>
@@ -767,28 +749,30 @@ export default function PlanPage() {
 
                 {selectedAddonsSlugs.map(slug => {
                   const addon = dynamicAddons.find(a => a.slug === slug);
-                  const addonTotal = Number(addon?.price || 0) * selectedInterval;
+                  // Valor do módulo com desconto de intervalo aplicado
+                  const addonPriceWithIntervalDiscount = Number(addon?.price || 0) * intervalDiscountFactor;
+                  const addonTotal = addonPriceWithIntervalDiscount * selectedInterval;
                   return (
                     <div key={slug} className="flex justify-between items-start">
                       <div className="flex flex-col">
-                        <span className="text-slate-500 font-bold uppercase text-[9px] tracking-widest">{addon?.name.replace("Módulo ", "")}</span>
+                        <span className="text-slate-500 font-bold uppercase text-[9px] tracking-widest leading-none mb-0.5">{addon?.name.replace("Módulo ", "")}</span>
                         <span className="text-[10px] text-slate-400 font-medium">TOTAL: R$ {addonTotal.toFixed(2).replace(".", ",")}</span>
                       </div>
                       <div className="flex items-baseline gap-1">
                         <span className="text-xs font-bold text-slate-300">+{selectedInterval}x</span>
-                        <span className="text-base font-black text-slate-300">R$ {Number(addon?.price || 0).toFixed(2).replace(".", ",")}</span>
+                        <span className="text-base font-black text-slate-300">R$ {addonPriceWithIntervalDiscount.toFixed(2).replace(".", ",")}</span>
                       </div>
                     </div>
                   );
                 })}
 
                 {hasFirstSubscriptionDiscount && (
-                  <div className="flex justify-between items-center py-2 px-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-                    <div className="flex flex-col">
-                      <span className="text-blue-400 font-black uppercase text-[9px]">Desconto Especial</span>
-                      <span className="text-[10px] text-blue-300/70 font-medium">Primeira Assinatura (-10%)</span>
+                  <div className="flex justify-between items-center py-2 px-3 bg-blue-500/10 border border-blue-500/20 rounded-xl gap-2 mt-1 min-h-[44px]">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-blue-400 font-black uppercase text-[8px] leading-none tracking-wider mb-1">Desconto Especial</span>
+                      <span className="text-[9px] text-blue-300/70 font-bold leading-none whitespace-nowrap">Primeira Assinatura (-10%)</span>
                     </div>
-                    <span className="text-blue-400 font-black text-sm">- R$ {firstSubscriptionDiscountAmount.toFixed(2).replace(".", ",")}</span>
+                    <span className="text-blue-400 font-black text-sm whitespace-nowrap tabular-nums">- R$ {firstSubscriptionDiscountAmount.toFixed(2).replace(".", ",")}</span>
                   </div>
                 )}
               </div>
