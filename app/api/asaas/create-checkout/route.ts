@@ -21,10 +21,12 @@ export async function POST(req: Request) {
             addon: addonSlug, // Legado: manter por compatibilidade se enviado sozinho
             addons: addonsSlugs = [], // Novo: array de slugs
             coupon,
-            interval = 1,
             paymentMethod = 'CREDIT_CARD',
             installments = 1
         } = body;
+
+        // RAMON FIX: Garantir que interval seja número
+        const interval = Number(body.interval || 1);
 
         // Consolidar addonsSlugs se houver addonSlug singular
         let finalAddonsSlugs = [...addonsSlugs];
@@ -50,6 +52,9 @@ export async function POST(req: Request) {
         const asaas = new AsaasClient({ apiKey, environment });
 
         // 2. Definir Itens e Calcular Valores
+        const intervalDiscountPercent = interval === 12 ? 20 : interval === 6 ? 10 : 0;
+        const intervalDiscountFactor = (1 - intervalDiscountPercent / 100);
+
         let totalPlanAmount = 0;
         let totalAddonAmount = 0;
         let checkoutItems: any[] = [];
@@ -60,33 +65,32 @@ export async function POST(req: Request) {
             const { data: plan } = await getSupabaseAdmin().from('system_plans').select('*').eq('slug', planSlug).single();
             if (!plan) throw new Error('Plano não encontrado');
 
-            let planBase = Number(plan.price);
-            const disc = interval === 12 ? (plan.discount_annual || 20) : interval === 6 ? (plan.discount_semiannual || 10) : 0;
-            if (disc > 0) planBase = planBase * (1 - (disc / 100));
-
+            // RAMON FIX: Usar o mesmo fator de desconto de intervalo
+            const planBase = Number(plan.price) * intervalDiscountFactor;
             totalPlanAmount = Number((planBase * interval).toFixed(2));
-            itemNames.push(`Plano ${plan.name}`);
+
+            const cleanPlanName = plan.name.replace("Plano ", "");
+            itemNames.push(`Plano ${cleanPlanName}`);
             checkoutItems.push({
-                name: `Assinatura: Plano ${plan.name}`,
+                name: `Assinatura: Plano ${cleanPlanName}`,
                 value: totalPlanAmount,
                 quantity: 1
             });
         }
 
         // 2.2 Processar Add-ons
-        const intervalDiscountPercent = interval === 12 ? 20 : interval === 6 ? 10 : 0;
-        const intervalDiscountFactor = (1 - intervalDiscountPercent / 100);
-
         for (const slug of finalAddonsSlugs) {
             const { data: addon } = await getSupabaseAdmin().from('system_addons').select('*').eq('slug', slug).single();
             if (!addon) continue;
 
-            // RAMON FIX: Aplicar desconto de intervalo aos módulos também
+            // RAMON FIX: Aplicar desconto de intervalo aos módulos corretamente
             const addonAmount = Number((Number(addon.price) * intervalDiscountFactor * interval).toFixed(2));
             totalAddonAmount += addonAmount;
-            itemNames.push(`Módulo ${addon.name}`);
+
+            const cleanAddonName = addon.name.replace("Módulo ", "");
+            itemNames.push(`Módulo ${cleanAddonName}`);
             checkoutItems.push({
-                name: `Adicional: Módulo ${addon.name}`,
+                name: `Adicional: Módulo ${cleanAddonName}`,
                 value: addonAmount,
                 quantity: 1
             });
@@ -123,22 +127,23 @@ export async function POST(req: Request) {
         }
 
         // Lógica de Desconto de Boas-vindas (10% no primeiro ciclo sobre o TOTAL)
-        // RAMON FIX: Alinhando com a lógica de 5 dias do frontend
-        let isWithinFiveDays = false;
+        // RAMON FIX: Alinhando com a lógica de 5 dias do frontend (+ 1 dia de margem de segurança)
+        let isWithinWelcomeWindow = false;
         if (tenant.created_at) {
             const created = new Date(tenant.created_at);
             const now = new Date();
             const diffTime = now.getTime() - created.getTime();
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            if (diffDays <= 5) isWithinFiveDays = true;
+            // Usando 6 dias para cobrir o 5º dia inteiro e evitar problemas de fuso horário/seguraças
+            if (diffDays <= 6) isWithinWelcomeWindow = true;
         }
 
         const isNotActive = !tenant.subscription_status ||
             ['trial', 'trial_expired', 'past_due', 'unpaid', 'incomplete'].includes(tenant.subscription_status || '');
         const isFirstSubscription = !tenant.asaas_subscription_id || isNotActive;
 
-        // O desconto se aplica se for a primeira assinatura OU estiver nos primeiros 5 dias
-        const applyWelcomeDiscount = isFirstSubscription && isWithinFiveDays;
+        // O desconto se aplica se for a primeira assinatura E estiver nos primeiros 5-6 dias
+        const applyWelcomeDiscount = isFirstSubscription && isWithinWelcomeWindow;
 
         // 3. Garantir Cliente no Asaas (Identificação por E-mail conforme solicitado)
         console.log(`[ASAAS 2.0 SECURITY] Tenant ID: ${tenant.id} | User: ${user.email} | Target Name: ${tenant.name}`);
