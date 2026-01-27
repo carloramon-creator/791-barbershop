@@ -235,7 +235,9 @@ export async function POST(req: Request) {
             };
         });
 
-        const shortDescription = `Pagamento: ${itemNames.join(' + ')}`.substring(0, 50) + (itemNames.join(' + ').length > 50 ? '...' : '');
+        const cleanItemNames = itemNames.join(' + ');
+        const fullItemDescription = `791 Barber: ${cleanItemNames}${applyWelcomeDiscount ? ' (Bônus Boas-vindas 10%)' : ''}`;
+        const shortDescription = fullItemDescription.substring(0, 100);
 
         // 6. CRIAÇÃO DA COBRANÇA (Checkouts Sessions para tudo)
         // Isso garante a melhor UI, Redirecionamento e Suporte a Itens.
@@ -246,7 +248,7 @@ export async function POST(req: Request) {
             billingTypes: [paymentMethod],
             chargeTypes: ['DETACHED'],
             description: shortDescription,
-            observations: itemDescription,
+            observations: fullItemDescription,
             externalReference: externalReference,
             totalValue: firstPaymentValue,
             minutesToExpire: 60,

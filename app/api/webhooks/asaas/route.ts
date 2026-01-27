@@ -250,6 +250,8 @@ export async function POST(req: Request) {
                     environment: (subSettings?.value?.environment || 'sandbox') as 'sandbox' | 'production'
                 });
 
+                const baseDescription = (financeRecord.description || '').replace(' (Bônus Boas-vindas 10%)', '');
+
                 // Criar assinatura oficial
                 await asaasSub.createSubscription({
                     customer: payment.customer,
@@ -257,13 +259,13 @@ export async function POST(req: Request) {
                     value: metadata.original_value, // Valor cheio acumulado
                     nextDueDate: dueDateString,
                     cycle: 'MONTHLY',
-                    description: `Assinatura: ${financeRecord.description}`,
+                    description: `Assinatura: ${baseDescription}`,
                     externalReference: `${metadata.external_reference}_sub`,
                     // Usar o token do cartão que acabou de pagar
                     creditCardToken: payment.creditCard?.token || payment.creditCardToken
                 });
 
-                console.log(`[ASAAS WEBHOOK 2.0] ✅ Assinatura recorrente criada com sucesso.`);
+                console.log(`[ASAAS WEBHOOK 2.0] ✅ Assinatura recorrente criada com sucesso para ${baseDescription}.`);
             } catch (subError: any) {
                 console.error('[ASAAS WEBHOOK 2.0] ❌ Falha ao criar assinatura pós-pagamento:', subError.message);
             }

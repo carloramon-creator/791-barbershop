@@ -62,18 +62,9 @@ export async function POST(req: Request) {
         const itemNameLabel = itemNames.join(' + ');
         const isAddonOnly = !planSlug && finalAddonsSlugs.length > 0;
 
-        // --- LÓGICA DE PRO-RATA (INTER) ---
-        // Se for um Add-on MENSAL sendo adicionado a um plano existente no meio do mês
+        // --- LÓGICA DE PRO-RATA (DESATIVADA CONFORME SOLICITAÇÃO) ---
+        // O usuário deseja o valor total do pedido sem divisões ou parcelamentos no boleto.
         let finalAmount = totalAmount;
-        if (interval === 1 && isAddonOnly && tenant.plan && tenant.plan !== 'trial') {
-            const now = new Date();
-            const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-            const remainingDays = lastDayOfMonth - now.getDate() + 1;
-
-            // Pro-rata: (Preço / Dias no Mês) * Dias Restantes
-            finalAmount = (totalAmount / lastDayOfMonth) * remainingDays;
-            if (finalAmount < 1) finalAmount = 1; // Mínimo R$ 1,00 para evitar erros bancários
-        }
 
         // 2. Processar Cupom
         let discountFromCoupon = 0;
