@@ -51,7 +51,8 @@ export async function POST(req: Request) {
             const { data: addon } = await getSupabaseAdmin().from('system_addons').select('*').eq('slug', slug).single();
             if (!addon) continue;
 
-            const addonAmount = Number((Number(addon.price) * interval).toFixed(2));
+            const intervalDiscountFactor = interval === 12 ? 0.8 : interval === 6 ? 0.9 : 1;
+            const addonAmount = Number((Number(addon.price) * intervalDiscountFactor * interval).toFixed(2));
             totalAddonAmount += addonAmount;
             itemNames.push(addon.name);
         }
@@ -101,18 +102,19 @@ export async function POST(req: Request) {
             }
         }
 
-        // 3. Desconto de Boas-Vindas (10% para novos cadastros até 5 dias)
-        if (discountFromCoupon === 0 && interval === 1 && !isAddonOnly) {
-            const isTrial = tenant.plan === 'trial' || tenant.subscription_status === 'trialing' || !tenant.stripe_subscription_id;
+        // 3. Desconto de Boas-Vindas (10% sobre 1 MÊS para novos cadastros)
+        if (discountFromCoupon === 0 && !isAddonOnly) {
+            const isTrial = !tenant.stripe_subscription_id || ['trial', 'trial_expired'].includes(tenant.plan || '');
             const tenantCreated = new Date(tenant.created_at || new Date());
             const now = new Date();
             const diffDays = Math.ceil(Math.abs(now.getTime() - tenantCreated.getTime()) / (1000 * 60 * 60 * 24));
-            const isNewAccount = diffDays <= 5;
+            const isNewAccount = diffDays <= 6; // Alinhado com Asaas (6 dias)
 
             if (isTrial && isNewAccount) {
-                discountFromCoupon = (finalAmount * 10) / 100; // 10%
+                const oneMonthValue = finalAmount / interval;
+                discountFromCoupon = Number((oneMonthValue * 0.1).toFixed(2));
                 couponApplied = 'BOAS_VINDAS_10';
-                console.log(`[INTER PIX] Desconto de Boas-Vindas aplicado: -R$ ${(discountFromCoupon || 0).toFixed(2)} (conta criada há ${diffDays} dias)`);
+                console.log(`[INTER PIX] Desconto de Boas-Vindas (1 mês): -R$ ${(discountFromCoupon || 0).toFixed(2)}`);
             }
         }
 
@@ -215,7 +217,7 @@ export async function POST(req: Request) {
                 tenant_id: tenant.id,
                 type: 'expense',
                 value: amount,
-                description: `SaaS - ${itemNameLabel}`,
+                description: `791 Barber: ${itemNameLabel}${couponApplied === 'BOAS_VINDAS_10' ? ' (Bônus Boas-vindas 10%)' : ''}`,
                 date: currentDate,
                 is_paid: false,
                 metadata: {

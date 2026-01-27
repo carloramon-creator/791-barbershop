@@ -409,7 +409,11 @@ export default function PlanPage() {
   };
 
   async function handleChangePlan() {
-    if (!selectedPlan && selectedAddonsSlugs.length === 0) return;
+    console.log("[DEBUG CHECKOUT] handleChangePlan triggered", { selectedPlan, selectedAddonsSlugs, paymentMethod, selectedInterval });
+    if (!selectedPlan && selectedAddonsSlugs.length === 0) {
+      setError("Por favor, selecione um plano ou módulo adicional.");
+      return;
+    }
 
     try {
       setSaving(true);
@@ -654,7 +658,8 @@ export default function PlanPage() {
   });
 
   const rawTotal = planTotal + addonsTotal;
-  const firstSubscriptionDiscountAmount = hasFirstSubscriptionDiscount ? rawTotal * 0.1 : 0;
+  const oneMonthValue = rawTotal / selectedInterval;
+  const firstSubscriptionDiscountAmount = hasFirstSubscriptionDiscount ? oneMonthValue * 0.1 : 0;
   const grandTotal = rawTotal - firstSubscriptionDiscountAmount;
 
   return (
@@ -781,12 +786,12 @@ export default function PlanPage() {
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Mensal</span>
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-black text-blue-500 tracking-tighter tabular-nums">
-                    R$ {(grandTotal / selectedInterval).toFixed(2).replace(".", ",")}
+                    R$ {oneMonthValue.toFixed(2).replace(".", ",")}
                   </span>
                   <span className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">/mês</span>
                 </div>
                 <div className="text-[11px] font-bold text-slate-400 mt-1 pb-1">
-                  Valor total do checkout: <span className="text-white">R$ {grandTotal.toFixed(2).replace(".", ",")}</span>
+                  Pagamento Total (Hoje): <span className="text-white">R$ {grandTotal.toFixed(2).replace(".", ",")}</span>
                 </div>
               </div>
             </div>
@@ -854,6 +859,13 @@ export default function PlanPage() {
                         "ASSINAR AGORA"
                       )}
                     </Button>
+
+                    {error && (
+                      <div className="flex items-center gap-2 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-[10px] font-black uppercase tracking-widest animate-in fade-in slide-in-from-top-2">
+                        <AlertCircle size={14} />
+                        <span>{error}</span>
+                      </div>
+                    )}
                   </div>
                 </>
               ) : (

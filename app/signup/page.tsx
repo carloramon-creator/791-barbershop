@@ -708,7 +708,7 @@ function Step6({ formData, services, products, loading, onSubmit, onBack, onOpen
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                     <span className="text-green-400">✅</span>
-                    <span className="text-slate-300">Endereço: {formData.city}/{formData.state}</span>
+                    <span className="text-slate-300">Endereço: {formData.street}, {formData.number} {formData.complement ? `- ${formData.complement}` : ''} ({formData.city}/{formData.state})</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                     <span className="text-green-400">✅</span>

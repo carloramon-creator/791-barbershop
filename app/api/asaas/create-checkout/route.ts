@@ -193,12 +193,33 @@ export async function POST(req: Request) {
 
         // 5. Calcular valor final (TOTAL)
         const totalFullValue = checkoutItems.reduce((acc, it) => acc + it.value, 0);
-        const firstPaymentValue = applyWelcomeDiscount ? Number((totalFullValue * 0.9).toFixed(2)) : totalFullValue;
+
+        console.log(`[ASAAS DEBUG] Intervalo: ${interval} | Total Bruto Itens: R$ ${totalFullValue}`);
+
+        // RAMON FIX: O desconto de 10% é sobre apenas 1 MÊS, mesmo em planos anuais/semestrais.
+        const oneMonthValue = totalFullValue / interval;
+        const welcomeDiscountAmount = applyWelcomeDiscount ? Number((oneMonthValue * 0.1).toFixed(2)) : 0;
+
+        // Calcular desconto do cupom (se houver)
+        const totalDiscountFromCoupon = couponDiscount;
+
+        const firstPaymentValue = Number((totalFullValue - welcomeDiscountAmount - totalDiscountFromCoupon).toFixed(2));
+
+        console.log(`[ASAAS DEBUG] Valor 1 Mês: R$ ${oneMonthValue.toFixed(2)}`);
+        console.log(`[ASAAS DEBUG] Desconto Welcome (10% de 1 mês): R$ ${welcomeDiscountAmount}`);
+        console.log(`[ASAAS DEBUG] Desconto Cupom: R$ ${totalDiscountFromCoupon}`);
+        console.log(`[ASAAS DEBUG] Valor Final Pago Hoje: R$ ${firstPaymentValue}`);
 
         // RAMON FIX: Aplicar desconto proporcional em cada item para o Asaas não se perder
         let itemsSum = 0;
         const finalCheckoutItems = checkoutItems.map((item, index) => {
-            let val = applyWelcomeDiscount ? Number((item.value * 0.9).toFixed(2)) : item.value;
+            // Rateio do desconto total (Welcome + Cupom) proporcional ao valor do item
+            const totalDiscountForThisCheckout = welcomeDiscountAmount + totalDiscountFromCoupon;
+            const itemDiscount = totalDiscountForThisCheckout > 0
+                ? Number(((item.value / totalFullValue) * totalDiscountForThisCheckout).toFixed(2))
+                : 0;
+
+            let val = Number((item.value - itemDiscount).toFixed(2));
 
             // Se for o último item, ajustar centavos para bater com o firstPaymentValue
             if (index === checkoutItems.length - 1) {
@@ -208,7 +229,7 @@ export async function POST(req: Request) {
             }
 
             return {
-                name: (item.name + (applyWelcomeDiscount ? ' (10% OFF)' : '')).substring(0, 30),
+                name: (item.name + (applyWelcomeDiscount ? ' (Bônus 1ª Parc)' : '')).substring(0, 30),
                 value: val,
                 quantity: 1
             };
@@ -248,11 +269,13 @@ export async function POST(req: Request) {
         const checkout = await asaas.createCheckout(checkoutPayload);
 
         // 7. Salvar Registro de Auditoria no Banco para o Webhook encontrar
+        const financeDescription = `${itemDescription}${applyWelcomeDiscount ? ' (Bônus Boas-vindas 10%)' : ''}`;
+
         await getSupabaseAdmin().from('finance').insert({
             tenant_id: tenant.id,
             type: 'expense',
             value: firstPaymentValue,
-            description: itemDescription,
+            description: financeDescription,
             date: new Date().toISOString().split('T')[0],
             is_paid: false,
             metadata: {
