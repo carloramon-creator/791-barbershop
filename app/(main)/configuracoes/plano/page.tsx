@@ -757,7 +757,7 @@ export default function PlanPage() {
                                     const now = new Date();
                                     const diff = Math.ceil(
                                       (end.getTime() - now.getTime()) /
-                                        (1000 * 60 * 60 * 24),
+                                      (1000 * 60 * 60 * 24),
                                     );
                                     return (
                                       <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1">
@@ -868,7 +868,7 @@ export default function PlanPage() {
                             className={cn(
                               "bg-slate-900/40 border-slate-800 transition-all hover:border-slate-700 relative overflow-hidden group shadow-sm backdrop-blur-sm",
                               isActive &&
-                                "border-emerald-500/50 bg-emerald-500/5",
+                              "border-emerald-500/50 bg-emerald-500/5",
                             )}
                           >
                             {isActive && (
@@ -1005,7 +1005,7 @@ export default function PlanPage() {
                         className={cn(
                           "bg-slate-900 border-slate-800 cursor-pointer transition-all hover:border-slate-600 rounded-3xl p-1 relative overflow-hidden group shadow-2xl",
                           currentPlan === plan.slug &&
-                            "border-blue-500 ring-4 ring-blue-500/10",
+                          "border-blue-500 ring-4 ring-blue-500/10",
                         )}
                       >
                         <div className="p-6">
@@ -1120,7 +1120,7 @@ export default function PlanPage() {
                               }}
                             >
                               {currentPlan === plan.slug &&
-                              subscriptionStatus === "active"
+                                subscriptionStatus === "active"
                                 ? "Plano Ativo"
                                 : selectedPlan === plan.slug
                                   ? "Selecionado"
@@ -1166,395 +1166,298 @@ export default function PlanPage() {
             }}
           >
             <DialogContent
-              className="border-slate-800 bg-slate-900 text-slate-100 max-w-4xl w-[95vw] rounded-3xl flex flex-col p-0 overflow-hidden shadow-2xl transition-all duration-300 border-none"
+              className="border-slate-800 bg-slate-900 text-slate-100 max-w-4xl w-[95vw] rounded-[2.5rem] flex flex-col p-0 overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.7)] border-none ring-1 ring-white/10"
               onPointerDownOutside={() => fetchInvoices()}
               onEscapeKeyDown={() => fetchInvoices()}
             >
-              <div className="flex-1 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-800/50 min-h-0 overflow-hidden">
-                {/* COLUNA ESQUERDA: RESUMO (Mais larga) */}
-                <div className="md:w-[57%] p-6 md:p-10 space-y-8 bg-slate-950/20 overflow-y-auto custom-scrollbar">
-                  <DialogHeader className="p-0 text-left">
-                    <DialogTitle className="font-black text-2xl tracking-tighter uppercase text-slate-100">
-                      Contratação
-                    </DialogTitle>
-                    <DialogDescription className="text-slate-500 text-[10px] font-bold uppercase tracking-widest leading-none">
-                      Revisão do Pedido
-                    </DialogDescription>
-                  </DialogHeader>
+              <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
+                {/* COLUNA ESQUERDA: RESUMO (MODERNO & LIMPO) */}
+                <div className="md:w-[58%] p-8 md:p-12 space-y-12 bg-slate-950/40 overflow-y-auto custom-scrollbar border-r border-white/5">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-400">Checkout Seguro</span>
+                    </div>
+                    <h2 className="text-3xl font-black text-slate-100 uppercase tracking-tighter leading-tight">
+                      Resumo do Pedido
+                    </h2>
+                    <p className="text-slate-500 text-xs font-bold uppercase tracking-widest pl-0.5">Confirme os detalhes da sua assinatura</p>
+                  </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-8">
                     {selectedPlan && (
-                      <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800/50">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">
-                            Plano Selecionado
-                          </span>
-                          <span className="text-[10px] font-bold text-blue-500 uppercase">
-                            {selectedInterval === 1
-                              ? "Mensal"
-                              : selectedInterval === 6
-                                ? "Semestral"
-                                : "Anual"}
+                      <div className="group bg-white/[0.02] p-6 rounded-3xl border border-white/5 transition-all hover:bg-white/[0.04] relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                          <Activity size={40} />
+                        </div>
+                        <div className="flex justify-between items-center mb-3">
+                          <span className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Plano em Seleção</span>
+                          <span className="px-3 py-1 bg-blue-500/10 text-blue-400 text-[9px] font-black rounded-full border border-blue-500/20 uppercase">
+                            {selectedInterval === 1 ? "Ciclo Mensal" : selectedInterval === 6 ? "Ciclo Semestral" : "Ciclo Anual"}
                           </span>
                         </div>
                         <div className="flex justify-between items-baseline">
-                          <span className="text-base font-black text-slate-100 capitalize">
+                          <span className="text-2xl font-black text-slate-100 uppercase tracking-tight">
                             {selectedPlan}
                           </span>
-                          <span className="text-base font-black text-slate-100">
+                          <span className="text-xl font-bold text-slate-300 tabular-nums">
                             {(() => {
-                              const plan = dynamicPlans.find(
-                                (p) => p.slug === selectedPlan,
-                              );
+                              const plan = dynamicPlans.find((p) => p.slug === selectedPlan);
                               if (!plan) return "";
                               const basePrice = plan.price || 0;
-                              const discount =
-                                selectedInterval === 6
-                                  ? 10
-                                  : selectedInterval === 12
-                                    ? 20
-                                    : 0;
-                              const totalPrice =
-                                basePrice *
-                                selectedInterval *
-                                (1 - discount / 100);
-                              return ` R$ ${(totalPrice || 0).toFixed(2).replace(".", ",")}`;
+                              const discount = selectedInterval === 6 ? 10 : selectedInterval === 12 ? 20 : 0;
+                              const totalPrice = basePrice * selectedInterval * (1 - discount / 100);
+                              return `R$ ${(totalPrice || 0).toFixed(2).replace(".", ",")}`;
                             })()}
                           </span>
                         </div>
                       </div>
                     )}
 
-                    <div className="space-y-3">
-                      <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">
-                        Módulos Extras
-                      </span>
-                      <div className="grid grid-cols-2 gap-2.5">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 px-1">
+                        <Zap size={14} className="text-amber-500" />
+                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Recursos Adicionais</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {(() => {
                           const filtered = dynamicAddons.filter((addon) => {
-                            const isPaidActive =
-                              subscriptionStatus === "active" &&
-                              !!tenantObject?.asaas_subscription_id;
+                            const isPaidActive = subscriptionStatus === "active" && !!tenantObject?.asaas_subscription_id;
                             if (!isPaidActive) return true;
-                            const plan = dynamicPlans.find(
-                              (p) => p.slug === selectedPlan,
-                            );
+                            const plan = dynamicPlans.find((p) => p.slug === selectedPlan);
                             if (!plan) return true;
-                            const addonName = (addon.name || "")
-                              .toLowerCase()
-                              .replace("módulo ", "")
-                              .trim();
-                            const features = (plan.features || []).map(
-                              (f: any) => String(f || "").toLowerCase(),
-                            );
-                            return !features.some(
-                              (f: string) =>
-                                f.includes(addonName) || f.includes(addon.slug),
-                            );
+                            const addonName = (addon.name || "").toLowerCase().replace("módulo ", "").trim();
+                            const features = (plan.features || []).map((f: any) => String(f || "").toLowerCase());
+                            return !features.some((f: string) => f.includes(addonName) || f.includes(addon.slug));
                           });
 
-                          if (filtered.length === 0)
-                            return (
-                              <p className="col-span-2 text-[9px] text-slate-600 italic">
-                                Nenhum módulo extra disponível.
-                              </p>
-                            );
+                          if (filtered.length === 0) return <p className="text-[11px] text-slate-600 font-medium px-1 italic">Nenhum módulo selecionado no momento.</p>;
 
                           return filtered.map((addon) => {
-                            const isSelected = selectedAddonsSlugs.includes(
-                              addon.slug,
-                            );
+                            const isSelected = selectedAddonsSlugs.includes(addon.slug);
                             return (
                               <button
                                 key={addon.slug}
                                 onClick={() => toggleAddon(addon.slug)}
                                 className={cn(
-                                  "flex items-center gap-2.5 p-3 rounded-2xl border transition-all truncate text-left",
+                                  "flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 group/addon",
                                   isSelected
-                                    ? "bg-amber-500/10 border-amber-500/50 text-slate-100 shadow-[0_0_15px_rgba(245,158,11,0.05)]"
-                                    : "bg-slate-900/50 border-slate-800/50 text-slate-500 hover:border-slate-700",
+                                    ? "bg-amber-500/10 border-amber-500/30 text-white shadow-[0_8px_20px_-10px_rgba(245,158,11,0.2)]"
+                                    : "bg-white/[0.01] border-white/5 text-slate-500 hover:border-slate-700 hover:bg-white/[0.03]"
                                 )}
                               >
-                                <div
-                                  className={cn(
-                                    "w-2 h-2 rounded-full",
-                                    isSelected
-                                      ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"
-                                      : "bg-slate-800",
-                                  )}
-                                />
-                                <span className="text-[10px] font-bold uppercase truncate">
+                                <span className="text-[11px] font-bold uppercase tracking-tight text-left break-words">
                                   {addon.name.replace("Módulo ", "")}
                                 </span>
+                                <div className={cn("w-2 h-2 rounded-full shrink-0 transition-all", isSelected ? "bg-amber-500 scale-110 shadow-[0_0_8px_rgba(245,158,11,0.5)]" : "bg-slate-800 group-hover/addon:bg-slate-700")} />
                               </button>
                             );
                           });
                         })()}
                       </div>
                     </div>
+                  </div>
 
-                    <div className="pt-8 border-t border-slate-800/50 flex justify-between items-end gap-6 w-full">
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] leading-none mb-2 whitespace-nowrap">
-                          Investimento Total
-                        </span>
-                        <span className="text-[10px] text-slate-600 font-bold uppercase bg-slate-950/50 px-2 py-0.5 rounded-md border border-slate-800/50 w-fit">
-                          {selectedInterval}{" "}
-                          {selectedInterval === 1 ? "mês" : "meses"}
-                        </span>
+                  {/* TOTAL SECTION (LOWER PRICE SECTION) */}
+                  <div className="pt-12 mt-auto border-t border-white/5">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1.5">
+                        <p className="text-[11px] font-black uppercase text-slate-500 tracking-[0.4em]">Total Bruto</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-slate-400 font-bold bg-slate-800/40 px-2 py-1 rounded-md border border-white/5 uppercase">
+                            {selectedInterval} Meses
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex flex-col items-end shrink-0">
-                        <span className="text-4xl md:text-5xl font-black text-white italic tracking-tighter leading-none">
-                          R${" "}
-                          {(() => {
-                            const plan = dynamicPlans.find(
-                              (p) => p.slug === selectedPlan,
-                            );
-                            const planPrice = plan
-                              ? plan.price *
-                                (1 -
-                                  (selectedInterval === 12
-                                    ? 20
-                                    : selectedInterval === 6
-                                      ? 10
-                                      : 0) /
-                                    100) *
-                                selectedInterval
-                              : 0;
-                            let addonsPrice = 0;
-                            selectedAddonsSlugs.forEach((slug) => {
-                              const addon = dynamicAddons.find(
-                                (a) => a.slug === slug,
-                              );
-                              if (addon)
-                                addonsPrice +=
-                                  Number(addon.price) * selectedInterval;
-                            });
-                            return (planPrice + addonsPrice)
-                              .toFixed(2)
-                              .replace(".", ",");
-                          })()}
-                        </span>
+                      <div className="text-right">
+                        <div className="flex items-baseline justify-end gap-1 mb-1">
+                          <span className="text-xs font-bold text-slate-500 uppercase">R$</span>
+                          <h3 className="text-4xl font-black text-white tracking-tighter tabular-nums leading-none">
+                            {(() => {
+                              const plan = dynamicPlans.find((p) => p.slug === selectedPlan);
+                              const planPrice = plan ? plan.price * (1 - (selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100) * selectedInterval : 0;
+                              let addonsPrice = 0;
+                              selectedAddonsSlugs.forEach((slug) => {
+                                const addon = dynamicAddons.find((a) => a.slug === slug);
+                                if (addon) addonsPrice += Number(addon.price) * selectedInterval;
+                              });
+                              return (planPrice + addonsPrice).toFixed(2).replace(".", ",");
+                            })()}
+                          </h3>
+                        </div>
+                        {selectedInterval > 1 && (
+                          <p className="text-[9px] font-bold text-emerald-500/80 uppercase tracking-widest">Economia garantida no ciclo</p>
+                        )}
                       </div>
-
-                      {/* DESCONTO BOAS VINDAS */}
-                      {(() => {
-                        const isTrialOrUnpaid =
-                          !["active", "active_paid", "paid"].includes(
-                            subscriptionStatus || "",
-                          ) ||
-                          ["trial", "trialing"].includes(
-                            subscriptionStatus || "",
-                          );
-                        const isFirstSub =
-                          !tenantObject?.asaas_subscription_id ||
-                          isTrialOrUnpaid;
-                        if (
-                          isFirstSub &&
-                          (selectedPlan || selectedAddonsSlugs.length > 0)
-                        ) {
-                          const plan = dynamicPlans.find(
-                            (p) => p.slug === selectedPlan,
-                          );
-                          const planTotal = plan
-                            ? plan.price *
-                              (1 -
-                                (selectedInterval === 12
-                                  ? 20
-                                  : selectedInterval === 6
-                                    ? 10
-                                    : 0) /
-                                  100) *
-                              selectedInterval
-                            : 0;
-                          let addonsTotal = 0;
-                          selectedAddonsSlugs.forEach((slug) => {
-                            const addon = dynamicAddons.find(
-                              (a) => a.slug === slug,
-                            );
-                            if (addon)
-                              addonsTotal +=
-                                Number(addon.price) * selectedInterval;
-                          });
-                          const discounted = (planTotal + addonsTotal) * 0.9;
-                          return (
-                            <div className="bg-emerald-500/10 border border-emerald-500/20 p-2 rounded-xl flex items-center justify-between">
-                              <span className="text-emerald-500 font-black text-[9px] uppercase tracking-wider">
-                                Boas-vindas (10% OFF)
-                              </span>
-                              <span className="text-xs font-black text-emerald-400">
-                                R$ {discounted.toFixed(2).replace(".", ",")}
-                              </span>
-                            </div>
-                          );
-                        }
-                        return null;
-                      })()}
                     </div>
+
+                    {(() => {
+                      const isTrialOrUnpaid = !["active", "active_paid", "paid"].includes(subscriptionStatus || "") || ["trial", "trialing"].includes(subscriptionStatus || "");
+                      const isFirstSub = !tenantObject?.asaas_subscription_id || isTrialOrUnpaid;
+                      if (isFirstSub && (selectedPlan || selectedAddonsSlugs.length > 0)) {
+                        return (
+                          <div className="mt-8 flex items-center justify-between p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-[1.25rem] shadow-sm">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                                <Check size={14} className="text-emerald-500" />
+                              </div>
+                              <span className="text-emerald-400 font-black text-[10px] uppercase tracking-widest">Boas-vindas Ativado</span>
+                            </div>
+                            <span className="text-[10px] font-black text-emerald-500 uppercase">10% OFF Aplicado</span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
-                {/* COLUNA DIREITA: PAGAMENTO */}
-                <div className="md:w-[43%] p-6 md:p-10 space-y-8 bg-slate-900 overflow-y-auto custom-scrollbar">
+
+                {/* COLUNA DIREITA: PAGAMENTO (SISTEMA DARK & MINIMALISTA) */}
+                <div className="md:w-[42%] p-8 md:p-12 bg-slate-900 overflow-y-auto custom-scrollbar flex flex-col">
                   {!pixData && !boletoData && !pendingData ? (
                     <>
-                      <div className="space-y-6">
-                        <Label className="text-[10px] text-slate-500 uppercase tracking-widest font-black ml-1">
-                          Forma de Pagamento
-                        </Label>
-                        <div className="grid grid-cols-3 gap-3">
-                          <button
-                            onClick={() => setPaymentMethod("card")}
-                            className={cn(
-                              "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2 h-24",
-                              paymentMethod === "card"
-                                ? "border-blue-500 bg-blue-500/10 text-slate-100 shadow-[0_0_20px_rgba(59,130,246,0.1)]"
-                                : "border-slate-800 bg-slate-950 text-slate-600 hover:border-slate-700",
-                            )}
-                          >
-                            <CreditCard className="w-5 h-5" />
-                            <span className="text-[10px] font-black uppercase">
-                              Cartão
-                            </span>
-                          </button>
-                          <button
-                            onClick={() => setPaymentMethod("pix")}
-                            className={cn(
-                              "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2 h-24",
-                              paymentMethod === "pix"
-                                ? "border-emerald-500 bg-emerald-500/10 text-slate-100 shadow-[0_0_20px_rgba(16,185,129,0.1)]"
-                                : "border-slate-800 bg-slate-950 text-slate-600 hover:border-slate-700",
-                            )}
-                          >
-                            <Zap className="w-5 h-5" />
-                            <span className="text-[10px] font-black uppercase">
-                              Pix
-                            </span>
-                          </button>
-                          <button
-                            onClick={() => setPaymentMethod("boleto-inter")}
-                            className={cn(
-                              "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2 h-24",
-                              paymentMethod === "boleto-inter"
-                                ? "border-blue-400 bg-blue-400/10 text-slate-100 shadow-[0_0_20px_rgba(96,165,250,0.1)]"
-                                : "border-slate-800 bg-slate-950 text-slate-600 hover:border-slate-700",
-                            )}
-                          >
-                            <FileText className="w-5 h-5" />
-                            <span className="text-[10px] font-black uppercase">
-                              Boleto
-                            </span>
-                          </button>
+                      <div className="flex-1 space-y-12">
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-3 mb-2 px-1">
+                            <CreditCard size={14} className="text-blue-500" />
+                            <span className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-500">Pagamento</span>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-3">
+                            {[
+                              { id: "card", icon: CreditCard, label: "Cartão de Crédito", desc: "Aprovação instantânea" },
+                              { id: "pix", icon: Zap, label: "Pix à Vista", desc: "Liberação imediata" },
+                              { id: "boleto-inter", icon: FileText, label: "Boleto Bancário", desc: "Até 3 dias úteis" }
+                            ].map((m) => (
+                              <button
+                                key={m.id}
+                                onClick={() => setPaymentMethod(m.id as any)}
+                                className={cn(
+                                  "flex items-center p-4 rounded-2xl border transition-all duration-300 gap-4 group relative overflow-hidden text-left",
+                                  paymentMethod === m.id
+                                    ? "border-blue-500 bg-blue-500/5 text-white ring-4 ring-blue-500/10 shadow-lg"
+                                    : "border-white/5 bg-slate-950/40 text-slate-500 hover:border-white/10"
+                                )}
+                              >
+                                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-colors", paymentMethod === m.id ? "bg-blue-600 text-white" : "bg-slate-900 text-slate-600")}>
+                                  <m.icon size={18} />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className={cn("text-xs font-black uppercase tracking-widest", paymentMethod === m.id ? "text-white" : "text-slate-400")}>{m.label}</span>
+                                  <span className="text-[9px] font-bold text-slate-600 uppercase tracking-tight">{m.desc}</span>
+                                </div>
+                                {paymentMethod === m.id && (
+                                  <div className="ml-auto">
+                                    <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center shadow-[0_0_10px_rgba(59,130,246,0.5)]">
+                                      <Check size={10} className="text-white" />
+                                    </div>
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
                         </div>
 
-                        <div className="space-y-1">
-                          <Label className="text-[10px] text-slate-500 uppercase tracking-widest font-black">
-                            Cupom de Desconto
-                          </Label>
-                          <input
-                            type="text"
-                            placeholder="CÓDIGO DO CUPOM"
-                            value={couponCode}
-                            onChange={(e) => {
-                              setCouponCode(e.target.value.toUpperCase());
-                              setError(null);
-                            }}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder:text-slate-700 focus:border-blue-500 transition-all outline-none"
-                          />
+                        <div className="space-y-4 pt-4">
+                          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 px-1">Pussui um Cupom?</span>
+                          <div className="relative group">
+                            <input
+                              type="text"
+                              placeholder="CÓDIGO AQUI"
+                              value={couponCode}
+                              onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setError(null); }}
+                              className="w-full bg-slate-950/40 border border-white/5 rounded-2xl px-6 py-4 text-xs text-white placeholder:text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all outline-none text-center font-black tracking-[0.2em] uppercase"
+                            />
+                            <div className="absolute inset-0 rounded-2xl border border-white/0 group-hover:border-white/5 pointer-events-none transition-colors" />
+                          </div>
                         </div>
                       </div>
 
-                      <div className="pt-2 space-y-3">
+                      <div className="space-y-6 pt-10">
                         {error && (
-                          <p className="text-[10px] font-bold text-red-500 uppercase text-center animate-pulse">
-                            {error}
-                          </p>
+                          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl animate-in shake duration-500">
+                            <p className="text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center justify-center gap-3">
+                              <AlertCircle size={14} /> {error}
+                            </p>
+                          </div>
                         )}
-                        <div className="flex flex-col gap-2">
+
+                        <div className="space-y-3">
                           <Button
                             onClick={handleChangePlan}
                             disabled={saving}
-                            className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-tight shadow-xl shadow-blue-600/20"
+                            className="w-full h-16 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-[0.3em] rounded-2xl shadow-[0_15px_40px_-10px_rgba(59,130,246,0.4)] group transition-all duration-300 active:scale-95"
                           >
-                            {saving ? "Processando..." : "Finalizar e Ativar"}
+                            {saving ? (
+                              <div className="flex items-center gap-3">
+                                <Activity className="animate-spin w-5 h-5" />
+                                <span>Verificando</span>
+                              </div>
+                            ) : (
+                              <span className="flex items-center gap-3">ATUALIZAR AGORA <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" /></span>
+                            )}
                           </Button>
-                          <Button
-                            variant="ghost"
+
+                          <button
                             onClick={() => setOpenDialog(false)}
-                            className="text-slate-500 text-[10px] uppercase font-bold hover:text-slate-300"
+                            className="w-full text-slate-600 hover:text-slate-400 text-[10px] font-black uppercase tracking-[0.4em] transition-colors py-3"
                           >
-                            Voltar
-                          </Button>
+                            Cancelar Pedido
+                          </button>
                         </div>
                       </div>
                     </>
                   ) : (
-                    <div className="h-full flex flex-col justify-center">
+                    <div className="h-full flex flex-col items-center justify-center py-12 space-y-12">
                       {pendingData && (
-                        <div className="text-center space-y-4">
-                          <div className="bg-amber-500/10 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto border border-amber-500/20">
-                            <Activity className="animate-spin text-amber-500 w-8 h-8" />
+                        <div className="text-center space-y-8 max-w-[280px]">
+                          <div className="relative h-24 w-24 mx-auto">
+                            <div className="absolute inset-0 bg-amber-500/20 rounded-full blur-3xl animate-pulse" />
+                            <div className="relative bg-slate-950 border-2 border-amber-500/40 p-6 rounded-full w-full h-full flex items-center justify-center shadow-2xl">
+                              <Activity className="animate-spin text-amber-500 w-10 h-10" />
+                            </div>
                           </div>
-                          <h3 className="text-xl font-bold text-slate-100">
-                            Gerando Cobrança...
-                          </h3>
-                          <p className="text-slate-400 text-xs px-4">
-                            {pendingData.message}
-                          </p>
+                          <div className="space-y-3">
+                            <h3 className="text-2xl font-black text-white uppercase tracking-tight">Processando</h3>
+                            <p className="text-slate-500 text-[11px] font-bold uppercase tracking-widest leading-relaxed">{pendingData.message}</p>
+                          </div>
                         </div>
                       )}
 
                       {pixData && !pendingData && (
-                        <div className="flex flex-col items-center space-y-4">
-                          <div className="text-center bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl w-full">
-                            <p className="text-[10px] text-emerald-500 uppercase font-black tracking-widest">
-                              Valor do Pix
-                            </p>
-                            <p className="text-3xl font-black text-slate-100">
-                              R${" "}
-                              {(pixData.amount || 0)
-                                .toFixed(2)
-                                .replace(".", ",")}
-                            </p>
-                          </div>
-                          <div className="bg-white p-2 rounded-xl border-4 border-emerald-500 shadow-xl">
-                            <QRCodeCanvas
-                              value={pixData.pixPayload}
-                              size={150}
-                              level="H"
-                              includeMargin={true}
-                            />
-                          </div>
-                          <div className="w-full space-y-1">
-                            <Label className="text-[10px] text-slate-600 uppercase font-black">
-                              Copia e Cola
-                            </Label>
-                            <div className="flex gap-2">
-                              <input
-                                readOnly
-                                value={pixData.pixPayload}
-                                className="flex-1 bg-slate-950 border border-slate-800 rounded px-3 py-2 text-[9px] font-mono text-slate-500"
-                              />
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-auto border-slate-700 text-xs"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(
-                                    pixData.pixPayload,
-                                  );
-                                  alert("PIX Copiado!");
-                                }}
-                              >
-                                Copiar
-                              </Button>
+                        <div className="flex flex-col items-center w-full space-y-10 animate-in fade-in zoom-in-95 duration-700">
+                          <div className="text-center space-y-3">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20 mb-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Aguardando Pagamento</span>
                             </div>
+                            <h4 className="text-4xl font-black text-white tracking-tighter tabular-nums">
+                              R$ {(pixData.amount || 0).toFixed(2).replace('.', ',')}
+                            </h4>
                           </div>
-                          <Button
-                            onClick={() => setOpenDialog(false)}
-                            className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold uppercase text-xs h-12 rounded-xl tracking-widest"
-                          >
-                            Concluído
-                          </Button>
+
+                          <div className="bg-white p-6 rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(16,185,129,0.3)] ring-1 ring-emerald-500/20 group relative overflow-hidden transition-all hover:scale-[1.02]">
+                            <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <QRCodeCanvas value={pixData.pixPayload} size={200} level="H" includeMargin={true} />
+                          </div>
+
+                          <div className="w-full space-y-4">
+                            <div className="bg-slate-950/60 border border-white/5 rounded-2xl p-6 font-mono text-[10px] text-slate-400 break-all text-center leading-relaxed">
+                              {pixData.pixPayload}
+                            </div>
+                            <Button
+                              size="lg"
+                              className="w-full h-14 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-[11px] tracking-[0.3em] rounded-2xl shadow-xl shadow-emerald-900/30 transition-all active:scale-95"
+                              onClick={() => { navigator.clipboard.writeText(pixData.pixPayload); alert('PIX Copiado!'); }}
+                            >
+                              Copiar Copia e Cola
+                            </Button>
+                          </div>
+
+                          <button onClick={() => setOpenDialog(false)} className="text-slate-600 hover:text-slate-400 uppercase font-black text-[10px] tracking-widest transition-colors">
+                            Vou pagar depois
+                          </button>
                         </div>
                       )}
                     </div>
@@ -1936,7 +1839,7 @@ export default function PlanPage() {
                                     } else {
                                       alert(
                                         "PDF da nota não disponível. ID: " +
-                                          inv.metadata.nfe_id,
+                                        inv.metadata.nfe_id,
                                       );
                                     }
                                   }}
@@ -1986,14 +1889,14 @@ export default function PlanPage() {
                       );
                       const planTotal = plan
                         ? plan.price *
-                          (1 -
-                            (selectedInterval === 12
-                              ? 20
-                              : selectedInterval === 6
-                                ? 10
-                                : 0) /
-                              100) *
-                          selectedInterval
+                        (1 -
+                          (selectedInterval === 12
+                            ? 20
+                            : selectedInterval === 6
+                              ? 10
+                              : 0) /
+                          100) *
+                        selectedInterval
                         : 0;
 
                       let addonsTotal = 0;
@@ -2115,21 +2018,21 @@ export default function PlanPage() {
           boletoData={
             boletoData
               ? {
-                  identificationField: boletoData.linhaDigitavel,
-                  barCode: boletoData.codigoBarras,
-                  value: boletoData.amount || 0,
-                  dueDate: (boletoData as any).dueDate,
-                  bankSlipUrl: boletoData.pdfUrl,
-                }
+                identificationField: boletoData.linhaDigitavel,
+                barCode: boletoData.codigoBarras,
+                value: boletoData.amount || 0,
+                dueDate: (boletoData as any).dueDate,
+                bankSlipUrl: boletoData.pdfUrl,
+              }
               : null
           }
           pixData={
             pixData
               ? {
-                  encodedImage: (pixData as any).encodedImage,
-                  payload: pixData.pixPayload,
-                  expirationDate: pixData.expiresAt,
-                }
+                encodedImage: (pixData as any).encodedImage,
+                payload: pixData.pixPayload,
+                expirationDate: pixData.expiresAt,
+              }
               : null
           }
           onClose={() => {
