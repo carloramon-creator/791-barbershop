@@ -740,26 +740,46 @@ export default function PlanPage() {
               </div>
 
               <div className="space-y-3 border-y border-white/5 py-4">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-500 font-bold uppercase">Base</span>
-                  <span className="text-white font-black">R$ {planTotal.toFixed(2).replace(".", ",")}</span>
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-col">
+                    <span className="text-slate-500 font-bold uppercase text-[9px] tracking-widest">Base</span>
+                    <span className="text-[10px] text-slate-400 font-medium">TOTAL: R$ {planTotal.toFixed(2).replace(".", ",")}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-xs font-black text-white">{selectedInterval}x</span>
+                    <span className="text-lg font-black text-white">R$ {(planTotal / selectedInterval).toFixed(2).replace(".", ",")}</span>
+                  </div>
                 </div>
+
                 {selectedAddonsSlugs.map(slug => {
                   const addon = dynamicAddons.find(a => a.slug === slug);
+                  const addonTotal = Number(addon?.price || 0) * selectedInterval;
                   return (
-                    <div key={slug} className="flex justify-between items-center text-xs">
-                      <span className="text-slate-500 font-bold uppercase">{addon?.name.replace("Módulo ", "")}</span>
-                      <span className="text-white font-black">+ R$ {(Number(addon?.price || 0) * selectedInterval).toFixed(2).replace(".", ",")}</span>
+                    <div key={slug} className="flex justify-between items-start">
+                      <div className="flex flex-col">
+                        <span className="text-slate-500 font-bold uppercase text-[9px] tracking-widest">{addon?.name.replace("Módulo ", "")}</span>
+                        <span className="text-[10px] text-slate-400 font-medium">TOTAL: R$ {addonTotal.toFixed(2).replace(".", ",")}</span>
+                      </div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xs font-bold text-slate-300">+{selectedInterval}x</span>
+                        <span className="text-base font-black text-slate-300">R$ {Number(addon?.price || 0).toFixed(2).replace(".", ",")}</span>
+                      </div>
                     </div>
                   );
                 })}
               </div>
 
-              <div className="flex justify-between items-center pt-2">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total</span>
-                <span className="text-2xl font-black text-blue-500 tracking-tighter tabular-nums whitespace-nowrap">
-                  R$ {grandTotal.toFixed(2).replace(".", ",")}
-                </span>
+              <div className="flex flex-col gap-1 pt-2">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Mensal</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-blue-500 tracking-tighter tabular-nums">
+                    R$ {(grandTotal / selectedInterval).toFixed(2).replace(".", ",")}
+                  </span>
+                  <span className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">/mês</span>
+                </div>
+                <div className="text-[11px] font-bold text-slate-400 mt-1 pb-1">
+                  Valor total do checkout: <span className="text-white">R$ {grandTotal.toFixed(2).replace(".", ",")}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -1403,6 +1423,9 @@ export default function PlanPage() {
                             }
                             onClick={(e) => {
                               e.stopPropagation();
+                              // Define o plano selecionado antes de abrir o modal ou expandir
+                              setSelectedPlan(plan.slug);
+
                               // Premium vai direto para pagamento
                               if (plan.slug === "premium") {
                                 setIsPaymentExpanded(true);

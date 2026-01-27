@@ -2,9 +2,8 @@
 
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Zap, Package, CheckCircle2, TrendingDown } from "lucide-react";
+import { Zap, Package, CheckCircle2, TrendingDown, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
 
 interface UpsellModalProps {
     open: boolean;
@@ -50,241 +49,213 @@ export function UpsellModal({
     };
 
     const discount = getDiscount(selectedInterval);
-    const monthlyPrice = planPrice * (1 - discount / 100);
-    const totalPrice = monthlyPrice * selectedInterval;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-slate-900 border-2 border-blue-500/30 max-w-3xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
-                {/* Header com gradiente */}
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-center relative overflow-hidden flex-shrink-0">
-                    <div className="absolute inset-0 opacity-30" />
-                    <div className="relative z-10">
-                        <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3 backdrop-blur-sm">
-                            <Zap className="w-7 h-7 text-white fill-white" />
+            <DialogContent className="bg-slate-900 border-2 border-blue-500/30 max-w-2xl p-0 overflow-hidden max-h-[95vh] flex flex-col">
+                {/* Header Compacto */}
+                <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-center relative overflow-hidden flex-shrink-0">
+                    <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+                    <div className="relative z-10 flex items-center justify-center gap-3">
+                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                            <Zap className="w-5 h-5 text-white fill-white" />
                         </div>
-                        <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-1">
-                            Turbine Seu Plano!
-                        </h2>
-                        <p className="text-blue-100 font-medium text-xs">
-                            Adicione módulos profissionais e escolha o melhor período de pagamento
-                        </p>
-                    </div>
-                </div>
-
-                {/* Body - Scrollable */}
-                <div className="p-6 space-y-5 overflow-y-auto flex-1">
-                    {/* Plano Selecionado */}
-                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 flex items-start gap-2">
-                        <div className="w-7 h-7 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <Package size={14} className="text-blue-400" />
-                        </div>
-                        <div className="flex-1">
-                            <h3 className="text-xs font-black text-white uppercase tracking-wide mb-0.5">
-                                Você selecionou: {planSlug === "basic" ? "Plano Básico" : "Plano Completo"}
-                            </h3>
-                            <p className="text-[10px] text-slate-400 leading-relaxed">
-                                {planSlug === "basic"
-                                    ? "Ótima escolha para começar! Que tal adicionar recursos profissionais?"
-                                    : "Excelente! Falta apenas o controle de estoque para ter tudo!"}
+                        <div className="text-left">
+                            <h2 className="text-xl font-black text-white uppercase tracking-tight leading-none mb-1">
+                                Turbine Seu Plano!
+                            </h2>
+                            <p className="text-blue-100 font-medium text-[10px] opacity-80">
+                                Adicione módulos e economize com planos anuais
                             </p>
                         </div>
                     </div>
+                </div>
 
-                    {/* Seleção de Intervalo */}
-                    <div className="space-y-2">
-                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                            Escolha o Período de Pagamento:
-                        </h3>
-                        <div className="grid grid-cols-3 gap-2">
-                            {/* Mensal */}
-                            <button
-                                onClick={() => onIntervalChange(1)}
-                                className={cn(
-                                    "relative p-3 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02]",
-                                    selectedInterval === 1
-                                        ? "border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/20"
-                                        : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
-                                )}
-                            >
-                                <div className="text-center">
-                                    <div className="text-xs font-black text-white uppercase mb-0.5">Mensal</div>
-                                    <div className="text-lg font-black text-blue-400">
-                                        R$ {planPrice.toFixed(2).replace(".", ",")}
-                                    </div>
-                                    <div className="text-[9px] text-slate-500">por mês</div>
-                                </div>
-                            </button>
+                {/* Body - Scrollable if needed */}
+                <div className="p-4 space-y-4 overflow-y-auto flex-1">
+                    {/* Seleção de Intervalo (Mais Compacto) */}
+                    <div className="grid grid-cols-3 gap-2">
+                        {[
+                            { label: "Mensal", interval: 1, discount: 0, color: "blue" },
+                            { label: "Semestral", interval: 6, discount: 10, color: "emerald" },
+                            { label: "Anual", interval: 12, discount: 20, color: "amber" },
+                        ].map((item) => {
+                            const isActive = selectedInterval === item.interval;
+                            const monthlyValue = planPrice * (1 - item.discount / 100);
+                            const colorClass = item.color === "blue" ? "blue" : item.color === "emerald" ? "emerald" : "amber";
 
-                            {/* Semestral */}
-                            <button
-                                onClick={() => onIntervalChange(6)}
-                                className={cn(
-                                    "relative p-3 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02]",
-                                    selectedInterval === 6
-                                        ? "border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/20"
-                                        : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
-                                )}
-                            >
-                                <div className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full">
-                                    -10%
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-xs font-black text-white uppercase mb-0.5">Semestral</div>
-                                    <div className="text-lg font-black text-emerald-400">
-                                        R$ {(planPrice * 0.9).toFixed(2).replace(".", ",")}
+                            return (
+                                <button
+                                    key={item.interval}
+                                    onClick={() => onIntervalChange(item.interval)}
+                                    className={cn(
+                                        "relative p-2 rounded-xl border-2 transition-all duration-300",
+                                        isActive
+                                            ? `border-${colorClass}-500 bg-${colorClass}-500/10 ring-2 ring-${colorClass}-500/20`
+                                            : "border-slate-800 bg-slate-800/40 hover:border-slate-700"
+                                    )}
+                                >
+                                    {item.discount > 0 && (
+                                        <div className={cn(
+                                            "absolute -top-2 -right-1 px-1.5 py-0.5 rounded-full text-[8px] font-black text-white",
+                                            item.color === "emerald" ? "bg-emerald-500" : "bg-amber-500"
+                                        )}>
+                                            -{item.discount}%
+                                        </div>
+                                    )}
+                                    <div className="text-center">
+                                        <div className="text-[9px] font-black text-slate-400 uppercase mb-0.5">{item.label}</div>
+                                        <div className={cn(
+                                            "text-sm font-black",
+                                            isActive ? `text-${colorClass}-400` : "text-white"
+                                        )}>
+                                            R$ {monthlyValue.toFixed(2).replace(".", ",")}
+                                        </div>
+                                        <div className="text-[8px] text-slate-500">/mês</div>
                                     </div>
-                                    <div className="text-[9px] text-slate-500">por mês</div>
-                                    <div className="text-[8px] text-emerald-400 font-bold mt-1 flex items-center justify-center gap-1">
-                                        <TrendingDown size={10} />
-                                        Economize R$ {(planPrice * 0.1 * 6).toFixed(2).replace(".", ",")}
-                                    </div>
-                                </div>
-                            </button>
-
-                            {/* Anual */}
-                            <button
-                                onClick={() => onIntervalChange(12)}
-                                className={cn(
-                                    "relative p-3 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02]",
-                                    selectedInterval === 12
-                                        ? "border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/20"
-                                        : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
-                                )}
-                            >
-                                <div className="absolute -top-2 -right-2 bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full">
-                                    -20%
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-xs font-black text-white uppercase mb-0.5">Anual</div>
-                                    <div className="text-lg font-black text-amber-400">
-                                        R$ {(planPrice * 0.8).toFixed(2).replace(".", ",")}
-                                    </div>
-                                    <div className="text-[9px] text-slate-500">por mês</div>
-                                    <div className="text-[8px] text-amber-400 font-bold mt-1 flex items-center justify-center gap-1">
-                                        <TrendingDown size={10} />
-                                        Economize R$ {(planPrice * 0.2 * 12).toFixed(2).replace(".", ",")}
-                                    </div>
-                                </div>
-                            </button>
-                        </div>
+                                </button>
+                            );
+                        })}
                     </div>
 
-                    {/* Módulos Adicionais */}
-                    <div className="space-y-3">
-                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                            Módulos Recomendados para Você:
+                    {/* Módulos Lado a Lado */}
+                    <div className="space-y-2">
+                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">
+                            Turbine com os Módulos:
                         </h3>
-
-                        {/* Módulo Financeiro (só para Básico) */}
-                        {planSlug === "basic" && financeiroAddon && (
-                            <div
-                                onClick={() => onAddonToggle(financeiroAddon.slug)}
-                                className={cn(
-                                    "group cursor-pointer bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-2 rounded-xl p-4 transition-all duration-300 hover:scale-[1.01] hover:shadow-lg hover:shadow-emerald-500/20",
-                                    selectedAddonsSlugs.includes(financeiroAddon.slug)
-                                        ? "border-emerald-500 ring-2 ring-emerald-500/20"
-                                        : "border-emerald-500/30 hover:border-emerald-500/60"
-                                )}
-                            >
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1.5">
-                                            <div className="w-7 h-7 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-                                                <Zap size={14} className="text-emerald-400" />
-                                            </div>
-                                            <h4 className="text-sm font-black text-white uppercase tracking-tight">
-                                                {financeiroAddon.name}
-                                            </h4>
-                                            {selectedAddonsSlugs.includes(financeiroAddon.slug) && (
-                                                <CheckCircle2 size={14} className="text-emerald-500" />
-                                            )}
+                        <div className="grid grid-cols-2 gap-3">
+                            {/* Módulo Financeiro */}
+                            {planSlug === "basic" && financeiroAddon && (
+                                <div
+                                    onClick={() => onAddonToggle(financeiroAddon.slug)}
+                                    className={cn(
+                                        "group cursor-pointer border-2 rounded-2xl p-3 transition-all duration-300 relative overflow-hidden flex flex-col h-full",
+                                        selectedAddonsSlugs.includes(financeiroAddon.slug)
+                                            ? "border-emerald-500/60 bg-emerald-500/10 ring-4 ring-emerald-500/5 shadow-lg shadow-emerald-500/10"
+                                            : "border-slate-800 bg-slate-800/30 hover:border-slate-700 hover:bg-slate-800/50"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className={cn(
+                                            "w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
+                                            selectedAddonsSlugs.includes(financeiroAddon.slug) ? "bg-emerald-500 text-white" : "bg-slate-700 text-slate-400"
+                                        )}>
+                                            <Zap size={14} />
                                         </div>
-                                        <p className="text-[10px] text-slate-400 leading-relaxed mb-2">
-                                            Controle completo de caixa, despesas e faturamento. Relatórios profissionais e gestão financeira inteligente.
-                                        </p>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xl font-black text-emerald-400">
+                                        <h4 className="text-[11px] font-black text-white uppercase leading-tight">
+                                            Financeiro
+                                        </h4>
+                                        {selectedAddonsSlugs.includes(financeiroAddon.slug) && (
+                                            <CheckCircle2 size={12} className="text-emerald-500 ml-auto" />
+                                        )}
+                                    </div>
+
+                                    <p className="text-[9px] text-slate-500 leading-tight mb-3 line-clamp-2">
+                                        Controle de caixa, despesas e faturamento profissional.
+                                    </p>
+
+                                    <div className="mt-auto pt-2 border-t border-white/5 space-y-1">
+                                        <div className="text-[8px] text-slate-500 font-bold">
+                                            TOTAL: R$ {(Number(financeiroAddon.price || 0) * (1 - discount / 100) * selectedInterval).toFixed(2).replace(".", ",")}
+                                        </div>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-sm font-black text-emerald-400">
+                                                {selectedInterval}x
+                                            </span>
+                                            <span className="text-[10px] text-slate-400">de</span>
+                                            <span className="text-lg font-black text-emerald-400">
                                                 R$ {(Number(financeiroAddon.price || 0) * (1 - discount / 100)).toFixed(2).replace(".", ",")}
                                             </span>
-                                            <span className="text-[10px] text-slate-500 font-bold">/mês</span>
-                                            {discount > 0 && (
-                                                <span className="text-[9px] text-slate-600 line-through">
-                                                    R$ {Number(financeiroAddon.price || 0).toFixed(2).replace(".", ",")}
-                                                </span>
-                                            )}
-                                            <span className="ml-auto px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[8px] font-black uppercase rounded-full">
-                                                Recomendado
-                                            </span>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {/* Módulo Estoque (para Básico e Completo) */}
-                        {estoqueAddon && (
-                            <div
-                                onClick={() => onAddonToggle(estoqueAddon.slug)}
-                                className={cn(
-                                    "group cursor-pointer bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-2 rounded-xl p-4 transition-all duration-300 hover:scale-[1.01] hover:shadow-lg hover:shadow-amber-500/20",
-                                    selectedAddonsSlugs.includes(estoqueAddon.slug)
-                                        ? "border-amber-500 ring-2 ring-amber-500/20"
-                                        : "border-amber-500/30 hover:border-amber-500/60"
-                                )}
-                            >
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1.5">
-                                            <div className="w-7 h-7 bg-amber-500/20 rounded-lg flex items-center justify-center">
-                                                <Package size={14} className="text-amber-400" />
-                                            </div>
-                                            <h4 className="text-sm font-black text-white uppercase tracking-tight">
-                                                {estoqueAddon.name}
-                                            </h4>
-                                            {selectedAddonsSlugs.includes(estoqueAddon.slug) && (
-                                                <CheckCircle2 size={14} className="text-amber-500" />
-                                            )}
+                            {/* Módulo Estoque */}
+                            {estoqueAddon && (
+                                <div
+                                    onClick={() => onAddonToggle(estoqueAddon.slug)}
+                                    className={cn(
+                                        "group cursor-pointer border-2 rounded-2xl p-3 transition-all duration-300 relative overflow-hidden flex flex-col h-full",
+                                        selectedAddonsSlugs.includes(estoqueAddon.slug)
+                                            ? "border-amber-500/60 bg-amber-500/10 ring-4 ring-amber-500/5 shadow-lg shadow-amber-500/10"
+                                            : "border-slate-800 bg-slate-800/30 hover:border-slate-700 hover:bg-slate-800/50"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className={cn(
+                                            "w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
+                                            selectedAddonsSlugs.includes(estoqueAddon.slug) ? "bg-amber-500 text-white" : "bg-slate-700 text-slate-400"
+                                        )}>
+                                            <Package size={14} />
                                         </div>
-                                        <p className="text-[10px] text-slate-400 leading-relaxed mb-2">
-                                            Gestão de produtos, controle de estoque e suprimentos. Nunca mais fique sem produtos essenciais!
-                                        </p>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xl font-black text-amber-400">
+                                        <h4 className="text-[11px] font-black text-white uppercase leading-tight">
+                                            Estoque
+                                        </h4>
+                                        {selectedAddonsSlugs.includes(estoqueAddon.slug) && (
+                                            <CheckCircle2 size={12} className="text-amber-500 ml-auto" />
+                                        )}
+                                    </div>
+
+                                    <p className="text-[9px] text-slate-500 leading-tight mb-3 line-clamp-2">
+                                        Gestão de produtos e controle absoluto de suprimentos.
+                                    </p>
+
+                                    <div className="mt-auto pt-2 border-t border-white/5 space-y-1">
+                                        <div className="text-[8px] text-slate-500 font-bold">
+                                            TOTAL: R$ {(Number(estoqueAddon.price || 0) * (1 - discount / 100) * selectedInterval).toFixed(2).replace(".", ",")}
+                                        </div>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-sm font-black text-amber-400">
+                                                {selectedInterval}x
+                                            </span>
+                                            <span className="text-[10px] text-slate-400">de</span>
+                                            <span className="text-lg font-black text-amber-400">
                                                 R$ {(Number(estoqueAddon.price || 0) * (1 - discount / 100)).toFixed(2).replace(".", ",")}
                                             </span>
-                                            <span className="text-[10px] text-slate-500 font-bold">/mês</span>
-                                            {discount > 0 && (
-                                                <span className="text-[9px] text-slate-600 line-through">
-                                                    R$ {Number(estoqueAddon.price || 0).toFixed(2).replace(".", ",")}
-                                                </span>
-                                            )}
-                                            <span className="ml-auto px-2 py-0.5 bg-amber-500/20 text-amber-400 text-[8px] font-black uppercase rounded-full">
-                                                Recomendado
-                                            </span>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                {/* Footer com ações - Sticky */}
-                <div className="flex gap-2 p-4 border-t border-white/5 bg-slate-900 flex-shrink-0">
-                    <Button
-                        onClick={() => onOpenChange(false)}
-                        variant="outline"
-                        className="flex-1 h-10 border-white/10 text-slate-400 hover:text-white hover:bg-white/5 font-bold uppercase text-[10px]"
-                    >
-                        Não, Obrigado
-                    </Button>
-                    <Button
-                        onClick={onContinue}
-                        className="flex-1 h-10 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-black uppercase text-[10px] shadow-lg shadow-blue-500/20"
-                    >
-                        {selectedAddonsSlugs.length > 0 ? "Continuar com Módulos" : "Continuar sem Módulos"}
-                    </Button>
+                {/* Footer */}
+                <div className="p-4 border-t border-white/5 bg-slate-900 flex flex-col gap-3">
+                    <div className="flex items-center justify-between px-2">
+                        <div className="text-[10px] text-slate-400 font-bold">
+                            VALOR MENSAL ESTIMADO:
+                        </div>
+                        <div className="text-xl font-black text-white flex items-baseline gap-1">
+                            <span className="text-[10px] text-blue-400">R$</span>
+                            {(
+                                (planPrice * (1 - discount / 100)) +
+                                selectedAddonsSlugs.reduce((acc, slug) => {
+                                    const addon = addons?.find(a => a.slug === slug);
+                                    return acc + (Number(addon?.price || 0) * (1 - discount / 100));
+                                }, 0)
+                            ).toFixed(2).replace(".", ",")}
+                            <span className="text-[10px] text-slate-500 uppercase">/mês</span>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                        <Button
+                            onClick={() => onOpenChange(false)}
+                            variant="outline"
+                            className="flex-1 h-12 border-slate-800 text-slate-500 hover:text-white hover:bg-slate-800 font-black uppercase text-[10px]"
+                        >
+                            Agora não
+                        </Button>
+                        <Button
+                            onClick={onContinue}
+                            className="flex-[2] h-12 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase text-[10px] shadow-xl shadow-blue-500/20 group"
+                        >
+                            <span>Continuar e Assinar</span>
+                            <ArrowRight size={14} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                        </Button>
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>

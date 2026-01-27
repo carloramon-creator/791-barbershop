@@ -61,12 +61,18 @@ export function Topbar() {
                                 }
 
                                 if (isTrial && daysLeft > 0) {
+                                    const created = new Date(tenant.created_at);
+                                    const now = new Date();
+                                    const diffTime = now.getTime() - created.getTime();
+                                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                    const showDiscount = diffDays <= 5;
+
                                     return (
                                         <Link href="/configuracoes/plano">
                                             <div className="flex items-center gap-2 bg-amber-500 text-slate-950 px-4 py-1.5 rounded-full font-bold shadow-lg shadow-amber-500/20 animate-in fade-in zoom-in duration-300 hover:scale-105 transition-transform cursor-pointer hover:bg-amber-400">
                                                 <Clock size={16} className="text-slate-900" />
-                                                <span>
-                                                    Seu teste acaba em {daysLeft} {daysLeft === 1 ? 'dia' : 'dias'}! Assine agora: APROVEITE E GANHE 10% DE DESCONTO NA PRIMEIRA ASSINATURA
+                                                <span className="text-[11px] leading-tight">
+                                                    Seu teste acaba em {daysLeft} {daysLeft === 1 ? 'dia' : 'dias'}! Assine agora: {showDiscount ? 'APROVEITE E GANHE 10% DE DESCONTO NA PRIMEIRA ASSINATURA ASSINANDO AGORA' : 'Profissionalize sua barbearia hoje mesmo!'}
                                                 </span>
                                             </div>
                                         </Link>
