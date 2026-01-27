@@ -545,7 +545,9 @@ export default function PlanPage() {
         data.seu_numero ||
         data.pending ||
         data.pixPayload ||
-        data.pdfUrl
+        data.pdfUrl ||
+        data.idRec ||
+        data.txid
       ) {
         // Resposta do Banco Inter (Pix ou Boleto)
         if (paymentMethod === "pix") {
@@ -562,7 +564,7 @@ export default function PlanPage() {
             setPendingData({
               pending: true,
               message: data.message || "Gerando seu PIX no Banco Inter...",
-              seu_numero: data.seu_numero,
+              seu_numero: data.seu_numero || data.txid,
             });
           }
           // setSelectedAddonsSlugs([]); // Limpar ao gerar Pix Inter

@@ -175,6 +175,7 @@ export async function POST(req: NextRequest) {
                 method: 'pix_automatico_j3',
                 id_rec: idRec,
                 txid_imediato: txid,
+                seu_numero: txid, // FUNDAMENTAL PARA O POLLING ENCONTRAR
                 plan: planSlug,
                 addons: finalAddonsSlugs,
                 interval: 1,
@@ -189,8 +190,11 @@ export async function POST(req: NextRequest) {
             idRec: idRec,
             pixPayload: pixCopiaECola,
             txid: txid,
+            seu_numero: txid, // Fallback para polling
             amount: firstPaymentAmount,
-            status: 'AGUARDANDO_PAGAMENTO'
+            status: pixCopiaECola ? 'AGUARDANDO_PAGAMENTO' : 'PROCESSANDO',
+            pending: !pixCopiaECola,
+            message: !pixCopiaECola ? 'Aguardando geração do QRCode Pix...' : undefined
         }));
 
     } catch (error: any) {
