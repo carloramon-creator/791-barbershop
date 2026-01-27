@@ -1396,8 +1396,15 @@ export default function PlanPage() {
                             }
                             onClick={(e) => {
                               e.stopPropagation();
-                              // Mostrar modal de upsell se aplicável
-                              if (plan.slug === "basic" || plan.slug === "complete") {
+                              // Premium vai direto para pagamento
+                              if (plan.slug === "premium") {
+                                setIsPaymentExpanded(true);
+                                setTimeout(() => {
+                                  paymentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }, 100);
+                              }
+                              // Basic e Complete mostram modal de upsell
+                              else if (plan.slug === "basic" || plan.slug === "complete") {
                                 setUpsellPlan(plan.slug);
                                 setShowUpsellModal(true);
                               }
