@@ -262,7 +262,7 @@ export async function POST(req: Request) {
         if (paymentMethod === 'CREDIT_CARD' && interval > 1) {
             checkoutPayload.chargeTypes = ['DETACHED', 'INSTALLMENT'];
             checkoutPayload.installment = {
-                installmentCount: interval // Forçar número exato de parcelas
+                maxInstallmentCount: interval // Forçar limite máximo de parcelas
             };
         }
 
