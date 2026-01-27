@@ -1166,41 +1166,34 @@ export default function PlanPage() {
             }}
           >
             <DialogContent
-              className="border-slate-800 bg-slate-900 text-slate-100 max-w-4xl w-[95vw] rounded-[2.5rem] flex flex-col p-0 overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.7)] border-none ring-1 ring-white/10"
+              className="border-slate-800 bg-slate-900 text-slate-100 max-w-4xl w-[95vw] rounded-3xl flex flex-col p-0 overflow-hidden shadow-2xl border-none ring-1 ring-white/10"
               onPointerDownOutside={() => fetchInvoices()}
               onEscapeKeyDown={() => fetchInvoices()}
             >
               <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
-                {/* COLUNA ESQUERDA: RESUMO (MODERNO & LIMPO) */}
-                <div className="md:w-[58%] p-8 md:p-12 space-y-12 bg-slate-950/40 overflow-y-auto custom-scrollbar border-r border-white/5">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
-                      <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-400">Checkout Seguro</span>
-                    </div>
-                    <h2 className="text-3xl font-black text-slate-100 uppercase tracking-tighter leading-tight">
+                {/* COLUNA ESQUERDA: RESUMO */}
+                <div className="md:w-[55%] p-6 md:p-10 space-y-8 bg-slate-950/40 overflow-y-auto custom-scrollbar border-r border-white/5">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400">Checkout</span>
+                    <h2 className="text-xl font-black text-slate-100 uppercase tracking-tight">
                       Resumo do Pedido
                     </h2>
-                    <p className="text-slate-500 text-xs font-bold uppercase tracking-widest pl-0.5">Confirme os detalhes da sua assinatura</p>
                   </div>
 
-                  <div className="space-y-8">
+                  <div className="space-y-6">
                     {selectedPlan && (
-                      <div className="group bg-white/[0.02] p-6 rounded-3xl border border-white/5 transition-all hover:bg-white/[0.04] relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                          <Activity size={40} />
-                        </div>
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Plano em Seleção</span>
-                          <span className="px-3 py-1 bg-blue-500/10 text-blue-400 text-[9px] font-black rounded-full border border-blue-500/20 uppercase">
-                            {selectedInterval === 1 ? "Ciclo Mensal" : selectedInterval === 6 ? "Ciclo Semestral" : "Ciclo Anual"}
+                      <div className="bg-white/[0.03] p-5 rounded-2xl border border-white/5">
+                        <div className="flex justify-between items-center mb-4">
+                          <span className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Plano</span>
+                          <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[8px] font-black rounded border border-blue-500/20 uppercase">
+                            {selectedInterval === 1 ? "Mensal" : selectedInterval === 6 ? "Semestral" : "Anual"}
                           </span>
                         </div>
-                        <div className="flex justify-between items-baseline">
-                          <span className="text-2xl font-black text-slate-100 uppercase tracking-tight">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-lg font-black text-slate-100 uppercase leading-none">
                             {selectedPlan}
                           </span>
-                          <span className="text-xl font-bold text-slate-300 tabular-nums">
+                          <span className="text-2xl font-black text-white tabular-nums">
                             {(() => {
                               const plan = dynamicPlans.find((p) => p.slug === selectedPlan);
                               if (!plan) return "";
@@ -1214,13 +1207,9 @@ export default function PlanPage() {
                       </div>
                     )}
 
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 px-1">
-                        <Zap size={14} className="text-amber-500" />
-                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Recursos Adicionais</span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-3">
+                      <span className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] px-1">Módulos</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {(() => {
                           const filtered = dynamicAddons.filter((addon) => {
                             const isPaidActive = subscriptionStatus === "active" && !!tenantObject?.asaas_subscription_id;
@@ -1232,7 +1221,7 @@ export default function PlanPage() {
                             return !features.some((f: string) => f.includes(addonName) || f.includes(addon.slug));
                           });
 
-                          if (filtered.length === 0) return <p className="text-[11px] text-slate-600 font-medium px-1 italic">Nenhum módulo selecionado no momento.</p>;
+                          if (filtered.length === 0) return <p className="text-[10px] text-slate-600 italic px-1">Nenhum adicional.</p>;
 
                           return filtered.map((addon) => {
                             const isSelected = selectedAddonsSlugs.includes(addon.slug);
@@ -1241,16 +1230,16 @@ export default function PlanPage() {
                                 key={addon.slug}
                                 onClick={() => toggleAddon(addon.slug)}
                                 className={cn(
-                                  "flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 group/addon",
+                                  "flex items-center justify-between p-3.5 rounded-xl border transition-all truncate",
                                   isSelected
-                                    ? "bg-amber-500/10 border-amber-500/30 text-white shadow-[0_8px_20px_-10px_rgba(245,158,11,0.2)]"
-                                    : "bg-white/[0.01] border-white/5 text-slate-500 hover:border-slate-700 hover:bg-white/[0.03]"
+                                    ? "bg-amber-500/10 border-amber-500/30 text-white"
+                                    : "bg-white/[0.01] border-white/5 text-slate-600 hover:border-slate-700"
                                 )}
                               >
-                                <span className="text-[11px] font-bold uppercase tracking-tight text-left break-words">
+                                <span className="text-[10px] font-bold uppercase tracking-tight truncate">
                                   {addon.name.replace("Módulo ", "")}
                                 </span>
-                                <div className={cn("w-2 h-2 rounded-full shrink-0 transition-all", isSelected ? "bg-amber-500 scale-110 shadow-[0_0_8px_rgba(245,158,11,0.5)]" : "bg-slate-800 group-hover/addon:bg-slate-700")} />
+                                <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", isSelected ? "bg-amber-500" : "bg-slate-800")} />
                               </button>
                             );
                           });
@@ -1259,37 +1248,26 @@ export default function PlanPage() {
                     </div>
                   </div>
 
-                  {/* TOTAL SECTION (LOWER PRICE SECTION) */}
-                  <div className="pt-12 mt-auto border-t border-white/5">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1.5">
-                        <p className="text-[11px] font-black uppercase text-slate-500 tracking-[0.4em]">Total Bruto</p>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-slate-400 font-bold bg-slate-800/40 px-2 py-1 rounded-md border border-white/5 uppercase">
-                            {selectedInterval} Meses
-                          </span>
-                        </div>
+                  <div className="pt-8 border-t border-white/5 mt-auto">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em]">Total Bruto</p>
+                        <span className="text-[10px] text-slate-500 font-bold bg-slate-800/40 px-2 py-0.5 rounded border border-white/5 uppercase">
+                          {selectedInterval} Meses
+                        </span>
                       </div>
-                      <div className="text-right">
-                        <div className="flex items-baseline justify-end gap-1 mb-1">
-                          <span className="text-xs font-bold text-slate-500 uppercase">R$</span>
-                          <h3 className="text-4xl font-black text-white tracking-tighter tabular-nums leading-none">
-                            {(() => {
-                              const plan = dynamicPlans.find((p) => p.slug === selectedPlan);
-                              const planPrice = plan ? plan.price * (1 - (selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100) * selectedInterval : 0;
-                              let addonsPrice = 0;
-                              selectedAddonsSlugs.forEach((slug) => {
-                                const addon = dynamicAddons.find((a) => a.slug === slug);
-                                if (addon) addonsPrice += Number(addon.price) * selectedInterval;
-                              });
-                              return (planPrice + addonsPrice).toFixed(2).replace(".", ",");
-                            })()}
-                          </h3>
-                        </div>
-                        {selectedInterval > 1 && (
-                          <p className="text-[9px] font-bold text-emerald-500/80 uppercase tracking-widest">Economia garantida no ciclo</p>
-                        )}
-                      </div>
+                      <h3 className="text-3xl font-black text-white tracking-widest leading-none">
+                        {(() => {
+                          const plan = dynamicPlans.find((p) => p.slug === selectedPlan);
+                          const planPrice = plan ? plan.price * (1 - (selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100) * selectedInterval : 0;
+                          let addonsPrice = 0;
+                          selectedAddonsSlugs.forEach((slug) => {
+                            const addon = dynamicAddons.find((a) => a.slug === slug);
+                            if (addon) addonsPrice += Number(addon.price) * selectedInterval;
+                          });
+                          return `R$ ${(planPrice + addonsPrice).toFixed(2).replace(".", ",")}`;
+                        })()}
+                      </h3>
                     </div>
 
                     {(() => {
@@ -1297,14 +1275,9 @@ export default function PlanPage() {
                       const isFirstSub = !tenantObject?.asaas_subscription_id || isTrialOrUnpaid;
                       if (isFirstSub && (selectedPlan || selectedAddonsSlugs.length > 0)) {
                         return (
-                          <div className="mt-8 flex items-center justify-between p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-[1.25rem] shadow-sm">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                                <Check size={14} className="text-emerald-500" />
-                              </div>
-                              <span className="text-emerald-400 font-black text-[10px] uppercase tracking-widest">Boas-vindas Ativado</span>
-                            </div>
-                            <span className="text-[10px] font-black text-emerald-500 uppercase">10% OFF Aplicado</span>
+                          <div className="mt-6 flex items-center justify-between p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-xl">
+                            <span className="text-emerald-500 font-black text-[9px] uppercase tracking-widest pl-1">Cupom Boas-vindas</span>
+                            <span className="text-[10px] font-black text-emerald-400">Aplicado</span>
                           </div>
                         );
                       }
@@ -1313,150 +1286,121 @@ export default function PlanPage() {
                   </div>
                 </div>
 
-                {/* COLUNA DIREITA: PAGAMENTO (SISTEMA DARK & MINIMALISTA) */}
-                <div className="md:w-[42%] p-8 md:p-12 bg-slate-900 overflow-y-auto custom-scrollbar flex flex-col">
+                {/* COLUNA DIREITA: PAGAMENTO */}
+                <div className="md:w-[45%] p-6 md:p-10 bg-slate-900 overflow-y-auto custom-scrollbar flex flex-col min-h-0">
                   {!pixData && !boletoData && !pendingData ? (
                     <>
-                      <div className="flex-1 space-y-12">
-                        <div className="space-y-6">
-                          <div className="flex items-center gap-3 mb-2 px-1">
-                            <CreditCard size={14} className="text-blue-500" />
-                            <span className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-500">Pagamento</span>
-                          </div>
+                      <div className="flex-1 space-y-8">
+                        <div className="space-y-5">
+                          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-1">Forma de Pagamento</span>
 
-                          <div className="grid grid-cols-1 gap-3">
+                          <div className="flex flex-col gap-2">
                             {[
-                              { id: "card", icon: CreditCard, label: "Cartão de Crédito", desc: "Aprovação instantânea" },
-                              { id: "pix", icon: Zap, label: "Pix à Vista", desc: "Liberação imediata" },
-                              { id: "boleto-inter", icon: FileText, label: "Boleto Bancário", desc: "Até 3 dias úteis" }
+                              { id: "card", icon: CreditCard, label: "Cartão de Crédito" },
+                              { id: "pix", icon: Zap, label: "Pix à Vista" },
+                              { id: "boleto-inter", icon: FileText, label: "Boleto Bancário" }
                             ].map((m) => (
                               <button
                                 key={m.id}
                                 onClick={() => setPaymentMethod(m.id as any)}
                                 className={cn(
-                                  "flex items-center p-4 rounded-2xl border transition-all duration-300 gap-4 group relative overflow-hidden text-left",
+                                  "flex items-center p-4 rounded-xl border-2 transition-all gap-4 text-left h-16",
                                   paymentMethod === m.id
-                                    ? "border-blue-500 bg-blue-500/5 text-white ring-4 ring-blue-500/10 shadow-lg"
-                                    : "border-white/5 bg-slate-950/40 text-slate-500 hover:border-white/10"
+                                    ? "border-blue-500 bg-blue-500/5 text-white"
+                                    : "border-white/5 bg-slate-950/40 text-slate-600 hover:border-white/10"
                                 )}
                               >
-                                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-colors", paymentMethod === m.id ? "bg-blue-600 text-white" : "bg-slate-900 text-slate-600")}>
-                                  <m.icon size={18} />
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className={cn("text-xs font-black uppercase tracking-widest", paymentMethod === m.id ? "text-white" : "text-slate-400")}>{m.label}</span>
-                                  <span className="text-[9px] font-bold text-slate-600 uppercase tracking-tight">{m.desc}</span>
-                                </div>
-                                {paymentMethod === m.id && (
-                                  <div className="ml-auto">
-                                    <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center shadow-[0_0_10px_rgba(59,130,246,0.5)]">
-                                      <Check size={10} className="text-white" />
-                                    </div>
-                                  </div>
-                                )}
+                                <m.icon size={16} className={paymentMethod === m.id ? "text-blue-500" : ""} />
+                                <span className={cn("text-[10px] font-black uppercase tracking-widest", paymentMethod === m.id ? "text-white" : "text-slate-600")}>{m.label}</span>
+                                {paymentMethod === m.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500" />}
                               </button>
                             ))}
                           </div>
                         </div>
 
-                        <div className="space-y-4 pt-4">
-                          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 px-1">Pussui um Cupom?</span>
-                          <div className="relative group">
-                            <input
-                              type="text"
-                              placeholder="CÓDIGO AQUI"
-                              value={couponCode}
-                              onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setError(null); }}
-                              className="w-full bg-slate-950/40 border border-white/5 rounded-2xl px-6 py-4 text-xs text-white placeholder:text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all outline-none text-center font-black tracking-[0.2em] uppercase"
-                            />
-                            <div className="absolute inset-0 rounded-2xl border border-white/0 group-hover:border-white/5 pointer-events-none transition-colors" />
-                          </div>
+                        <div className="space-y-3">
+                          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-1">Código de Desconto</span>
+                          <input
+                            type="text"
+                            placeholder="CUPOM"
+                            value={couponCode}
+                            onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setError(null); }}
+                            className="w-full bg-slate-950/40 border border-white/5 rounded-xl px-5 py-3 text-xs text-white placeholder:text-slate-800 transition-all outline-none font-bold tracking-widest text-center"
+                          />
                         </div>
                       </div>
 
-                      <div className="space-y-6 pt-10">
+                      <div className="space-y-4 pt-8">
                         {error && (
-                          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl animate-in shake duration-500">
-                            <p className="text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center justify-center gap-3">
-                              <AlertCircle size={14} /> {error}
-                            </p>
-                          </div>
+                          <p className="text-[10px] font-bold text-red-500 uppercase text-center">{error}</p>
                         )}
 
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                           <Button
                             onClick={handleChangePlan}
                             disabled={saving}
-                            className="w-full h-16 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-[0.3em] rounded-2xl shadow-[0_15px_40px_-10px_rgba(59,130,246,0.4)] group transition-all duration-300 active:scale-95"
+                            className="w-full h-14 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest rounded-xl shadow-xl shadow-blue-900/30"
                           >
                             {saving ? (
-                              <div className="flex items-center gap-3">
-                                <Activity className="animate-spin w-5 h-5" />
-                                <span>Verificando</span>
+                              <div className="flex items-center gap-2">
+                                <Activity className="animate-spin w-4 h-4" />
+                                <span>Processando</span>
                               </div>
                             ) : (
-                              <span className="flex items-center gap-3">ATUALIZAR AGORA <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" /></span>
+                              "Finalizar e Ativar"
                             )}
                           </Button>
 
                           <button
                             onClick={() => setOpenDialog(false)}
-                            className="w-full text-slate-600 hover:text-slate-400 text-[10px] font-black uppercase tracking-[0.4em] transition-colors py-3"
+                            className="w-full text-slate-600 hover:text-slate-400 text-[10px] font-black uppercase tracking-widest py-3"
                           >
-                            Cancelar Pedido
+                            Voltar
                           </button>
                         </div>
                       </div>
                     </>
                   ) : (
-                    <div className="h-full flex flex-col items-center justify-center py-12 space-y-12">
+                    <div className="h-full flex flex-col items-center justify-center py-10 space-y-8">
                       {pendingData && (
-                        <div className="text-center space-y-8 max-w-[280px]">
-                          <div className="relative h-24 w-24 mx-auto">
-                            <div className="absolute inset-0 bg-amber-500/20 rounded-full blur-3xl animate-pulse" />
-                            <div className="relative bg-slate-950 border-2 border-amber-500/40 p-6 rounded-full w-full h-full flex items-center justify-center shadow-2xl">
-                              <Activity className="animate-spin text-amber-500 w-10 h-10" />
-                            </div>
+                        <div className="text-center space-y-6">
+                          <div className="h-20 w-20 mx-auto bg-slate-950 border border-amber-500/30 rounded-full flex items-center justify-center">
+                            <Activity className="animate-spin text-amber-500 w-10 h-10" />
                           </div>
-                          <div className="space-y-3">
-                            <h3 className="text-2xl font-black text-white uppercase tracking-tight">Processando</h3>
-                            <p className="text-slate-500 text-[11px] font-bold uppercase tracking-widest leading-relaxed">{pendingData.message}</p>
+                          <div className="space-y-2">
+                            <h3 className="text-xl font-black text-white uppercase tracking-tight">Gerando Cobrança</h3>
+                            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest max-w-[220px] mx-auto">{pendingData.message}</p>
                           </div>
                         </div>
                       )}
 
                       {pixData && !pendingData && (
-                        <div className="flex flex-col items-center w-full space-y-10 animate-in fade-in zoom-in-95 duration-700">
-                          <div className="text-center space-y-3">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20 mb-2">
-                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Aguardando Pagamento</span>
-                            </div>
-                            <h4 className="text-4xl font-black text-white tracking-tighter tabular-nums">
+                        <div className="flex flex-col items-center w-full space-y-8 animate-in fade-in zoom-in-95">
+                          <div className="text-center space-y-2">
+                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Aguardando Pix</span>
+                            <h4 className="text-3xl font-black text-white tracking-widest tabular-nums mt-4">
                               R$ {(pixData.amount || 0).toFixed(2).replace('.', ',')}
                             </h4>
                           </div>
 
-                          <div className="bg-white p-6 rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(16,185,129,0.3)] ring-1 ring-emerald-500/20 group relative overflow-hidden transition-all hover:scale-[1.02]">
-                            <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <QRCodeCanvas value={pixData.pixPayload} size={200} level="H" includeMargin={true} />
+                          <div className="bg-white p-4 rounded-3xl shadow-2xl">
+                            <QRCodeCanvas value={pixData.pixPayload} size={180} level="H" includeMargin={true} />
                           </div>
 
                           <div className="w-full space-y-4">
-                            <div className="bg-slate-950/60 border border-white/5 rounded-2xl p-6 font-mono text-[10px] text-slate-400 break-all text-center leading-relaxed">
+                            <div className="bg-slate-950 border border-white/5 rounded-xl p-4 font-mono text-[10px] text-slate-400 break-all text-center leading-relaxed">
                               {pixData.pixPayload}
                             </div>
                             <Button
-                              size="lg"
-                              className="w-full h-14 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-[11px] tracking-[0.3em] rounded-2xl shadow-xl shadow-emerald-900/30 transition-all active:scale-95"
+                              className="w-full h-14 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-[10px] tracking-widest rounded-xl transition-all"
                               onClick={() => { navigator.clipboard.writeText(pixData.pixPayload); alert('PIX Copiado!'); }}
                             >
-                              Copiar Copia e Cola
+                              Copiar Código Pix
                             </Button>
                           </div>
 
-                          <button onClick={() => setOpenDialog(false)} className="text-slate-600 hover:text-slate-400 uppercase font-black text-[10px] tracking-widest transition-colors">
-                            Vou pagar depois
+                          <button onClick={() => setOpenDialog(false)} className="text-slate-600 hover:text-slate-400 uppercase font-black text-[10px] tracking-widest transition-colors py-2">
+                            Finalizar Depois
                           </button>
                         </div>
                       )}
