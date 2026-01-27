@@ -1166,34 +1166,41 @@ export default function PlanPage() {
             }}
           >
             <DialogContent
-              className="border-slate-800 bg-slate-900 text-slate-100 max-w-4xl w-[95vw] rounded-3xl flex flex-col p-0 overflow-hidden shadow-2xl border-none ring-1 ring-white/10"
+              className="border-slate-800 bg-slate-900 text-slate-100 max-w-6xl w-[98vw] rounded-[2rem] flex flex-col p-0 overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.8)] border-none ring-1 ring-white/10"
               onPointerDownOutside={() => fetchInvoices()}
               onEscapeKeyDown={() => fetchInvoices()}
             >
               <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
-                {/* COLUNA ESQUERDA: RESUMO */}
-                <div className="md:w-[55%] p-6 md:p-10 space-y-8 bg-slate-950/40 overflow-y-auto custom-scrollbar border-r border-white/5">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400">Checkout</span>
-                    <h2 className="text-xl font-black text-slate-100 uppercase tracking-tight">
+                {/* COLUNA ESQUERDA: RESUMO TOTAL (MUITO MAIS LARGO) */}
+                <div className="md:w-[58%] p-10 md:p-16 space-y-12 bg-slate-950/50 overflow-y-auto custom-scrollbar border-r border-white/5">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.6)]" />
+                      <span className="text-[11px] font-black uppercase tracking-[0.4em] text-blue-400">Checkout Seguro</span>
+                    </div>
+                    <h2 className="text-5xl font-black text-white uppercase tracking-tighter leading-none">
                       Resumo do Pedido
                     </h2>
+                    <p className="text-slate-500 text-base font-medium">Revise e confirme os detalhes da sua assinatura profissional.</p>
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="space-y-10">
                     {selectedPlan && (
-                      <div className="bg-white/[0.03] p-5 rounded-2xl border border-white/5">
-                        <div className="flex justify-between items-center mb-4">
-                          <span className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Plano</span>
-                          <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[8px] font-black rounded border border-blue-500/20 uppercase">
-                            {selectedInterval === 1 ? "Mensal" : selectedInterval === 6 ? "Semestral" : "Anual"}
+                      <div className="bg-white/[0.02] p-8 rounded-3xl border border-white/10 hover:bg-white/[0.04] transition-all">
+                        <div className="flex justify-between items-center mb-6">
+                          <span className="text-xs font-black uppercase text-slate-500 tracking-[0.3em]">Plano Selecionado</span>
+                          <span className="px-3 py-1 bg-blue-500/10 text-blue-400 text-[10px] font-black rounded-full border border-blue-500/20 uppercase tracking-widest">
+                            {selectedInterval === 1 ? "Ciclo Mensal" : selectedInterval === 6 ? "Ciclo Semestral" : "Ciclo Anual"}
                           </span>
                         </div>
-                        <div className="flex flex-col gap-1">
-                          <span className="text-lg font-black text-slate-100 uppercase leading-none">
-                            {selectedPlan}
-                          </span>
-                          <span className="text-2xl font-black text-white tabular-nums">
+                        <div className="flex flex-col sm:flex-row justify-between items-end gap-4">
+                          <div className="space-y-1">
+                            <span className="text-3xl font-black text-white uppercase tracking-tight leading-none">
+                              {selectedPlan}
+                            </span>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Ativação automática imediata</p>
+                          </div>
+                          <span className="text-4xl font-black text-white tabular-nums tracking-tighter">
                             {(() => {
                               const plan = dynamicPlans.find((p) => p.slug === selectedPlan);
                               if (!plan) return "";
@@ -1207,9 +1214,13 @@ export default function PlanPage() {
                       </div>
                     )}
 
-                    <div className="space-y-3">
-                      <span className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] px-1">Módulos</span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-3 px-1">
+                        <Zap size={16} className="text-amber-500" />
+                        <span className="text-xs font-black uppercase text-slate-500 tracking-[0.3em]">Recursos e Módulos Extras</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {(() => {
                           const filtered = dynamicAddons.filter((addon) => {
                             const isPaidActive = subscriptionStatus === "active" && !!tenantObject?.asaas_subscription_id;
@@ -1221,7 +1232,7 @@ export default function PlanPage() {
                             return !features.some((f: string) => f.includes(addonName) || f.includes(addon.slug));
                           });
 
-                          if (filtered.length === 0) return <p className="text-[10px] text-slate-600 italic px-1">Nenhum adicional.</p>;
+                          if (filtered.length === 0) return <p className="text-sm text-slate-600 font-medium px-2 italic">Nenhum adicional selecionado para este checkout.</p>;
 
                           return filtered.map((addon) => {
                             const isSelected = selectedAddonsSlugs.includes(addon.slug);
@@ -1230,16 +1241,16 @@ export default function PlanPage() {
                                 key={addon.slug}
                                 onClick={() => toggleAddon(addon.slug)}
                                 className={cn(
-                                  "flex items-center justify-between p-3.5 rounded-xl border transition-all truncate",
+                                  "flex items-center justify-between p-5 rounded-2xl border transition-all duration-300 group",
                                   isSelected
-                                    ? "bg-amber-500/10 border-amber-500/30 text-white"
+                                    ? "bg-amber-500/10 border-amber-500/30 text-white shadow-xl shadow-amber-900/10"
                                     : "bg-white/[0.01] border-white/5 text-slate-600 hover:border-slate-700"
                                 )}
                               >
-                                <span className="text-[10px] font-bold uppercase tracking-tight truncate">
+                                <span className="text-xs font-black uppercase tracking-tight text-left">
                                   {addon.name.replace("Módulo ", "")}
                                 </span>
-                                <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", isSelected ? "bg-amber-500" : "bg-slate-800")} />
+                                <div className={cn("w-2 h-2 rounded-full shrink-0 transition-transform duration-500", isSelected ? "bg-amber-500 scale-125 shadow-[0_0_8px_rgba(245,158,11,0.8)]" : "bg-slate-800 group-hover:bg-slate-700")} />
                               </button>
                             );
                           });
@@ -1248,15 +1259,15 @@ export default function PlanPage() {
                     </div>
                   </div>
 
-                  <div className="pt-8 border-t border-white/5 mt-auto">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em]">Total Bruto</p>
-                        <span className="text-[10px] text-slate-500 font-bold bg-slate-800/40 px-2 py-0.5 rounded border border-white/5 uppercase">
-                          {selectedInterval} Meses
-                        </span>
+                  <div className="pt-12 border-t border-white/5 mt-auto">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-8">
+                      <div className="space-y-2 text-center sm:text-left">
+                        <p className="text-xs font-black uppercase text-slate-500 tracking-[0.5em]">Valor Final do Investimento</p>
+                        <div className="inline-flex items-center px-4 py-1.5 bg-slate-900 rounded-lg border border-white/5 text-[11px] text-slate-400 font-bold uppercase tracking-widest shadow-inner">
+                          Referente ao ciclo de {selectedInterval} {selectedInterval === 1 ? "mês" : "meses"}
+                        </div>
                       </div>
-                      <h3 className="text-3xl font-black text-white tracking-widest leading-none">
+                      <h3 className="text-7xl font-black text-white tracking-widest leading-none tabular-nums shadow-text">
                         {(() => {
                           const plan = dynamicPlans.find((p) => p.slug === selectedPlan);
                           const planPrice = plan ? plan.price * (1 - (selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100) * selectedInterval : 0;
@@ -1275,9 +1286,17 @@ export default function PlanPage() {
                       const isFirstSub = !tenantObject?.asaas_subscription_id || isTrialOrUnpaid;
                       if (isFirstSub && (selectedPlan || selectedAddonsSlugs.length > 0)) {
                         return (
-                          <div className="mt-6 flex items-center justify-between p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-xl">
-                            <span className="text-emerald-500 font-black text-[9px] uppercase tracking-widest pl-1">Cupom Boas-vindas</span>
-                            <span className="text-[10px] font-black text-emerald-400">Aplicado</span>
+                          <div className="mt-10 flex items-center justify-between p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-3xl shadow-lg">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                                <Check size={20} className="text-emerald-500" />
+                              </div>
+                              <div>
+                                <span className="text-emerald-500 font-black text-xs uppercase tracking-widest block">Oferta de Boas-vindas</span>
+                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight italic">Desconto vitalício na primeira assinatura</span>
+                              </div>
+                            </div>
+                            <span className="text-xs font-black text-emerald-400 bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-500/20">10% OFF APLICADO</span>
                           </div>
                         );
                       }
@@ -1287,7 +1306,7 @@ export default function PlanPage() {
                 </div>
 
                 {/* COLUNA DIREITA: PAGAMENTO */}
-                <div className="md:w-[45%] p-6 md:p-10 bg-slate-900 overflow-y-auto custom-scrollbar flex flex-col min-h-0">
+                <div className="md:w-[42%] p-10 md:p-16 bg-slate-900 overflow-y-auto custom-scrollbar flex flex-col min-h-0 border-l border-black/20">
                   {!pixData && !boletoData && !pendingData ? (
                     <>
                       <div className="flex-1 space-y-8">
