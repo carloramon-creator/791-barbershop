@@ -626,6 +626,13 @@ export default function PlanPage() {
   }
 
   const selectedPlanData = dynamicPlans.find((p) => p.slug === selectedPlan);
+
+  // Debug logs
+  console.log("selectedPlan:", selectedPlan);
+  console.log("selectedPlanData:", selectedPlanData);
+  console.log("selectedPlanData.price:", selectedPlanData?.price);
+  console.log("selectedInterval:", selectedInterval);
+
   const planTotal = selectedPlanData
     ? selectedPlanData.price *
     (1 -
@@ -1880,13 +1887,16 @@ export default function PlanPage() {
         open={showUpsellModal}
         onOpenChange={setShowUpsellModal}
         planSlug={upsellPlan}
+        planPrice={dynamicPlans.find(p => p.slug === upsellPlan)?.price || 0}
         addons={dynamicAddons}
         selectedAddonsSlugs={selectedAddonsSlugs}
+        selectedInterval={selectedInterval}
         onAddonToggle={(slug) => {
           if (!selectedAddonsSlugs.includes(slug)) {
             setSelectedAddonsSlugs([...selectedAddonsSlugs, slug]);
           }
         }}
+        onIntervalChange={(interval) => setSelectedInterval(interval)}
         onContinue={() => {
           setShowUpsellModal(false);
           setIsPaymentExpanded(true);

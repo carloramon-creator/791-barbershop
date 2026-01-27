@@ -2,16 +2,20 @@
 
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Zap, Package, CheckCircle2 } from "lucide-react";
+import { Zap, Package, CheckCircle2, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface UpsellModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     planSlug: string | null;
+    planPrice: number;
     addons: any[];
     selectedAddonsSlugs: string[];
+    selectedInterval: number;
     onAddonToggle: (slug: string) => void;
+    onIntervalChange: (interval: number) => void;
     onContinue: () => void;
 }
 
@@ -19,9 +23,12 @@ export function UpsellModal({
     open,
     onOpenChange,
     planSlug,
+    planPrice,
     addons,
     selectedAddonsSlugs,
+    selectedInterval,
     onAddonToggle,
+    onIntervalChange,
     onContinue,
 }: UpsellModalProps) {
     const financeiroAddon = addons?.find(a =>
@@ -35,9 +42,20 @@ export function UpsellModal({
         a.name?.toLowerCase().includes("estoque")
     );
 
+    // Calcular desconto baseado no intervalo
+    const getDiscount = (interval: number) => {
+        if (interval === 12) return 20;
+        if (interval === 6) return 10;
+        return 0;
+    };
+
+    const discount = getDiscount(selectedInterval);
+    const monthlyPrice = planPrice * (1 - discount / 100);
+    const totalPrice = monthlyPrice * selectedInterval;
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-slate-900 border-2 border-blue-500/30 max-w-2xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
+            <DialogContent className="bg-slate-900 border-2 border-blue-500/30 max-w-3xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
                 {/* Header com gradiente */}
                 <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-center relative overflow-hidden flex-shrink-0">
                     <div className="absolute inset-0 opacity-30" />
@@ -49,18 +67,19 @@ export function UpsellModal({
                             Turbine Seu Plano!
                         </h2>
                         <p className="text-blue-100 font-medium text-xs">
-                            Adicione módulos profissionais e maximize seus resultados
+                            Adicione módulos profissionais e escolha o melhor período de pagamento
                         </p>
                     </div>
                 </div>
 
                 {/* Body - Scrollable */}
-                <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                <div className="p-6 space-y-5 overflow-y-auto flex-1">
+                    {/* Plano Selecionado */}
                     <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 flex items-start gap-2">
                         <div className="w-7 h-7 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
                             <Package size={14} className="text-blue-400" />
                         </div>
-                        <div>
+                        <div className="flex-1">
                             <h3 className="text-xs font-black text-white uppercase tracking-wide mb-0.5">
                                 Você selecionou: {planSlug === "basic" ? "Plano Básico" : "Plano Completo"}
                             </h3>
@@ -72,6 +91,86 @@ export function UpsellModal({
                         </div>
                     </div>
 
+                    {/* Seleção de Intervalo */}
+                    <div className="space-y-2">
+                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                            Escolha o Período de Pagamento:
+                        </h3>
+                        <div className="grid grid-cols-3 gap-2">
+                            {/* Mensal */}
+                            <button
+                                onClick={() => onIntervalChange(1)}
+                                className={cn(
+                                    "relative p-3 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02]",
+                                    selectedInterval === 1
+                                        ? "border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/20"
+                                        : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
+                                )}
+                            >
+                                <div className="text-center">
+                                    <div className="text-xs font-black text-white uppercase mb-0.5">Mensal</div>
+                                    <div className="text-lg font-black text-blue-400">
+                                        R$ {planPrice.toFixed(2).replace(".", ",")}
+                                    </div>
+                                    <div className="text-[9px] text-slate-500">por mês</div>
+                                </div>
+                            </button>
+
+                            {/* Semestral */}
+                            <button
+                                onClick={() => onIntervalChange(6)}
+                                className={cn(
+                                    "relative p-3 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02]",
+                                    selectedInterval === 6
+                                        ? "border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/20"
+                                        : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
+                                )}
+                            >
+                                <div className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full">
+                                    -10%
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-xs font-black text-white uppercase mb-0.5">Semestral</div>
+                                    <div className="text-lg font-black text-emerald-400">
+                                        R$ {(planPrice * 0.9).toFixed(2).replace(".", ",")}
+                                    </div>
+                                    <div className="text-[9px] text-slate-500">por mês</div>
+                                    <div className="text-[8px] text-emerald-400 font-bold mt-1 flex items-center justify-center gap-1">
+                                        <TrendingDown size={10} />
+                                        Economize R$ {(planPrice * 0.1 * 6).toFixed(2).replace(".", ",")}
+                                    </div>
+                                </div>
+                            </button>
+
+                            {/* Anual */}
+                            <button
+                                onClick={() => onIntervalChange(12)}
+                                className={cn(
+                                    "relative p-3 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02]",
+                                    selectedInterval === 12
+                                        ? "border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/20"
+                                        : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
+                                )}
+                            >
+                                <div className="absolute -top-2 -right-2 bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full">
+                                    -20%
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-xs font-black text-white uppercase mb-0.5">Anual</div>
+                                    <div className="text-lg font-black text-amber-400">
+                                        R$ {(planPrice * 0.8).toFixed(2).replace(".", ",")}
+                                    </div>
+                                    <div className="text-[9px] text-slate-500">por mês</div>
+                                    <div className="text-[8px] text-amber-400 font-bold mt-1 flex items-center justify-center gap-1">
+                                        <TrendingDown size={10} />
+                                        Economize R$ {(planPrice * 0.2 * 12).toFixed(2).replace(".", ",")}
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Módulos Adicionais */}
                     <div className="space-y-3">
                         <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                             Módulos Recomendados para Você:
@@ -106,9 +205,14 @@ export function UpsellModal({
                                         </p>
                                         <div className="flex items-center gap-2">
                                             <span className="text-xl font-black text-emerald-400">
-                                                R$ {Number(financeiroAddon.price || 0).toFixed(2).replace(".", ",")}
+                                                R$ {(Number(financeiroAddon.price || 0) * (1 - discount / 100)).toFixed(2).replace(".", ",")}
                                             </span>
                                             <span className="text-[10px] text-slate-500 font-bold">/mês</span>
+                                            {discount > 0 && (
+                                                <span className="text-[9px] text-slate-600 line-through">
+                                                    R$ {Number(financeiroAddon.price || 0).toFixed(2).replace(".", ",")}
+                                                </span>
+                                            )}
                                             <span className="ml-auto px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[8px] font-black uppercase rounded-full">
                                                 Recomendado
                                             </span>
@@ -147,9 +251,14 @@ export function UpsellModal({
                                         </p>
                                         <div className="flex items-center gap-2">
                                             <span className="text-xl font-black text-amber-400">
-                                                R$ {Number(estoqueAddon.price || 0).toFixed(2).replace(".", ",")}
+                                                R$ {(Number(estoqueAddon.price || 0) * (1 - discount / 100)).toFixed(2).replace(".", ",")}
                                             </span>
                                             <span className="text-[10px] text-slate-500 font-bold">/mês</span>
+                                            {discount > 0 && (
+                                                <span className="text-[9px] text-slate-600 line-through">
+                                                    R$ {Number(estoqueAddon.price || 0).toFixed(2).replace(".", ",")}
+                                                </span>
+                                            )}
                                             <span className="ml-auto px-2 py-0.5 bg-amber-500/20 text-amber-400 text-[8px] font-black uppercase rounded-full">
                                                 Recomendado
                                             </span>
