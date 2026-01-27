@@ -416,7 +416,15 @@ export default function PlanPage() {
     }
 
     // Bloqueio inteligente de assinatura
-    if (currentPlan && currentPlan !== "trial") {
+    // PERMITIR LIVRE MUDANÇA SE:
+    // 1. Estiver em trial/trialing (independente do plano ser premium)
+    // 2. Estiver nos primeiros 10 dias (grace period)
+    const now = new Date();
+    const referenceDate = tenantCreatedAt ? new Date(tenantCreatedAt) : new Date();
+    const diffDays = Math.ceil(Math.abs(now.getTime() - referenceDate.getTime()) / (1000 * 60 * 60 * 24));
+    const isTrialPeriod = ['trial', 'trialing'].includes(subscriptionStatus || '') || diffDays <= 10;
+
+    if (currentPlan && currentPlan !== "trial" && !isTrialPeriod) {
       const planLevels: Record<string, number> = {
         "basic": 1,
         "complete": 2,
@@ -842,7 +850,7 @@ export default function PlanPage() {
                     <span className="text-xs font-black text-slate-500 uppercase tracking-[0.4em] text-center block">Escolha como pagar</span>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {[
-                        { id: "pix", icon: Zap, label: "PIX", color: "emerald" },
+                        { id: "pix", icon: Zap, label: selectedInterval === 1 ? "PIX AUTOMÁTICO" : "PIX", color: "emerald" },
                         { id: "card", icon: CreditCard, label: "CARTÃO", color: "blue" },
                         { id: "boleto-inter", icon: FileText, label: "BOLETO", color: "orange" }
                       ].map((m) => (
