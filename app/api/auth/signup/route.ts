@@ -15,7 +15,7 @@ export async function POST(req: Request) {
             name, email, password, barbershopName, phone, cnpj, businessType,
             services, products, module_queue_enabled, module_appointments_enabled,
             // Address fields
-            cep, street, number, neighborhood, city, state,
+            cep, street, number, neighborhood, city, state, complement,
             // Redirect Override
             emailRedirectTo
         } = body;
@@ -105,6 +105,7 @@ export async function POST(req: Request) {
                 neighborhood: neighborhood || null,
                 city: city || null,
                 state: state || null,
+                complement: complement || null,
                 // --------------
                 business_type: businessType || 'barbershop',
                 plan: 'premium',

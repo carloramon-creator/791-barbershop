@@ -43,6 +43,7 @@ export default function SignupPage() {
         neighborhood: '',
         city: '',
         state: '',
+        complement: '',
         businessType: 'barbershop' as BusinessType,
         serviceMethod: 'queue' as ServiceMethod,
     });
@@ -488,6 +489,19 @@ function Step2({ formData, setFormData, onNext, onBack }: any) {
                         value={formData.number}
                         onChange={(e) => setFormData({ ...formData, number: e.target.value })}
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors"
+                        placeholder="123"
+                    />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+                <div>
+                    <label className="block text-sm font-bold text-slate-300 mb-2">Complemento <span className="text-slate-500 font-normal">(Opcional)</span></label>
+                    <input
+                        value={formData.complement}
+                        onChange={(e) => setFormData({ ...formData, complement: e.target.value })}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors"
+                        placeholder="Ex: Sala 202, Edifício Comercial"
                     />
                 </div>
             </div>
