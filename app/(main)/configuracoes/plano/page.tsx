@@ -692,18 +692,17 @@ export default function PlanPage() {
               )}
             </div>
 
-            {/* DIREITA: Botão */}
             <Button
               onClick={() => setIsPaymentExpanded(!isPaymentExpanded)}
               className={cn(
-                "h-16 px-10 rounded-2xl font-black uppercase tracking-widest transition-all duration-500",
+                "h-20 px-12 rounded-[28px] font-black uppercase tracking-[0.2em] transition-all duration-500 text-sm shadow-2xl hover:scale-[1.05] active:scale-95 flex items-center gap-3",
                 isPaymentExpanded
-                  ? "bg-slate-800 text-slate-400 hover:bg-slate-700"
-                  : "bg-blue-600 hover:bg-blue-500 text-white shadow-xl shadow-blue-900/20 hover:scale-[1.02]"
+                  ? "bg-slate-800 text-slate-400 border border-white/5"
+                  : "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-blue-500/25"
               )}
             >
-              {isPaymentExpanded ? "VOLTAR À SELEÇÃO" : "IR PARA PAGAMENTO"}
-              <ArrowRight size={20} className={cn("ml-2 transition-transform", isPaymentExpanded && "rotate-90")} />
+              {isPaymentExpanded ? "VOLTAR" : "CONTINUAR E ASSINAR"}
+              <ArrowRight size={22} className={cn("transition-transform duration-500", isPaymentExpanded && "rotate-90")} />
             </Button>
           </div>
         </div>
@@ -800,9 +799,16 @@ export default function PlanPage() {
                     <Button
                       onClick={handleChangePlan}
                       disabled={saving}
-                      className="w-full h-20 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-[0.2em] rounded-2xl text-lg shadow-2xl"
+                      className="w-full h-24 bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-500 hover:to-blue-300 text-white font-black uppercase tracking-[0.3em] rounded-[30px] text-xl shadow-[0_25px_50px_-12px_rgba(59,130,246,0.5)] transition-all duration-500 hover:scale-[1.02] active:scale-95"
                     >
-                      {saving ? <Activity className="animate-spin" /> : "FINALIZAR PAGAMENTO"}
+                      {saving ? (
+                        <div className="flex items-center gap-4">
+                          <Activity className="animate-spin w-8 h-8" />
+                          <span>PROCESSANDO...</span>
+                        </div>
+                      ) : (
+                        "ASSINAR AGORA"
+                      )}
                     </Button>
                   </div>
                 </>
@@ -1264,28 +1270,35 @@ export default function PlanPage() {
                     .map((plan) => (
                       <Card
                         key={plan.id}
+                        onClick={() => {
+                          if (selectedPlan === plan.slug) {
+                            setSelectedPlan(null);
+                          } else {
+                            setSelectedPlan(plan.slug);
+                          }
+                        }}
                         className={cn(
-                          "bg-slate-900 border-slate-800 cursor-pointer transition-all hover:border-slate-600 rounded-3xl p-1 relative overflow-hidden group shadow-2xl",
-                          currentPlan === plan.slug &&
-                          "border-blue-500 ring-4 ring-blue-500/10",
+                          "bg-slate-900 border-2 border-slate-800 cursor-pointer transition-all duration-300 rounded-[32px] overflow-hidden relative group shadow-2xl flex flex-col h-full",
+                          currentPlan === plan.slug && "border-blue-500/50 bg-slate-900/80",
+                          selectedPlan === plan.slug && "border-blue-500 ring-4 ring-blue-500/20 bg-blue-500/5 shadow-blue-900/20"
                         )}
                       >
-                        <div className="p-6">
-                          <div className="flex justify-between items-start mb-4">
-                            <span className="px-3 py-1 bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-[0.2em] rounded-lg border border-blue-500/20">
+                        <div className="p-8 flex flex-col h-full">
+                          <div className="flex justify-between items-start mb-6">
+                            <span className="px-4 py-1.5 bg-blue-500/10 text-blue-400 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl border border-blue-500/10">
                               {plan.slug}
                             </span>
                             {currentPlan === plan.slug && (
-                              <span className="flex items-center gap-1 text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-lg">
-                                <CheckCircle2 size={12} /> Plano Ativo
+                              <span className="flex items-center gap-1.5 text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-4 py-1.5 rounded-xl border border-emerald-500/10">
+                                <CheckCircle2 size={12} /> Ativo
                               </span>
                             )}
                           </div>
 
-                          <CardHeader className="p-0 mb-6">
-                            <CardTitle className="text-3xl font-black text-slate-100 tracking-tight mb-2">
+                          <div className="space-y-4 mb-8">
+                            <h3 className="text-3xl font-black text-white tracking-tight uppercase">
                               {plan.name}
-                            </CardTitle>
+                            </h3>
                             <div className="space-y-1">
                               {(() => {
                                 const basePrice = plan.price || 0;
@@ -1304,24 +1317,23 @@ export default function PlanPage() {
 
                                 return (
                                   <>
-                                    <div className="flex items-baseline gap-1">
-                                      <span className="text-3xl font-black text-slate-100">
+                                    <div className="flex items-baseline gap-1.5">
+                                      <span className="text-4xl font-black text-white tabular-nums tracking-tighter">
                                         R${" "}
                                         {(monthlyEquivalent || 0)
                                           .toFixed(2)
                                           .replace(".", ",")}
                                       </span>
-                                      <span className="text-xs text-slate-500 font-bold lowercase">
+                                      <span className="text-sm text-slate-500 font-bold lowercase">
                                         /mês
                                       </span>
                                     </div>
                                     {selectedInterval > 1 && (
-                                      <div className="text-[10px] font-black text-emerald-500 uppercase tracking-wider">
-                                        Total: R${" "}
+                                      <div className="text-[11px] font-black text-emerald-500 uppercase tracking-wider flex items-center gap-2">
+                                        <Zap size={12} /> Total do ciclo: R${" "}
                                         {(totalPrice || 0)
                                           .toFixed(2)
-                                          .replace(".", ",")}{" "}
-                                        ({selectedInterval} meses)
+                                          .replace(".", ",")}
                                       </div>
                                     )}
                                   </>
@@ -1329,66 +1341,58 @@ export default function PlanPage() {
                               })()}
                             </div>
                             {plan.description && (
-                              <p className="mt-4 text-xs font-bold text-slate-500 leading-relaxed min-h-[40px]">
+                              <p className="text-xs font-bold text-slate-500 leading-relaxed line-clamp-2">
                                 {plan.description}
                               </p>
                             )}
-                          </CardHeader>
+                          </div>
 
-                          <CardContent className="p-0 space-y-8">
-                            <div className="space-y-4 pt-6 border-t border-slate-800">
-                              <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">
-                                O que está incluso:
-                              </p>
-                              <div className="space-y-3">
-                                {plan.features?.map(
-                                  (feature: any, i: number) => (
-                                    <div
-                                      key={i}
-                                      className="flex items-start gap-3 group/item"
-                                    >
-                                      <div className="mt-0.5 w-4 h-4 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
-                                        <Check className="w-2.5 h-2.5 text-amber-500" />
-                                      </div>
-                                      <span className="text-xs font-bold text-slate-400 group-hover/item:text-slate-200 transition-colors leading-tight">
-                                        {feature}
-                                      </span>
+                          <div className="space-y-5 flex-grow pb-8">
+                            <div className="h-px bg-slate-800/50 w-full" />
+                            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">
+                              Recursos Inclusos:
+                            </p>
+                            <div className="space-y-3.5">
+                              {plan.features?.map(
+                                (feature: any, i: number) => (
+                                  <div
+                                    key={i}
+                                    className="flex items-start gap-3 group/item"
+                                  >
+                                    <div className="mt-0.5 w-4.5 h-4.5 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shadow-sm">
+                                      <Check className="w-2.5 h-2.5 text-blue-500" />
                                     </div>
-                                  ),
-                                )}
-                              </div>
-                            </div>
-
-                            <Button
-                              className={cn(
-                                "w-full py-7 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl",
-                                currentPlan === plan.slug &&
-                                  subscriptionStatus === "active"
-                                  ? "bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700"
-                                  : selectedPlan === plan.slug
-                                    ? "bg-amber-600 text-white"
-                                    : "bg-blue-600 hover:bg-white hover:text-blue-600 text-white shadow-blue-600/20 active:scale-95",
+                                    <span className="text-[11px] font-bold text-slate-400 group-hover/item:text-slate-200 transition-colors leading-tight">
+                                      {feature}
+                                    </span>
+                                  </div>
+                                ),
                               )}
-                              disabled={
-                                currentPlan === plan.slug &&
+                            </div>
+                          </div>
+
+                          <Button
+                            className={cn(
+                              "w-full h-16 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] transition-all duration-500 shadow-xl mt-auto",
+                              currentPlan === plan.slug &&
                                 subscriptionStatus === "active"
-                              }
-                              onClick={() => {
-                                if (selectedPlan === plan.slug) {
-                                  setSelectedPlan(null);
-                                } else {
-                                  setSelectedPlan(plan.slug);
-                                }
-                              }}
-                            >
-                              {currentPlan === plan.slug &&
-                                subscriptionStatus === "active"
-                                ? "Plano Ativo"
+                                ? "bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5 opacity-50"
                                 : selectedPlan === plan.slug
-                                  ? "Selecionado"
-                                  : "Selecionar Plano"}
-                            </Button>
-                          </CardContent>
+                                  ? "bg-amber-600 hover:bg-amber-500 text-white shadow-amber-900/20 scale-[1.02]"
+                                  : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20 hover:scale-[1.02] active:scale-95"
+                            )}
+                            disabled={
+                              currentPlan === plan.slug &&
+                              subscriptionStatus === "active"
+                            }
+                          >
+                            {currentPlan === plan.slug &&
+                              subscriptionStatus === "active"
+                              ? "Plano Ativo"
+                              : selectedPlan === plan.slug
+                                ? "SELECIONADO"
+                                : "ASSINAR AGORA"}
+                          </Button>
                         </div>
                       </Card>
                     ))}
