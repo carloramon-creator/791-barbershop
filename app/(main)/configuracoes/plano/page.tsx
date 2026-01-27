@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   Package,
   ArrowRight,
+  Bot,
 } from "lucide-react";
 import {
   Card,
@@ -104,6 +105,15 @@ export default function PlanPage() {
   const [checkingAsaasPayment, setCheckingAsaasPayment] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [isPaymentExpanded, setIsPaymentExpanded] = useState(false);
+  const paymentRef = React.useRef<HTMLDivElement>(null);
+
+  // Monitorar se deve abrir automaticamente
+  useEffect(() => {
+    if (isPaymentExpanded && paymentRef.current) {
+      paymentRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [isPaymentExpanded]);
 
   const tabs = [
     { name: "Geral", href: "/configuracoes/barbearia", icon: Building2 },
@@ -612,8 +622,260 @@ export default function PlanPage() {
     }
   }
 
+  const selectedPlanData = dynamicPlans.find((p) => p.slug === selectedPlan);
+  const planTotal = selectedPlanData
+    ? selectedPlanData.price *
+    (1 -
+      (selectedInterval === 12
+        ? 20
+        : selectedInterval === 6
+          ? 10
+          : 0) /
+      100) *
+    selectedInterval
+    : 0;
+
+  let addonsTotal = 0;
+  selectedAddonsSlugs.forEach((slug) => {
+    const addon = dynamicAddons.find((a) => a.slug === slug);
+    if (addon) addonsTotal += Number(addon.price) * selectedInterval;
+  });
+
+  const grandTotal = planTotal + addonsTotal;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
+      {/* SEÇÃO DE SELEÇÃO NO TOPO (NOVA) */}
+      {(selectedPlan || selectedAddonsSlugs.length > 0) && (
+        <div className="w-full bg-slate-900/40 backdrop-blur-xl border-2 border-blue-500/20 p-8 rounded-[40px] shadow-2xl flex flex-col gap-6 animate-in fade-in slide-in-from-top-4">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-8">
+            {/* ESQUERDA: Plano e Preço */}
+            <div className="flex flex-col gap-2 min-w-0">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                <span className="text-[12px] font-black uppercase tracking-[0.3em] text-blue-400">
+                  Pacote em Seleção
+                </span>
+                <span className="px-3 py-1 bg-blue-500/10 text-[10px] font-black text-blue-400 rounded-full border border-blue-500/20 uppercase">
+                  {selectedPlanData?.name || selectedPlan}
+                </span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl md:text-5xl font-black text-white tracking-tighter tabular-nums">
+                  R$ {grandTotal.toFixed(2).replace(".", ",")}
+                </span>
+                <span className="text-sm text-slate-500 font-bold uppercase">
+                  / {selectedInterval === 1 ? "mês" : `${selectedInterval} meses`}
+                </span>
+              </div>
+            </div>
+
+            {/* CENTRO: Módulos selecionados */}
+            <div className="flex items-center gap-3 flex-1 justify-center">
+              {dynamicAddons
+                .filter(a => selectedAddonsSlugs.includes(a.slug))
+                .map((addon) => (
+                  <div
+                    key={addon.slug}
+                    className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-2xl"
+                  >
+                    <Zap size={12} className="text-amber-500" />
+                    <span className="text-[10px] font-black uppercase text-amber-500">
+                      {addon.name.replace("Módulo ", "")}
+                    </span>
+                  </div>
+                ))}
+              {selectedAddonsSlugs.length === 0 && (
+                <span className="text-xs font-bold text-slate-600 uppercase tracking-widest italic">
+                  Nenhum módulo extra selecionado
+                </span>
+              )}
+            </div>
+
+            {/* DIREITA: Botão */}
+            <Button
+              onClick={() => setIsPaymentExpanded(!isPaymentExpanded)}
+              className={cn(
+                "h-16 px-10 rounded-2xl font-black uppercase tracking-widest transition-all duration-500",
+                isPaymentExpanded
+                  ? "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                  : "bg-blue-600 hover:bg-blue-500 text-white shadow-xl shadow-blue-900/20 hover:scale-[1.02]"
+              )}
+            >
+              {isPaymentExpanded ? "VOLTAR À SELEÇÃO" : "IR PARA PAGAMENTO"}
+              <ArrowRight size={20} className={cn("ml-2 transition-transform", isPaymentExpanded && "rotate-90")} />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* SEÇÃO DE PAGAMENTO EXPANSÍVEL */}
+      {isPaymentExpanded && (
+        <div ref={paymentRef} className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in zoom-in-95 duration-500">
+          {/* QUADRADO 1: RESUMO (MAIS FINO) */}
+          <div className="lg:col-span-4 bg-slate-900 border border-white/5 p-8 rounded-[40px] shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 blur-3xl" />
+
+            <div className="relative z-10 space-y-8">
+              <div className="space-y-2">
+                <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em]">Resumo do Pedido</span>
+                <h3 className="text-3xl font-black text-white uppercase tracking-tighter">
+                  {selectedPlanData?.name || selectedPlan}
+                </h3>
+              </div>
+
+              <div className="space-y-4 border-y border-white/5 py-6">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500 font-bold uppercase">Plano</span>
+                  <span className="text-white font-black">R$ {planTotal.toFixed(2).replace(".", ",")}</span>
+                </div>
+                {selectedAddonsSlugs.map(slug => {
+                  const addon = dynamicAddons.find(a => a.slug === slug);
+                  return (
+                    <div key={slug} className="flex justify-between items-center text-sm">
+                      <span className="text-slate-500 font-bold uppercase">{addon?.name.replace("Módulo ", "")}</span>
+                      <span className="text-white font-black">+ R$ {(Number(addon?.price || 0) * selectedInterval).toFixed(2).replace(".", ",")}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex justify-between items-baseline pt-4">
+                <span className="text-xs font-black text-slate-500 uppercase">Total Final</span>
+                <span className="text-4xl font-black text-blue-500 tracking-tighter tabular-nums">
+                  R$ {grandTotal.toFixed(2).replace(".", ",")}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* QUADRADO 2: PAGAMENTO (MAIOR) */}
+          <div className="lg:col-span-8 bg-slate-950 border border-white/10 p-10 rounded-[40px] shadow-2xl relative overflow-hidden flex flex-col items-center justify-center min-h-[500px]">
+            {/* O ROBÔ VISUAL */}
+            {!pixData && !boletoData && !pendingData && (
+              <div className="absolute top-10 right-10 animate-bounce duration-[3000ms]">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full" />
+                  <Bot size={48} className="text-blue-500 relative z-10" />
+                </div>
+              </div>
+            )}
+
+            <div className="w-full max-w-xl space-y-10">
+              {!pixData && !boletoData && !pendingData ? (
+                <>
+                  <div className="space-y-6">
+                    <span className="text-xs font-black text-slate-500 uppercase tracking-[0.4em] text-center block">Escolha como pagar</span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        { id: "pix", icon: Zap, label: "PIX", color: "emerald" },
+                        { id: "card", icon: CreditCard, label: "CARTÃO", color: "blue" },
+                        { id: "boleto-inter", icon: FileText, label: "BOLETO", color: "orange" }
+                      ].map((m) => (
+                        <button
+                          key={m.id}
+                          onClick={() => setPaymentMethod(m.id as any)}
+                          className={cn(
+                            "flex flex-col items-center justify-center p-6 rounded-3xl border-2 transition-all duration-300 gap-3 group",
+                            paymentMethod === m.id
+                              ? `border-${m.color}-500 bg-${m.color}-500/10 text-white shadow-xl`
+                              : "border-white/5 bg-slate-900/40 text-slate-600 hover:border-white/20"
+                          )}
+                        >
+                          <m.icon size={28} className={cn(paymentMethod === m.id ? `text-${m.color}-400` : "text-slate-700")} />
+                          <span className="text-[10px] font-black tracking-widest uppercase">{m.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <input
+                      type="text"
+                      placeholder="CUPOM DE DESCONTO"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      className="w-full bg-slate-900/50 border border-white/5 rounded-2xl px-6 py-4 text-center font-black tracking-widest text-white outline-none focus:border-blue-500/30"
+                    />
+                    <Button
+                      onClick={handleChangePlan}
+                      disabled={saving}
+                      className="w-full h-20 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-[0.2em] rounded-2xl text-lg shadow-2xl"
+                    >
+                      {saving ? <Activity className="animate-spin" /> : "FINALIZAR PAGAMENTO"}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="w-full animate-in zoom-in-95">
+                  {/* RESULTADO DO PAGAMENTO (PIX/BOLETO) */}
+                  {pixData && (
+                    <div className="flex flex-col items-center space-y-8">
+                      <div className="bg-white p-6 rounded-[32px] shadow-2xl">
+                        <QRCodeCanvas value={pixData?.pixPayload || ""} size={240} level="H" includeMargin={true} />
+                      </div>
+                      <div className="w-full space-y-4">
+                        <div className="bg-slate-900 p-4 rounded-xl border border-white/5 font-mono text-[10px] text-slate-400 break-all text-center">
+                          {pixData?.pixPayload}
+                        </div>
+                        <Button
+                          className="w-full h-16 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase rounded-2xl"
+                          onClick={() => { if (pixData?.pixPayload) { navigator.clipboard.writeText(pixData.pixPayload); alert('Copiado!'); } }}
+                        >
+                          Copiar Código Pix
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {boletoData && (
+                    <div className="flex flex-col items-center space-y-8">
+                      <div className="w-20 h-20 bg-orange-500/10 rounded-3xl flex items-center justify-center text-orange-500 border border-orange-500/20">
+                        <FileText size={40} />
+                      </div>
+                      <div className="w-full space-y-4">
+                        <div className="bg-slate-900 p-4 rounded-xl border border-white/5 font-mono text-xs text-slate-300 text-center">
+                          {boletoData?.linhaDigitavel}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <Button
+                            variant="outline"
+                            className="h-16 border-white/10 bg-transparent text-white font-black uppercase rounded-2xl"
+                            onClick={() => { if (boletoData?.linhaDigitavel) { navigator.clipboard.writeText(boletoData.linhaDigitavel); alert('Copiado!'); } }}
+                          >
+                            Copiar Linha
+                          </Button>
+                          <Button
+                            className="h-16 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase rounded-2xl"
+                            onClick={() => { if (boletoData?.pdfUrl) window.open(boletoData.pdfUrl, '_blank'); }}
+                          >
+                            Ver PDF
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {pendingData && (
+                    <div className="text-center space-y-6">
+                      <Activity className="animate-spin text-blue-500 w-12 h-12 mx-auto" />
+                      <p className="text-slate-400 font-bold uppercase tracking-widest">{pendingData?.message}</p>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => { setPixData(null); setBoletoData(null); setPendingData(null); }}
+                    className="w-full text-slate-600 hover:text-white text-[10px] font-black uppercase tracking-widest pt-10"
+                  >
+                    Alterar forma de pagamento
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {checkingAsaasPayment && (
         <div className="bg-blue-500/10 border border-blue-500/20 p-6 rounded-2xl space-y-4 animate-pulse">
           <div className="flex items-start gap-4">
@@ -1153,318 +1415,7 @@ export default function PlanPage() {
 
           {/* O loading agora fecha mais abaixo, englobando tudo */}
 
-          <Dialog
-            open={openDialog}
-            onOpenChange={(open) => {
-              setOpenDialog(open);
-              if (!open) {
-                setPixData(null);
-                setBoletoData(null);
-                setPendingData(null);
-                setError(null);
-              }
-            }}
-          >
-            <DialogContent
-              className="border-slate-800 bg-slate-900 text-slate-100 max-w-[98vw] lg:max-w-7xl w-[98vw] h-[95vh] rounded-[3rem] flex flex-col p-0 overflow-hidden shadow-[0_80px_160px_rgba(0,0,0,0.95)] border-none ring-1 ring-white/10"
-              onPointerDownOutside={() => fetchInvoices()}
-              onEscapeKeyDown={() => fetchInvoices()}
-            >
-              <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
-                {/* COLUNA ESQUERDA: EXPERIÊNCIA DE RESUMO DE IMPACTO */}
-                <div className="md:w-[55%] p-10 md:p-24 space-y-20 bg-gradient-to-br from-slate-950 to-slate-900 overflow-y-auto custom-scrollbar border-r border-white/5 flex flex-col relative">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-transparent opacity-50" />
 
-                  <div className="space-y-8">
-                    <div className="flex items-center gap-5">
-                      <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_25px_rgba(59,130,246,0.9)] animate-pulse" />
-                      <span className="text-[14px] font-black uppercase tracking-[0.5em] text-blue-400/80">Premium Checkout</span>
-                    </div>
-                    <h2 className="text-6xl md:text-8xl font-black text-white uppercase tracking-tighter leading-[0.85] filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">
-                      Resumo da <br /><span className="text-blue-500">Sua Conta</span>
-                    </h2>
-                    <p className="text-slate-400 text-xl font-medium max-w-lg leading-relaxed">Você está a poucos segundos de desbloquear o potencial máximo da sua gestão.</p>
-                  </div>
-
-                  <div className="space-y-16 flex-1">
-                    {selectedPlan && (
-                      <div className="bg-white/[0.03] p-12 rounded-[3.5rem] border border-white/10 hover:border-blue-500/30 transition-all duration-700 shadow-3xl group">
-                        <div className="flex justify-between items-center mb-10 border-b border-white/5 pb-6">
-                          <span className="text-xs font-bold uppercase text-slate-500 tracking-[0.3em]">Plano Ativo</span>
-                          <span className="px-5 py-2 bg-blue-500/20 text-blue-400 text-xs font-black rounded-full border border-blue-500/20 uppercase tracking-widest animate-in fade-in slide-in-from-right-10">
-                            {selectedInterval === 1 ? "Cobrança Mensal" : selectedInterval === 6 ? "Ciclo Semestral" : "Ciclo Anual"}
-                          </span>
-                        </div>
-                        <div className="flex flex-col xl:flex-row justify-between items-baseline gap-10">
-                          <div className="space-y-3">
-                            <span className="text-5xl font-black text-white uppercase tracking-tighter block group-hover:text-blue-500 transition-colors">
-                              {selectedPlan}
-                            </span>
-                            <span className="text-[12px] text-slate-500 font-bold uppercase tracking-[0.2em]">Liberação instantânea imediata</span>
-                          </div>
-                          <div className="flex flex-col items-end">
-                            <span className="text-6xl font-black text-white tabular-nums tracking-tighter">
-                              {(() => {
-                                const plan = dynamicPlans.find((p) => p.slug === selectedPlan);
-                                if (!plan) return "";
-                                const basePrice = plan.price || 0;
-                                const discount = selectedInterval === 6 ? 10 : selectedInterval === 12 ? 20 : 0;
-                                const totalPrice = basePrice * selectedInterval * (1 - discount / 100);
-                                return `R$ ${(totalPrice || 0).toFixed(2).replace(".", ",")}`;
-                              })()}
-                            </span>
-                            {selectedInterval > 1 && <span className="text-[11px] text-slate-600 font-bold uppercase">Total do ciclo de {selectedInterval} meses</span>}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="space-y-10">
-                      <div className="flex items-center gap-5 px-4 opacity-70">
-                        <div className="w-10 h-10 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
-                          <Zap size={22} className="text-amber-500 fill-amber-500/20" />
-                        </div>
-                        <span className="text-[11px] font-black uppercase text-slate-400 tracking-[0.4em]">Turbos & Módulos Extras selecionados</span>
-                      </div>
-
-                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                        {(() => {
-                          const currentSelected = dynamicAddons.filter(a => selectedAddonsSlugs.includes(a.slug));
-
-                          if (currentSelected.length === 0) return (
-                            <div className="col-span-full p-8 border-2 border-dashed border-white/5 rounded-[2.5rem] flex items-center justify-center text-slate-700 font-black uppercase tracking-widest text-xs">
-                              Nenhum Módulo Adicional
-                            </div>
-                          );
-
-                          return currentSelected.map((addon) => (
-                            <div
-                              key={addon.slug}
-                              className="flex items-center justify-between p-8 rounded-[2.5rem] border-2 border-white/5 bg-white/[0.02] shadow-xl"
-                            >
-                              <span className="text-xs font-black uppercase tracking-widest text-white">
-                                {addon.name.replace("Módulo ", "")}
-                              </span>
-                              <div className="w-4 h-4 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)] flex items-center justify-center">
-                                <Check size={10} className="text-white" />
-                              </div>
-                            </div>
-                          ));
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-20 border-t border-white/10 mt-auto">
-                    <div className="flex flex-col xl:flex-row items-end justify-between gap-12">
-                      <div className="space-y-4">
-                        <p className="text-[14px] font-black uppercase text-slate-500 tracking-[0.6em] ml-2">Total do Investimento</p>
-                        <div className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-2xl animate-bounce">
-                          Aproveite seu Plano
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <h3 className="text-7xl md:text-9xl font-black text-white tracking-widest leading-none tabular-nums filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.8)]">
-                          {(() => {
-                            const plan = dynamicPlans.find((p) => p.slug === selectedPlan);
-                            const planPrice = plan ? plan.price * (1 - (selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100) * selectedInterval : 0;
-                            let addonsPrice = 0;
-                            selectedAddonsSlugs.forEach((slug) => {
-                              const addon = dynamicAddons.find((a) => a.slug === slug);
-                              if (addon) addonsPrice += Number(addon.price) * selectedInterval;
-                            });
-                            return `R$ ${(planPrice + addonsPrice).toFixed(2).replace(".", ",")}`;
-                          })()}
-                        </h3>
-                        <span className="text-[12px] text-slate-500 font-black uppercase tracking-[0.3em] mr-4 italic">Valor final sem taxas ocultas</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* COLUNA DIREITA: PAGAMENTO & FEEDBACK (IMPACTO TOTAL) */}
-                <div className="md:w-[45%] p-10 md:p-24 bg-slate-900 overflow-y-auto custom-scrollbar flex flex-col min-h-0 border-l border-white/5 relative">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 blur-[100px]" />
-
-                  {!pixData && !boletoData && !pendingData ? (
-                    <>
-                      <div className="flex-1 space-y-20">
-                        <div className="space-y-10">
-                          <span className="text-[14px] font-black uppercase tracking-[0.6em] text-slate-500 px-4 block border-l-4 border-blue-600 ml-2">Escolha seu Método</span>
-
-                          <div className="flex flex-col gap-6">
-                            {[
-                              { id: "card", icon: CreditCard, label: "Cartão de Crédito", desc: "Checkout Via Asaas" },
-                              { id: "pix", icon: Zap, label: "Pix à Vista", desc: "Aprovação em Segundos" },
-                              { id: "boleto-inter", icon: FileText, label: "Boleto Inter", desc: "Taxa Zero de Emissão" }
-                            ].map((m) => (
-                              <button
-                                key={m.id}
-                                onClick={() => setPaymentMethod(m.id as any)}
-                                className={cn(
-                                  "flex items-center p-10 rounded-[3rem] border-2 transition-all duration-700 gap-8 text-left h-32 relative group overflow-hidden",
-                                  paymentMethod === m.id
-                                    ? "border-blue-500 bg-blue-500/5 text-white shadow-[0_45px_90px_rgba(59,130,246,0.5)] ring-12 ring-blue-500/5 scale-[1.03]"
-                                    : "border-white/5 bg-slate-950/40 text-slate-800 hover:border-white/10 hover:bg-slate-950/60"
-                                )}
-                              >
-                                {paymentMethod === m.id && <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-transparent pointer-events-none" />}
-                                <div className={cn("w-16 h-16 rounded-3xl flex items-center justify-center transition-all duration-700 shadow-2xl", paymentMethod === m.id ? "bg-blue-600 text-white rotate-6" : "bg-slate-900 text-slate-800 group-hover:bg-slate-800")}>
-                                  <m.icon size={36} />
-                                </div>
-                                <div className="space-y-2 relative z-10">
-                                  <span className={cn("text-lg font-black uppercase tracking-[0.3em] block", paymentMethod === m.id ? "text-white" : "text-slate-600")}>{m.label}</span>
-                                  <span className="text-[11px] font-bold text-slate-600 uppercase tracking-widest block opacity-70">{m.desc}</span>
-                                </div>
-                                {paymentMethod === m.id && (
-                                  <div className="ml-auto w-5 h-5 rounded-full bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,1)] flex items-center justify-center">
-                                    <Check size={12} className="text-white" />
-                                  </div>
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="space-y-8">
-                          <span className="text-[14px] font-black uppercase tracking-[0.6em] text-slate-500 px-4 block">Cupom Promocional</span>
-                          <input
-                            type="text"
-                            placeholder="DIGITE O CÓDIGO"
-                            value={couponCode}
-                            onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setError(null); }}
-                            className="w-full bg-slate-950/80 border-4 border-white/5 rounded-[3rem] px-12 py-8 text-2xl text-white placeholder:text-slate-900 transition-all outline-none font-black tracking-[0.8em] uppercase text-center focus:border-blue-500/30 focus:bg-black shadow-2xl focus:scale-[1.02]"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-4 pt-8">
-                        {error && (
-                          <p className="text-[10px] font-bold text-red-500 uppercase text-center bg-red-500/10 p-2 rounded-lg">{error}</p>
-                        )}
-
-                        <div className="space-y-6">
-                          <Button
-                            onClick={handleChangePlan}
-                            disabled={saving}
-                            className="w-full h-32 bg-blue-600 hover:bg-white hover:text-blue-600 text-white font-black uppercase tracking-[0.6em] rounded-[4rem] shadow-[0_40px_80px_rgba(59,130,246,0.7)] transition-all active:scale-95 text-xl flex flex-col items-center justify-center gap-1 group"
-                          >
-                            {saving ? (
-                              <div className="flex flex-col items-center gap-4">
-                                <Activity className="animate-spin w-10 h-10" />
-                                <span className="text-xs font-black">PROCESSANDO...</span>
-                              </div>
-                            ) : (
-                              <>
-                                <span>CONTRATAR AGORA</span>
-                                <span className="text-[11px] opacity-60 tracking-[1em] font-bold mt-1 group-hover:text-blue-600 italic">ATIVAÇÃO IMEDIATA</span>
-                              </>
-                            )}
-                          </Button>
-
-                          <button
-                            onClick={() => setOpenDialog(false)}
-                            className="w-full text-slate-700 hover:text-white text-[12px] font-black uppercase tracking-[1.5em] py-8 transition-all opacity-40 hover:opacity-100"
-                          >
-                            CANCELAR E SAIR
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="h-full flex flex-col items-center justify-center py-10 space-y-24">
-                      {pendingData && (
-                        <div className="text-center space-y-6">
-                          <div className="h-16 w-16 mx-auto bg-slate-950 border border-blue-500/20 rounded-full flex items-center justify-center">
-                            <Activity className="animate-spin text-blue-500 w-8 h-8" />
-                          </div>
-                          <div className="space-y-2">
-                            <h3 className="text-lg font-black text-white uppercase tracking-tight">Gerando Cobrança</h3>
-                            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest max-w-[180px] mx-auto">{pendingData.message}</p>
-                          </div>
-                        </div>
-                      )}
-
-                      {pixData && !pendingData && (
-                        <div className="flex flex-col items-center w-full space-y-8 animate-in fade-in zoom-in-95 duration-500">
-                          <div className="text-center space-y-2">
-                            <span className="text-sm font-black text-emerald-400 uppercase tracking-[0.6em]">Aguardando Pagamento Pix</span>
-                            <h4 className="text-7xl md:text-9xl font-black text-white tracking-widest tabular-nums mt-10 filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.8)]">
-                              R$ {(pixData.amount || 0).toFixed(2).replace('.', ',')}
-                            </h4>
-                          </div>
-
-                          <div className="bg-white p-10 rounded-[4.5rem] shadow-[0_80px_160px_-20px_rgba(16,185,129,0.5)] ring-[24px] ring-emerald-500/10 transform scale-110">
-                            <QRCodeCanvas value={pixData.pixPayload} size={320} level="H" includeMargin={true} />
-                          </div>
-
-                          <div className="w-full space-y-4">
-                            <div className="bg-slate-950 border border-white/5 rounded-xl p-4 font-mono text-[9px] text-slate-500 break-all text-center leading-relaxed">
-                              {pixData.pixPayload}
-                            </div>
-                            <Button
-                              className="w-full h-32 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-lg tracking-[0.6em] rounded-[4rem] shadow-4xl transform active:scale-95 transition-all"
-                              onClick={() => { navigator.clipboard.writeText(pixData.pixPayload); alert('PIX Copiado!'); }}
-                            >
-                              Copiar Pix
-                            </Button>
-                          </div>
-
-                          <button onClick={() => setOpenDialog(false)} className="text-slate-600 hover:text-white uppercase font-black text-[10px] tracking-widest transition-colors py-2">
-                            Concluir Depois
-                          </button>
-                        </div>
-                      )}
-
-                      {boletoData && !pendingData && (
-                        <div className="flex flex-col items-center w-full space-y-8 animate-in fade-in zoom-in-95 duration-500">
-                          <div className="text-center space-y-2">
-                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Boleto Gerado</span>
-                            <h4 className="text-7xl md:text-9xl font-black text-white tracking-widest tabular-nums mt-10 filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.8)]">
-                              R$ {(boletoData.amount || 0).toFixed(2).replace('.', ',')}
-                            </h4>
-                          </div>
-
-                          <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/20 rounded-full flex items-center justify-center text-blue-500">
-                            <FileText size={32} />
-                          </div>
-
-                          <div className="w-full space-y-5">
-                            <div className="space-y-2">
-                              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">Linha Digitável</span>
-                              <div className="bg-slate-950 border border-white/5 rounded-xl p-4 font-mono text-[9px] text-slate-300 text-center">
-                                {boletoData.linhaDigitavel}
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <Button
-                                variant="outline"
-                                className="h-12 border-white/10 bg-transparent hover:bg-white/5 text-white font-black uppercase text-[10px] tracking-widest rounded-xl transition-all"
-                                onClick={() => { navigator.clipboard.writeText(boletoData.linhaDigitavel); alert('Linha Copiada!'); }}
-                              >
-                                Copiar Linha
-                              </Button>
-                              <Button
-                                className="h-12 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase text-[10px] tracking-widest rounded-xl"
-                                onClick={() => window.open(boletoData.pdfUrl, '_blank')}
-                              >
-                                Baixar PDF
-                              </Button>
-                            </div>
-                          </div>
-
-                          <button onClick={() => setOpenDialog(false)} className="text-slate-600 hover:text-white uppercase font-black text-[10px] tracking-widest transition-colors">
-                            Concluir Depois
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
 
           {/* --- SEÇÃO DE HISTÓRICO DE FATURAS --- */}
           <div className="mt-12 space-y-6">
@@ -1627,8 +1578,8 @@ export default function PlanPage() {
                                             const debugData =
                                               await debugRes.json();
                                             if (
-                                              debugData.updatedIsPaid ||
-                                              debugData.updated
+                                              debugData?.updatedIsPaid ||
+                                              debugData?.updated
                                             ) {
                                               alert("Status Atualizado! 🚀");
                                               fetchInvoices();
@@ -1672,18 +1623,18 @@ export default function PlanPage() {
                                           setPixData({
                                             amount: inv.value,
                                             pixPayload:
-                                              inv.metadata.pix_payload,
+                                              inv.metadata?.pix_payload || "",
                                             expiresAt:
-                                              inv.metadata.expires_at ||
+                                              inv.metadata?.expires_at ||
                                               new Date().toISOString(),
-                                            pdfUrl: undefined, // Pix pendente não tem PDF
+                                            pdfUrl: undefined,
                                           });
                                           setPendingData({
                                             pending: true,
                                             message: "Aguardando pagamento...",
-                                            seu_numero: inv.metadata.seu_numero,
-                                          }); // Ativa polling UI
-                                          setOpenDialog(true);
+                                            seu_numero: inv.metadata?.seu_numero,
+                                          });
+                                          setIsPaymentExpanded(true);
                                         }}
                                       >
                                         <Zap className="w-3 h-3 mr-1" /> Ver Pix
@@ -1695,9 +1646,9 @@ export default function PlanPage() {
                                         className="h-8 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 text-[10px] font-black uppercase"
                                         onClick={() => {
                                           const codigoSolicitacao =
-                                            inv.metadata.txid;
+                                            inv.metadata?.txid;
                                           const nossoNumero =
-                                            inv.metadata.nosso_numero || "";
+                                            inv.metadata?.nosso_numero || "";
                                           const url = codigoSolicitacao
                                             ? `/api/checkout/inter-boleto/pdf?codigoSolicitacao=${codigoSolicitacao}&nossoNumero=${nossoNumero}`
                                             : `/api/checkout/inter-boleto/pdf?nossoNumero=${nossoNumero}`;
@@ -1860,155 +1811,6 @@ export default function PlanPage() {
         </>
       )}
 
-      {/* BARRA DE SELEÇÃO FIXA NO RODAPÉ (ESCANDALOSA) */}
-      {(selectedPlan || selectedAddonsSlugs.length > 0) &&
-        !openDialog &&
-        !pendingData &&
-        !pixData &&
-        !boletoData && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-4xl bg-slate-900/98 backdrop-blur-2xl border-2 border-blue-500/50 p-6 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col gap-4 z-50 animate-in slide-in-from-bottom-10 pointer-events-auto ring-1 ring-white/10">
-            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-8">
-              {/* ESQUERDA: Plano e Preço */}
-              <div className="flex flex-col gap-1.5 min-w-0">
-                <div className="flex items-center gap-2">
-                  <Activity size={14} className="text-blue-400 animate-pulse" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">
-                    Pacote em Seleção
-                  </span>
-                  <span className="px-2 py-0.5 bg-blue-500/20 text-[9px] font-black text-blue-400 rounded-lg border border-blue-500/30 uppercase tracking-tighter">
-                    Plano {selectedPlan}
-                  </span>
-                </div>
-                <div className="flex items-baseline gap-2 whitespace-nowrap">
-                  <span className="text-3xl md:text-4xl font-black text-white tracking-tighter drop-shadow-sm tabular-nums">
-                    R${" "}
-                    {(() => {
-                      const plan = dynamicPlans.find(
-                        (p) => p.slug === selectedPlan,
-                      );
-                      const planTotal = plan
-                        ? plan.price *
-                        (1 -
-                          (selectedInterval === 12
-                            ? 20
-                            : selectedInterval === 6
-                              ? 10
-                              : 0) /
-                          100) *
-                        selectedInterval
-                        : 0;
-
-                      let addonsTotal = 0;
-                      selectedAddonsSlugs.forEach((slug) => {
-                        const addon = dynamicAddons.find(
-                          (a) => a.slug === slug,
-                        );
-                        if (addon)
-                          addonsTotal += Number(addon.price) * selectedInterval;
-                      });
-
-                      return (planTotal + addonsTotal)
-                        .toFixed(2)
-                        .replace(".", ",");
-                    })()}
-                  </span>
-                  <span className="text-xs md:text-sm text-slate-400 font-bold uppercase shrink-0">
-                    /{" "}
-                    {selectedInterval === 1
-                      ? "mês"
-                      : `${selectedInterval} meses`}
-                  </span>
-                </div>
-              </div>
-
-              {/* CENTRO: Seleção de Módulos (Escandalosa) */}
-              <div className="flex items-center gap-3 flex-1 justify-center py-2 border-y border-slate-800/50 md:border-0">
-                {dynamicAddons
-                  .filter((addon) => {
-                    const isPaidActive =
-                      subscriptionStatus === "active" &&
-                      !!tenantObject?.asaas_subscription_id;
-                    if (!isPaidActive) return true;
-                    const currentPlanData = dynamicPlans.find(
-                      (p) => p.slug === currentPlan,
-                    );
-                    if (!currentPlanData) return true;
-                    const addonName = (addon.name || "")
-                      .toLowerCase()
-                      .replace("módulo ", "")
-                      .trim();
-                    const features = (currentPlanData.features || []).map(
-                      (f: any) => String(f || "").toLowerCase(),
-                    );
-                    return !features.some(
-                      (f: string) =>
-                        f.includes(addonName) || f.includes(addon.slug),
-                    );
-                  })
-                  .map((addon) => {
-                    const isSelected = selectedAddonsSlugs.includes(addon.slug);
-                    return (
-                      <button
-                        key={addon.slug}
-                        onClick={() => toggleAddon(addon.slug)}
-                        className={cn(
-                          "flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all duration-300 min-w-[120px] h-20 group relative overflow-hidden",
-                          isSelected
-                            ? "bg-amber-500 border-amber-400 text-slate-900 shadow-[0_0_25px_rgba(245,158,11,0.5)] scale-105 active:scale-95"
-                            : "bg-slate-800/40 border-slate-700/50 text-slate-400 hover:border-amber-500/50 hover:bg-slate-800 hover:scale-102 active:scale-95",
-                        )}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <Zap
-                            size={12}
-                            className={cn(
-                              isSelected ? "text-slate-900" : "text-amber-500",
-                              "animate-pulse",
-                            )}
-                          />
-                          <span className="text-[10px] font-black uppercase tracking-tight">
-                            {addon.name.replace("Módulo ", "")}
-                          </span>
-                        </div>
-                        <span className="text-xs font-bold opacity-90">
-                          + R${" "}
-                          {Number(addon.price).toFixed(2).replace(".", ",")}
-                        </span>
-                        {isSelected && (
-                          <div className="absolute top-1 right-1 bg-slate-900 rounded-full p-0.5 shadow-sm">
-                            <Check
-                              size={10}
-                              className="text-amber-500 stroke-[4px]"
-                            />
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-              </div>
-
-              {/* DIREITA: Botão de Ação */}
-              <Button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setPaymentMethod("card");
-                  setOpenDialog(true);
-                }}
-                className="bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest px-12 rounded-2xl shadow-2xl shadow-blue-900/40 shrink-0 h-16 text-md group transition-all duration-500 hover:scale-[1.03]"
-              >
-                <span className="flex items-center gap-3">
-                  IR PARA PAGAMENTO{" "}
-                  <ArrowRight
-                    size={22}
-                    className="group-hover:translate-x-1 transition-transform"
-                  />
-                </span>
-              </Button>
-            </div>
-          </div>
-        )}
-
       {/* Modal de Checkout Integrado do Asaas */}
       {checkoutUrl && (
         <AsaasCheckoutModal
@@ -2017,20 +1819,20 @@ export default function PlanPage() {
           boletoData={
             boletoData
               ? {
-                identificationField: boletoData.linhaDigitavel,
-                barCode: boletoData.codigoBarras,
-                value: boletoData.amount || 0,
-                dueDate: (boletoData as any).dueDate,
-                bankSlipUrl: boletoData.pdfUrl,
+                identificationField: boletoData?.linhaDigitavel || "",
+                barCode: boletoData?.codigoBarras || "",
+                value: boletoData?.amount || 0,
+                dueDate: (boletoData as any)?.dueDate || "",
+                bankSlipUrl: boletoData?.pdfUrl,
               }
               : null
           }
           pixData={
             pixData
               ? {
-                encodedImage: (pixData as any).encodedImage,
-                payload: pixData.pixPayload,
-                expirationDate: pixData.expiresAt,
+                encodedImage: (pixData as any)?.encodedImage,
+                payload: pixData?.pixPayload,
+                expirationDate: pixData?.expiresAt,
               }
               : null
           }
