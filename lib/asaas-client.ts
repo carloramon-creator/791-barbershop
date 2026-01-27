@@ -258,6 +258,8 @@ export class AsaasClient {
             type?: 'FIXED' | 'PERCENTAGE';
             cycles?: number;
         };
+        creditCardToken?: string;
+        creditCard?: any;
     }) {
         try {
             const response = await this.client.post('/subscriptions', data);

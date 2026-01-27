@@ -234,6 +234,41 @@ export async function POST(req: Request) {
         if (tenantRes.error) console.error('[ASAAS WEBHOOK 2.0] ❌ Erro ao atualizar tenant:', tenantRes.error);
         if (financeRes.error) console.error('[ASAAS WEBHOOK 2.0] ❌ Erro ao atualizar finance:', financeRes.error);
 
+        // 4.3 RAMON FIX: Criar Assinatura Recorrente se for o primeiro pagamento mensal via Checkout
+        if (metadata.recurring_setup && payment.billingType === 'CREDIT_CARD') {
+            try {
+                // Calcular data do primeiro vencimento recorrente (daqui a 30 dias)
+                const nextDueDate = new Date();
+                nextDueDate.setDate(nextDueDate.getDate() + 30);
+                const dueDateString = nextDueDate.toISOString().split('T')[0];
+
+                console.log(`[ASAAS WEBHOOK 2.0] 🔄 Criando assinatura oficial para o futuro: ${tenant.name}`);
+
+                const { data: subSettings } = await getSupabaseAdmin().from('system_settings').select('value').eq('key', 'asaas_config').single();
+                const asaasSub = new AsaasClient({
+                    apiKey: subSettings?.value?.api_key || process.env.ASAAS_API_KEY as string,
+                    environment: (subSettings?.value?.environment || 'sandbox') as 'sandbox' | 'production'
+                });
+
+                // Criar assinatura oficial
+                await asaasSub.createSubscription({
+                    customer: payment.customer,
+                    billingType: 'CREDIT_CARD',
+                    value: metadata.original_value, // Valor cheio acumulado
+                    nextDueDate: dueDateString,
+                    cycle: 'MONTHLY',
+                    description: `Assinatura: ${financeRecord.description}`,
+                    externalReference: `${metadata.external_reference}_sub`,
+                    // Usar o token do cartão que acabou de pagar
+                    creditCardToken: payment.creditCard?.token || payment.creditCardToken
+                });
+
+                console.log(`[ASAAS WEBHOOK 2.0] ✅ Assinatura recorrente criada com sucesso.`);
+            } catch (subError: any) {
+                console.error('[ASAAS WEBHOOK 2.0] ❌ Falha ao criar assinatura pós-pagamento:', subError.message);
+            }
+        }
+
         // Log de Auditoria (OPCIONAL - não bloqueia se falhar)
         try {
             await getSupabaseAdmin().from('system_audit_logs').insert({

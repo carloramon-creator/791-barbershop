@@ -216,87 +216,10 @@ export async function POST(req: Request) {
 
         const shortDescription = `Pagamento: ${itemNames.join(' + ')}`.substring(0, 50) + (itemNames.join(' + ').length > 50 ? '...' : '');
 
-        // 6. CRIAÇÃO DA COBRANÇA (Checkouts ou Assinatura Direta)
+        // 6. CRIAÇÃO DA COBRANÇA (Checkouts Sessions para tudo)
+        // Isso garante a melhor UI, Redirecionamento e Suporte a Itens.
+        const isMonthlyRecurring = paymentMethod === 'CREDIT_CARD' && interval === 1;
 
-        // SE FOR CARTÃO + MENSAL: Usar CREATE SUBSCRIPTION direto para garantir visualização correta na Fatura
-        if (paymentMethod === 'CREDIT_CARD' && interval === 1) {
-            const today = new Date();
-            const dueDateString = today.toISOString().split('T')[0];
-
-            // Lógica de Desconto na Assinatura (Apenas 1º Ciclo)
-            let discountObj = null;
-            if (applyWelcomeDiscount) {
-                // Se o desconto é 10% do total
-                const discountVal = Number((totalAmount * 0.10).toFixed(2));
-                discountObj = {
-                    value: discountVal,
-                    type: 'FIXED' as 'FIXED' | 'PERCENTAGE' // Valor fixo para garantir precisão
-                };
-            }
-
-            const subscriptionPayload = {
-                customer: customer.id,
-                billingType: 'CREDIT_CARD' as 'CREDIT_CARD' | 'BOLETO' | 'UNDEFINED',
-                value: totalAmount, // Valor CHEIO
-                nextDueDate: dueDateString,
-                cycle: 'MONTHLY' as 'MONTHLY' | 'WEEKLY' | 'BIWEEKLY' | 'QUARTERLY' | 'SEMIANNUALLY' | 'YEARLY',
-                description: shortDescription,
-                discount: discountObj ? { ...discountObj, cycles: 1 } : undefined,
-                externalReference: externalReference
-            };
-
-            console.log('[ASAAS 2.0] Criando Assinatura Direta:', JSON.stringify(subscriptionPayload, null, 2));
-
-            // 1. Criar Assinatura
-            const subscription = await asaas.createSubscription(subscriptionPayload);
-
-            if (!subscription || !subscription.id) {
-                throw new Error('Falha ao criar assinatura no Asaas');
-            }
-
-            // 2. Buscar a primeira cobrança gerada para obter o Link de Pagamento da Fatura
-            // A assinatura gera a cobrança imediatamente se a data for próxima/hoje.
-            const payments = await asaas.getPaymentsBySubscription(subscription.id);
-            const firstPayment = payments.data?.[0]; // Pega a primeira (mais recente/pendente)
-
-            if (!firstPayment) {
-                throw new Error('Assinatura criada, mas busca de cobrança falhou (delay Asaas?).');
-            }
-
-            // 3. Registrar no Banco
-            await getSupabaseAdmin().from('finance').insert({
-                tenant_id: tenant.id,
-                type: 'expense',
-                value: firstPaymentValue,
-                description: itemDescription, // Descrição completa com itens
-                date: new Date().toISOString().split('T')[0],
-                is_paid: false,
-                metadata: {
-                    is_saas_payment: true,
-                    asaas_checkout_id: null, // Não é checkout session
-                    asaas_subscription_id: subscription.id,
-                    asaas_payment_id: firstPayment.id,
-                    external_reference: externalReference,
-                    payment_method: paymentMethod,
-                    plan: planSlug,
-                    addons: finalAddonsSlugs,
-                    is_first_payment: true,
-                    original_value: totalAmount
-                }
-            });
-
-            // 4. Retornar URL da Fatura (Invoice)
-            // A visualização de Fatura do Asaas mostra claramente: Valor, Desconto, Juros, Total.
-            return addCorsHeaders(req, NextResponse.json({
-                success: true,
-                checkoutId: subscription.id, // Para tracking frontend
-                checkoutUrl: firstPayment.invoiceUrl || firstPayment.bankSlipUrl || firstPayment.pixQrCodeUrl, // REDIRECT PARA A FATURA
-                amount: firstPaymentValue
-            }));
-        }
-        // FIM DO BLOCO DE ASSINATURA DIRETA
-
-        // FALLBACK: createCheckout (Pix, Boleto, Parcelados)
         const checkoutPayload: any = {
             customer: customer.id,
             billingTypes: [paymentMethod],
@@ -308,21 +231,23 @@ export async function POST(req: Request) {
             minutesToExpire: 60,
             callback: {
                 successUrl: `${baseUrl}/asaas/checkout/success`,
-                cancelUrl: `${baseUrl}/asaas/checkout/cancel`
+                cancelUrl: `${baseUrl}/configuracoes/plano?error=true`,
+                autoRedirect: true
             },
             items: finalCheckoutItems
         };
 
+        // Configuração de Parcelamento (Se for anual/semestral)
         if (paymentMethod === 'CREDIT_CARD' && interval > 1) {
             checkoutPayload.chargeTypes = ['DETACHED', 'INSTALLMENT'];
             checkoutPayload.installment = {
-                maxInstallmentCount: interval === 12 ? 12 : 6
+                installmentCount: interval // Forçar número exato de parcelas
             };
         }
 
         const checkout = await asaas.createCheckout(checkoutPayload);
 
-        // 5. Salvar Registro de Auditoria no Banco para o Webhook encontrar
+        // 7. Salvar Registro de Auditoria no Banco para o Webhook encontrar
         await getSupabaseAdmin().from('finance').insert({
             tenant_id: tenant.id,
             type: 'expense',
@@ -340,7 +265,8 @@ export async function POST(req: Request) {
                 addons: finalAddonsSlugs,
                 interval: interval,
                 is_first_payment: true,
-                original_value: totalAmount
+                original_value: totalAmount, // Valor cheio sem o primeiro desconto de 10%
+                recurring_setup: isMonthlyRecurring // Webhook usará isso para criar a assinatura oficial
             }
         });
 
