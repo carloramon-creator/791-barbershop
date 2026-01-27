@@ -24,6 +24,24 @@ export function UpsellModal({
     onAddonToggle,
     onContinue,
 }: UpsellModalProps) {
+    // Debug
+    console.log("UpsellModal - planSlug:", planSlug);
+    console.log("UpsellModal - addons:", addons);
+
+    const financeiroAddon = addons?.find(a =>
+        a.slug === "financeiro" ||
+        a.slug === "finance" ||
+        a.name?.toLowerCase().includes("financeiro")
+    );
+    const estoqueAddon = addons?.find(a =>
+        a.slug === "estoque" ||
+        a.slug === "stock" ||
+        a.name?.toLowerCase().includes("estoque")
+    );
+
+    console.log("financeiroAddon:", financeiroAddon);
+    console.log("estoqueAddon:", estoqueAddon);
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="bg-slate-900 border-2 border-blue-500/30 max-w-2xl p-0 overflow-hidden">
@@ -67,12 +85,12 @@ export function UpsellModal({
                         </h3>
 
                         {/* Módulo Financeiro (só para Básico) */}
-                        {planSlug === "basic" && addons.find(a => a.slug === "financeiro") && (
+                        {planSlug === "basic" && financeiroAddon && (
                             <div
-                                onClick={() => onAddonToggle("financeiro")}
+                                onClick={() => onAddonToggle(financeiroAddon.slug)}
                                 className={cn(
                                     "group cursor-pointer bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-2 rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-emerald-500/20",
-                                    selectedAddonsSlugs.includes("financeiro")
+                                    selectedAddonsSlugs.includes(financeiroAddon.slug)
                                         ? "border-emerald-500 ring-4 ring-emerald-500/20"
                                         : "border-emerald-500/30 hover:border-emerald-500/60"
                                 )}
@@ -84,9 +102,9 @@ export function UpsellModal({
                                                 <Zap size={16} className="text-emerald-400" />
                                             </div>
                                             <h4 className="text-base font-black text-white uppercase tracking-tight">
-                                                Módulo Financeiro
+                                                {financeiroAddon.name}
                                             </h4>
-                                            {selectedAddonsSlugs.includes("financeiro") && (
+                                            {selectedAddonsSlugs.includes(financeiroAddon.slug) && (
                                                 <CheckCircle2 size={16} className="text-emerald-500" />
                                             )}
                                         </div>
@@ -95,7 +113,7 @@ export function UpsellModal({
                                         </p>
                                         <div className="flex items-center gap-3">
                                             <span className="text-2xl font-black text-emerald-400">
-                                                R$ {Number(addons.find(a => a.slug === "financeiro")?.price || 0).toFixed(2).replace(".", ",")}
+                                                R$ {Number(financeiroAddon.price || 0).toFixed(2).replace(".", ",")}
                                             </span>
                                             <span className="text-xs text-slate-500 font-bold">/mês</span>
                                             <span className="ml-auto px-3 py-1 bg-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase rounded-full">
@@ -108,12 +126,12 @@ export function UpsellModal({
                         )}
 
                         {/* Módulo Estoque (para Básico e Completo) */}
-                        {addons.find(a => a.slug === "estoque") && (
+                        {estoqueAddon && (
                             <div
-                                onClick={() => onAddonToggle("estoque")}
+                                onClick={() => onAddonToggle(estoqueAddon.slug)}
                                 className={cn(
                                     "group cursor-pointer bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-2 rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-amber-500/20",
-                                    selectedAddonsSlugs.includes("estoque")
+                                    selectedAddonsSlugs.includes(estoqueAddon.slug)
                                         ? "border-amber-500 ring-4 ring-amber-500/20"
                                         : "border-amber-500/30 hover:border-amber-500/60"
                                 )}
@@ -125,9 +143,9 @@ export function UpsellModal({
                                                 <Package size={16} className="text-amber-400" />
                                             </div>
                                             <h4 className="text-base font-black text-white uppercase tracking-tight">
-                                                Módulo Estoque
+                                                {estoqueAddon.name}
                                             </h4>
-                                            {selectedAddonsSlugs.includes("estoque") && (
+                                            {selectedAddonsSlugs.includes(estoqueAddon.slug) && (
                                                 <CheckCircle2 size={16} className="text-amber-500" />
                                             )}
                                         </div>
@@ -136,7 +154,7 @@ export function UpsellModal({
                                         </p>
                                         <div className="flex items-center gap-3">
                                             <span className="text-2xl font-black text-amber-400">
-                                                R$ {Number(addons.find(a => a.slug === "estoque")?.price || 0).toFixed(2).replace(".", ",")}
+                                                R$ {Number(estoqueAddon.price || 0).toFixed(2).replace(".", ",")}
                                             </span>
                                             <span className="text-xs text-slate-500 font-bold">/mês</span>
                                             <span className="ml-auto px-3 py-1 bg-amber-500/20 text-amber-400 text-[9px] font-black uppercase rounded-full">
