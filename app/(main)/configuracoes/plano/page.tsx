@@ -399,21 +399,6 @@ export default function PlanPage() {
     };
   }, [pendingData]);
 
-  // --- NOVO: AUTO-POLLING PARA LISTA DE FATURAS ---
-  // Se houver alguma fatura pendente na lista, atualizamos a cada 8 segundos
-  useEffect(() => {
-    const hasPending = invoices.some(
-      (inv) => !inv.is_paid && inv.type === "expense",
-    );
-    if (!hasPending) return;
-
-    const interval = setInterval(() => {
-      console.log("[AUTO-REFRESH] Verificando faturas pendentes...");
-      fetchInvoices();
-    }, 8000); // 8 segundos
-
-    return () => clearInterval(interval);
-  }, [invoices]);
 
   const [installments, setInstallments] = useState(1);
 
@@ -428,6 +413,32 @@ export default function PlanPage() {
     if (!selectedPlan && selectedAddonsSlugs.length === 0) {
       setError("Por favor, selecione um plano ou módulo adicional.");
       return;
+    }
+
+    // Bloqueio inteligente de assinatura
+    if (currentPlan && currentPlan !== "trial") {
+      const planLevels: Record<string, number> = {
+        "basic": 1,
+        "complete": 2,
+        "premium": 3
+      };
+
+      const currentLevel = planLevels[currentPlan] || 0;
+      const selectedLevel = selectedPlan ? (planLevels[selectedPlan] || 0) : currentLevel;
+
+      const isUpgrade = selectedLevel > currentLevel;
+      const isSamePlan = selectedLevel === currentLevel;
+      const addingNewAddons = selectedAddonsSlugs.some(slug => !activeAddons.includes(slug));
+
+      if (!isUpgrade && isSamePlan && !addingNewAddons) {
+        setError("Você já possui este plano. Para adicionar novos módulos, selecione-os acima.");
+        return;
+      }
+      
+      if (!isUpgrade && !isSamePlan) {
+        setError("Para mudar para um plano inferior, entre em contato com nosso suporte.");
+        return;
+      }
     }
 
     try {
