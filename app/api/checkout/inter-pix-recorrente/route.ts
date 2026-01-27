@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { InterAPIV3 } from '@/lib/payment/inter-api-v3';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { InterAPIV3 } from '@/lib/inter-api-v3';
 
 // Helper to add CORS headers
 function addCorsHeaders(req: NextRequest, res: NextResponse) {
@@ -93,6 +93,8 @@ export async function POST(req: NextRequest) {
 
         // --- INTER API V3 ---
         const inter = new InterAPIV3({
+            clientId: dbConfig?.client_id || '',
+            clientSecret: dbConfig?.client_secret || '',
             cert,
             key,
             accountNumber: dbConfig?.account_number || dbConfig?.accountNumber
