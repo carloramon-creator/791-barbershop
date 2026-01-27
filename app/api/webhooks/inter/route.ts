@@ -87,7 +87,7 @@ export async function POST(req: Request) {
     }
 }
 
-async function processPayment(params: { identifier: string, identifierType: 'txid' | 'nosso_numero', secondaryIdentifier?: string, amount: string | number, paidAt: string, raw: any }) {
+async function processPayment(params: { identifier: string, identifierType: 'txid' | 'nosso_numero' | 'id_rec', secondaryIdentifier?: string, amount: string | number, paidAt: string, raw: any }) {
     console.log(`[INTER WEBHOOK] Buscando registro financeiro... Identifier: ${params.identifier} (${params.identifierType})`);
 
     // Busca na tabela FINANCE (SaaS)
@@ -170,17 +170,31 @@ async function processPayment(params: { identifier: string, identifierType: 'txi
                     console.log(`[INTER WEBHOOK] Add-on ${addonSlug} ativado para tenant ${tenantId}`);
                 }
             } else {
-                // É UM PLANO: Liberar ou fazer Upgrade
                 const periodEnd = new Date();
                 periodEnd.setDate(periodEnd.getDate() + 31);
 
+                // Se houver id_rec (Recorrência), salvamos no metadata para cancelamento futuro
+                const updatePayload: any = {
+                    plan: finalPlan,
+                    subscription_status: 'active',
+                    subscription_current_period_end: periodEnd.toISOString()
+                };
+
+                if (params.identifierType === 'id_rec') {
+                    // Mescla com os metadados existentes para não perder outras infos
+                    const { data: currentTenant } = await getSupabaseAdmin()
+                        .from('tenants')
+                        .select('metadata')
+                        .eq('id', tenantId)
+                        .single();
+
+                    const existingMeta = currentTenant?.metadata || {};
+                    updatePayload.metadata = { ...existingMeta, id_rec: params.identifier };
+                }
+
                 const { error: tenantError } = await getSupabaseAdmin()
                     .from('tenants')
-                    .update({
-                        plan: finalPlan,
-                        subscription_status: 'active',
-                        subscription_current_period_end: periodEnd.toISOString()
-                    })
+                    .update(updatePayload)
                     .eq('id', tenantId);
 
                 if (tenantError) {
