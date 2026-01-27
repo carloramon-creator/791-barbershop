@@ -45,6 +45,7 @@ import { AlertCircle } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import AsaasCheckoutModal from "@/components/asaas/AsaasCheckoutModal";
 import { supabaseClient } from "@/lib/supabase-client";
+import { UpsellModal } from "@/components/upsell-modal";
 
 // Use NEXT_PUBLIC_BACKEND_URL if set, else fallback.
 // Hardcoding production URL to ensure immediate fix
@@ -107,6 +108,8 @@ export default function PlanPage() {
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [isPaymentExpanded, setIsPaymentExpanded] = useState(false);
   const paymentRef = React.useRef<HTMLDivElement>(null);
+  const [showUpsellModal, setShowUpsellModal] = useState(false);
+  const [upsellPlan, setUpsellPlan] = useState<string | null>(null);
 
   // Monitorar se deve abrir automaticamente
   useEffect(() => {
@@ -647,7 +650,7 @@ export default function PlanPage() {
     <div className="space-y-6 pb-20">
       {/* SEÇÃO DE SELEÇÃO NO TOPO (NOVA) */}
       {(selectedPlan || selectedAddonsSlugs.length > 0) && (
-        <div className="w-full bg-slate-900/40 backdrop-blur-xl border-2 border-blue-500/20 p-5 rounded-[28px] shadow-2xl flex flex-col gap-4 animate-in fade-in slide-in-from-top-4 sticky top-4 z-50">
+        <div className="w-full bg-slate-900/40 backdrop-blur-xl border-2 border-blue-500/20 p-5 rounded-[28px] shadow-2xl flex flex-col gap-4 animate-in fade-in slide-in-from-top-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             {/* ESQUERDA: Plano e Preço */}
             <div className="flex flex-col gap-1 min-w-0">
@@ -755,7 +758,7 @@ export default function PlanPage() {
           </div>
 
           {/* QUADRADO 2: PAGAMENTO (MAIOR) */}
-          <div className="lg:col-span-8 bg-slate-950 border border-white/10 p-8 rounded-[32px] shadow-2xl relative overflow-hidden flex flex-col items-center justify-center min-h-[400px]">
+          <div className="lg:col-span-8 bg-slate-950 border border-white/10 p-8 rounded-[32px] shadow-2xl relative overflow-hidden flex flex-col items-center justify-center min-h-[500px]">
             {/* O ROBÔ VISUAL */}
             {!pixData && !boletoData && !pendingData && (
               <div className="absolute top-10 right-10 animate-bounce duration-[3000ms]">
@@ -1391,6 +1394,14 @@ export default function PlanPage() {
                               currentPlan === plan.slug &&
                               subscriptionStatus === "active"
                             }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Mostrar modal de upsell se aplicável
+                              if (plan.slug === "basic" || plan.slug === "complete") {
+                                setUpsellPlan(plan.slug);
+                                setShowUpsellModal(true);
+                              }
+                            }}
                           >
                             {currentPlan === plan.slug &&
                               subscriptionStatus === "active"
@@ -1856,6 +1867,27 @@ export default function PlanPage() {
           }}
         />
       )}
+
+      {/* MODAL DE UPSELL DE MÓDULOS */}
+      <UpsellModal
+        open={showUpsellModal}
+        onOpenChange={setShowUpsellModal}
+        planSlug={upsellPlan}
+        addons={dynamicAddons}
+        selectedAddonsSlugs={selectedAddonsSlugs}
+        onAddonToggle={(slug) => {
+          if (!selectedAddonsSlugs.includes(slug)) {
+            setSelectedAddonsSlugs([...selectedAddonsSlugs, slug]);
+          }
+        }}
+        onContinue={() => {
+          setShowUpsellModal(false);
+          setIsPaymentExpanded(true);
+          setTimeout(() => {
+            paymentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 100);
+        }}
+      />
     </div>
   );
 }
