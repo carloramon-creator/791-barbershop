@@ -25,7 +25,9 @@ import {
     Ticket,
     Database,
     FileText,
-    ShoppingCart
+    ShoppingCart,
+    Zap,
+    RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -164,6 +166,7 @@ export function Sidebar() {
                 { name: 'Cupons', href: '/geral/cupons', icon: Ticket, roles: ['owner'], adminPermission: 'manage_coupons' },
                 { name: 'Configurações API', href: '/geral/configuracoes', icon: Database, roles: ['owner'], adminPermission: 'manage_settings' },
                 { name: 'Configuração Fiscal', href: '/geral/configuracoes/nfs-e', icon: FileText, roles: ['owner'], adminPermission: 'manage_settings' },
+                { name: 'Pix Automático', href: '/geral/pix-automatico', icon: Zap, roles: ['owner'], adminPermission: 'manage_finance' },
                 { name: 'Suporte', href: '/geral/suporte', icon: HelpCircle, roles: ['owner'], adminPermission: 'manage_support' },
                 { name: 'Administradores', href: '/geral/usuarios', icon: Users, roles: ['owner'], adminPermission: 'manage_admins' },
             ]

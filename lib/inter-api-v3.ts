@@ -251,8 +251,32 @@ export class InterAPIV3 {
     }
 
     /**
-     * Pix Automático: Consulta acordo de recorrência
+     * Pix Automático: Lista acordos de recorrência por período
      */
+    async listRecurrenceAgreements(startDate: string, endDate: string) {
+        const token = await this.getAccessToken();
+        const headers: any = {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+        };
+
+        if (this.config.accountNumber) {
+            headers['x-conta-corrente'] = this.config.accountNumber;
+        }
+
+        const options: https.RequestOptions = {
+            hostname: 'cdpj.partners.bancointer.com.br',
+            port: 443,
+            path: `/pix/v2/rec?inicio=${startDate}T00:00:00Z&fim=${endDate}T23:59:59Z`,
+            method: 'GET',
+            headers,
+            cert: this.config.cert,
+            key: this.config.key,
+            rejectUnauthorized: false
+        };
+        return await this.makeRequest(options);
+    }
+
     async getRecurrenceAgreement(idRec: string, txid?: string) {
         const token = await this.getAccessToken();
         let path = `/pix/v2/rec/${idRec}`;
