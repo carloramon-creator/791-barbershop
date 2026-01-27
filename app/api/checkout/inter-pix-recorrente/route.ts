@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
             },
             valor: { original: firstPaymentAmount.toFixed(2) },
             chave: pixKey,
-            solicitacaoPagador: `Adesão Mensal - ${itemNameLabel}`.substring(0, 140),
+            solicitacaoPagador: `Assinatura Mensal Recorrente - ${itemNameLabel}`.substring(0, 140),
             txid,
             loc: { id: locId }
         };

@@ -434,7 +434,7 @@ export default function PlanPage() {
         setError("Você já possui este plano. Para adicionar novos módulos, selecione-os acima.");
         return;
       }
-      
+
       if (!isUpgrade && !isSamePlan) {
         setError("Para mudar para um plano inferior, entre em contato com nosso suporte.");
         return;
@@ -467,7 +467,7 @@ export default function PlanPage() {
             pending: true,
             message: "Configurando seu PIX no Banco Inter...",
           });
-          endpoint = "/api/checkout/inter-pix"; // Unificando para rota estável que funciona
+          endpoint = "/api/checkout/inter-pix-recorrente"; // Ativando Pix Automático Real para mensal
         } else {
           setPendingData({
             pending: true,
@@ -918,6 +918,17 @@ export default function PlanPage() {
                     <>
                       {pixData && (
                         <div className="flex flex-col items-center space-y-8">
+                          {selectedInterval === 1 && (
+                            <div className="w-full bg-blue-500/10 border border-blue-500/20 p-5 rounded-3xl space-y-2 animate-in fade-in slide-in-from-top-4">
+                              <div className="flex items-center gap-2 text-blue-400 font-black text-[10px] uppercase tracking-widest">
+                                <Zap size={14} fill="currentColor" />
+                                <span>Aviso de Pix Automático</span>
+                              </div>
+                              <p className="text-slate-400 text-[10px] leading-relaxed font-bold uppercase tracking-tight">
+                                Ao pagar, você autoriza o <strong>{tenantObject?.name}</strong> a realizar cobranças automáticas mensais. É prático e você pode cancelar quando quiser no seu app bancário.
+                              </p>
+                            </div>
+                          )}
                           <div className="bg-white p-6 rounded-[32px] shadow-2xl">
                             <QRCodeCanvas value={pixData?.pixPayload || ""} size={240} level="H" includeMargin={true} />
                           </div>
