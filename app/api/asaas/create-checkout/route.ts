@@ -260,7 +260,9 @@ export async function POST(req: Request) {
             items: finalCheckoutItems
         };
 
-        // Configuração de Parcelamento (Se for anual/semestral)
+        // --- BLINDAGEM ASAAS (NÃO ALTERAR) ---
+        // O Asaas Checkout permite parcelamento proporcional ao intervalo (Mensal 1x, Semestral 6x, Anual 12x).
+        // Isso é ativado via chargeTypes 'INSTALLMENT' e maxInstallmentCount.
         if (paymentMethod === 'CREDIT_CARD' && interval > 1) {
             checkoutPayload.chargeTypes = ['DETACHED', 'INSTALLMENT'];
             checkoutPayload.installment = {

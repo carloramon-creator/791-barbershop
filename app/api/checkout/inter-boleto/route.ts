@@ -62,8 +62,9 @@ export async function POST(req: Request) {
         const itemNameLabel = itemNames.join(' + ');
         const isAddonOnly = !planSlug && finalAddonsSlugs.length > 0;
 
-        // --- LÓGICA DE PRO-RATA (DESATIVADA CONFORME SOLICITAÇÃO) ---
-        // O usuário deseja o valor total do pedido sem divisões ou parcelamentos no boleto.
+        // --- BLINDAGEM INTER (NÃO PARCELAR) ---
+        // Boletos e Pix no Inter devem ser sempre do valor total integral ("Pagamento Hoje").
+        // Jamais dividir pelo intervalo aqui.
         let finalAmount = totalAmount;
 
         // 2. Processar Cupom
