@@ -33,8 +33,9 @@ export default function PixAutomaticoPage() {
 
             if (data.error) throw new Error(data.error);
 
-            // O Inter retorna em data.rec ou algo similar conforme a versão
-            const list = data.parametros?.paginacao?.quantidadeRegistros > 0 ? (data.rec || []) : [];
+            // O Inter pode retornar a lista direto em data.rec (ou objeto vindo do wrap da API)
+            // Sendo mais permissivo: se existir data.rec, usa. Se não, tenta ver se a data é a própria lista.
+            const list = data.rec || (Array.isArray(data) ? data : []);
             setAgreements(list);
         } catch (err: any) {
             setError(err.message);

@@ -1180,7 +1180,7 @@ export default function PlanPage() {
                               ? "Cancelamento Pendente"
                               : "Escalável & Ativo"}
                           </span>
-                          {(stripeSubscriptionId || asaasSubscriptionId || interRecurrenceId) &&
+                          {(stripeSubscriptionId || (asaasSubscriptionId && tenantObject?.asaas_subscription_id) || interRecurrenceId) &&
                             subscriptionStatus !== "canceled" && (
                               <Button
                                 variant="ghost"
