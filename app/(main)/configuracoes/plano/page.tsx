@@ -92,12 +92,10 @@ export default function PlanPage() {
   const [error, setError] = useState<string | null>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
-  const [stripeSubscriptionId, setStripeSubscriptionId] = useState<
-    string | null
-  >(null);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(
-    null,
-  );
+  const [stripeSubscriptionId, setStripeSubscriptionId] = useState<string | null>(null);
+  const [asaasSubscriptionId, setAsaasSubscriptionId] = useState<string | null>(null);
+  const [interRecurrenceId, setInterRecurrenceId] = useState<string | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null,);
   const [activeAddons, setActiveAddons] = useState<string[]>([]);
   const [tenantCreatedAt, setTenantCreatedAt] = useState<string | null>(null);
   const [tenantObject, setTenantObject] = useState<any>(null);
@@ -310,6 +308,8 @@ export default function PlanPage() {
 
       setCurrentPlan(planData.currentPlan || "trial");
       setStripeSubscriptionId(planData.stripeSubscriptionId);
+      setAsaasSubscriptionId(planData.asaasSubscriptionId);
+      setInterRecurrenceId(planData.interRecurrenceId);
       setSubscriptionStatus(planData.subscriptionStatus);
       setActiveAddons(planData.activeAddons || []);
       setTenantCreatedAt(tenantData.created_at);
@@ -1180,7 +1180,7 @@ export default function PlanPage() {
                               ? "Cancelamento Pendente"
                               : "Escalável & Ativo"}
                           </span>
-                          {stripeSubscriptionId &&
+                          {(stripeSubscriptionId || asaasSubscriptionId || interRecurrenceId) &&
                             subscriptionStatus !== "canceled" && (
                               <Button
                                 variant="ghost"

@@ -32,7 +32,7 @@ export async function GET(req: Request) {
 
         const { data: tenant, error } = await getSupabaseAdmin()
             .from('tenants')
-            .select('id, plan, stripe_subscription_id, subscription_status, stripe_customer_id')
+            .select('id, plan, stripe_subscription_id, asaas_subscription_id, subscription_status, stripe_customer_id, metadata')
             .eq('id', tenantId)
             .maybeSingle();
 
@@ -209,6 +209,8 @@ export async function GET(req: Request) {
         const response = NextResponse.json({
             currentPlan: tenant.plan || 'basic',
             stripeSubscriptionId: stripeSubscriptionId,
+            asaasSubscriptionId: tenant.asaas_subscription_id,
+            interRecurrenceId: (tenant.metadata as any)?.id_rec,
             subscriptionStatus: subscriptionStatus,
             activeAddons: activeAddons
         });

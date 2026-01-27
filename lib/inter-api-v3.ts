@@ -277,6 +277,37 @@ export class InterAPIV3 {
         return await this.makeRequest(options);
     }
 
+    /**
+     * Pix Automático: Cancela um acordo de recorrência
+     */
+    async cancelRecurrenceAgreement(idRec: string) {
+        const token = await this.getAccessToken();
+        const payload = { status: 'CANCELADO_PELO_USUARIO_RECEBEDOR' };
+        const body = JSON.stringify(payload);
+
+        const headers: any = {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body)
+        };
+
+        if (this.config.accountNumber) {
+            headers['x-conta-corrente'] = this.config.accountNumber;
+        }
+
+        const options: https.RequestOptions = {
+            hostname: 'cdpj.partners.bancointer.com.br',
+            port: 443,
+            path: `/pix/v2/rec/${idRec}`,
+            method: 'PATCH',
+            headers,
+            cert: this.config.cert,
+            key: this.config.key,
+            rejectUnauthorized: false
+        };
+        return await this.makeRequest(options, body);
+    }
+
     async getRecurrenceAgreement(idRec: string, txid?: string) {
         const token = await this.getAccessToken();
         let path = `/pix/v2/rec/${idRec}`;

@@ -53,12 +53,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     isBlocked = true;
                 } else {
                     // 4. Carência (10 dias) para TRIAL e ATRASO
-                    // Se não tiver data futura, usa created_at como fallback para trial
-                    const referenceDate = new Date(tenant.created_at);
-                    const diffTime = now.getTime() - referenceDate.getTime();
-                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                    // Usamos a maior data entre criação (trial) e fim do período anterior
+                    const trialEndDate = new Date(tenant.created_at);
+                    trialEndDate.setDate(trialEndDate.getDate() + 10);
 
-                    if (diffDays > 10) {
+                    const graceDate = endDate ? new Date(endDate) : trialEndDate;
+                    // Se já tinha uma assinatura, damos +10 dias de carência após o 'vencimento'
+                    if (endDate) {
+                        graceDate.setDate(graceDate.getDate() + 10);
+                    }
+
+                    if (now > graceDate) {
                         isBlocked = true;
                     }
                 }
