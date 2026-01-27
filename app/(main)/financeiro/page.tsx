@@ -201,17 +201,17 @@ export default function FinanceiroPage() {
     const todayStr = new Date().toISOString().split('T')[0];
     const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
 
-    // Total Revenue: Sales (until today) + Finance Revenue (paid and until today)
+    // Total Revenue: Sales (until today) + Finance Revenue (paid OR until today)
     const totalRevenue = sales
         .filter(s => s.created_at.split('T')[0] <= todayStr)
         .reduce((acc, s) => acc + Number(s.total_amount), 0) +
         financeRecords
-            .filter(r => (r.type === 'revenue' || (r.type as any) === 'income') && r.is_paid && r.date <= todayStr)
+            .filter(r => (r.type === 'revenue' || (r.type as any) === 'income') && (r.is_paid || r.date <= todayStr))
             .reduce((acc, r) => acc + Number(r.value), 0);
 
-    // Total Expenses: ALL paid expenses in current month (not just until today)
+    // Total Expenses: ALL paid expenses OR unpaid until today
     const totalExpenses = financeRecords
-        .filter(r => r.type === 'expense' && r.is_paid && r.date.startsWith(currentMonth))
+        .filter(r => r.type === 'expense' && (r.is_paid || r.date <= todayStr))
         .reduce((acc, r) => acc + Number(r.value), 0);
 
     const netBalance = totalRevenue - totalExpenses;
@@ -248,7 +248,7 @@ export default function FinanceiroPage() {
                 is_recurring: false,
                 is_paid: true
             })),
-            ...financeRecords.filter(r => r.is_paid && r.date.startsWith(currentMonth)).map(r => ({
+            ...financeRecords.filter(r => r.is_paid || r.date <= todayStr).map(r => ({
                 id: r.id,
                 date: r.date,
                 created_at: r.created_at,
@@ -260,7 +260,7 @@ export default function FinanceiroPage() {
                 barber: r.barbers?.name || '-',
                 barber_id: r.barber_id,
                 is_recurring: !!r.is_recurring,
-                is_paid: true,
+                is_paid: r.is_paid, // Show actual status
                 metadata: r.metadata
             }))
         ].sort((a, b) => (b.created_at || b.date).localeCompare(a.created_at || a.date))

@@ -633,6 +633,18 @@ export default function PlanPage() {
   console.log("selectedPlanData.price:", selectedPlanData?.price);
   console.log("selectedInterval:", selectedInterval);
 
+  // Lógica de Desconto de Primeira Assinatura (Banner 10%)
+  let hasFirstSubscriptionDiscount = false;
+  if (tenantCreatedAt) {
+    const created = new Date(tenantCreatedAt);
+    const now = new Date();
+    const diffTime = now.getTime() - created.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays <= 5) {
+      hasFirstSubscriptionDiscount = true;
+    }
+  }
+
   const planTotal = selectedPlanData
     ? selectedPlanData.price *
     (1 -
@@ -651,7 +663,9 @@ export default function PlanPage() {
     if (addon) addonsTotal += Number(addon.price) * selectedInterval;
   });
 
-  const grandTotal = planTotal + addonsTotal;
+  const rawTotal = planTotal + addonsTotal;
+  const firstSubscriptionDiscountAmount = hasFirstSubscriptionDiscount ? rawTotal * 0.1 : 0;
+  const grandTotal = rawTotal - firstSubscriptionDiscountAmount;
 
   return (
     <div className="space-y-6 pb-20">
@@ -767,6 +781,16 @@ export default function PlanPage() {
                     </div>
                   );
                 })}
+
+                {hasFirstSubscriptionDiscount && (
+                  <div className="flex justify-between items-center py-2 px-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                    <div className="flex flex-col">
+                      <span className="text-blue-400 font-black uppercase text-[9px]">Desconto Especial</span>
+                      <span className="text-[10px] text-blue-300/70 font-medium">Primeira Assinatura (-10%)</span>
+                    </div>
+                    <span className="text-blue-400 font-black text-sm">- R$ {firstSubscriptionDiscountAmount.toFixed(2).replace(".", ",")}</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col gap-1 pt-2">
@@ -785,7 +809,7 @@ export default function PlanPage() {
           </div>
 
           {/* QUADRADO 2: PAGAMENTO (MAIOR) */}
-          <div className="lg:col-span-8 bg-slate-950 border border-white/10 p-8 rounded-[32px] shadow-2xl relative overflow-hidden flex flex-col items-center justify-center min-h-[500px]">
+          <div className="lg:col-span-8 bg-slate-950 border border-white/10 p-5 md:p-6 rounded-[32px] shadow-2xl relative overflow-hidden flex flex-col items-center justify-center min-h-[400px]">
             {/* O ROBÔ VISUAL */}
             {!pixData && !boletoData && !pendingData && (
               <div className="absolute top-10 right-10 animate-bounce duration-[3000ms]">
