@@ -111,6 +111,15 @@ export default function PlanPage() {
   const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [upsellPlan, setUpsellPlan] = useState<string | null>(null);
 
+  // Refs para o polling universal (evitar stale closures)
+  const pixDataRef = React.useRef(pixData);
+  const boletoDataRef = React.useRef(boletoData);
+  const pendingDataRef = React.useRef(pendingData);
+
+  useEffect(() => { pixDataRef.current = pixData; }, [pixData]);
+  useEffect(() => { boletoDataRef.current = boletoData; }, [boletoData]);
+  useEffect(() => { pendingDataRef.current = pendingData; }, [pendingData]);
+
   // Monitorar se deve abrir automaticamente
   useEffect(() => {
     if (isPaymentExpanded && paymentRef.current) {
@@ -237,12 +246,21 @@ export default function PlanPage() {
             // Se ativou, limpar todos os estados pendentes
             if (
               localStorage.getItem("asaas_pending_payment") ||
-              document.body.innerText.includes("Gerando seu PIX")
+              pendingDataRef.current ||
+              pixDataRef.current ||
+              boletoDataRef.current
             ) {
               localStorage.removeItem("asaas_pending_payment");
               setCheckingAsaasPayment(false);
-              setPendingData(null); // Fecha o motor girando do Inter
-              alert("✅ Pagamento confirmado! Seu plano foi ativado.");
+              setPendingData(null);
+              setPixData(null);
+              setBoletoData(null);
+
+              // Pequeno delay no alert para dar tempo da renderização ocorrer primeiro se necessário
+              setTimeout(() => {
+                alert("✅ Pagamento confirmado! Seu plano foi ativado.");
+              }, 100);
+
               await fetchCurrentPlan();
               await fetchInvoices();
             }
