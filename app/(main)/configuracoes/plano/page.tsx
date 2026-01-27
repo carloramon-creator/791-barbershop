@@ -422,9 +422,9 @@ export default function PlanPage() {
         if (paymentMethod === "pix" && selectedInterval === 1) {
           setPendingData({
             pending: true,
-            message: "Configurando Pix Automático (Recorrência)...",
+            message: "Configurando seu PIX no Banco Inter...",
           });
-          endpoint = "/api/checkout/inter-pix-recorrente";
+          endpoint = "/api/checkout/inter-pix"; // Unificando para rota estável que funciona
         } else {
           setPendingData({
             pending: true,
@@ -1166,73 +1166,88 @@ export default function PlanPage() {
             }}
           >
             <DialogContent
-              className="border-slate-800 bg-slate-900 text-slate-100 max-w-4xl w-[95vw] rounded-3xl flex flex-col p-0 overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.8)] border-none ring-1 ring-white/10"
+              className="border-slate-800 bg-slate-900 text-slate-100 max-w-[98vw] lg:max-w-7xl w-[98vw] h-[95vh] rounded-[3rem] flex flex-col p-0 overflow-hidden shadow-[0_80px_160px_rgba(0,0,0,0.95)] border-none ring-1 ring-white/10"
               onPointerDownOutside={() => fetchInvoices()}
               onEscapeKeyDown={() => fetchInvoices()}
             >
               <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
-                {/* COLUNA ESQUERDA: RESUMO */}
-                <div className="md:w-1/2 p-8 md:p-10 space-y-8 bg-slate-950/40 overflow-y-auto custom-scrollbar border-r border-white/5">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400">Checkout Seguro</span>
+                {/* COLUNA ESQUERDA: EXPERIÊNCIA DE RESUMO DE IMPACTO */}
+                <div className="md:w-[55%] p-10 md:p-24 space-y-20 bg-gradient-to-br from-slate-950 to-slate-900 overflow-y-auto custom-scrollbar border-r border-white/5 flex flex-col relative">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-transparent opacity-50" />
+
+                  <div className="space-y-8">
+                    <div className="flex items-center gap-5">
+                      <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_25px_rgba(59,130,246,0.9)] animate-pulse" />
+                      <span className="text-[14px] font-black uppercase tracking-[0.5em] text-blue-400/80">Premium Checkout</span>
                     </div>
-                    <h2 className="text-2xl font-black text-white uppercase tracking-tight">
-                      Resumo do Pedido
+                    <h2 className="text-6xl md:text-8xl font-black text-white uppercase tracking-tighter leading-[0.85] filter drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">
+                      Resumo da <br /><span className="text-blue-500">Sua Conta</span>
                     </h2>
+                    <p className="text-slate-400 text-xl font-medium max-w-lg leading-relaxed">Você está a poucos segundos de desbloquear o potencial máximo da sua gestão.</p>
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="space-y-16 flex-1">
                     {selectedPlan && (
-                      <div className="bg-white/[0.02] p-5 rounded-2xl border border-white/10">
-                        <div className="flex justify-between items-center mb-4">
-                          <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Plano</span>
-                          <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[9px] font-black rounded uppercase tracking-widest">
-                            {selectedInterval === 1 ? "MENSAL" : selectedInterval === 6 ? "SEMESTRAL" : "ANUAL"}
+                      <div className="bg-white/[0.03] p-12 rounded-[3.5rem] border border-white/10 hover:border-blue-500/30 transition-all duration-700 shadow-3xl group">
+                        <div className="flex justify-between items-center mb-10 border-b border-white/5 pb-6">
+                          <span className="text-xs font-bold uppercase text-slate-500 tracking-[0.3em]">Plano Ativo</span>
+                          <span className="px-5 py-2 bg-blue-500/20 text-blue-400 text-xs font-black rounded-full border border-blue-500/20 uppercase tracking-widest animate-in fade-in slide-in-from-right-10">
+                            {selectedInterval === 1 ? "Cobrança Mensal" : selectedInterval === 6 ? "Ciclo Semestral" : "Ciclo Anual"}
                           </span>
                         </div>
-                        <div className="flex flex-col sm:flex-row justify-between items-baseline gap-2">
-                          <span className="text-xl font-black text-white uppercase tracking-tight">
-                            {selectedPlan}
-                          </span>
-                          <span className="text-2xl font-black text-white tabular-nums tracking-tighter">
-                            {(() => {
-                              const plan = dynamicPlans.find((p) => p.slug === selectedPlan);
-                              if (!plan) return "";
-                              const basePrice = plan.price || 0;
-                              const discount = selectedInterval === 6 ? 10 : selectedInterval === 12 ? 20 : 0;
-                              const totalPrice = basePrice * selectedInterval * (1 - discount / 100);
-                              return `R$ ${(totalPrice || 0).toFixed(2).replace(".", ",")}`;
-                            })()}
-                          </span>
+                        <div className="flex flex-col xl:flex-row justify-between items-baseline gap-10">
+                          <div className="space-y-3">
+                            <span className="text-5xl font-black text-white uppercase tracking-tighter block group-hover:text-blue-500 transition-colors">
+                              {selectedPlan}
+                            </span>
+                            <span className="text-[12px] text-slate-500 font-bold uppercase tracking-[0.2em]">Liberação instantânea imediata</span>
+                          </div>
+                          <div className="flex flex-col items-end">
+                            <span className="text-6xl font-black text-white tabular-nums tracking-tighter">
+                              {(() => {
+                                const plan = dynamicPlans.find((p) => p.slug === selectedPlan);
+                                if (!plan) return "";
+                                const basePrice = plan.price || 0;
+                                const discount = selectedInterval === 6 ? 10 : selectedInterval === 12 ? 20 : 0;
+                                const totalPrice = basePrice * selectedInterval * (1 - discount / 100);
+                                return `R$ ${(totalPrice || 0).toFixed(2).replace(".", ",")}`;
+                              })()}
+                            </span>
+                            {selectedInterval > 1 && <span className="text-[11px] text-slate-600 font-bold uppercase">Total do ciclo de {selectedInterval} meses</span>}
+                          </div>
                         </div>
                       </div>
                     )}
 
-                    <div className="space-y-4">
-                      <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider px-1">Módulos Adicionais</span>
-                      <div className="grid grid-cols-1 gap-2">
-                        {(() => {
-                          const filtered = dynamicAddons.filter((addon) => {
-                            const isPaidActive = subscriptionStatus === "active" && !!tenantObject?.asaas_subscription_id;
-                            if (!isPaidActive) return true;
-                            return selectedAddonsSlugs.includes(addon.slug);
-                          });
+                    <div className="space-y-10">
+                      <div className="flex items-center gap-5 px-4 opacity-70">
+                        <div className="w-10 h-10 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+                          <Zap size={22} className="text-amber-500 fill-amber-500/20" />
+                        </div>
+                        <span className="text-[11px] font-black uppercase text-slate-400 tracking-[0.4em]">Turbos & Módulos Extras selecionados</span>
+                      </div>
 
+                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        {(() => {
                           const currentSelected = dynamicAddons.filter(a => selectedAddonsSlugs.includes(a.slug));
 
-                          if (currentSelected.length === 0) return <p className="text-[10px] text-slate-600 italic px-1">Nenhum módulo selecionado.</p>;
+                          if (currentSelected.length === 0) return (
+                            <div className="col-span-full p-8 border-2 border-dashed border-white/5 rounded-[2.5rem] flex items-center justify-center text-slate-700 font-black uppercase tracking-widest text-xs">
+                              Nenhum Módulo Adicional
+                            </div>
+                          );
 
                           return currentSelected.map((addon) => (
                             <div
                               key={addon.slug}
-                              className="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-white/[0.01]"
+                              className="flex items-center justify-between p-8 rounded-[2.5rem] border-2 border-white/5 bg-white/[0.02] shadow-xl"
                             >
-                              <span className="text-[11px] font-bold uppercase tracking-tight text-white">
-                                {addon.name}
+                              <span className="text-xs font-black uppercase tracking-widest text-white">
+                                {addon.name.replace("Módulo ", "")}
                               </span>
-                              <Check size={14} className="text-emerald-500" />
+                              <div className="w-4 h-4 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)] flex items-center justify-center">
+                                <Check size={10} className="text-white" />
+                              </div>
                             </div>
                           ));
                         })()}
@@ -1240,69 +1255,85 @@ export default function PlanPage() {
                     </div>
                   </div>
 
-                  <div className="pt-8 border-t border-white/5 mt-auto">
-                    <div className="flex items-end justify-between">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Investimento Total</p>
-                        <p className="text-[9px] text-slate-600 font-bold uppercase tracking-tight">Pagamento único {selectedInterval > 1 ? `p/ ${selectedInterval} meses` : "mensal"}</p>
+                  <div className="pt-20 border-t border-white/10 mt-auto">
+                    <div className="flex flex-col xl:flex-row items-end justify-between gap-12">
+                      <div className="space-y-4">
+                        <p className="text-[14px] font-black uppercase text-slate-500 tracking-[0.6em] ml-2">Total do Investimento</p>
+                        <div className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-2xl animate-bounce">
+                          Aproveite seu Plano
+                        </div>
                       </div>
-                      <h3 className="text-4xl font-black text-white tracking-widest leading-none tabular-nums">
-                        {(() => {
-                          const plan = dynamicPlans.find((p) => p.slug === selectedPlan);
-                          const planPrice = plan ? plan.price * (1 - (selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100) * selectedInterval : 0;
-                          let addonsPrice = 0;
-                          selectedAddonsSlugs.forEach((slug) => {
-                            const addon = dynamicAddons.find((a) => a.slug === slug);
-                            if (addon) addonsPrice += Number(addon.price) * selectedInterval;
-                          });
-                          return `R$ ${(planPrice + addonsPrice).toFixed(2).replace(".", ",")}`;
-                        })()}
-                      </h3>
+                      <div className="flex flex-col items-end gap-2">
+                        <h3 className="text-7xl md:text-9xl font-black text-white tracking-widest leading-none tabular-nums filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.8)]">
+                          {(() => {
+                            const plan = dynamicPlans.find((p) => p.slug === selectedPlan);
+                            const planPrice = plan ? plan.price * (1 - (selectedInterval === 12 ? 20 : selectedInterval === 6 ? 10 : 0) / 100) * selectedInterval : 0;
+                            let addonsPrice = 0;
+                            selectedAddonsSlugs.forEach((slug) => {
+                              const addon = dynamicAddons.find((a) => a.slug === slug);
+                              if (addon) addonsPrice += Number(addon.price) * selectedInterval;
+                            });
+                            return `R$ ${(planPrice + addonsPrice).toFixed(2).replace(".", ",")}`;
+                          })()}
+                        </h3>
+                        <span className="text-[12px] text-slate-500 font-black uppercase tracking-[0.3em] mr-4 italic">Valor final sem taxas ocultas</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* COLUNA DIREITA: PAGAMENTO */}
-                <div className="md:w-1/2 p-8 md:p-10 bg-slate-900 overflow-y-auto custom-scrollbar flex flex-col min-h-0">
+                {/* COLUNA DIREITA: PAGAMENTO & FEEDBACK (IMPACTO TOTAL) */}
+                <div className="md:w-[45%] p-10 md:p-24 bg-slate-900 overflow-y-auto custom-scrollbar flex flex-col min-h-0 border-l border-white/5 relative">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 blur-[100px]" />
+
                   {!pixData && !boletoData && !pendingData ? (
                     <>
-                      <div className="flex-1 space-y-8">
-                        <div className="space-y-4">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 px-1">Método de Pagamento</span>
-                          <div className="flex flex-col gap-2">
+                      <div className="flex-1 space-y-20">
+                        <div className="space-y-10">
+                          <span className="text-[14px] font-black uppercase tracking-[0.6em] text-slate-500 px-4 block border-l-4 border-blue-600 ml-2">Escolha seu Método</span>
+
+                          <div className="flex flex-col gap-6">
                             {[
-                              { id: "card", icon: CreditCard, label: "Cartão de Crédito" },
-                              { id: "pix", icon: Zap, label: "Pix" },
-                              { id: "boleto-inter", icon: FileText, label: "Boleto Bancário" }
+                              { id: "card", icon: CreditCard, label: "Cartão de Crédito", desc: "Checkout Via Asaas" },
+                              { id: "pix", icon: Zap, label: "Pix à Vista", desc: "Aprovação em Segundos" },
+                              { id: "boleto-inter", icon: FileText, label: "Boleto Inter", desc: "Taxa Zero de Emissão" }
                             ].map((m) => (
                               <button
                                 key={m.id}
                                 onClick={() => setPaymentMethod(m.id as any)}
                                 className={cn(
-                                  "flex items-center p-4 rounded-xl border-2 transition-all gap-4 text-left h-16",
+                                  "flex items-center p-10 rounded-[3rem] border-2 transition-all duration-700 gap-8 text-left h-32 relative group overflow-hidden",
                                   paymentMethod === m.id
-                                    ? "border-blue-500 bg-blue-500/5 text-white"
-                                    : "border-white/5 bg-slate-950/40 text-slate-600 hover:border-white/10"
+                                    ? "border-blue-500 bg-blue-500/5 text-white shadow-[0_45px_90px_rgba(59,130,246,0.5)] ring-12 ring-blue-500/5 scale-[1.03]"
+                                    : "border-white/5 bg-slate-950/40 text-slate-800 hover:border-white/10 hover:bg-slate-950/60"
                                 )}
                               >
-                                <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center transition-colors", paymentMethod === m.id ? "bg-blue-600 text-white" : "bg-slate-900 text-slate-700")}>
-                                  <m.icon size={16} />
+                                {paymentMethod === m.id && <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-transparent pointer-events-none" />}
+                                <div className={cn("w-16 h-16 rounded-3xl flex items-center justify-center transition-all duration-700 shadow-2xl", paymentMethod === m.id ? "bg-blue-600 text-white rotate-6" : "bg-slate-900 text-slate-800 group-hover:bg-slate-800")}>
+                                  <m.icon size={36} />
                                 </div>
-                                <span className={cn("text-[10px] font-black uppercase tracking-widest", paymentMethod === m.id ? "text-white" : "text-slate-500")}>{m.label}</span>
-                                {paymentMethod === m.id && <Check size={14} className="ml-auto text-blue-500" />}
+                                <div className="space-y-2 relative z-10">
+                                  <span className={cn("text-lg font-black uppercase tracking-[0.3em] block", paymentMethod === m.id ? "text-white" : "text-slate-600")}>{m.label}</span>
+                                  <span className="text-[11px] font-bold text-slate-600 uppercase tracking-widest block opacity-70">{m.desc}</span>
+                                </div>
+                                {paymentMethod === m.id && (
+                                  <div className="ml-auto w-5 h-5 rounded-full bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,1)] flex items-center justify-center">
+                                    <Check size={12} className="text-white" />
+                                  </div>
+                                )}
                               </button>
                             ))}
                           </div>
                         </div>
 
-                        <div className="space-y-3">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 px-1">Código de Desconto</span>
+                        <div className="space-y-8">
+                          <span className="text-[14px] font-black uppercase tracking-[0.6em] text-slate-500 px-4 block">Cupom Promocional</span>
                           <input
                             type="text"
-                            placeholder="CUPOM"
+                            placeholder="DIGITE O CÓDIGO"
                             value={couponCode}
                             onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setError(null); }}
-                            className="w-full bg-slate-950 border border-white/5 rounded-xl px-5 py-3 text-xs text-white placeholder:text-slate-800 transition-all outline-none font-bold tracking-widest text-center focus:border-blue-500/30"
+                            className="w-full bg-slate-950/80 border-4 border-white/5 rounded-[3rem] px-12 py-8 text-2xl text-white placeholder:text-slate-900 transition-all outline-none font-black tracking-[0.8em] uppercase text-center focus:border-blue-500/30 focus:bg-black shadow-2xl focus:scale-[1.02]"
                           />
                         </div>
                       </div>
@@ -1312,33 +1343,36 @@ export default function PlanPage() {
                           <p className="text-[10px] font-bold text-red-500 uppercase text-center bg-red-500/10 p-2 rounded-lg">{error}</p>
                         )}
 
-                        <div className="space-y-2">
+                        <div className="space-y-6">
                           <Button
                             onClick={handleChangePlan}
                             disabled={saving}
-                            className="w-full h-14 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest rounded-xl shadow-xl transition-all active:scale-95"
+                            className="w-full h-32 bg-blue-600 hover:bg-white hover:text-blue-600 text-white font-black uppercase tracking-[0.6em] rounded-[4rem] shadow-[0_40px_80px_rgba(59,130,246,0.7)] transition-all active:scale-95 text-xl flex flex-col items-center justify-center gap-1 group"
                           >
                             {saving ? (
-                              <div className="flex items-center gap-2">
-                                <Activity className="animate-spin w-4 h-4" />
-                                <span>Processando</span>
+                              <div className="flex flex-col items-center gap-4">
+                                <Activity className="animate-spin w-10 h-10" />
+                                <span className="text-xs font-black">PROCESSANDO...</span>
                               </div>
                             ) : (
-                              "Finalizar e Ativar"
+                              <>
+                                <span>CONTRATAR AGORA</span>
+                                <span className="text-[11px] opacity-60 tracking-[1em] font-bold mt-1 group-hover:text-blue-600 italic">ATIVAÇÃO IMEDIATA</span>
+                              </>
                             )}
                           </Button>
 
                           <button
                             onClick={() => setOpenDialog(false)}
-                            className="w-full text-slate-600 hover:text-white text-[10px] font-black uppercase tracking-widest py-3 transition-colors"
+                            className="w-full text-slate-700 hover:text-white text-[12px] font-black uppercase tracking-[1.5em] py-8 transition-all opacity-40 hover:opacity-100"
                           >
-                            Voltar
+                            CANCELAR E SAIR
                           </button>
                         </div>
                       </div>
                     </>
                   ) : (
-                    <div className="h-full flex flex-col items-center justify-center py-10 space-y-8">
+                    <div className="h-full flex flex-col items-center justify-center py-10 space-y-24">
                       {pendingData && (
                         <div className="text-center space-y-6">
                           <div className="h-16 w-16 mx-auto bg-slate-950 border border-blue-500/20 rounded-full flex items-center justify-center">
@@ -1354,14 +1388,14 @@ export default function PlanPage() {
                       {pixData && !pendingData && (
                         <div className="flex flex-col items-center w-full space-y-8 animate-in fade-in zoom-in-95 duration-500">
                           <div className="text-center space-y-2">
-                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Aguardando Pix</span>
-                            <h4 className="text-3xl font-black text-white tracking-widest tabular-nums mt-4">
+                            <span className="text-sm font-black text-emerald-400 uppercase tracking-[0.6em]">Aguardando Pagamento Pix</span>
+                            <h4 className="text-7xl md:text-9xl font-black text-white tracking-widest tabular-nums mt-10 filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.8)]">
                               R$ {(pixData.amount || 0).toFixed(2).replace('.', ',')}
                             </h4>
                           </div>
 
-                          <div className="bg-white p-4 rounded-3xl shadow-2xl">
-                            <QRCodeCanvas value={pixData.pixPayload} size={160} level="H" includeMargin={true} />
+                          <div className="bg-white p-10 rounded-[4.5rem] shadow-[0_80px_160px_-20px_rgba(16,185,129,0.5)] ring-[24px] ring-emerald-500/10 transform scale-110">
+                            <QRCodeCanvas value={pixData.pixPayload} size={320} level="H" includeMargin={true} />
                           </div>
 
                           <div className="w-full space-y-4">
@@ -1369,7 +1403,7 @@ export default function PlanPage() {
                               {pixData.pixPayload}
                             </div>
                             <Button
-                              className="w-full h-14 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-[10px] tracking-widest rounded-xl"
+                              className="w-full h-32 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase text-lg tracking-[0.6em] rounded-[4rem] shadow-4xl transform active:scale-95 transition-all"
                               onClick={() => { navigator.clipboard.writeText(pixData.pixPayload); alert('PIX Copiado!'); }}
                             >
                               Copiar Pix
@@ -1386,7 +1420,7 @@ export default function PlanPage() {
                         <div className="flex flex-col items-center w-full space-y-8 animate-in fade-in zoom-in-95 duration-500">
                           <div className="text-center space-y-2">
                             <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Boleto Gerado</span>
-                            <h4 className="text-3xl font-black text-white tracking-widest tabular-nums mt-4">
+                            <h4 className="text-7xl md:text-9xl font-black text-white tracking-widest tabular-nums mt-10 filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.8)]">
                               R$ {(boletoData.amount || 0).toFixed(2).replace('.', ',')}
                             </h4>
                           </div>
