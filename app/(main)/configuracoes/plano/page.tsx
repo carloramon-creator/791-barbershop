@@ -660,7 +660,7 @@ export default function PlanPage() {
   return (
     <div className="space-y-6 pb-20">
       {/* SEÇÃO DE SELEÇÃO NO TOPO (NOVA) */}
-      {(selectedPlan || selectedAddonsSlugs.length > 0) && (
+      {(selectedPlan || selectedAddonsSlugs.length > 0) && !isPaymentExpanded && (
         <div className="w-full bg-slate-900/40 backdrop-blur-xl border-2 border-blue-500/20 p-5 rounded-[28px] shadow-2xl flex flex-col gap-4 animate-in fade-in slide-in-from-top-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             {/* ESQUERDA: Plano e Preço */}
@@ -769,8 +769,8 @@ export default function PlanPage() {
                 {hasFirstSubscriptionDiscount && (
                   <div className="flex justify-between items-center py-2 px-3 bg-blue-500/10 border border-blue-500/20 rounded-xl gap-2 mt-1 min-h-[44px]">
                     <div className="flex flex-col min-w-0">
-                      <span className="text-blue-400 font-black uppercase text-[8px] leading-none tracking-wider mb-1">Desconto Especial</span>
-                      <span className="text-[9px] text-blue-300/70 font-bold leading-none whitespace-nowrap">Primeira Assinatura (-10%)</span>
+                      <span className="text-blue-400 font-black uppercase text-[8px] leading-none tracking-wider mb-1">Desconto Boas-vindas</span>
+                      <span className="text-[9px] text-blue-300/70 font-bold leading-none whitespace-nowrap">Bônus: 10% OFF 1ª parcela</span>
                     </div>
                     <span className="text-blue-400 font-black text-sm whitespace-nowrap tabular-nums">- R$ {firstSubscriptionDiscountAmount.toFixed(2).replace(".", ",")}</span>
                   </div>

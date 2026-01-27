@@ -74,11 +74,15 @@ export async function POST(req: Request) {
         }
 
         // 2.2 Processar Add-ons
+        const intervalDiscountPercent = interval === 12 ? 20 : interval === 6 ? 10 : 0;
+        const intervalDiscountFactor = (1 - intervalDiscountPercent / 100);
+
         for (const slug of finalAddonsSlugs) {
             const { data: addon } = await getSupabaseAdmin().from('system_addons').select('*').eq('slug', slug).single();
             if (!addon) continue;
 
-            const addonAmount = Number((Number(addon.price) * interval).toFixed(2));
+            // RAMON FIX: Aplicar desconto de intervalo aos módulos também
+            const addonAmount = Number((Number(addon.price) * intervalDiscountFactor * interval).toFixed(2));
             totalAddonAmount += addonAmount;
             itemNames.push(`Módulo ${addon.name}`);
             checkoutItems.push({
@@ -119,10 +123,22 @@ export async function POST(req: Request) {
         }
 
         // Lógica de Desconto de Boas-vindas (10% no primeiro ciclo sobre o TOTAL)
+        // RAMON FIX: Alinhando com a lógica de 5 dias do frontend
+        let isWithinFiveDays = false;
+        if (tenant.created_at) {
+            const created = new Date(tenant.created_at);
+            const now = new Date();
+            const diffTime = now.getTime() - created.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays <= 5) isWithinFiveDays = true;
+        }
+
         const isNotActive = !tenant.subscription_status ||
             ['trial', 'trial_expired', 'past_due', 'unpaid', 'incomplete'].includes(tenant.subscription_status || '');
         const isFirstSubscription = !tenant.asaas_subscription_id || isNotActive;
-        const applyWelcomeDiscount = isFirstSubscription || (coupon?.toUpperCase() === 'WELCOME791');
+
+        // O desconto se aplica se for a primeira assinatura OU estiver nos primeiros 5 dias
+        const applyWelcomeDiscount = isFirstSubscription && isWithinFiveDays;
 
         // 3. Garantir Cliente no Asaas (Identificação por E-mail conforme solicitado)
         console.log(`[ASAAS 2.0 SECURITY] Tenant ID: ${tenant.id} | User: ${user.email} | Target Name: ${tenant.name}`);
@@ -171,17 +187,27 @@ export async function POST(req: Request) {
         const baseUrl = 'https://791barber.com';
 
         // 5. Calcular valor final (TOTAL)
-        // RAMON FIX: Mantemos o valor dos itens CHEIO para exibição na fatura.
-        // O desconto será aplicado no objeto 'discount' ou 'payment' dependendo do tipo.
-        const finalCheckoutItems = checkoutItems.map(item => ({
-            name: item.name.length > 30 ? item.name.substring(0, 27) + '...' : item.name,
-            value: item.value, // Valor ORIGINAL (Cheio)
-            quantity: 1
-        }));
-
-        const totalFullValue = finalCheckoutItems.reduce((acc, it) => acc + it.value, 0);
-        // FIX CRÍTICO: Restaurando firstPaymentValue para lógica de comparação e fallback
+        const totalFullValue = checkoutItems.reduce((acc, it) => acc + it.value, 0);
         const firstPaymentValue = applyWelcomeDiscount ? Number((totalFullValue * 0.9).toFixed(2)) : totalFullValue;
+
+        // RAMON FIX: Aplicar desconto proporcional em cada item para o Asaas não se perder
+        let itemsSum = 0;
+        const finalCheckoutItems = checkoutItems.map((item, index) => {
+            let val = applyWelcomeDiscount ? Number((item.value * 0.9).toFixed(2)) : item.value;
+
+            // Se for o último item, ajustar centavos para bater com o firstPaymentValue
+            if (index === checkoutItems.length - 1) {
+                val = Number((firstPaymentValue - itemsSum).toFixed(2));
+            } else {
+                itemsSum += val;
+            }
+
+            return {
+                name: (item.name + (applyWelcomeDiscount ? ' (10% OFF)' : '')).substring(0, 30),
+                value: val,
+                quantity: 1
+            };
+        });
 
         const shortDescription = `Pagamento: ${itemNames.join(' + ')}`.substring(0, 50) + (itemNames.join(' + ').length > 50 ? '...' : '');
 
@@ -259,7 +285,7 @@ export async function POST(req: Request) {
             return addCorsHeaders(req, NextResponse.json({
                 success: true,
                 checkoutId: subscription.id, // Para tracking frontend
-                checkoutUrl: firstPayment.invoiceUrl, // REDIRECT PARA A FATURA
+                checkoutUrl: firstPayment.invoiceUrl || firstPayment.bankSlipUrl || firstPayment.pixQrCodeUrl, // REDIRECT PARA A FATURA
                 amount: firstPaymentValue
             }));
         }
