@@ -102,14 +102,39 @@ export async function POST(req: NextRequest) {
             return addCorsHeaders(req, NextResponse.json({ error: 'CPF/CNPJ necessário para Pix Automático.' }, { status: 400 }));
         }
 
-        console.log(`[INTER PIX AUTO] Iniciando Jornada 3 (Adesão + Recorrência) para ${tenant.name}`);
+        // --- PASSO 0: Criar Registro Inicial no Banco (Segurança contra Timeout) ---
+        const txid = tempId || `REC${Date.now()}${Math.random().toString(36).substring(2, 5)}`.toUpperCase();
+
+        const { data: financeRecord, error: dbError } = await getSupabaseAdmin().from('finance').insert({
+            tenant_id: tenant.id,
+            type: 'expense',
+            value: firstPaymentAmount,
+            description: `Pix Automático (Adesão): ${itemNameLabel}${couponApplied ? ' (Bônus 10%)' : ''}`,
+            date: new Date().toISOString().split('T')[0],
+            is_paid: false,
+            metadata: {
+                is_saas_payment: true,
+                method: 'pix_automatico_j3',
+                txid_imediato: txid,
+                seu_numero: txid, // Fundamental para polling
+                plan: planSlug,
+                addons: finalAddonsSlugs,
+                interval: 1,
+                coupon: couponApplied,
+                recurrence_value: fullMonthlyValue,
+                status_inter: 'PENDING_INIT'
+            }
+        }).select().single();
+
+        if (dbError) throw new Error('Erro ao criar registro financeiro inicial: ' + dbError.message);
+
+        console.log(`[INTER PIX AUTO] Iniciando Jornada 3 para ${tenant.name}. Registro ID: ${financeRecord.id}`);
 
         // --- PASSO 1: Criar Location (Recurrency) ---
         const loc = await inter.createLocation('rec');
         const locId = loc.id;
 
         // --- PASSO 2: Criar Cobrança Imediata (Adesão) ---
-        const txid = tempId || `REC${Date.now()}${Math.random().toString(36).substring(2, 5)}`.toUpperCase();
         const immediatePayload = {
             calendario: { expiracao: 86400 },
             devedor: {
@@ -120,14 +145,13 @@ export async function POST(req: NextRequest) {
             valor: { original: firstPaymentAmount.toFixed(2) },
             chave: pixKey,
             solicitacaoPagador: `Assinatura Mensal Recorrente - ${itemNameLabel}`.substring(0, 140),
-            txid,
+            txid: txid,
             loc: { id: locId }
         };
 
         await inter.createPixImmediateBilling(immediatePayload);
 
         // --- PASSO 3: Criar Recorrência (Jornada 3) ---
-        // Valor da recorrência é o valor mensal CHEIO (sem o bônus de 10%)
         const recurrencePayload = {
             vinculo: {
                 objeto: `Assinatura: ${itemNameLabel}`.substring(0, 50),
@@ -163,27 +187,23 @@ export async function POST(req: NextRequest) {
         }
 
         // 5. Salvar registro local
-        await getSupabaseAdmin().from('finance').insert({
-            tenant_id: tenant.id,
-            type: 'expense',
-            value: firstPaymentAmount,
-            description: `Pix Automático (Adesão): ${itemNameLabel}${couponApplied ? ' (Bônus 10%)' : ''}`,
-            date: new Date().toISOString().split('T')[0],
-            is_paid: false,
+        // 5. ATUALIZAR registro local (Em vez de inserir novo)
+        await getSupabaseAdmin().from('finance').update({
             metadata: {
                 is_saas_payment: true,
                 method: 'pix_automatico_j3',
                 id_rec: idRec,
                 txid_imediato: txid,
-                seu_numero: txid, // FUNDAMENTAL PARA O POLLING ENCONTRAR
+                seu_numero: txid,
                 plan: planSlug,
                 addons: finalAddonsSlugs,
                 interval: 1,
                 coupon: couponApplied,
                 recurrence_value: fullMonthlyValue,
-                pix_payload: pixCopiaECola
+                pix_payload: pixCopiaECola,
+                status_inter: 'CREATED'
             }
-        });
+        }).eq('id', financeRecord.id);
 
         return addCorsHeaders(req, NextResponse.json({
             success: true,
