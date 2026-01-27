@@ -110,6 +110,7 @@ export default function PlanPage() {
   const paymentRef = React.useRef<HTMLDivElement>(null);
   const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [upsellPlan, setUpsellPlan] = useState<string | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   // Refs para o polling universal (evitar stale closures)
   const pixDataRef = React.useRef(pixData);
@@ -233,17 +234,12 @@ export default function PlanPage() {
       }
 
       // 2. Check Subscription Status (Universal) - Resolve travamentos do Inter
-      const isProcessingInter = document.querySelector(
-        '[data-testid="inter-processing"]',
-      ); // Vou adicionar esse ID no elemento de loading depois
-      // Ou simplesmente checar sempre se não estiver ativo
-
       try {
         const res = await fetch("/api/tenant/subscription-status");
         if (res.ok) {
           const data = await res.json();
           if (data.subscription_status === "active") {
-            // Se ativou, limpar todos os estados pendentes
+            // Se ativou, limpar todos os estados pendentes se houver algo ativo
             if (
               localStorage.getItem("asaas_pending_payment") ||
               pendingDataRef.current ||
@@ -255,21 +251,22 @@ export default function PlanPage() {
               setPendingData(null);
               setPixData(null);
               setBoletoData(null);
+              setPaymentSuccess(true);
 
-              // Pequeno delay no alert para dar tempo da renderização ocorrer primeiro se necessário
-              setTimeout(() => {
-                alert("✅ Pagamento confirmado! Seu plano foi ativado.");
-              }, 100);
-
-              await fetchCurrentPlan();
+              await fetchCurrentPlan(false);
               await fetchInvoices();
+
+              // Recarrega em 5s
+              setTimeout(() => {
+                window.location.reload();
+              }, 5000);
             }
           }
         }
       } catch (err) {
         // silêncio é ouro no polling
       }
-    }, 5000); // 5 segundos para ser mais responsivo
+    }, 3000); // 3 segundos
 
     return () => clearInterval(interval);
   }, []);
@@ -888,24 +885,45 @@ export default function PlanPage() {
                 </>
               ) : (
                 <div className="w-full animate-in zoom-in-95">
-                  {/* RESULTADO DO PAGAMENTO (PIX/BOLETO) */}
-                  {pixData && (
-                    <div className="flex flex-col items-center space-y-8">
-                      <div className="bg-white p-6 rounded-[32px] shadow-2xl">
-                        <QRCodeCanvas value={pixData?.pixPayload || ""} size={240} level="H" includeMargin={true} />
+                  {paymentSuccess ? (
+                    <div className="flex flex-col items-center justify-center space-y-6 text-center animate-in zoom-in-90 duration-500">
+                      <div className="w-24 h-24 bg-emerald-500/20 text-emerald-500 rounded-[32px] flex items-center justify-center border border-emerald-500/30 shadow-[0_0_50px_-12px_rgba(16,185,129,0.4)]">
+                        <CheckCircle2 size={48} className="animate-bounce" />
                       </div>
-                      <div className="w-full space-y-4">
-                        <div className="bg-slate-900 p-4 rounded-xl border border-white/5 font-mono text-[10px] text-slate-400 break-all text-center">
-                          {pixData?.pixPayload}
-                        </div>
-                        <Button
-                          className="w-full h-16 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase rounded-2xl"
-                          onClick={() => { if (pixData?.pixPayload) { navigator.clipboard.writeText(pixData.pixPayload); alert('Copiado!'); } }}
-                        >
-                          Copiar Código Pix
-                        </Button>
+                      <div className="space-y-2">
+                        <h2 className="text-2xl font-black text-white uppercase tracking-tighter">
+                          Pagamento Confirmado!
+                        </h2>
+                        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
+                          Tudo certo por aqui. Seu plano já foi ativado.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">
+                        <Activity size={12} className="animate-spin" />
+                        Atualizando sua conta...
                       </div>
                     </div>
+                  ) : (
+                    <>
+                      {pixData && (
+                        <div className="flex flex-col items-center space-y-8">
+                          <div className="bg-white p-6 rounded-[32px] shadow-2xl">
+                            <QRCodeCanvas value={pixData?.pixPayload || ""} size={240} level="H" includeMargin={true} />
+                          </div>
+                          <div className="w-full space-y-4">
+                            <div className="bg-slate-900 p-4 rounded-xl border border-white/5 font-mono text-[10px] text-slate-400 break-all text-center">
+                              {pixData?.pixPayload}
+                            </div>
+                            <Button
+                              className="w-full h-16 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase rounded-2xl"
+                              onClick={() => { if (pixData?.pixPayload) { navigator.clipboard.writeText(pixData.pixPayload); alert('Copiado!'); } }}
+                            >
+                              Copiar Código Pix
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
 
                   {boletoData && (
