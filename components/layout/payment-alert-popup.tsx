@@ -60,12 +60,21 @@ export function PaymentAlertPopup() {
         setIsDismissed(true);
     };
 
-    const copyPix = () => {
-        if (pendingPayment.metadata?.pix_payload) {
-            navigator.clipboard.writeText(pendingPayment.metadata.pix_payload);
-            toast.success('Código Pix copiado!');
+    const copyPaymentCode = () => {
+        const code = pendingPayment.metadata?.pix_payload ||
+            pendingPayment.metadata?.linha_digitavel ||
+            pendingPayment.metadata?.boleto?.linhaDigitavel;
+
+        if (code) {
+            navigator.clipboard.writeText(code);
+            toast.success(pendingPayment.metadata?.method === 'boleto_inter' ? 'Linha digitável copiada!' : 'Código Pix copiado!');
         }
     };
+
+    const isBoleto = pendingPayment.metadata?.method === 'boleto_inter';
+    const pdfUrl = pendingPayment.metadata?.codigoSolicitacao
+        ? `/api/checkout/inter-boleto/pdf?codigoSolicitacao=${pendingPayment.metadata.codigoSolicitacao}`
+        : null;
 
     return (
         <>
@@ -98,17 +107,16 @@ export function PaymentAlertPopup() {
                         <div className="flex-1 space-y-1">
                             <h3 className="font-bold text-base leading-tight">
                                 {isOverdue
-                                    ? `Mensalidade Atrasada (${daysLate}d)`
-                                    : 'Mensalidade Próxima'}
+                                    ? `Seu plano venceu`
+                                    : 'Atenção ao Vencimento'}
                             </h3>
                             <p className="text-sm opacity-80 leading-relaxed">
-                                {pendingPayment.description}
+                                {isOverdue
+                                    ? `Sua mensalidade venceu em ${new Date(dueDate).toLocaleDateString()}.`
+                                    : `Sua mensalidade irá vencer em ${new Date(dueDate).toLocaleDateString()}.`}
                             </p>
                             <div className="pt-1 flex items-center gap-2">
                                 <span className="font-black text-lg">{formatCurrency(pendingPayment.value)}</span>
-                                <span className="text-[10px] opacity-60 font-bold uppercase tracking-wider">
-                                    Venceu: {new Date(dueDate).toLocaleDateString()}
-                                </span>
                             </div>
                         </div>
                     </div>
@@ -146,16 +154,22 @@ export function PaymentAlertPopup() {
                     </DialogHeader>
 
                     <div className="flex flex-col items-center py-6 space-y-6">
-                        <div className="bg-white p-4 rounded-2xl shadow-xl">
-                            {pendingPayment.metadata?.pix_payload ? (
+                        {/* QR CODE (Aparece se tiver Pix ou se for Boleto com Pix) */}
+                        {(pendingPayment.metadata?.pix_payload) && (
+                            <div className="bg-white p-4 rounded-2xl shadow-xl">
                                 <QRCodeSVG value={pendingPayment.metadata.pix_payload} size={200} />
-                            ) : (
-                                <div className="w-[200px] h-[200px] bg-slate-100 flex flex-col items-center justify-center text-slate-400 gap-2">
-                                    <Loader2 className="animate-spin" />
-                                    <span className="text-xs">Gerando Pix...</span>
-                                </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
+
+                        {/* LINHA DIGITÁVEL (Se for Boleto) */}
+                        {isBoleto && (pendingPayment.metadata?.linha_digitavel || pendingPayment.metadata?.boleto?.linhaDigitavel) && (
+                            <div className="w-full p-4 bg-slate-950/50 border border-slate-800 rounded-xl text-center space-y-2">
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Linha Digitável</p>
+                                <p className="text-xs font-mono text-slate-300 break-all select-all">
+                                    {pendingPayment.metadata.linha_digitavel || pendingPayment.metadata.boleto?.linhaDigitavel}
+                                </p>
+                            </div>
+                        )}
 
                         <div className="text-center">
                             <div className="text-sm text-slate-400 mb-1">Valor a pagar</div>
@@ -164,15 +178,27 @@ export function PaymentAlertPopup() {
 
                         <div className="w-full space-y-3">
                             <Button
-                                onClick={copyPix}
+                                onClick={copyPaymentCode}
                                 className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 h-12 font-bold"
                             >
-                                <Copy size={18} className="mr-2" /> Copiar Código Pix
+                                <Copy size={18} className="mr-2" /> {isBoleto ? 'Copiar Linha Digitável' : 'Copiar Código Pix'}
                             </Button>
+
+                            {isBoleto && pdfUrl && (
+                                <Button
+                                    asChild
+                                    variant="outline"
+                                    className="w-full border-slate-700 h-12 font-bold text-slate-300"
+                                >
+                                    <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+                                        <ExternalLink size={18} className="mr-2" /> Visualizar Boleto (PDF)
+                                    </a>
+                                </Button>
+                            )}
 
                             <div className="flex items-center gap-2 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20 text-[11px] text-blue-200">
                                 <CheckCircle2 className="shrink-0 text-blue-400" size={16} />
-                                <p>A confirmação é imediata. Após o pagamento, o aviso desaparecerá e seu acesso será renovado automaticamente.</p>
+                                <p>A confirmação {isBoleto ? 'pode levar até 24h para Boletos' : 'é imediata via Pix'}. Após o pagamento, o aviso desaparecerá automaticamente.</p>
                             </div>
                         </div>
                     </div>

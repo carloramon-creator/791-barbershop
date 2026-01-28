@@ -1161,7 +1161,7 @@ export default function PlanPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-auto p-0 mt-3 text-red-500 hover:text-red-400 text-[10px] font-black uppercase underline tracking-widest"
+                                  className="w-full justify-center h-auto p-0 mt-3 text-red-500 hover:text-red-400 text-[10px] font-black uppercase underline tracking-widest"
                                   onClick={handleCancelSubscription}
                                   disabled={canceling}
                                 >

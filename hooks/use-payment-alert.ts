@@ -14,6 +14,14 @@ export interface PendingPayment {
         expires_at?: string;
         txid?: string;
         seu_numero?: string;
+        method?: string;
+        linha_digitavel?: string;
+        codigo_barras?: string;
+        codigoSolicitacao?: string;
+        boleto?: {
+            linhaDigitavel?: string;
+            codigoBarras?: string;
+        };
     };
 }
 
