@@ -88,7 +88,9 @@ export default function DashboardPage() {
     const servicesCount = summary?.servicesDone ?? 0;
     const waitTime = summary?.avgWaitTime ?? 0;
     // Calculate waiting queue from the fetched queueStatus array if available
-    const waitingQueue = queueStatus.filter(q => q.status === 'waiting').length;
+    const waitingQueue = queueStatus.reduce((acc, barber) => {
+        return acc + (barber.queue?.filter(q => q.status === 'waiting').length || 0);
+    }, 0);
 
     return (
         <div className="space-y-6">
