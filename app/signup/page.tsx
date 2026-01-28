@@ -390,14 +390,14 @@ function Step2({ formData, setFormData, onNext, onBack }: any) {
                 const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
                 const data = await res.json();
                 if (!data.erro) {
-                    setFormData(prev => ({
-                        ...prev,
+                    setFormData({
+                        ...formData,
                         cep: maskedCep,
                         street: data.logradouro,
                         neighborhood: data.bairro,
                         city: data.localidade,
                         state: data.uf
-                    }));
+                    });
                     // Tenta focar no número após buscar
                     setTimeout(() => {
                         const numInput = document.getElementById('address-number');
