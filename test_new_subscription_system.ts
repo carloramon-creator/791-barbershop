@@ -1,8 +1,8 @@
-import { createClient } from '@supabase/supabase-client';
+import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 import { v4 as uuidv4 } from 'uuid';
 
-dotenv.config();
+dotenv.config({ path: '.env.local' });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -25,26 +25,30 @@ async function testSubscriptionSystem() {
     const tenant = tenants[0];
     console.log(`✅ Tenant selecionado: ${tenant.name} (${tenant.id})`);
 
-    // 2. Criar uma assinatura ativa
-    console.log('Creating active subscription...');
+    // 2. Criar uma assinatura ativa (Simulação)
+    console.log('Cleaning old test subscriptions and creating new one...');
+
+    // Remove qualquer assinatura de teste anterior para esse tenant
+    await supabase.from('subscriptions').delete().eq('tenant_id', tenant.id);
+
     const { data: sub, error: subError } = await supabase
         .from('subscriptions')
-        .upsert({
+        .insert({
             tenant_id: tenant.id,
             plan_slug: 'premium',
             status: 'active',
-            billing_cycle: 'monthly',
-            next_billing_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            last_billing_date: new Date().toISOString(),
+            billing_cycle: 1,
+            next_billing_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            last_billing_date: new Date().toISOString().split('T')[0],
             metadata: { is_test: true }
-        }, { onConflict: 'tenant_id' })
+        })
         .select();
 
     if (subError) {
         console.error('❌ Erro ao criar assinatura:', subError);
         return;
     }
-    console.log('✅ Assinatura criada/atualizada com sucesso!');
+    console.log('✅ Assinatura de teste criada com sucesso!');
 
     // 3. Criar uma fatura pendente (para disparar o alerta visual)
     console.log('Creating pending SaaS payment for alert testing...');

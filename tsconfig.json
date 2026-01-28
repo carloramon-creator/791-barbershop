@@ -37,6 +37,16 @@
     "**/*.mts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "test_*.ts",
+    "check_*.ts",
+    "fix_*.ts",
+    "setup_*.ts",
+    "create_*.ts",
+    "apply_migration.ts",
+    "audit_*.ts",
+    "debug-*.ts",
+    "find_*.ts",
+    "update_*.ts"
   ]
 }
