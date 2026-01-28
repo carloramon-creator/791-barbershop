@@ -260,7 +260,7 @@ export default function BarbeirosPage() {
                                                             else setReportBarbers(reportBarbers.filter(id => id !== b.id));
                                                         }}
                                                     />
-                                                    <Label htmlFor={`rb-${b.id}`} className={cn("cursor-pointer", !b.is_active && "text-slate-500 italic")}>
+                                                    <Label htmlFor={`rb-${b.id}`} className={cn("cursor-pointer", !b.is_active && "text-slate-500")}>
                                                         {b.name} {!b.is_active && '(Inativo)'}
                                                     </Label>
                                                 </div>

@@ -84,17 +84,18 @@ export default function DashboardPage() {
     }
 
     // Adapt data from either getDashboardMetrics or getDashboardSummary
-    const billing = summary?.periodMetrics?.totalBilling ?? summary?.metrics?.billingToday ?? 0;
-    const servicesCount = summary?.periodMetrics?.servicesDone ?? summary?.metrics?.servicesDone ?? 0;
-    const waitTime = summary?.periodMetrics?.avgWaitTime ?? summary?.metrics?.avgWaitTime ?? 0;
-    const waitingQueue = summary?.liveQueue?.waitingCount ?? summary?.metrics?.queueCount ?? 0;
+    const billing = summary?.totalBilling ?? 0;
+    const servicesCount = summary?.servicesDone ?? 0;
+    const waitTime = summary?.avgWaitTime ?? 0;
+    // Calculate waiting queue from the fetched queueStatus array if available
+    const waitingQueue = queueStatus.filter(q => q.status === 'waiting').length;
 
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-100 italic tracking-tight flex items-center gap-2">
-                        PAINEL <span className="bg-blue-600 text-white px-2 py-0.5 rounded not-italic tracking-normal text-sm font-black">ADMINISTRATIVO</span>
+                    <h1 className="text-2xl font-bold text-slate-100 tracking-tight flex items-center gap-2">
+                        PAINEL <span className="bg-blue-600 text-white px-2 py-0.5 rounded tracking-normal text-sm font-black">ADMINISTRATIVO</span>
                     </h1>
                     <p className="text-slate-400 text-sm mt-1">Acompanhe os principais indicadores em tempo real.</p>
                 </div>
@@ -149,7 +150,7 @@ export default function DashboardPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-white italic">
+                        <div className="text-2xl font-bold text-white">
                             {billing.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </div>
                     </CardContent>
@@ -165,8 +166,8 @@ export default function DashboardPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-white italic">
-                            {servicesCount} <span className="text-xs font-normal text-slate-500 not-italic">serviços</span>
+                        <div className="text-2xl font-bold text-white">
+                            {servicesCount} <span className="text-xs font-normal text-slate-500">serviços</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -182,8 +183,8 @@ export default function DashboardPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-white italic">
-                            {waitTime} <span className="text-xs font-normal text-slate-500 not-italic">min</span>
+                        <div className="text-2xl font-bold text-white">
+                            {waitTime} <span className="text-xs font-normal text-slate-500">min</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -198,8 +199,8 @@ export default function DashboardPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-white italic">
-                            {waitingQueue} <span className="text-xs font-normal text-slate-500 not-italic">aguardando</span>
+                        <div className="text-2xl font-bold text-white">
+                            {waitingQueue} <span className="text-xs font-normal text-slate-500">aguardando</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -210,7 +211,7 @@ export default function DashboardPage() {
                 {/* Real-time Status */}
                 <Card className="lg:col-span-2 bg-slate-900 border-slate-800">
                     <CardHeader className="border-b border-slate-800/50">
-                        <CardTitle className="text-sm font-bold text-slate-200 flex items-center justify-between uppercase tracking-tighter italic">
+                        <CardTitle className="text-sm font-bold text-slate-200 flex items-center justify-between uppercase tracking-tighter">
                             Status da Equipe em Tempo Real
                             <HelpTooltip content="Acompanhe o que cada barbeiro está fazendo agora" />
                         </CardTitle>
@@ -229,7 +230,7 @@ export default function DashboardPage() {
                             <TableBody>
                                 {queueStatus.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center py-8 text-slate-500 italic text-sm">
+                                        <TableCell colSpan={5} className="text-center py-8 text-slate-500 text-sm">
                                             Nenhum profissional online no momento.
                                         </TableCell>
                                     </TableRow>
@@ -237,7 +238,7 @@ export default function DashboardPage() {
                                     queueStatus.map((barber) => (
                                         <TableRow key={barber.barber_id} className="border-slate-800/30 hover:bg-slate-800/20 transition-colors">
                                             <TableCell className="py-4">
-                                                <div className="font-bold text-slate-200 italic leading-none">{barber.barber_name}</div>
+                                                <div className="font-bold text-slate-200 leading-none">{barber.barber_name}</div>
                                                 <div className="text-[10px] text-slate-500 mt-1 uppercase">{texts.professional} Oficial</div>
                                             </TableCell>
                                             <TableCell className="text-center">
@@ -250,9 +251,9 @@ export default function DashboardPage() {
                                                     {barber.status === 'available' ? 'Disponível' : barber.status === 'busy' ? 'Atendendo' : 'Offline'}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className="text-center font-bold text-slate-300 italic">{barber.queue?.length || 0}</TableCell>
-                                            <TableCell className="text-center font-bold text-slate-300 italic">-</TableCell>
-                                            <TableCell className="text-right text-xs text-slate-400 font-mono italic">
+                                            <TableCell className="text-center font-bold text-slate-300">{barber.queue?.length || 0}</TableCell>
+                                            <TableCell className="text-center font-bold text-slate-300">-</TableCell>
+                                            <TableCell className="text-right text-xs text-slate-400 font-mono">
                                                 {barber.avg_time_minutes} min
                                             </TableCell>
                                         </TableRow>
@@ -267,14 +268,14 @@ export default function DashboardPage() {
                 <div className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 h-full">
                         <CardHeader>
-                            <CardTitle className="text-sm font-bold text-slate-200 uppercase tracking-tighter italic flex items-center gap-2">
+                            <CardTitle className="text-sm font-bold text-slate-200 uppercase tracking-tighter flex items-center gap-2">
                                 <TrendingUp className="w-4 h-4 text-emerald-500" />
                                 Meta de Atendimentos
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="flex flex-col items-center justify-center py-6">
-                                <span className="text-4xl font-black text-white italic leading-none">
+                                <span className="text-4xl font-black text-white leading-none">
                                     {servicesCount}
                                 </span>
                                 <span className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-2">
@@ -283,7 +284,7 @@ export default function DashboardPage() {
                             </div>
 
                             <div className="bg-slate-950/50 p-4 rounded-lg border border-slate-800/50">
-                                <div className="flex justify-between text-[10px] uppercase font-black text-slate-500 mb-2 italic">
+                                <div className="flex justify-between text-[10px] uppercase font-black text-slate-500 mb-2">
                                     <span>Progresso Diário</span>
                                     <span className="text-blue-400">Em tempo real</span>
                                 </div>

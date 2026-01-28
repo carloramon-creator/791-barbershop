@@ -472,7 +472,7 @@ export default function ClientsPage() {
                                 AVISO DE RESTRIÇÃO
                             </h4>
                             <p className="text-sm text-slate-300 leading-relaxed font-medium">
-                                <span className="text-red-400 font-bold italic">ATENÇÃO!</span> Não remova clientes do sistema, a não ser que o cadastro esteja <span className="text-white font-bold underline underline-offset-4 Decoration-red-500">DUPLICADO</span>.
+                                <span className="text-red-400 font-bold">ATENÇÃO!</span> Não remova clientes do sistema, a não ser que o cadastro esteja <span className="text-white font-bold underline underline-offset-4 Decoration-red-500">DUPLICADO</span>.
                             </p>
                         </div>
 

@@ -369,7 +369,7 @@ export default function VendasPage() {
                                             </div>
                                         ))
                                     ) : buscaCliente.length >= 3 ? (
-                                        <p className="text-center text-xs text-slate-600 py-6 italic font-medium">Nenhum cliente para "{buscaCliente}"</p>
+                                        <p className="text-center text-xs text-slate-600 py-6 font-medium">Nenhum cliente para "{buscaCliente}"</p>
                                     ) : buscaCliente.length > 0 ? (
                                         <p className="text-center text-[10px] text-slate-600 py-6 uppercase font-bold tracking-widest opacity-30">Digite 3 letras ou mais...</p>
                                     ) : (
