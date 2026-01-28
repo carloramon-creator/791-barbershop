@@ -26,12 +26,12 @@ export interface PendingPayment {
 }
 
 export function usePaymentAlert() {
-    const { tenant, user, checkPermission } = useAuth();
+    const [paymentSuccess, setPaymentSuccess] = useState(false);
+    const { tenant, user, checkPermission, refresh } = useAuth();
     const [pendingPayment, setPendingPayment] = useState<PendingPayment | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // 1. Verificar permissão
         const hasPermission = checkPermission('Visualizar Alertas de Pagamento');
 
         if (!hasPermission || !tenant?.id) {
@@ -41,7 +41,6 @@ export function usePaymentAlert() {
 
         async function fetchPendingPayment() {
             try {
-                // Buscar faturas SaaS não pagas para este tenant
                 const { data, error } = await supabaseClient
                     .from('finance')
                     .select('*')
@@ -68,7 +67,6 @@ export function usePaymentAlert() {
 
         fetchPendingPayment();
 
-        // Listen para mudanças no financeiro (opcional, mas bom para fechar popup após pagar)
         const channel = supabaseClient
             .channel('finance_alerts')
             .on('postgres_changes', {
@@ -76,9 +74,16 @@ export function usePaymentAlert() {
                 schema: 'public',
                 table: 'finance',
                 filter: `tenant_id=eq.${tenant.id}`
-            }, (payload) => {
+            }, async (payload) => {
                 if (payload.new.is_paid && payload.new.metadata?.is_saas_payment === true) {
                     setPendingPayment(null);
+                    setPaymentSuccess(true);
+
+                    // Atualiza os dados do tenant ( plano, status, etc )
+                    await refresh();
+
+                    // Oculta msg de sucesso após 8 segundos
+                    setTimeout(() => setPaymentSuccess(false), 8000);
                 }
             })
             .subscribe();
@@ -88,5 +93,5 @@ export function usePaymentAlert() {
         };
     }, [tenant?.id, user?.id]);
 
-    return { pendingPayment, loading };
+    return { pendingPayment, loading, paymentSuccess };
 }

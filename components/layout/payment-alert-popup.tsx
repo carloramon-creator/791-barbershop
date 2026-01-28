@@ -28,7 +28,7 @@ import { toast } from 'sonner';
 
 export function PaymentAlertPopup() {
     const { tenant } = useAuth();
-    const { pendingPayment, loading } = usePaymentAlert();
+    const { pendingPayment, loading, paymentSuccess } = usePaymentAlert();
     const [isVisible, setIsVisible] = useState(false);
     const [isQRModalOpen, setIsQRModalOpen] = useState(false);
     const [isDismissed, setIsDismissed] = useState(false);
@@ -56,6 +56,23 @@ export function PaymentAlertPopup() {
             setIsVisible(false);
         }
     }, [pendingPayment, loading, isDismissed]);
+
+    if (paymentSuccess) {
+        return (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-500">
+                <div className="bg-slate-900 border border-emerald-500/50 p-8 rounded-3xl shadow-2xl flex flex-col items-center text-center max-w-sm w-full animate-in zoom-in-95 duration-500">
+                    <div className="w-24 h-24 bg-emerald-500/20 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
+                        <CheckCircle2 className="w-12 h-12 text-emerald-500" />
+                    </div>
+                    <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Pagamento Confirmado!</h2>
+                    <p className="text-slate-400 font-medium mb-6">Sua assinatura foi ativada com sucesso. Aproveite!</p>
+                    <div className="text-xs font-bold text-emerald-600 uppercase tracking-widest animate-pulse">
+                        Atualizando sistema...
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (!isVisible || !pendingPayment) return null;
 
