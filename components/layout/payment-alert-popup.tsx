@@ -1,4 +1,5 @@
-'use client';
+
+import { useAuth } from '@/lib/auth-provider';
 
 import { useState, useEffect } from 'react';
 import { usePaymentAlert, PendingPayment } from '@/hooks/use-payment-alert';
@@ -26,12 +27,20 @@ import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export function PaymentAlertPopup() {
+    const { tenant } = useAuth();
     const { pendingPayment, loading } = usePaymentAlert();
     const [isVisible, setIsVisible] = useState(false);
     const [isQRModalOpen, setIsQRModalOpen] = useState(false);
     const [isDismissed, setIsDismissed] = useState(false);
 
     useEffect(() => {
+        // Se a assinatura já estiver ativa, não mostrar alertas de pendência
+        // (Isso resolve o caso de múltiplos Pix gerados onde um foi pago e o outro ficou pendente)
+        if (tenant?.subscription_status === 'active') {
+            setIsVisible(false);
+            return;
+        }
+
         if (!loading && pendingPayment) {
             // Verificar se o usuário "dispensou" temporariamente
             const lastDismissed = localStorage.getItem(`payment_alert_dismissed_${pendingPayment.id}`);
