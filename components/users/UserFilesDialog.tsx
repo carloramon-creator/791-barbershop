@@ -77,6 +77,8 @@ export function UserFilesDialog({ open, onOpenChange, user }: UserFilesDialogPro
                 .insert({
                     tenant_id: tenant.id,
                     user_id: user.id,
+                    name: file.name, // Legacy field
+                    url: fileName,   // Legacy field
                     file_name: file.name,
                     file_path: fileName,
                     file_size: file.size,

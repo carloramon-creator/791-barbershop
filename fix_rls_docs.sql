@@ -39,6 +39,10 @@ ADD COLUMN IF NOT EXISTS file_path TEXT,
 ADD COLUMN IF NOT EXISTS file_size BIGINT,
 ADD COLUMN IF NOT EXISTS content_type TEXT;
 
+-- 5. Tornar colunas antigas opcionais para evitar erros de constraint
+ALTER TABLE public.user_documents ALTER COLUMN "name" DROP NOT NULL;
+ALTER TABLE public.user_documents ALTER COLUMN "url" DROP NOT NULL;
+
 -- 5. Sincronizar colunas antigas (opcional)
 UPDATE public.user_documents SET file_name = name WHERE file_name IS NULL AND name IS NOT NULL;
 UPDATE public.user_documents SET file_path = url WHERE file_path IS NULL AND url IS NOT NULL;
