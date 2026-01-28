@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-provider';
 import { Sidebar } from '@/components/layout/sidebar';
 import { ExpirationAlert, ConfigAlert } from '@/components/layout/config-alert-bar';
 import { Topbar } from '@/components/layout/topbar';
+import { PaymentAlertPopup } from '@/components/layout/payment-alert-popup';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
     const { session, loading, tenant, isSystemAdmin, role } = useAuth();
@@ -108,6 +109,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <Topbar />
                 <ConfigAlert />
                 <ExpirationAlert />
+                <PaymentAlertPopup />
                 <main className="flex-1 overflow-y-auto p-2 md:p-4 light:bg-white text-slate-50 light:text-slate-900 custom-scrollbar transition-colors">
                     <div className="w-full max-w-none">
                         {content}

@@ -69,6 +69,13 @@ const DEFAULT_PERMISSIONS_LIST = [
         barber: false,
         desc: 'Nome, logo, endereço e horários.'
     },
+    {
+        action: 'Visualizar Alertas de Pagamento',
+        owner: true,
+        staff: false,
+        barber: false,
+        desc: 'Ver popups e avisos sobre mensalidades pendentes do sistema.'
+    },
 ];
 
 export default function PermissoesPage() {

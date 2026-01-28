@@ -202,6 +202,33 @@ async function processPayment(params: { identifier: string, identifierType: 'txi
                     throw tenantError;
                 }
                 console.log(`[INTER WEBHOOK] ✅ Plano ${finalPlan} liberado para tenant ${tenantId}`);
+
+                // --- NOVO: Gestão de Assinatura Pix Mensal ---
+                if (metadata.is_saas_payment && metadata.is_subscription) {
+                    if (metadata.is_renewal) {
+                        // Se for renovação, a próxima data já foi atualizada pelo CRON ao gerar o Pix.
+                        // Aqui apenas confirmamos que o tenant continua ativo.
+                        console.log(`[INTER WEBHOOK] Renovação confirmada para tenant ${tenantId}`);
+                    } else {
+                        // Primeira assinatura: Criar registro na tabela subscriptions
+                        const nextDate = new Date();
+                        nextDate.setDate(nextDate.getDate() + 30);
+
+                        await getSupabaseAdmin()
+                            .from('subscriptions')
+                            .upsert({
+                                tenant_id: tenantId,
+                                plan_slug: finalPlan,
+                                addons: metadata.addons || [],
+                                billing_cycle: metadata.interval || 1,
+                                status: 'active',
+                                next_billing_date: nextDate.toISOString().split('T')[0],
+                                last_billing_date: new Date().toISOString().split('T')[0]
+                            }, { onConflict: 'tenant_id' });
+
+                        console.log(`[INTER WEBHOOK] Assinatura criada na tabela subscriptions para tenant ${tenantId}`);
+                    }
+                }
             }
         }
 

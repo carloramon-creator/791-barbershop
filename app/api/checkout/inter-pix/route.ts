@@ -10,12 +10,28 @@ export async function OPTIONS(req: Request) {
 
 export async function POST(req: Request) {
     try {
-        const { tenant, user } = await getCurrentUserAndTenant();
-        if (!tenant || !user) {
-            return addCorsHeaders(req, NextResponse.json({ error: 'Não autenticado' }, { status: 401 }));
+        const body = await req.json();
+        const { plan: planSlug, addon: addonSlug, addons: addonsSlugs = [], coupon, tempId, interval = 1, is_renewal = false, tenant_id: overrideTenantId } = body;
+
+        // --- LÓGICA DE AUTENTICAÇÃO / BYPASS CRON ---
+        const authHeader = req.headers.get('authorization');
+        const cronSecret = process.env.CRON_SECRET || 'dev-secret-change-in-production';
+        const isInternalCall = authHeader === `Bearer ${cronSecret}`;
+
+        let tenant, user;
+        if (isInternalCall && overrideTenantId) {
+            const { data: t } = await getSupabaseAdmin().from('tenants').select('*').eq('id', overrideTenantId).single();
+            tenant = t;
+            user = { id: 'SYSTEM' }; // Mock para sistema
+        } else {
+            const auth = await getCurrentUserAndTenant();
+            tenant = auth.tenant;
+            user = auth.user;
         }
 
-        const { plan: planSlug, addon: addonSlug, addons: addonsSlugs = [], coupon, tempId, interval = 1 } = await req.json();
+        if (!tenant || (!user && !isInternalCall)) {
+            return addCorsHeaders(req, NextResponse.json({ error: 'Não autenticado' }, { status: 401 }));
+        }
 
         // Consolidar addonsSlugs se houver addonSlug singular (compatibilidade)
         let finalAddonsSlugs = [...addonsSlugs];
@@ -217,8 +233,11 @@ export async function POST(req: Request) {
                     pix_payload: pixCopiaECola,
                     expires_at: dueDate.toISOString(),
                     [isAddonOnly ? 'addons' : 'plan']: isAddonOnly ? finalAddonsSlugs : planSlug,
+                    addons: finalAddonsSlugs, // Garante que addons estejam disponíveis sempre
                     is_addon: isAddonOnly,
-                    interval: interval
+                    interval: interval,
+                    is_renewal: is_renewal,
+                    is_subscription: !isAddonOnly // Se tem plano, é uma assinatura
                 }
             });
 

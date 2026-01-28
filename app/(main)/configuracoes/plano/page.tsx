@@ -19,6 +19,7 @@ import {
   ArrowRight,
   Bot,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -109,6 +110,8 @@ export default function PlanPage() {
   const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [upsellPlan, setUpsellPlan] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [subscriptionData, setSubscriptionData] = useState<any>(null);
+  const [loadingSubscription, setLoadingSubscription] = useState(false);
 
   // Refs para o polling universal (evitar stale closures)
   const pixDataRef = React.useRef(pixData);
@@ -317,12 +320,51 @@ export default function PlanPage() {
 
       const doc = tenantData.cnpj || tenantData.cpf_cnpj || "";
       setTenantHasDocument(doc.replace(/\D/g, "").length >= 11);
+
+      // NOVO: Buscar assinatura da tabela subscriptions
+      const { data: subData } = await supabaseClient
+        .from('subscriptions')
+        .select('*')
+        .eq('tenant_id', tenantData.id)
+        .maybeSingle();
+
+      setSubscriptionData(subData);
+
     } catch (err: unknown) {
       const errorObj = err as Error;
       console.error("Erro ao buscar plano:", errorObj.message);
       setError(errorObj.message);
     } finally {
       if (shouldSetLoading) setLoading(false);
+    }
+  }
+
+  async function handleCancelSubscription() {
+    if (!confirm("Tem certeza que deseja cancelar sua renovação automática? Você manterá acesso até o fim do período pago.")) return;
+
+    try {
+      setCanceling(true);
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) return;
+
+      const res = await fetch("/api/subscriptions/cancel", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Erro ao cancelar assinatura");
+      }
+
+      toast.success("Assinatura cancelada com sucesso!");
+      fetchCurrentPlan(false);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setCanceling(false);
     }
   }
 
@@ -473,9 +515,9 @@ export default function PlanPage() {
         if (paymentMethod === "pix" && selectedInterval === 1) {
           setPendingData({
             pending: true,
-            message: "Configurando seu PIX no Banco Inter...",
+            message: "Gerando seu PIX no Banco Inter...",
           });
-          endpoint = "/api/checkout/inter-pix-recorrente"; // Ativando Pix Automático Real para mensal
+          endpoint = "/api/checkout/inter-pix"; // Usando Pix normal + sistema interno de renovação
         } else {
           setPendingData({
             pending: true,
@@ -624,44 +666,6 @@ export default function PlanPage() {
       setError(err.message || "Erro inesperado ao processar pagamento");
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function handleCancelSubscription() {
-    if (
-      !confirm(
-        "Tem certeza que deseja cancelar sua assinatura? Você continuará com acesso até o final do período pago.",
-      )
-    )
-      return;
-
-    try {
-      setCanceling(true);
-      const {
-        data: { session },
-      } = await supabaseClient.auth.getSession();
-      if (!session) return;
-
-      const res = await fetch("/api/checkout/cancel-subscription", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Erro ao cancelar");
-      }
-
-      alert(
-        "Assinatura cancelada com sucesso! Você continuará com acesso até o final do período atual.",
-      );
-      fetchCurrentPlan();
-    } catch (e: any) {
-      alert("Erro: " + e.message);
-    } finally {
-      setCanceling(false);
     }
   }
 
@@ -1136,44 +1140,40 @@ export default function PlanPage() {
                                 ?.name || currentPlan}
                             </h3>
                             <p className="text-xl font-black text-blue-500">
-                              {tenantObject?.subscription_current_period_end ? (
+                              {(subscriptionData?.next_billing_date || tenantObject?.subscription_current_period_end) ? (
                                 <>
-                                  Vence em:{" "}
+                                  Próxima Cobrança:{" "}
                                   {new Date(
-                                    tenantObject.subscription_current_period_end,
+                                    subscriptionData?.next_billing_date || tenantObject.subscription_current_period_end,
                                   ).toLocaleDateString("pt-BR")}
-                                  {(() => {
-                                    const end = new Date(
-                                      tenantObject.subscription_current_period_end,
-                                    );
-                                    const now = new Date();
-                                    const diff = Math.ceil(
-                                      (end.getTime() - now.getTime()) /
-                                      (1000 * 60 * 60 * 24),
-                                    );
-                                    return (
-                                      <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1">
-                                        {diff > 0
-                                          ? `Faltam ${diff} dias`
-                                          : "Plano Expirado"}
-                                      </span>
-                                    );
-                                  })()}
                                 </>
                               ) : (
-                                <>
-                                  R${" "}
-                                  {(
-                                    dynamicPlans.find(
-                                      (p) => p.slug === currentPlan,
-                                    )?.price || 0
-                                  ).toLocaleString("pt-BR", {
-                                    minimumFractionDigits: 2,
-                                  })}
-                                  /mês
-                                </>
+                                "Período de Teste"
                               )}
                             </p>
+
+                            {subscriptionData?.status === 'active' && (
+                              <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                                <p className="text-[10px] font-bold text-blue-400 uppercase mb-1">Renovação Pix Mensal</p>
+                                <p className="text-xs text-slate-300">Seu Pix será gerado automaticamente em {new Date(subscriptionData.next_billing_date).toLocaleDateString("pt-BR")}.</p>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-auto p-0 mt-2 text-red-500 hover:text-red-400 text-[10px] font-bold uppercase underline"
+                                  onClick={handleCancelSubscription}
+                                  disabled={canceling}
+                                >
+                                  {canceling ? "Cancelando..." : "Cancelar Renovação Automática"}
+                                </Button>
+                              </div>
+                            )}
+
+                            {subscriptionData?.status === 'canceled' && (
+                              <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                                <p className="text-[10px] font-bold text-yellow-600 uppercase mb-1">Renovação Cancelada</p>
+                                <p className="text-xs text-slate-300">Sua assinatura não será renovada. O acesso expira em {new Date(subscriptionData.next_billing_date).toLocaleDateString("pt-BR")}.</p>
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -1334,7 +1334,7 @@ export default function PlanPage() {
                       })}
                   </div>
                 </div>
-              </div>
+              </div >
             );
 
             const PlanSelectionSection = (
@@ -1958,40 +1958,42 @@ export default function PlanPage() {
       )}
 
       {/* Modal de Checkout Integrado do Asaas */}
-      {checkoutUrl && (
-        <AsaasCheckoutModal
-          checkoutUrl={checkoutUrl}
-          isOpen={showCheckoutModal}
-          boletoData={
-            boletoData
-              ? {
-                identificationField: boletoData?.linhaDigitavel || "",
-                barCode: boletoData?.codigoBarras || "",
-                value: boletoData?.amount || 0,
-                dueDate: (boletoData as any)?.dueDate || "",
-                bankSlipUrl: boletoData?.pdfUrl,
-              }
-              : null
-          }
-          pixData={
-            pixData
-              ? {
-                encodedImage: (pixData as any)?.encodedImage,
-                payload: pixData?.pixPayload,
-                expirationDate: pixData?.expiresAt,
-              }
-              : null
-          }
-          onClose={() => {
-            setShowCheckoutModal(false);
-            setCheckoutUrl(null);
-            setBoletoData(null);
-            setPixData(null);
-            fetchCurrentPlan();
-            fetchInvoices();
-          }}
-        />
-      )}
+      {
+        checkoutUrl && (
+          <AsaasCheckoutModal
+            checkoutUrl={checkoutUrl}
+            isOpen={showCheckoutModal}
+            boletoData={
+              boletoData
+                ? {
+                  identificationField: boletoData?.linhaDigitavel || "",
+                  barCode: boletoData?.codigoBarras || "",
+                  value: boletoData?.amount || 0,
+                  dueDate: (boletoData as any)?.dueDate || "",
+                  bankSlipUrl: boletoData?.pdfUrl,
+                }
+                : null
+            }
+            pixData={
+              pixData
+                ? {
+                  encodedImage: (pixData as any)?.encodedImage,
+                  payload: pixData?.pixPayload,
+                  expirationDate: pixData?.expiresAt,
+                }
+                : null
+            }
+            onClose={() => {
+              setShowCheckoutModal(false);
+              setCheckoutUrl(null);
+              setBoletoData(null);
+              setPixData(null);
+              fetchCurrentPlan();
+              fetchInvoices();
+            }}
+          />
+        )
+      }
 
       {/* MODAL DE UPSELL DE MÓDULOS */}
       <UpsellModal
@@ -2016,6 +2018,6 @@ export default function PlanPage() {
           }, 100);
         }}
       />
-    </div>
+    </div >
   );
 }
