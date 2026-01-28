@@ -31,17 +31,10 @@ export async function POST(req: Request) {
         }
 
         if (!finalTenantId) {
-            // Fallback para dev: pegar primeiro tenant
-            const { data: firstTenant } = await getSupabaseAdmin()
-                .from('tenants')
-                .select('id')
-                .limit(1)
-                .single();
-            finalTenantId = firstTenant?.id;
-        }
-
-        if (!finalTenantId) {
-            return addCorsHeaders(req, NextResponse.json({ error: 'Nenhuma barbearia encontrada' }, { status: 404 }));
+            console.error('[PUBLIC QUEUE ERROR] Missing tenant_id');
+            return addCorsHeaders(req, NextResponse.json({
+                error: 'Identificação do estabelecimento (tenant_id) é obrigatória.'
+            }, { status: 400 }));
         }
 
         // 1. Encontrar ou criar cliente
