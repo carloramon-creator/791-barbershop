@@ -26,14 +26,34 @@ import { useAuth } from '@/lib/auth-provider';
 import { HelpTooltip } from '@/components/ui/help-tooltip';
 
 export default function DashboardPage() {
-    const { tenant } = useAuth();
+    const { tenant, role } = useAuth();
     const texts = getBusinessTexts(tenant?.business_type);
+
+    // -- PERMISSÃO DE ACESSO --
+    const permissions = tenant?.settings?.permissions || [];
+    const canViewDashboard = role === 'owner' || permissions.find((p: any) => p.action === 'Ver Dashboard')?.[role as string] !== false;
 
     const [summary, setSummary] = useState<DashboardSummary | null>(null);
     const [queueStatus, setQueueStatus] = useState<BarberQueueStatus[]>([]);
     const [loading, setLoading] = useState(true);
 
     const [period, setPeriod] = useState<'today' | 'week' | 'fortnight' | 'month'>('today');
+
+    // ... (rest of states)
+
+    if (!canViewDashboard) {
+        return (
+            <div className="h-[60vh] flex flex-col items-center justify-center text-center space-y-4">
+                <div className="bg-red-500/10 p-4 rounded-full">
+                    <Users className="w-12 h-12 text-red-500 opacity-50" />
+                </div>
+                <div>
+                    <h2 className="text-xl font-bold text-slate-100">Acesso Restrito</h2>
+                    <p className="text-slate-400 max-w-sm">Você não tem permissão para visualizar o dashboard. Entre em contato com o administrador.</p>
+                </div>
+            </div>
+        );
+    }
     const [periodMetrics, setPeriodMetrics] = useState({
         totalBilling: 0,
         servicesDone: 0,

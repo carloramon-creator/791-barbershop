@@ -24,7 +24,7 @@ const DEFAULT_PERMISSIONS_LIST = [
         action: 'Ver Dashboard',
         owner: true,
         staff: true,
-        barber: true,
+        barber: false,
         desc: 'Visualizar estatísticas básicas do dia.'
     },
     {

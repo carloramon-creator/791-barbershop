@@ -66,7 +66,7 @@ export function UserFilesDialog({ open, onOpenChange, user }: UserFilesDialogPro
             const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
             const { error: uploadError } = await supabaseClient.storage
-                .from('documents') // Ensure this bucket exists!
+                .from('barber-documents') // Standardized bucket name
                 .upload(fileName, file);
 
             if (uploadError) throw uploadError;
@@ -101,7 +101,7 @@ export function UserFilesDialog({ open, onOpenChange, user }: UserFilesDialogPro
     const handleDownload = async (doc: UserDocument) => {
         try {
             const { data, error } = await supabaseClient.storage
-                .from('documents')
+                .from('barber-documents')
                 .createSignedUrl(doc.file_path, 60); // Link valid for 60s
 
             if (error) throw error;
@@ -119,7 +119,7 @@ export function UserFilesDialog({ open, onOpenChange, user }: UserFilesDialogPro
         try {
             // 1. Delete from Storage
             const { error: storageError } = await supabaseClient.storage
-                .from('documents')
+                .from('barber-documents')
                 .remove([filePath]);
 
             if (storageError) console.error("Storage delete error", storageError);

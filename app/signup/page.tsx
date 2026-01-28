@@ -373,23 +373,41 @@ function Step2({ formData, setFormData, onNext, onBack }: any) {
         setCnpjError(isValid ? '' : (formData.hasCnpj ? 'CNPJ inválido' : 'CPF inválido'));
     };
 
-    const handleCepBlur = async () => {
-        const cleanCep = formData.cep.replace(/\D/g, '');
+    const [cepLoading, setCepLoading] = React.useState(false);
+
+    const handleCepChange = async (val: string) => {
+        const cleanCep = val.replace(/\D/g, '');
+        // Máscara simples
+        let maskedCep = cleanCep;
+        if (cleanCep.length > 5) {
+            maskedCep = `${cleanCep.slice(0, 5)}-${cleanCep.slice(5, 8)}`;
+        }
+        setFormData({ ...formData, cep: maskedCep });
+
         if (cleanCep.length === 8) {
+            setCepLoading(true);
             try {
                 const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
                 const data = await res.json();
                 if (!data.erro) {
-                    setFormData({
-                        ...formData,
+                    setFormData(prev => ({
+                        ...prev,
+                        cep: maskedCep,
                         street: data.logradouro,
                         neighborhood: data.bairro,
                         city: data.localidade,
                         state: data.uf
-                    });
+                    }));
+                    // Tenta focar no número após buscar
+                    setTimeout(() => {
+                        const numInput = document.getElementById('address-number');
+                        numInput?.focus();
+                    }, 100);
                 }
             } catch (e) {
                 console.error('Erro ao buscar CEP:', e);
+            } finally {
+                setCepLoading(false);
             }
         }
     };
@@ -454,15 +472,22 @@ function Step2({ formData, setFormData, onNext, onBack }: any) {
 
             {/* Endereço */}
             <div className="grid grid-cols-3 gap-3">
-                <div>
+                <div className="relative">
                     <label className="block text-sm font-bold text-slate-300 mb-2">CEP</label>
-                    <input
-                        value={formData.cep}
-                        onChange={(e) => setFormData({ ...formData, cep: e.target.value })}
-                        onBlur={handleCepBlur}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors"
-                        placeholder="00000-000"
-                    />
+                    <div className="relative">
+                        <input
+                            value={formData.cep}
+                            onChange={(e) => handleCepChange(e.target.value)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors pr-10"
+                            placeholder="00000-000"
+                            maxLength={9}
+                        />
+                        {cepLoading && (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <div className="col-span-2">
                     <label className="block text-sm font-bold text-slate-300 mb-2">Bairro</label>
@@ -486,6 +511,7 @@ function Step2({ formData, setFormData, onNext, onBack }: any) {
                 <div>
                     <label className="block text-sm font-bold text-slate-300 mb-2">Nº</label>
                     <input
+                        id="address-number"
                         value={formData.number}
                         onChange={(e) => setFormData({ ...formData, number: e.target.value })}
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:outline-none focus:border-blue-500 transition-colors"
