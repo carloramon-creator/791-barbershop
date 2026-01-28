@@ -31,7 +31,7 @@ export default function DashboardPage() {
 
     // -- PERMISSÃO DE ACESSO --
     const permissions = tenant?.settings?.permissions || [];
-    const canViewDashboard = role === 'owner' || permissions.find((p: any) => p.action === 'Ver Dashboard')?.[role as string] !== false;
+    const canViewDashboard = role === 'owner' || (permissions.find((p: any) => p.action === 'Ver Dashboard') as any)?.[role as string] !== false;
 
     const [summary, setSummary] = useState<DashboardSummary | null>(null);
     const [queueStatus, setQueueStatus] = useState<BarberQueueStatus[]>([]);
