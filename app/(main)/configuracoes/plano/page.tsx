@@ -1547,16 +1547,16 @@ export default function PlanPage() {
             if (isTrialOrPending) {
               return (
                 <div className="space-y-8">
-                  {PlanSelectionSection}
                   {CurrentPlanSection}
+                  {PlanSelectionSection}
                 </div>
               );
             }
 
             return (
               <div className="space-y-8">
-                {PlanSelectionSection}
                 {CurrentPlanSection}
+                {PlanSelectionSection}
               </div>
             );
           })()}

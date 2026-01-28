@@ -129,6 +129,32 @@ export async function GET(req: Request) {
                         subscription_current_period_end: periodEnd.toISOString()
                     }).eq('id', tenantId);
 
+                    // ATIVAR ADDONS SE HOUVER
+                    if (meta.addons && Array.isArray(meta.addons) && meta.addons.length > 0) {
+                        try {
+                            const { data: systemAddons } = await getSupabaseAdmin()
+                                .from('system_addons')
+                                .select('id, slug')
+                                .in('slug', meta.addons);
+
+                            if (systemAddons) {
+                                for (const sa of systemAddons) {
+                                    await getSupabaseAdmin().from('tenant_addons').upsert({
+                                        tenant_id: tenantId,
+                                        addon_id: sa.id,
+                                        status: 'active',
+                                        created_at: new Date().toISOString(),
+                                        updated_at: new Date().toISOString()
+                                    }, { onConflict: 'tenant_id,addon_id' });
+                                }
+                                // Adiciona na lista atual para retorno imediato
+                                activeAddons.push(...meta.addons.filter((s: string) => !activeAddons.includes(s)));
+                            }
+                        } catch (addonErr) {
+                            console.error('[PLAN API HEALING] Erro ao ativar addons:', addonErr);
+                        }
+                    }
+
                     subscriptionStatus = 'active';
                     tenant.plan = planSlug;
                 } else {
@@ -188,6 +214,32 @@ export async function GET(req: Request) {
                                                 subscription_status: 'active',
                                                 subscription_current_period_end: periodEnd.toISOString()
                                             }).eq('id', tenantId);
+
+                                            // ATIVAR ADDONS SE HOUVER (ASAAS)
+                                            if (meta.addons && Array.isArray(meta.addons) && meta.addons.length > 0) {
+                                                try {
+                                                    const { data: systemAddons } = await getSupabaseAdmin()
+                                                        .from('system_addons')
+                                                        .select('id, slug')
+                                                        .in('slug', meta.addons);
+
+                                                    if (systemAddons) {
+                                                        for (const sa of systemAddons) {
+                                                            await getSupabaseAdmin().from('tenant_addons').upsert({
+                                                                tenant_id: tenantId,
+                                                                addon_id: sa.id,
+                                                                status: 'active',
+                                                                created_at: new Date().toISOString(),
+                                                                updated_at: new Date().toISOString()
+                                                            }, { onConflict: 'tenant_id,addon_id' });
+                                                        }
+                                                        // Adiciona na lista atual para retorno imediato
+                                                        activeAddons.push(...meta.addons.filter((s: string) => !activeAddons.includes(s)));
+                                                    }
+                                                } catch (addonErr) {
+                                                    console.error('[PLAN API HEALING] Erro ao ativar addons (Asaas):', addonErr);
+                                                }
+                                            }
 
                                             subscriptionStatus = 'active';
                                             tenant.plan = planSlug;
