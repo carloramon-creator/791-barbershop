@@ -1130,11 +1130,11 @@ export default function PlanPage() {
                     </CardHeader>
                     <CardContent className="p-6">
                       <div className="space-y-6">
-                        <div className="flex items-start gap-4">
-                          <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center font-black text-white text-2xl shadow-xl shadow-blue-900/40 transform -rotate-3 group-hover:rotate-0 transition-transform">
+                        <div className="flex flex-col items-center text-center gap-4">
+                          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center font-black text-white text-3xl shadow-xl shadow-blue-900/40 transform -rotate-3 hover:rotate-0 transition-transform mb-2">
                             {currentPlan.charAt(0).toUpperCase()}
                           </div>
-                          <div>
+                          <div className="w-full">
                             <h3 className="text-3xl font-black text-slate-100 capitalize tracking-tight leading-none mb-2">
                               {dynamicPlans.find((p) => p.slug === currentPlan)
                                 ?.name || currentPlan}
@@ -1153,13 +1153,15 @@ export default function PlanPage() {
                             </p>
 
                             {subscriptionData?.status === 'active' && (
-                              <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                                <p className="text-[10px] font-bold text-blue-400 uppercase mb-1">Renovação Pix Mensal</p>
-                                <p className="text-xs text-slate-300">Seu Pix será gerado automaticamente em {new Date(subscriptionData.next_billing_date).toLocaleDateString("pt-BR")}.</p>
+                              <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl max-w-xs mx-auto">
+                                <p className="text-[10px] font-black text-blue-400 uppercase mb-2 tracking-widest">Renovação Pix Mensal</p>
+                                <p className="text-xs text-slate-300 leading-relaxed">
+                                  Seu Pix será gerado automaticamente em <span className="text-blue-400 font-bold">{new Date(subscriptionData.next_billing_date).toLocaleDateString("pt-BR")}</span>.
+                                </p>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-auto p-0 mt-2 text-red-500 hover:text-red-400 text-[10px] font-bold uppercase underline"
+                                  className="h-auto p-0 mt-3 text-red-500 hover:text-red-400 text-[10px] font-black uppercase underline tracking-widest"
                                   onClick={handleCancelSubscription}
                                   disabled={canceling}
                                 >
@@ -1169,15 +1171,15 @@ export default function PlanPage() {
                             )}
 
                             {subscriptionData?.status === 'canceled' && (
-                              <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                                <p className="text-[10px] font-bold text-yellow-600 uppercase mb-1">Renovação Cancelada</p>
-                                <p className="text-xs text-slate-300">Sua assinatura não será renovada. O acesso expira em {new Date(subscriptionData.next_billing_date).toLocaleDateString("pt-BR")}.</p>
+                              <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl max-w-xs mx-auto">
+                                <p className="text-[10px] font-black text-yellow-600 uppercase mb-2 tracking-widest">Renovação Cancelada</p>
+                                <p className="text-xs text-slate-300 leading-relaxed">Sua assinatura não será renovada. O acesso expira em <span className="text-yellow-600 font-bold">{new Date(subscriptionData.next_billing_date).toLocaleDateString("pt-BR")}</span>.</p>
                               </div>
                             )}
                           </div>
                         </div>
 
-                        <div className="pt-4 border-t border-slate-800/50 flex flex-col gap-3">
+                        <div className="pt-4 border-t border-slate-800/50 flex flex-col items-center gap-3">
                           <span
                             className={cn(
                               "w-fit px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border shadow-sm",
@@ -1195,7 +1197,7 @@ export default function PlanPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 text-[10px] text-red-500/60 hover:text-red-500 hover:bg-red-500/10 font-black uppercase tracking-widest p-0 justify-start"
+                                className="h-8 text-[10px] text-red-500/60 hover:text-red-500 hover:bg-red-500/10 font-black uppercase tracking-widest p-0 flex items-center justify-center gap-2"
                                 onClick={handleCancelSubscription}
                                 disabled={canceling}
                               >

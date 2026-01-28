@@ -11,15 +11,21 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 async function testSubscriptionSystem() {
     console.log('🚀 Iniciando simulação do sistema de assinaturas...');
 
-    // 1. Buscar o primeiro tenant disponível
+    // 1. Buscar o tenant Barbearia Ingleses
     const { data: tenants, error: tenantError } = await supabase
         .from('tenants')
         .select('id, name')
+        .eq('name', 'Barbearia Ingleses')
         .limit(1);
 
     if (tenantError || !tenants || tenants.length === 0) {
-        console.error('❌ Erro ao buscar tenant:', tenantError);
-        return;
+        console.error('❌ Tenant Barbearia Ingleses não encontrado. Buscando qualquer um...');
+        const { data: fallback, error: fallError } = await supabase
+            .from('tenants')
+            .select('id, name')
+            .limit(1);
+        if (fallError || !fallback) return;
+        tenants[0] = fallback[0];
     }
 
     const tenant = tenants[0];
