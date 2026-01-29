@@ -130,6 +130,17 @@ export default function DashboardPage() {
                         size="sm"
                         className={cn(
                             "text-xs px-3 h-8",
+                            period === 'fortnight' ? "bg-slate-800 text-blue-400" : "text-slate-400"
+                        )}
+                        onClick={() => setPeriod('fortnight')}
+                    >
+                        Quinzenal
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className={cn(
+                            "text-xs px-3 h-8",
                             period === 'month' ? "bg-slate-800 text-blue-400" : "text-slate-400"
                         )}
                         onClick={() => setPeriod('month')}

@@ -140,6 +140,7 @@ export async function GET(req: Request) {
         return addCorsHeaders(req, NextResponse.json({
             barbers: consolidatedBarbers,
             tenant: {
+                id: tenantId,
                 name: tenant.name,
                 logo_url: tenant.logo_url,
                 business_type: tenant.business_type || 'barbershop',

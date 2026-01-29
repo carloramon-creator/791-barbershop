@@ -20,13 +20,17 @@ import {
     ExternalLink,
     UserCheck,
     Scissors,
-    MessageSquare
+    MessageSquare,
+    Clock,
+    ShoppingBag,
+    CalendarCheck,
+    ListOrdered
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { cn, formatPhone, formatCPF } from '@/lib/utils';
+import { cn, formatPhone, formatCPF, formatCurrency } from '@/lib/utils';
 import {
     Dialog,
     DialogContent,
@@ -72,6 +76,10 @@ export default function ClientsPage() {
     const [editingClient, setEditingClient] = useState<Client | null>(null);
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [clientHistory, setClientHistory] = useState<any[]>([]);
+    const [selectedHistoryClient, setSelectedHistoryClient] = useState<Client | null>(null);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -165,6 +173,20 @@ export default function ClientsPage() {
         const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
 
         window.open(whatsappUrl, '_blank');
+    };
+
+    const handleViewHistory = async (client: Client) => {
+        setSelectedHistoryClient(client);
+        setShowHistoryDialog(true);
+        setHistoryLoading(true);
+        try {
+            const data = await Api.getClientHistory(client.id);
+            setClientHistory(data.history || []);
+        } catch (error) {
+            console.error('Erro ao carregar histórico', error);
+        } finally {
+            setHistoryLoading(false);
+        }
     };
 
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -309,6 +331,9 @@ export default function ClientsPage() {
                                                             <DropdownMenuSeparator className="bg-slate-800" />
                                                             <DropdownMenuItem onClick={() => handleEdit(client)} className="gap-2 focus:bg-slate-800 focus:text-slate-100">
                                                                 <Edit2 size={16} /> Editar Cadastro
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleViewHistory(client)} className="gap-2 focus:bg-slate-800 focus:text-slate-100">
+                                                                <Clock size={16} /> Ver Histórico
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem onClick={() => handleShareLink(client)} className="gap-2 text-green-400 focus:bg-green-400/10 focus:text-green-400 cursor-pointer">
                                                                 <MessageSquare size={16} /> Enviar Link WhatsApp
@@ -497,6 +522,102 @@ export default function ClientsPage() {
                             className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl h-12 font-black shadow-lg shadow-red-600/20"
                         >
                             {deleting ? <Loader2 className="animate-spin" /> : 'EXCLUIR'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            {/* History Dialog */}
+            <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
+                <DialogContent className="bg-slate-950 border-slate-800 text-slate-100 max-w-2xl h-[80vh] flex flex-col p-0">
+                    <DialogHeader className="p-6 border-b border-slate-800 shrink-0">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-blue-600/20 flex items-center justify-center text-blue-500">
+                                <Clock size={24} />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-xl font-black text-slate-100">HISTÓRICO DO CLIENTE</DialogTitle>
+                                <DialogDescription className="text-slate-500 font-medium">
+                                    {selectedHistoryClient?.name} • {selectedHistoryClient?.phone}
+                                </DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        {historyLoading ? (
+                            <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-500">
+                                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                                <p className="text-sm font-bold uppercase tracking-widest">Carregando histórico...</p>
+                            </div>
+                        ) : clientHistory.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-600">
+                                <ListOrdered size={48} className="opacity-20" />
+                                <p className="font-medium">Nenhum registro encontrado para este cliente.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-800 before:to-transparent">
+                                {clientHistory.map((item, idx) => (
+                                    <div key={idx} className="relative flex items-center justify-between gap-6 group">
+                                        {/* Timeline dot */}
+                                        <div className={cn(
+                                            "absolute left-0 w-10 h-10 -ml-0 rounded-full border-4 border-slate-950 flex items-center justify-center z-10 transition-transform group-hover:scale-110",
+                                            item.type === 'service_sale' ? "bg-emerald-500 text-white" :
+                                                item.type === 'product_sale' ? "bg-blue-500 text-white" :
+                                                    item.type === 'appointment' ? "bg-amber-500 text-white" : "bg-slate-700 text-slate-300"
+                                        )}>
+                                            {item.type === 'service_sale' ? <Scissors size={18} /> :
+                                                item.type === 'product_sale' ? <ShoppingBag size={18} /> :
+                                                    item.type === 'appointment' ? <CalendarCheck size={18} /> : <Clock size={18} />}
+                                        </div>
+
+                                        <div className="flex-1 ml-14 py-4 px-6 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-slate-700 transition-all hover:bg-slate-900">
+                                            <div className="flex justify-between items-start mb-1">
+                                                <h4 className="font-black text-slate-100 text-sm uppercase tracking-tight">{item.title}</h4>
+                                                <span className="text-[10px] font-bold text-slate-500 bg-slate-950 px-2 py-1 rounded">
+                                                    {format(new Date(item.date), "dd 'de' MMM, HH:mm", { locale: ptBR })}
+                                                </span>
+                                            </div>
+
+                                            <div className="text-sm text-slate-400 font-medium">
+                                                {item.type === 'service_sale' && (
+                                                    <div className="flex flex-col gap-1">
+                                                        <p>Profissional: <span className="text-slate-200">{item.barber}</span></p>
+                                                        <p className="text-emerald-400 font-black">{formatCurrency(item.amount)} • {item.method}</p>
+                                                    </div>
+                                                )}
+                                                {item.type === 'product_sale' && (
+                                                    <div className="flex flex-col gap-1">
+                                                        <p className="text-slate-300 italic">{item.items}</p>
+                                                        <p className="text-blue-400 font-black">{formatCurrency(item.amount)} • {item.method}</p>
+                                                    </div>
+                                                )}
+                                                {item.type === 'appointment' && (
+                                                    <div className="flex flex-col gap-1">
+                                                        <p>Profissional: <span className="text-slate-200">{item.barber}</span></p>
+                                                        <p className={cn(
+                                                            "font-bold uppercase text-[10px]",
+                                                            item.status === 'completed' ? "text-emerald-500" :
+                                                                item.status === 'cancelled' ? "text-red-500" : "text-amber-500"
+                                                        )}>{item.status}</p>
+                                                    </div>
+                                                )}
+                                                {item.type === 'queue_entry' && (
+                                                    <div className="flex flex-col gap-1">
+                                                        <p>Serviço: <span className="text-slate-200">{item.service}</span></p>
+                                                        <p className="text-xs">{item.status}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <DialogFooter className="p-4 border-t border-slate-800 shrink-0">
+                        <Button variant="ghost" onClick={() => setShowHistoryDialog(false)} className="w-full rounded-xl text-slate-400 font-bold">
+                            FECHAR
                         </Button>
                     </DialogFooter>
                 </DialogContent>

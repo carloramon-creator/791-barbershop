@@ -19,16 +19,28 @@ export async function GET(req: Request) {
         const startIso = startDate.toISOString();
         const endIso = endDate.toISOString();
 
-        // 1. Faturamento no período
-        const { data: sales, error: salesError } = await getSupabaseAdmin()
-            .from('sales')
-            .select('total_amount')
-            .eq('tenant_id', tenant.id)
-            .gte('created_at', startIso)
-            .lte('created_at', endIso);
+        // 1. Faturamento no período (Consolidado: sales + vendas)
+        const [salesRes, vendasRes] = await Promise.all([
+            getSupabaseAdmin()
+                .from('sales')
+                .select('total_amount')
+                .eq('tenant_id', tenant.id)
+                .gte('created_at', startIso)
+                .lte('created_at', endIso),
+            getSupabaseAdmin()
+                .from('vendas')
+                .select('total')
+                .eq('tenant_id', tenant.id)
+                .gte('created_at', startIso)
+                .lte('created_at', endIso)
+        ]);
 
-        if (salesError) throw salesError;
-        const totalBilling = sales?.reduce((acc, s) => acc + Number(s.total_amount), 0) || 0;
+        if (salesRes.error) throw salesRes.error;
+        if (vendasRes.error) throw vendasRes.error;
+
+        const salesTotal = salesRes.data?.reduce((acc, s) => acc + Number(s.total_amount), 0) || 0;
+        const vendasTotal = vendasRes.data?.reduce((acc, v) => acc + Number(v.total), 0) || 0;
+        const totalBilling = salesTotal + vendasTotal;
 
         // 2. Total de atendimentos feitos (finished)
         const { count: servicesDone, error: queueError } = await getSupabaseAdmin()
