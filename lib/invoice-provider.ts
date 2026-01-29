@@ -5,7 +5,6 @@
  */
 
 import nfseService from './nfse/nfse-service';
-
 import { getSupabaseAdmin } from './supabase-server';
 
 export interface InvoiceData {
@@ -49,7 +48,7 @@ class InvoiceProvider {
      * Emite uma nota fiscal de faturamento do SaaS para uma barbearia.
      */
     public async emitSaaSInvoice(invoice: InvoiceData, skipAutoCheck: boolean = true): Promise<InvoiceResponse> {
-        console.log(`[INVOICE-PROVIDER] Iniciando emissão MONOLÍTICA para: ${invoice.customerName}`);
+        console.log(`[INVOICE-PROVIDER] Iniciando emissão DIRETA para: ${invoice.customerName}`);
 
         try {
             // 0. Buscar configurações no DB
@@ -93,67 +92,23 @@ class InvoiceProvider {
                 }
             };
 
-            // 2. Chamar o microserviço de NFS-e
-            console.log(`[INVOICE-PROVIDER] Delegando emissão para o microserviço: http://localhost:3333/nfse/emit`);
+            // 2. Chamar o serviço de NFS-e diretamente (mesmo processo)
+            console.log(`[INVOICE-PROVIDER] Emitindo via NfseService...`);
+            const result = await nfseService.emitNfse(dpsData, pfxBase64, passphrase);
 
-            // Extrair chaves para o microserviço (que espera privateKey e publicCert separados)
-            const { privateKey, certificate: publicCert } = (await import('./nfse/signature-service')).default.extractFromPfx(pfxBase64, passphrase);
-
-            const providerUrl = process.env.NFSE_PROVIDER_URL || 'http://localhost:3333';
-            const providerSecret = process.env.NFSE_PROVIDER_SECRET || 'sua_chave_secreta_aqui';
-
-            console.log(`[INVOICE-PROVIDER] Chamando microserviço em: ${providerUrl}/nfse/emit`);
-
-            // Gerar token simples para o microserviço
-            const jwt = (await import('jsonwebtoken')).default;
-            const token = jwt.sign({ service: 'frontend-owner' }, providerSecret);
-
-            try {
-                const response = await fetch(`${providerUrl}/nfse/emit`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        dpsData,
-                        privateKey,
-                        publicCert,
-                        pfxBase64,
-                        passphrase
-                    })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error('[INVOICE-PROVIDER] Resposta de erro do microserviço:', errorData);
-                    throw new Error(errorData.error || 'Erro na comunicação com o microserviço de NFS-e');
-                }
-
-                const result = await response.json();
-                console.log('[INVOICE-PROVIDER] Sucesso no microserviço:', result);
-
-                return {
-                    success: true,
-                    invoiceId: result.invoiceId || dpsData.numero,
-                    status: 'authorized',
-                    pdfUrl: `/api/nfse/pdf`, // A rota de download ainda pode ser via proxy ou direta
-                    message: 'Nota Fiscal autorizada com sucesso via Microserviço 791.'
-                };
-            } catch (error: any) {
-                console.error('[INVOICE-PROVIDER ERROR]', error);
-                return {
-                    success: false,
-                    status: 'rejected',
-                    message: error.message
-                };
-            }
-        } catch (globalError: any) {
-            console.error('[INVOICE-PROVIDER GLOBAL ERROR]', globalError);
+            return {
+                success: true,
+                invoiceId: (result as any).invoiceId || dpsData.numero,
+                status: 'authorized',
+                pdfUrl: `/api/nfse/pdf`,
+                message: 'Nota Fiscal autorizada com sucesso via Provedor 791 (Nacional).'
+            };
+        } catch (error: any) {
+            console.error('[INVOICE-PROVIDER ERROR]', error);
             return {
                 success: false,
                 status: 'rejected',
-                message: globalError.message
+                message: error.message || 'Falha na emissão da NFS-e'
             };
         }
     }

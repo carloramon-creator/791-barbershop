@@ -69,7 +69,7 @@ export default function CouponsCentralPage() {
             setLoading(true);
             const res = await fetch('/api/barbershop/vouchers');
             const data = await res.json();
-            if (res.ok) setVouchers(data);
+            if (res.ok) setVouchers(data || []);
         } catch (error) {
             toast.error("Erro ao carregar cupons");
         } finally {
@@ -82,9 +82,8 @@ export default function CouponsCentralPage() {
             const res = await fetch('/api/barbershop/clients');
             const data = await res.json();
             if (res.ok) {
-                // Filtra para garantir que temos uma lista válida de clientes
-                const clientList = Array.isArray(data) ? data : (data.clients || []);
-                setClients(clientList.filter((c: any) => c.name));
+                const list = Array.isArray(data) ? data : (data.clients || []);
+                setClients(list.filter((c: any) => c.name));
             }
         } catch (error) {
             console.error("Erro ao carregar clientes", error);
@@ -147,8 +146,8 @@ export default function CouponsCentralPage() {
     };
 
     const filteredVouchers = vouchers.filter(v =>
-        v.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        v.clients?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+        (v.code || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (v.clients?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const getStatus = (v: any) => {
@@ -170,11 +169,11 @@ export default function CouponsCentralPage() {
 
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                     <DialogTrigger asChild>
-                        <Button className="bg-blue-600 hover:bg-blue-700 font-bold gap-2 shadow-lg shadow-blue-600/20">
+                        <Button className="bg-blue-600 hover:bg-blue-700 font-bold gap-2 shadow-lg shadow-blue-600/20 active:scale-95 transition-transform">
                             <Plus className="w-5 h-5" /> Novo Cupom
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-md">
+                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-md shadow-2xl">
                         <DialogHeader>
                             <DialogTitle>Criar Novo Voucher</DialogTitle>
                             <DialogDescription className="text-slate-400">
@@ -184,25 +183,25 @@ export default function CouponsCentralPage() {
 
                         <div className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <Label>Código do Cupom</Label>
+                                <Label className="text-xs uppercase text-slate-500 font-black tracking-widest">Código do Cupom</Label>
                                 <Input
                                     placeholder="Ex: BEMVINDO10"
-                                    className="bg-slate-800 border-slate-700 uppercase font-mono"
+                                    className="bg-slate-800 border-slate-700 uppercase font-mono h-11"
                                     value={formData.code}
                                     onChange={e => setFormData({ ...formData, code: e.target.value })}
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Destinatário</Label>
+                                <Label className="text-xs uppercase text-slate-500 font-black tracking-widest">Destinatário</Label>
                                 <Select
                                     value={formData.client_id}
                                     onValueChange={v => setFormData({ ...formData, client_id: v })}
                                 >
-                                    <SelectTrigger className="bg-slate-800 border-slate-700">
+                                    <SelectTrigger className="bg-slate-800 border-slate-700 h-11 w-full text-left">
                                         <SelectValue placeholder="Selecione um cliente" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-100 max-h-[250px] overflow-y-auto z-[100]">
+                                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-100 max-h-[300px] z-[9999]">
                                         <SelectItem value="global" className="font-bold text-blue-400">🌍 Global (Qualquer Cliente)</SelectItem>
                                         {(clients || []).map(c => (
                                             <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
@@ -213,26 +212,26 @@ export default function CouponsCentralPage() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label>Tipo</Label>
+                                    <Label className="text-xs uppercase text-slate-500 font-black tracking-widest">Tipo</Label>
                                     <Select
                                         value={formData.discount_type}
                                         onValueChange={v => setFormData({ ...formData, discount_type: v })}
                                     >
-                                        <SelectTrigger className="bg-slate-800 border-slate-700">
+                                        <SelectTrigger className="bg-slate-800 border-slate-700 h-11">
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                                        <SelectContent className="bg-slate-900 border-slate-800 text-slate-100 z-[9999]">
                                             <SelectItem value="fixed">Fixo (R$)</SelectItem>
                                             <SelectItem value="percentage">Percentual (%)</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Valor</Label>
+                                    <Label className="text-xs uppercase text-slate-500 font-black tracking-widest">Valor</Label>
                                     <Input
                                         type="number"
                                         placeholder="0.00"
-                                        className="bg-slate-800 border-slate-700"
+                                        className="bg-slate-800 border-slate-700 h-11"
                                         value={formData.discount_value}
                                         onChange={e => setFormData({ ...formData, discount_value: e.target.value })}
                                     />
@@ -240,10 +239,10 @@ export default function CouponsCentralPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Data de Expiração</Label>
+                                <Label className="text-xs uppercase text-slate-500 font-black tracking-widest">Data de Expiração</Label>
                                 <Input
                                     type="date"
-                                    className="bg-slate-800 border-slate-700"
+                                    className="bg-slate-800 border-slate-700 h-11"
                                     value={formData.expires_at}
                                     onChange={e => setFormData({ ...formData, expires_at: e.target.value })}
                                 />
@@ -266,10 +265,10 @@ export default function CouponsCentralPage() {
                             </div>
                         </div>
 
-                        <DialogFooter>
-                            <Button variant="ghost" onClick={() => setIsCreateOpen(false)}>Cancelar</Button>
+                        <DialogFooter className="gap-2">
+                            <Button variant="ghost" onClick={() => setIsCreateOpen(false)} className="text-xs font-bold uppercase tracking-widest">Cancelar</Button>
                             <Button
-                                className="bg-blue-600 hover:bg-blue-700 font-bold"
+                                className="bg-blue-600 hover:bg-blue-700 font-bold h-11 flex-1 shadow-lg shadow-blue-600/20"
                                 onClick={handleCreate}
                                 disabled={isSubmitting}
                             >
@@ -288,23 +287,23 @@ export default function CouponsCentralPage() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
                             <Input
                                 placeholder="Buscar por código ou cliente..."
-                                className="bg-slate-800 border-slate-700 pl-10"
+                                className="bg-slate-800 border-slate-700 pl-10 h-11"
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                             />
                         </div>
                         <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 text-xs font-bold uppercase tracking-wider">
-                                <Filter className="w-3 h-3 mr-2" /> Filtrar
+                            <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 text-xs font-bold uppercase tracking-wider h-11 px-4">
+                                <Filter className="w-4 h-4 mr-2" /> Filtrar
                             </Button>
-                            <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 text-xs font-bold uppercase tracking-wider" onClick={fetchData}>
-                                <Loader2 className={cn("w-3 h-3 mr-2", loading && "animate-spin")} /> Atualizar
+                            <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 text-xs font-bold uppercase tracking-wider h-11 px-4" onClick={fetchData}>
+                                <Loader2 className={cn("w-4 h-4 mr-2", loading && "animate-spin")} /> Atualizar
                             </Button>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto overflow-y-hidden">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-slate-950/50 border-b border-slate-800">
@@ -343,6 +342,9 @@ export default function CouponsCentralPage() {
                                                 <td className="px-6 py-4">
                                                     <div className="inline-flex items-center gap-2 px-2 py-1 rounded bg-blue-500/10 text-blue-400 font-mono font-bold text-xs uppercase border border-blue-500/20">
                                                         <Ticket className="w-3 h-3" /> {v.code}
+                                                        {v.is_birthday && (
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" title="Aniversário" />
+                                                        )}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
