@@ -160,6 +160,11 @@ export const Api = {
     getBarbershop: () => apiFetch('/api/barbershop'),
     updateBarbershop: (payload: Record<string, unknown>) => apiFetch('/api/barbershop', { method: 'PUT', body: JSON.stringify(payload) }),
 
+    // Vouchers
+    getVouchers: (clientId?: string) => apiFetch(`/api/barbershop/vouchers${clientId ? `?clientId=${clientId}` : ''}`),
+    createVoucher: (payload: Record<string, unknown>) => apiFetch('/api/barbershop/vouchers', { method: 'POST', body: JSON.stringify(payload) }),
+    deleteVoucher: (id: string) => apiFetch(`/api/barbershop/vouchers?id=${id}`, { method: 'DELETE' }),
+
     // Users
     getUsers: (includeArchived: boolean = false) => apiFetch(`/api/barbershop/users?include_archived=${includeArchived}`),
     inviteUser: (payload: Record<string, unknown>) => apiFetch('/api/barbershop/users', { method: 'POST', body: JSON.stringify(payload) }),

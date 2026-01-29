@@ -31,7 +31,13 @@ export default function NfseConfigPage() {
             const res = await fetch('/api/system/nfse-config');
             const data = await res.json();
             if (res.ok) {
-                setConfig(data);
+                // Sincroniza o estado local com os dados do servidor
+                setConfig({
+                    environment: data.environment || 'homologacao',
+                    auto_emit: !!data.auto_emit,
+                    certificateUploaded: !!data.certificateUploaded,
+                    lastUpdated: data.lastUpdated
+                });
             }
         } catch (error) {
             console.error('Erro ao carregar configurações:', error);
@@ -60,19 +66,21 @@ export default function NfseConfigPage() {
                 body: JSON.stringify({
                     environment: config.environment,
                     auto_emit: config.auto_emit,
-                    ...files
+                    pfxBase64: files.pfxBase64,
+                    passphrase: files.passphrase
                 })
             });
 
             if (res.ok) {
-                toast.success("Configurações fiscais atualizadas.");
-                setFiles({}); // Limpa inputs de arquivo/senha após salvar
+                toast.success("Configurações fiscais salvas com sucesso!");
+                setFiles({}); // Limpa inputs locais
                 fetchConfig();
             } else {
-                throw new Error('Erro ao salvar');
+                const errData = await res.json();
+                throw new Error(errData.error || 'Erro ao salvar');
             }
-        } catch (error) {
-            toast.error("Não foi possível salvar as configurações.");
+        } catch (error: any) {
+            toast.error(error.message || "Não foi possível salvar as configurações.");
         } finally {
             setSaving(false);
         }
@@ -109,6 +117,7 @@ export default function NfseConfigPage() {
                             <Select
                                 value={config.environment}
                                 onValueChange={(v) => setConfig(prev => ({ ...prev, environment: v }))}
+                                disabled={saving}
                             >
                                 <SelectTrigger className="bg-slate-800 border-slate-700">
                                     <SelectValue placeholder="Selecione o ambiente" />
@@ -142,7 +151,8 @@ export default function NfseConfigPage() {
                                 type="file"
                                 accept=".pfx,.p12"
                                 onChange={handleFileChange}
-                                className="bg-slate-800 border-slate-700 cursor-pointer"
+                                disabled={saving}
+                                className="bg-slate-800 border-slate-700 cursor-pointer file:bg-blue-600 file:text-white file:border-0 file:rounded-md file:px-2 file:py-1 file:mr-2 file:text-xs"
                             />
                             {config.certificateUploaded && (
                                 <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider flex items-center gap-1">
@@ -158,7 +168,8 @@ export default function NfseConfigPage() {
                                 placeholder="Digite a senha do certificado"
                                 value={files.passphrase || ''}
                                 onChange={(e) => setFiles(prev => ({ ...prev, passphrase: e.target.value }))}
-                                className="bg-slate-800 border-slate-700"
+                                disabled={saving}
+                                className="bg-slate-800 border-slate-700 font-mono"
                             />
                         </div>
                     </CardContent>
@@ -172,17 +183,21 @@ export default function NfseConfigPage() {
                         <CardDescription>Configure o comportamento automático da plataforma.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                        <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700 transition-colors hover:bg-slate-800">
                             <div className="space-y-1">
-                                <Label className="text-base font-bold text-slate-100">Emissão Automática (SaaS)</Label>
+                                <Label className="text-base font-bold text-slate-100 cursor-pointer" htmlFor="auto-emit-toggle">
+                                    Emissão Automática (SaaS)
+                                </Label>
                                 <p className="text-xs text-slate-400">Emitir NFS-e Nacional automaticamente após a confirmação de pagamento (Stripe/Inter).</p>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input
+                                    id="auto-emit-toggle"
                                     type="checkbox"
                                     className="sr-only peer"
                                     checked={config.auto_emit}
                                     onChange={(e) => setConfig(prev => ({ ...prev, auto_emit: e.target.checked }))}
+                                    disabled={saving}
                                 />
                                 <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                             </label>
@@ -193,12 +208,21 @@ export default function NfseConfigPage() {
 
             <div className="flex justify-end pt-4">
                 <Button
-                    className="bg-blue-600 hover:bg-blue-700 h-12 w-full md:w-48 font-bold shadow-lg shadow-blue-600/20"
+                    className="bg-blue-600 hover:bg-blue-700 h-12 w-full md:w-48 font-bold shadow-lg shadow-blue-600/20 active:scale-95 transition-transform"
                     disabled={saving}
                     onClick={handleSave}
                 >
-                    {saving ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Save className="w-5 h-5 mr-2" />}
-                    Salvar Alterações
+                    {saving ? (
+                        <>
+                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                            Salvando...
+                        </>
+                    ) : (
+                        <>
+                            <Save className="w-5 h-5 mr-2" />
+                            Salvar Alterações
+                        </>
+                    )}
                 </Button>
             </div>
         </div>

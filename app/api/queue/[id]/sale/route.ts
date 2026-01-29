@@ -43,7 +43,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         if (services && services.length > 0) {
             const { data: dbServices } = await client
                 .from('services')
-                .select('id, price, name') // name para log se precisar
+                .select('id, price, name')
                 .in('id', services.map((s: any) => s.id));
 
             if (dbServices) {
@@ -53,7 +53,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                         const price = Number(dbService.price);
                         const itemTotal = price * s.qty;
                         totalAmount += itemTotal;
-                        servicesTotal += itemTotal; // Track services total
+                        servicesTotal += itemTotal;
                         salesItems.push({
                             item_type: 'service',
                             item_id: s.id,
@@ -65,7 +65,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             }
         }
 
-        // Processar Produtos (com verificação de estoque simples, se houver lógica futura)
+        // Processar Produtos
         if (products && products.length > 0) {
             const { data: dbProducts } = await client
                 .from('products')
@@ -78,7 +78,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                     if (dbProduct) {
                         const price = Number(dbProduct.price);
                         totalAmount += price * p.qty;
-                        // Products do NOT add to servicesTotal
                         salesItems.push({
                             item_type: 'product',
                             item_id: p.id,
@@ -90,13 +89,43 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             }
         }
 
-        // 3. Calcular Comissão (Buscar configuração do barbeiro)
-        // 3. Calcular Comissão (Buscar configuração do barbeiro)
+        // --- NEW: LÓGICA DE CUPOM ---
+        let discountAmount = 0;
+        let voucherId = null;
+        const voucherCode = body.voucher_code;
+
+        if (voucherCode && servicesTotal > 0) {
+            const { data: voucher } = await client
+                .from('client_vouchers')
+                .select('*')
+                .eq('code', voucherCode.trim().toUpperCase())
+                .eq('tenant_id', tenant.id)
+                .is('used_at', null)
+                .gte('expires_at', new Date().toISOString())
+                .single();
+
+            if (voucher) {
+                // Verificar se o voucher é deste cliente ou genérico (se client_id for null)
+                if (!voucher.client_id || voucher.client_id === queueItem.client_id) {
+                    if (voucher.discount_type === 'percentage') {
+                        discountAmount = (servicesTotal * Number(voucher.discount_value)) / 100;
+                    } else {
+                        discountAmount = Math.min(Number(voucher.discount_value), servicesTotal); // Desconto fixo não pode ser maior que o total de serviços
+                    }
+                    voucherId = voucher.id;
+                    totalAmount = Math.max(0, totalAmount - discountAmount);
+
+                    // Marcar voucher como usado
+                    await client.from('client_vouchers').update({ used_at: new Date().toISOString() }).eq('id', voucher.id);
+                }
+            }
+        }
+
+        // 3. Calcular Comissão
         let commissionValue = 0;
-        let commissionRate = 50; // Default 50%
+        let commissionRate = 50;
         let commissionType = 'percentage';
 
-        // Tenta obter user_id através da tabela barbers
         const { data: barberData } = await client
             .from('barbers')
             .select('user_id')
@@ -116,11 +145,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             }
         }
 
-        // FIXED: Calculate commission ONLY on services, not products
+        // Cálculo da comissão sobre o valor LÍQUIDO do serviço
+        const netServicesTotal = Math.max(0, servicesTotal - discountAmount);
         if (commissionType === 'percentage') {
-            commissionValue = (servicesTotal * commissionRate) / 100;
+            commissionValue = (netServicesTotal * commissionRate) / 100;
         } else {
-            commissionValue = commissionRate; // Valor fixo
+            commissionValue = commissionRate;
         }
 
         // 4. Criar Venda (Sale)
@@ -132,7 +162,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                 barber_id: queueItem.barber_id,
                 client_id: queueItem.client_id,
                 total_amount: totalAmount,
-                commission_value: commissionValue, // Valor calculado
+                discount_amount: discountAmount,
+                voucher_id: voucherId,
+                commission_value: commissionValue,
                 payment_method,
                 status: 'completed',
                 created_by: user.id

@@ -11,8 +11,8 @@ export async function OPTIONS(req: Request) {
  */
 export async function GET(req: Request) {
     try {
-        const { roles } = await getCurrentUserAndTenant();
-        if (!roles.includes('system_admin')) {
+        const { isSystemAdmin } = await getCurrentUserAndTenant();
+        if (!isSystemAdmin) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Acesso negado' }, { status: 403 }));
         }
 
@@ -50,13 +50,20 @@ export async function GET(req: Request) {
  */
 export async function POST(req: Request) {
     try {
-        const { roles } = await getCurrentUserAndTenant();
-        if (!roles.includes('system_admin')) {
+        const { isSystemAdmin } = await getCurrentUserAndTenant();
+        if (!isSystemAdmin) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Acesso negado' }, { status: 403 }));
         }
 
         const body = await req.json();
         const { environment, pfxBase64, passphrase, auto_emit } = body;
+
+        console.log(`[NFSE-POST] Recebendo config de ${user.email}:`, {
+            environment,
+            hasCertificate: !!pfxBase64,
+            hasPassphrase: !!passphrase,
+            auto_emit
+        });
 
         // Busca configuração existente
         const { data: existing } = await getSupabaseAdmin()
@@ -83,7 +90,12 @@ export async function POST(req: Request) {
                 updated_at: new Date().toISOString()
             }, { onConflict: 'key' });
 
-        if (error) throw error;
+        if (error) {
+            console.error('[NFSE-POST] Erro ao salvar no banco:', error);
+            throw error;
+        }
+
+        console.log('[NFSE-POST] Sucesso!');
 
         return addCorsHeaders(req, NextResponse.json({ success: true, message: 'Configurações salvas com sucesso' }));
     } catch (error: any) {

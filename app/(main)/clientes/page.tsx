@@ -24,7 +24,8 @@ import {
     Clock,
     ShoppingBag,
     CalendarCheck,
-    ListOrdered
+    ListOrdered,
+    Ticket
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -81,6 +82,16 @@ export default function ClientsPage() {
     const [historyLoading, setHistoryLoading] = useState(false);
     const [clientHistory, setClientHistory] = useState<any[]>([]);
     const [selectedHistoryClient, setSelectedHistoryClient] = useState<Client | null>(null);
+    const [showVoucherDialog, setShowVoucherDialog] = useState(false);
+    const [vouchers, setVouchers] = useState<any[]>([]);
+    const [voucherLoading, setVoucherLoading] = useState(false);
+    const [voucherFormData, setVoucherFormData] = useState({
+        code: '',
+        discount_type: 'fixed' as 'fixed' | 'percentage',
+        discount_value: 0,
+        expires_at: '',
+        is_birthday: false
+    });
 
     // Form State
     const [formData, setFormData] = useState({
@@ -189,6 +200,59 @@ export default function ClientsPage() {
             console.error('Erro ao carregar histórico', error);
         } finally {
             setHistoryLoading(false);
+        }
+    };
+
+    const handleViewVouchers = async (client: Client) => {
+        setSelectedHistoryClient(client);
+        setShowVoucherDialog(true);
+        setVoucherLoading(true);
+        try {
+            const data = await Api.getVouchers(client.id);
+            setVouchers(data);
+            setVoucherFormData({
+                code: `PROMO${Math.floor(1000 + Math.random() * 9000)}`,
+                discount_type: 'fixed',
+                discount_value: 10,
+                expires_at: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+                is_birthday: false
+            });
+        } catch (error) {
+            console.error('Erro ao carregar vouchers', error);
+        } finally {
+            setVoucherLoading(false);
+        }
+    };
+
+    const handleCreateVoucher = async () => {
+        if (!selectedHistoryClient) return;
+        try {
+            setVoucherLoading(true);
+            await Api.createVoucher({
+                ...voucherFormData,
+                client_id: selectedHistoryClient.id
+            });
+            const data = await Api.getVouchers(selectedHistoryClient.id);
+            setVouchers(data);
+            alert('Voucher criado com sucesso!');
+        } catch (error: any) {
+            alert('Erro ao criar: ' + error.message);
+        } finally {
+            setVoucherLoading(false);
+        }
+    };
+
+    const handleDeleteVoucher = async (id: string) => {
+        if (!confirm('Excluir este voucher?')) return;
+        try {
+            setVoucherLoading(true);
+            await Api.deleteVoucher(id);
+            const data = await Api.getVouchers(selectedHistoryClient?.id);
+            setVouchers(data);
+        } catch (error: any) {
+            alert('Erro ao excluir: ' + error.message);
+        } finally {
+            setVoucherLoading(false);
         }
     };
 
@@ -340,6 +404,9 @@ export default function ClientsPage() {
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem onClick={() => handleShareLink(client)} className="gap-2 text-green-400 focus:bg-green-400/10 focus:text-green-400 cursor-pointer">
                                                                 <MessageSquare size={16} /> Enviar Link WhatsApp
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleViewVouchers(client)} className="gap-2 text-blue-400 focus:bg-blue-400/10 focus:text-blue-400 cursor-pointer">
+                                                                <Ticket size={16} /> Ver Cupons / Fidelidade
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator className="bg-slate-800" />
                                                             <DropdownMenuItem onClick={() => handleDelete(client.id)} className="gap-2 text-red-400 focus:bg-red-400/10 focus:text-red-400 cursor-pointer">
@@ -612,6 +679,118 @@ export default function ClientsPage() {
                             FECHAR
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Vouchers Dialog */}
+            <Dialog open={showVoucherDialog} onOpenChange={setShowVoucherDialog}>
+                <DialogContent className="bg-slate-950 border-slate-800 text-slate-100 max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-black text-slate-100 flex items-center gap-2">
+                            <Ticket size={24} className="text-blue-500" />
+                            CUPONS E FIDELIDADE
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-500 text-xs">
+                            Gerencie os vouchers de desconto de <span className="text-white font-bold">{selectedHistoryClient?.name}</span>.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+                        {/* List Vouchers */}
+                        <div className="space-y-4">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Cupons Ativos</h4>
+                            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                {voucherLoading && vouchers.length === 0 ? (
+                                    <div className="flex justify-center p-8"><Loader2 className="animate-spin text-blue-500" /></div>
+                                ) : vouchers.length === 0 ? (
+                                    <p className="text-xs text-slate-600 text-center py-8 font-medium">Nenhum cupom ativo.</p>
+                                ) : (
+                                    vouchers.map((v: any) => (
+                                        <div key={v.id} className="p-3 bg-slate-900 border border-slate-800 rounded-xl relative group">
+                                            <div className="flex justify-between items-start mb-1">
+                                                <span className="text-xs font-black text-blue-400 uppercase tracking-tighter">{v.code}</span>
+                                                <button onClick={() => handleDeleteVoucher(v.id)} className="text-slate-600 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
+                                                    <Trash2 size={12} />
+                                                </button>
+                                            </div>
+                                            <div className="flex justify-between items-end">
+                                                <p className="text-lg font-black text-slate-100">
+                                                    {v.discount_type === 'percentage' ? `${v.discount_value}%` : formatCurrency(v.discount_value)}
+                                                </p>
+                                                <p className="text-[9px] font-medium text-slate-500">EXP: {v.expires_at ? format(new Date(v.expires_at), "dd/MM/yy") : 'N/A'}</p>
+                                            </div>
+                                            {v.is_birthday && (
+                                                <span className="absolute -top-1 -right-1 bg-pink-600 text-[8px] font-black text-white px-1.5 py-0.5 rounded-full uppercase">Aniversário 🎂</span>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Create Voucher */}
+                        <div className="space-y-4 bg-slate-900/50 p-4 rounded-2xl border border-slate-800 shadow-inner">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Novo Voucher</h4>
+                            <div className="space-y-3">
+                                <div className="space-y-1">
+                                    <Label className="text-[10px] font-bold text-slate-500 uppercase">Código</Label>
+                                    <Input
+                                        value={voucherFormData.code}
+                                        onChange={e => setVoucherFormData({ ...voucherFormData, code: e.target.value.toUpperCase() })}
+                                        className="h-10 bg-slate-950 border-slate-800 text-sm font-mono focus:ring-blue-500/20"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] font-bold text-slate-500 uppercase">Tipo</Label>
+                                        <select
+                                            className="w-full h-10 bg-slate-950 border-slate-800 rounded-md px-3 text-sm text-slate-100 focus:ring-2 focus:ring-blue-500/20 outline-none"
+                                            value={voucherFormData.discount_type}
+                                            onChange={(e: any) => setVoucherFormData({ ...voucherFormData, discount_type: e.target.value })}
+                                        >
+                                            <option value="fixed">Fixo (R$)</option>
+                                            <option value="percentage">Percentual (%)</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] font-bold text-slate-500 uppercase">Valor</Label>
+                                        <Input
+                                            type="number"
+                                            value={voucherFormData.discount_value}
+                                            onChange={e => setVoucherFormData({ ...voucherFormData, discount_value: Number(e.target.value) })}
+                                            className="h-10 bg-slate-950 border-slate-800 text-sm focus:ring-blue-500/20"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[10px] font-bold text-slate-500 uppercase">Validade</Label>
+                                    <Input
+                                        type="date"
+                                        value={voucherFormData.expires_at}
+                                        onChange={e => setVoucherFormData({ ...voucherFormData, expires_at: e.target.value })}
+                                        className="h-10 bg-slate-950 border-slate-800 text-sm focus:ring-blue-500/20"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2 pt-2">
+                                    <input
+                                        type="checkbox"
+                                        id="is_birthday"
+                                        checked={voucherFormData.is_birthday}
+                                        onChange={e => setVoucherFormData({ ...voucherFormData, is_birthday: e.target.checked })}
+                                        className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-blue-600 focus:ring-blue-500/10"
+                                    />
+                                    <Label htmlFor="is_birthday" className="text-[10px] font-bold text-slate-400 uppercase cursor-pointer select-none">Cupom Especial de Aniversário</Label>
+                                </div>
+                                <Button
+                                    onClick={handleCreateVoucher}
+                                    disabled={voucherLoading}
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase h-12 mt-4 rounded-xl shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98]"
+                                >
+                                    {voucherLoading ? <Loader2 className="animate-spin" /> : 'GERAR CUPOM'}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div >
