@@ -80,6 +80,7 @@ export default function UsersPage() {
   const [inviteCommValue, setInviteCommValue] = useState('50');
   const [inviteCnpjMei, setInviteCnpjMei] = useState('');
   const [generatedLink, setGeneratedLink] = useState('');
+  const [inviteBirthDate, setInviteBirthDate] = useState('');
   const [cepLoading, setCepLoading] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [isViewOnly, setIsViewOnly] = useState(false);
@@ -128,6 +129,7 @@ export default function UsersPage() {
     setInviteCommType('percentage');
     setInviteCommValue('50');
     setInviteCnpjMei('');
+    setInviteBirthDate('');
     setGeneratedLink('');
     setCepLoading(false);
     setEditingUserId(null);
@@ -201,6 +203,7 @@ export default function UsersPage() {
         commission_type: inviteCommType,
         commission_value: parseFloat(inviteCommValue) || 0,
         cnpj_mei: inviteCnpjMei,
+        birth_date: inviteBirthDate || null,
         generateInvite: !editingUserId
       };
 
@@ -304,6 +307,7 @@ export default function UsersPage() {
     setInviteCommType(u.commission_type || 'percentage');
     setInviteCommValue(u.commission_value?.toString() || '50');
     setInviteCnpjMei(u.cnpj_mei || '');
+    setInviteBirthDate(u.birth_date || '');
     setIsInviteOpen(true);
 
     // Load Services if Barber
@@ -601,6 +605,17 @@ export default function UsersPage() {
                         placeholder="nome@email.com"
                         disabled={!!editingUserId || isViewOnly}
                         required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="birth_date">Data de Nascimento</Label>
+                      <Input
+                        id="birth_date"
+                        type="date"
+                        value={inviteBirthDate}
+                        onChange={e => setInviteBirthDate(e.target.value)}
+                        className="bg-slate-950 border-slate-800"
+                        disabled={isViewOnly}
                       />
                     </div>
                     <div className="space-y-2">

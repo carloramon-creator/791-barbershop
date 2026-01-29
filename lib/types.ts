@@ -89,6 +89,7 @@ export interface User {
     commission_type?: 'fixed' | 'percentage';
     commission_value?: number;
     last_seen_at?: string;
+    birth_date?: string;
     created_at: string;
 }
 
@@ -98,6 +99,7 @@ export interface Barber {
     name: string;
     nickname?: string;
     photo_url?: string;
+    birth_date?: string;
     status: BarberStatus;
     avg_time_minutes: number;
     is_active?: boolean;

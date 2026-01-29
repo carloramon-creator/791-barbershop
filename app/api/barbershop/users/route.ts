@@ -100,7 +100,8 @@ export async function POST(req: Request) {
         state: body.state,
         avg_service_time: body.avg_service_time || 30,
         commission_type: body.commission_type || 'percentage',
-        commission_value: body.commission_value || 50
+        commission_value: body.commission_value || 50,
+        birth_date: body.birth_date
       };
 
       Object.keys(userPayload).forEach(key => userPayload[key] === undefined && delete userPayload[key]);
@@ -215,7 +216,8 @@ export async function PUT(req: Request) {
       state: body.state,
       avg_service_time: body.avg_service_time,
       commission_type: body.commission_type,
-      commission_value: body.commission_value
+      commission_value: body.commission_value,
+      birth_date: body.birth_date
     };
 
     Object.keys(updates).forEach(key => updates[key] === undefined && delete updates[key]);

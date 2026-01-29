@@ -60,6 +60,7 @@ interface Client {
     phone: string;
     cpf?: string;
     photo_url?: string;
+    birth_date?: string;
     last_service_at?: string;
     created_at: string;
 }
@@ -86,7 +87,8 @@ export default function ClientsPage() {
         name: '',
         phone: '',
         cpf: '',
-        photo_url: ''
+        photo_url: '',
+        birth_date: ''
     });
 
     const [uploading, setUploading] = useState(false);
@@ -123,7 +125,7 @@ export default function ClientsPage() {
             }
             setShowRegisterDialog(false);
             setEditingClient(null);
-            setFormData({ name: '', phone: '', cpf: '', photo_url: '' });
+            setFormData({ name: '', phone: '', cpf: '', photo_url: '', birth_date: '' });
             loadClients();
         } catch (error: any) {
             alert('Erro ao salvar: ' + (error.message || 'Erro desconhecido'));
@@ -138,7 +140,8 @@ export default function ClientsPage() {
             name: client.name,
             phone: client.phone,
             cpf: client.cpf || '',
-            photo_url: client.photo_url || ''
+            photo_url: client.photo_url || '',
+            birth_date: client.birth_date || ''
         });
         setShowRegisterDialog(true);
     };
@@ -228,7 +231,7 @@ export default function ClientsPage() {
                 <Button
                     onClick={() => {
                         setEditingClient(null);
-                        setFormData({ name: '', phone: '', cpf: '', photo_url: '' });
+                        setFormData({ name: '', phone: '', cpf: '', photo_url: '', birth_date: '' });
                         setShowRegisterDialog(true);
                     }}
                     className="bg-blue-600 hover:bg-blue-700 text-white gap-2 h-12 px-6 rounded-xl shadow-lg shadow-blue-600/20"
@@ -465,6 +468,16 @@ export default function ClientsPage() {
                                         className="bg-slate-900 border-slate-700 h-11 focus:ring-blue-500/20 font-mono"
                                     />
                                 </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="birth_date" className="text-xs font-bold uppercase text-slate-400">Data de Nascimento</Label>
+                                    <Input
+                                        id="birth_date"
+                                        type="date"
+                                        value={formData.birth_date}
+                                        onChange={e => setFormData({ ...formData, birth_date: e.target.value })}
+                                        className="bg-slate-900 border-slate-700 h-11 focus:ring-blue-500/20"
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -528,22 +541,27 @@ export default function ClientsPage() {
             </Dialog>
             {/* History Dialog */}
             <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
-                <DialogContent className="bg-slate-950 border-slate-800 text-slate-100 max-w-2xl h-[80vh] flex flex-col p-0">
-                    <DialogHeader className="p-6 border-b border-slate-800 shrink-0">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-blue-600/20 flex items-center justify-center text-blue-500">
-                                <Clock size={24} />
+                <DialogContent className="bg-slate-950 border-slate-800 text-slate-100 max-w-4xl h-[80vh] flex flex-col p-0 overflow-hidden">
+                    <DialogHeader className="p-4 border-b border-slate-800 shrink-0">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-blue-600/20 flex items-center justify-center text-blue-500">
+                                    <Clock size={20} />
+                                </div>
+                                <div>
+                                    <DialogTitle className="text-lg font-black text-slate-100">HISTÓRICO DE ATENDIMENTO</DialogTitle>
+                                    <DialogDescription className="text-slate-500 text-xs font-medium">
+                                        {selectedHistoryClient?.name} • {selectedHistoryClient?.phone}
+                                    </DialogDescription>
+                                </div>
                             </div>
-                            <div>
-                                <DialogTitle className="text-xl font-black text-slate-100">HISTÓRICO DO CLIENTE</DialogTitle>
-                                <DialogDescription className="text-slate-500 font-medium">
-                                    {selectedHistoryClient?.name} • {selectedHistoryClient?.phone}
-                                </DialogDescription>
-                            </div>
+                            <Button variant="ghost" size="icon" onClick={() => setShowHistoryDialog(false)} className="rounded-full text-slate-500 h-8 w-8">
+                                <X size={20} />
+                            </Button>
                         </div>
                     </DialogHeader>
 
-                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-950/30">
                         {historyLoading ? (
                             <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-500">
                                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
@@ -555,58 +573,35 @@ export default function ClientsPage() {
                                 <p className="font-medium">Nenhum registro encontrado para este cliente.</p>
                             </div>
                         ) : (
-                            <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-800 before:to-transparent">
+                            <div className="space-y-3 relative before:absolute before:inset-0 before:ml-4 before:-translate-x-px before:h-full before:w-0.5 before:bg-slate-800">
                                 {clientHistory.map((item, idx) => (
-                                    <div key={idx} className="relative flex items-center justify-between gap-6 group">
-                                        {/* Timeline dot */}
-                                        <div className={cn(
-                                            "absolute left-0 w-10 h-10 -ml-0 rounded-full border-4 border-slate-950 flex items-center justify-center z-10 transition-transform group-hover:scale-110",
-                                            item.type === 'service_sale' ? "bg-emerald-500 text-white" :
-                                                item.type === 'product_sale' ? "bg-blue-500 text-white" :
-                                                    item.type === 'appointment' ? "bg-amber-500 text-white" : "bg-slate-700 text-slate-300"
-                                        )}>
-                                            {item.type === 'service_sale' ? <Scissors size={18} /> :
-                                                item.type === 'product_sale' ? <ShoppingBag size={18} /> :
-                                                    item.type === 'appointment' ? <CalendarCheck size={18} /> : <Clock size={18} />}
-                                        </div>
-
-                                        <div className="flex-1 ml-14 py-4 px-6 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-slate-700 transition-all hover:bg-slate-900">
-                                            <div className="flex justify-between items-start mb-1">
-                                                <h4 className="font-black text-slate-100 text-sm uppercase tracking-tight">{item.title}</h4>
-                                                <span className="text-[10px] font-bold text-slate-500 bg-slate-950 px-2 py-1 rounded">
-                                                    {format(new Date(item.date), "dd 'de' MMM, HH:mm", { locale: ptBR })}
-                                                </span>
+                                    <div key={idx} className="relative flex flex-col gap-2">
+                                        <div className="flex items-center gap-4">
+                                            {/* Timeline dot */}
+                                            <div className={cn(
+                                                "w-8 h-8 rounded-full border-2 border-slate-950 flex items-center justify-center z-10",
+                                                item.type === 'service_sale' ? "bg-emerald-500 text-white" : "bg-blue-500 text-white"
+                                            )}>
+                                                {item.type === 'service_sale' ? <Scissors size={14} /> : <ShoppingBag size={14} />}
                                             </div>
 
-                                            <div className="text-sm text-slate-400 font-medium">
-                                                {item.type === 'service_sale' && (
-                                                    <div className="flex flex-col gap-1">
-                                                        <p>Profissional: <span className="text-slate-200">{item.barber}</span></p>
-                                                        <p className="text-emerald-400 font-black">{formatCurrency(item.amount)} • {item.method}</p>
+                                            <div
+                                                onClick={() => {
+                                                    const detailText = item.items?.map((i: any) => `${i.quantity}x ${i.name} (${formatCurrency(i.price)})`).join('\n') || 'Nenhum detalhe';
+                                                    alert(`${item.title}\n\n${detailText}\n\nTotal: ${formatCurrency(item.amount)}`);
+                                                }}
+                                                className="flex-1 p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-600 transition-all cursor-pointer group"
+                                            >
+                                                <div className="flex justify-between items-center">
+                                                    <div>
+                                                        <h4 className="font-bold text-slate-100 text-xs uppercase">{item.title}</h4>
+                                                        <p className="text-[10px] text-slate-400 font-medium">{item.barber || item.vendedor}</p>
                                                     </div>
-                                                )}
-                                                {item.type === 'product_sale' && (
-                                                    <div className="flex flex-col gap-1">
-                                                        <p className="text-slate-300 italic">{item.items}</p>
-                                                        <p className="text-blue-400 font-black">{formatCurrency(item.amount)} • {item.method}</p>
+                                                    <div className="text-right">
+                                                        <p className={cn("font-black text-sm", item.type === 'service_sale' ? "text-emerald-400" : "text-blue-400")}>{formatCurrency(item.amount)}</p>
+                                                        <p className="text-[9px] font-bold text-slate-600">{format(new Date(item.date), "dd/MM/yy HH:mm")}</p>
                                                     </div>
-                                                )}
-                                                {item.type === 'appointment' && (
-                                                    <div className="flex flex-col gap-1">
-                                                        <p>Profissional: <span className="text-slate-200">{item.barber}</span></p>
-                                                        <p className={cn(
-                                                            "font-bold uppercase text-[10px]",
-                                                            item.status === 'completed' ? "text-emerald-500" :
-                                                                item.status === 'cancelled' ? "text-red-500" : "text-amber-500"
-                                                        )}>{item.status}</p>
-                                                    </div>
-                                                )}
-                                                {item.type === 'queue_entry' && (
-                                                    <div className="flex flex-col gap-1">
-                                                        <p>Serviço: <span className="text-slate-200">{item.service}</span></p>
-                                                        <p className="text-xs">{item.status}</p>
-                                                    </div>
-                                                )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -616,12 +611,12 @@ export default function ClientsPage() {
                     </div>
 
                     <DialogFooter className="p-4 border-t border-slate-800 shrink-0">
-                        <Button variant="ghost" onClick={() => setShowHistoryDialog(false)} className="w-full rounded-xl text-slate-400 font-bold">
+                        <Button variant="ghost" onClick={() => setShowHistoryDialog(false)} className="w-full rounded-xl text-slate-400 font-bold hover:bg-slate-900 hover:text-white transition-all">
                             FECHAR
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </div >
     );
 }

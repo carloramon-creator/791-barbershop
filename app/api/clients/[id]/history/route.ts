@@ -16,7 +16,7 @@ export async function GET(
 
         const supabase = getSupabaseAdmin();
 
-        // 1. Buscar dados básicos do cliente (incluindo telefone para busca em agendamentos)
+        // 1. Buscar dados básicos do cliente
         const { data: client, error: clientError } = await supabase
             .from('clients')
             .select('*')
@@ -28,15 +28,19 @@ export async function GET(
             return NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 });
         }
 
-        // 2. Buscar histórico de diversas fontes
-        const [salesRes, vendasRes, appointmentsRes, queueRes] = await Promise.all([
-            // Vendas de serviços (vincular com itens da venda se necessário)
+        // 2. Buscar histórico apenas de faturamento real
+        const [salesRes, vendasRes] = await Promise.all([
+            // Vendas de serviços com itens detalhados
             supabase
                 .from('sales')
                 .select(`
                     *,
                     barbers(name),
-                    client_queue(client_name)
+                    itens:sale_items(
+                        *,
+                        service:services(name),
+                        product:products(name)
+                    )
                 `)
                 .eq('client_id', clientId)
                 .order('created_at', { ascending: false }),
@@ -53,21 +57,6 @@ export async function GET(
                     )
                 `)
                 .eq('cliente_id', clientId)
-                .order('created_at', { ascending: false }),
-
-            // Agendamentos (pode estar por ID ou por telefone se for agendamento externo)
-            supabase
-                .from('appointments')
-                .select('*, barbers(name)')
-                .or(`client_id.eq.${clientId},client_phone.eq.${client.phone}`)
-                .eq('tenant_id', tenant.id)
-                .order('start_time', { ascending: false }),
-
-            // Entradas na fila (para ver serviços iniciados/cancelados/não faturados)
-            supabase
-                .from('client_queue')
-                .select('*, barbers(name)')
-                .eq('client_id', clientId)
                 .order('created_at', { ascending: false })
         ]);
 
@@ -76,60 +65,42 @@ export async function GET(
 
         // Adicionar Vendas de Serviços
         salesRes.data?.forEach(sale => {
+            const items = sale.itens?.map((i: any) => ({
+                name: i.service?.name || i.product?.name || 'Item desconhecido',
+                quantity: i.quantity,
+                price: i.price
+            })) || [];
+
             history.push({
                 id: sale.id,
                 type: 'service_sale',
                 date: sale.created_at,
-                title: 'Serviço Realizado',
+                title: 'Atendimento Realizado',
                 amount: sale.total_amount,
                 method: sale.payment_method,
                 barber: sale.barbers?.name,
                 status: sale.status,
-                details: sale.client_queue?.client_name
+                items
             });
         });
 
         // Adicionar Vendas Diretas
         vendasRes.data?.forEach(venda => {
+            const items = venda.itens?.map((i: any) => ({
+                name: i.produto?.name || 'Produto',
+                quantity: i.quantidade,
+                price: i.preco_unitario
+            })) || [];
+
             history.push({
                 id: venda.id,
                 type: 'product_sale',
                 date: venda.created_at,
-                title: 'Compra de Produtos',
+                title: 'Venda de Produtos',
                 amount: venda.total,
                 method: venda.metodo_pagamento,
                 vendedor: venda.vendedor?.name,
-                items: venda.itens?.map((i: any) => `${i.quantidade}x ${i.produto?.name}`).join(', ')
-            });
-        });
-
-        // Adicionar Agendamentos (filtrar os que já viraram venda/faturamento para não duplicar se possível, 
-        // ou mostrar como "Agendamento" vs "Serviço")
-        appointmentsRes.data?.forEach(appt => {
-            // Evitar duplicidade se já estiver em sales (opcional, por simplicidade mostramos todos)
-            history.push({
-                id: appt.id,
-                type: 'appointment',
-                date: appt.start_time,
-                title: 'Agendamento Horário',
-                status: appt.status,
-                barber: appt.barbers?.name,
-                notes: appt.notes
-            });
-        });
-
-        // Adicionar Entradas na Fila (que não viraram venda ou para detalhar o status)
-        queueRes.data?.forEach(q => {
-            // Se já tem uma venda vinculada, talvez não precise mostrar a fila isolada
-            // Mas para histórico completo, é bom.
-            history.push({
-                id: q.id,
-                type: 'queue_entry',
-                date: q.created_at,
-                title: 'Entrada na Fila',
-                status: q.status,
-                barber: q.barbers?.name,
-                service: q.service_name
+                items
             });
         });
 
@@ -140,7 +111,8 @@ export async function GET(
             client: {
                 id: client.id,
                 name: client.name,
-                phone: client.phone
+                phone: client.phone,
+                birth_date: client.birth_date
             },
             history
         });

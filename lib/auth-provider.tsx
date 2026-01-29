@@ -64,37 +64,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setIsImpersonating(!!impersonateCookie);
 
             if (session?.user) {
-                // Obter role e perfil do usuário
-                const { data } = await supabaseClient
-                    .from('users')
-                    .select('role, roles, is_system_admin, admin_permissions, name, nickname, email, photo_url')
-                    .eq('id', session.user.id)
-                    .single();
-                setRole(data?.role ?? null);
-                setRoles(data?.roles ?? (data?.role ? [data.role] : null));
-                setIsSystemAdmin(data?.is_system_admin ?? false);
-                // Default to 'all' if admin but column missing/null, provided permission check logic handles it or we default here.
-                // Let's default to ['all'] if system admin but permissions null to be safe for now
-                setAdminPermissions(data?.admin_permissions ?? (data?.is_system_admin ? ['all'] : null));
+                // Obter role, perfil e tenant em paralelo para maior velocidade
+                const [userRes, tenantRes] = await Promise.all([
+                    supabaseClient
+                        .from('users')
+                        .select('role, roles, is_system_admin, admin_permissions, name, nickname, email, photo_url')
+                        .eq('id', session.user.id)
+                        .single(),
+                    Api.getBarbershop().catch(e => {
+                        console.error("Failed to load tenant", e);
+                        return null;
+                    })
+                ]);
 
-                setProfile(data ? {
-                    name: data.name,
-                    nickname: data.nickname,
-                    email: data.email,
-                    photo_url: data.photo_url
+                const userData = userRes.data;
+                setRole(userData?.role ?? null);
+                setRoles(userData?.roles ?? (userData?.role ? [userData.role] : null));
+                setIsSystemAdmin(userData?.is_system_admin ?? false);
+                setAdminPermissions(userData?.admin_permissions ?? (userData?.is_system_admin ? ['all'] : null));
+
+                setProfile(userData ? {
+                    name: userData.name,
+                    nickname: userData.nickname,
+                    email: userData.email,
+                    photo_url: userData.photo_url
                 } : null);
 
-                // Obter tenant/branding
-                // Como Api.getBarbershop usa a session (que acabamos de pegar), 
-                // talvez precisemos garantir que o client esteja autenticado.
-                // Mas supabaseClient retém a sessão.
-                // Porém, nossa Api.ts pega a sessão de novo.
-                try {
-                    const tenantData = await Api.getBarbershop();
-                    setTenant(tenantData);
-                } catch (e) {
-                    console.error("Failed to load tenant", e);
-                }
+                setTenant(tenantRes);
             } else {
                 setRole(null);
                 setRoles(null);
