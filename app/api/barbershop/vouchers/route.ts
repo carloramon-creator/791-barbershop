@@ -13,7 +13,12 @@ export async function GET(req: Request) {
 
         let query = getSupabaseAdmin()
             .from('client_vouchers')
-            .select('*')
+            .select(`
+                *,
+                clients (
+                    name
+                )
+            `)
             .eq('tenant_id', tenant.id)
             .order('created_at', { ascending: false });
 

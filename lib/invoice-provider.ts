@@ -102,45 +102,58 @@ class InvoiceProvider {
             const providerUrl = process.env.NFSE_PROVIDER_URL || 'http://localhost:3333';
             const providerSecret = process.env.NFSE_PROVIDER_SECRET || 'sua_chave_secreta_aqui';
 
+            console.log(`[INVOICE-PROVIDER] Chamando microserviço em: ${providerUrl}/nfse/emit`);
+
             // Gerar token simples para o microserviço
             const jwt = (await import('jsonwebtoken')).default;
             const token = jwt.sign({ service: 'frontend-owner' }, providerSecret);
 
-            const response = await fetch(`${providerUrl}/nfse/emit`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    dpsData,
-                    privateKey,
-                    publicCert,
-                    pfxBase64,
-                    passphrase
-                })
-            });
+            try {
+                const response = await fetch(`${providerUrl}/nfse/emit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        dpsData,
+                        privateKey,
+                        publicCert,
+                        pfxBase64,
+                        passphrase
+                    })
+                });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Erro na comunicação com o microserviço de NFS-e');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('[INVOICE-PROVIDER] Resposta de erro do microserviço:', errorData);
+                    throw new Error(errorData.error || 'Erro na comunicação com o microserviço de NFS-e');
+                }
+
+                const result = await response.json();
+                console.log('[INVOICE-PROVIDER] Sucesso no microserviço:', result);
+
+                return {
+                    success: true,
+                    invoiceId: result.invoiceId || dpsData.numero,
+                    status: 'authorized',
+                    pdfUrl: `/api/nfse/pdf`, // A rota de download ainda pode ser via proxy ou direta
+                    message: 'Nota Fiscal autorizada com sucesso via Microserviço 791.'
+                };
+            } catch (error: any) {
+                console.error('[INVOICE-PROVIDER ERROR]', error);
+                return {
+                    success: false,
+                    status: 'rejected',
+                    message: error.message
+                };
             }
-
-            const result = await response.json();
-
-            return {
-                success: true,
-                invoiceId: result.invoiceId || dpsData.numero,
-                status: 'authorized',
-                pdfUrl: `/api/nfse/pdf`, // A rota de download ainda pode ser via proxy ou direta
-                message: 'Nota Fiscal autorizada com sucesso via Microserviço 791.'
-            };
-        } catch (error: any) {
-            console.error('[INVOICE-PROVIDER ERROR]', error);
+        } catch (globalError: any) {
+            console.error('[INVOICE-PROVIDER GLOBAL ERROR]', globalError);
             return {
                 success: false,
                 status: 'rejected',
-                message: error.message
+                message: globalError.message
             };
         }
     }

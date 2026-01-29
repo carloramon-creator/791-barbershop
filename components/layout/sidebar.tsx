@@ -144,6 +144,7 @@ export function Sidebar() {
                 { name: 'Produtos', href: '/produtos', icon: ShoppingBag, roles: ['owner', 'staff'], permission: 'products' },
                 { name: 'Estoque', href: '/estoque', icon: Briefcase, roles: ['owner', 'staff'], permission: 'inventory', module: 'inventory' },
                 { name: 'Vendas', href: '/vendas', icon: ShoppingCart, roles: ['owner', 'staff'], permission: 'sales' },
+                { name: 'Cupons', href: '/cupons', icon: Ticket, roles: ['owner', 'staff'], permission: 'sales' },
                 { name: 'Relatório de Vendas', href: '/vendas/relatorio', icon: BarChart3, roles: ['owner', 'staff'], permission: 'sales' },
                 { name: 'Financeiro', href: '/financeiro', icon: BarChart3, roles: ['owner'], permission: 'finance', module: 'finance' },
             ]
