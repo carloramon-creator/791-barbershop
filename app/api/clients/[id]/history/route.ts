@@ -4,11 +4,11 @@ import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 export async function GET(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id: clientId } = await params;
         const { tenant } = await getCurrentUserAndTenant();
-        const clientId = params.id;
 
         if (!clientId) {
             return NextResponse.json({ error: 'ID do cliente não fornecido' }, { status: 400 });
