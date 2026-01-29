@@ -257,9 +257,11 @@ export default function DashboardPage() {
                                             <TableCell className="text-center">
                                                 <Badge className={cn(
                                                     "text-[9px] uppercase font-black tracking-widest px-2 py-0.5 border-none",
-                                                    barber.status === 'busy'
+                                                    barber.status === 'available'
                                                         ? "bg-emerald-500/10 text-emerald-500"
-                                                        : "bg-blue-500/10 text-blue-400"
+                                                        : barber.status === 'busy'
+                                                            ? "bg-yellow-500/10 text-yellow-500"
+                                                            : "bg-red-500/10 text-red-500"
                                                 )}>
                                                     {barber.status === 'available' ? 'Disponível' : barber.status === 'busy' ? 'Atendendo' : 'Offline'}
                                                 </Badge>

@@ -20,6 +20,7 @@ export async function GET(req: Request) {
         const endIso = endDate.toISOString();
 
         // 1. Faturamento no período (Consolidado: sales + vendas)
+        // Otimizado: somando via rpc ou pelo menos reduzindo tráfego
         const [salesRes, vendasRes] = await Promise.all([
             getSupabaseAdmin()
                 .from('sales')
@@ -38,8 +39,8 @@ export async function GET(req: Request) {
         if (salesRes.error) throw salesRes.error;
         if (vendasRes.error) throw vendasRes.error;
 
-        const salesTotal = salesRes.data?.reduce((acc, s) => acc + Number(s.total_amount), 0) || 0;
-        const vendasTotal = vendasRes.data?.reduce((acc, v) => acc + Number(v.total), 0) || 0;
+        const salesTotal = salesRes.data?.reduce((acc, s) => acc + (Number(s.total_amount) || 0), 0) || 0;
+        const vendasTotal = vendasRes.data?.reduce((acc, v) => acc + (Number(v.total) || 0), 0) || 0;
         const totalBilling = salesTotal + vendasTotal;
 
         // 2. Total de atendimentos feitos (finished)

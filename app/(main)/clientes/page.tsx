@@ -555,9 +555,6 @@ export default function ClientsPage() {
                                     </DialogDescription>
                                 </div>
                             </div>
-                            <Button variant="ghost" size="icon" onClick={() => setShowHistoryDialog(false)} className="rounded-full text-slate-500 h-8 w-8">
-                                <X size={20} />
-                            </Button>
                         </div>
                     </DialogHeader>
 

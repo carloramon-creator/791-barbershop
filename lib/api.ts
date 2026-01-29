@@ -2,12 +2,24 @@ import { supabaseClient } from './supabase-client';
 
 const BACKEND_URL = typeof window === 'undefined' ? (process.env.NEXT_PUBLIC_APP_URL || '') : '';
 
-async function apiFetch(path: string, options: RequestInit = {}) {
-    // Buscar sessão atual para pegar o JWT
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    const token = session?.access_token;
+// Cache de sessão para evitar overhead de getSession() em chamadas rápidas
+let cachedToken: string | null = null;
+let lastSessionFetch = 0;
+const SESSION_CACHE_TIME = 30000; // 30 segundos
 
-    // Timeout de 30 segundos
+async function apiFetch(path: string, options: RequestInit = {}) {
+    const now = Date.now();
+    let token = cachedToken;
+
+    // Se não tiver token ou cache expirou, busca novo
+    if (!token || (now - lastSessionFetch > SESSION_CACHE_TIME)) {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        token = session?.access_token || null;
+        cachedToken = token;
+        lastSessionFetch = now;
+    }
+
+    // Timeout de 60 segundos
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), 60000);
 

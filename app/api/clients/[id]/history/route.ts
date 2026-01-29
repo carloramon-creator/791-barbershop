@@ -29,13 +29,13 @@ export async function GET(
         }
 
         // 2. Buscar histórico apenas de faturamento real
-        const [salesRes, vendasRes] = await Promise.all([
+        const [salesRes, vendasRes, queueRes] = await Promise.all([
             // Vendas de serviços com itens detalhados
             supabase
                 .from('sales')
                 .select(`
                     *,
-                    barbers(name),
+                    barber:barbers(name),
                     itens:sale_items(
                         *,
                         service:services(name),
@@ -57,11 +57,23 @@ export async function GET(
                     )
                 `)
                 .eq('cliente_id', clientId)
-                .order('created_at', { ascending: false })
+                .order('created_at', { ascending: false }),
+
+            // Atendimentos finalizados (para capturar atendimentos sem venda vinculada)
+            supabase
+                .from('client_queue')
+                .select(`
+                    *,
+                    barber:barbers(name)
+                `)
+                .eq('client_id', clientId)
+                .eq('status', 'finished')
+                .order('finished_at', { ascending: false })
         ]);
 
         // 3. Consolidar e formatar o histórico
         const history: any[] = [];
+        const saleQueueIds = new Set(salesRes.data?.map(s => s.client_queue_id).filter(Boolean));
 
         // Adicionar Vendas de Serviços
         salesRes.data?.forEach(sale => {
@@ -78,13 +90,30 @@ export async function GET(
                 title: 'Atendimento Realizado',
                 amount: sale.total_amount,
                 method: sale.payment_method,
-                barber: sale.barbers?.name,
+                barber: sale.barber?.name,
                 status: sale.status,
                 items
             });
         });
 
-        // Adicionar Vendas Diretas
+        // Adicionar Atendimentos da Fila (apenas se não houver venda vinculada para evitar duplicidade)
+        queueRes.data?.forEach(queue => {
+            if (saleQueueIds.has(queue.id)) return;
+
+            history.push({
+                id: queue.id,
+                type: 'service_sale',
+                date: queue.finished_at || queue.created_at,
+                title: 'Atendimento Realizado (Sem venda)',
+                amount: 0,
+                method: 'N/A',
+                barber: queue.barber?.name,
+                status: 'concluido',
+                items: []
+            });
+        });
+
+        // Adicionar Vendas Diretas de Produtos
         vendasRes.data?.forEach(venda => {
             const items = venda.itens?.map((i: any) => ({
                 name: i.produto?.name || 'Produto',
