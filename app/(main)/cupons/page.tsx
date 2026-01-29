@@ -14,7 +14,9 @@ import {
     CheckCircle2,
     Clock,
     AlertCircle,
-    Loader2
+    Loader2,
+    Check,
+    ChevronsUpDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,7 +37,21 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -48,6 +64,7 @@ export default function CouponsCentralPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [clientSearchOpen, setClientSearchOpen] = useState(false);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -157,6 +174,10 @@ export default function CouponsCentralPage() {
         return { label: 'Ativo', color: 'bg-emerald-500/10 text-emerald-500', icon: Ticket };
     };
 
+    const selectedClientName = formData.client_id === 'global'
+        ? "🌍 Global (Qualquer Cliente)"
+        : (clients.find(c => c.id === formData.client_id)?.name || "Selecionar Cliente...");
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -173,7 +194,7 @@ export default function CouponsCentralPage() {
                             <Plus className="w-5 h-5" /> Novo Cupom
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-md shadow-2xl">
+                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-md shadow-2xl overflow-hidden">
                         <DialogHeader>
                             <DialogTitle>Criar Novo Voucher</DialogTitle>
                             <DialogDescription className="text-slate-400">
@@ -181,12 +202,12 @@ export default function CouponsCentralPage() {
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="space-y-4 py-4">
+                        <div className="space-y-5 py-4">
                             <div className="space-y-2">
-                                <Label className="text-xs uppercase text-slate-500 font-black tracking-widest">Código do Cupom</Label>
+                                <Label className="text-xs uppercase text-slate-500 font-black tracking-widest">Código do Cupom (Aceita Emojis ✨)</Label>
                                 <Input
-                                    placeholder="Ex: BEMVINDO10"
-                                    className="bg-slate-800 border-slate-700 uppercase font-mono h-11"
+                                    placeholder="Ex: PROMO10 🏷️"
+                                    className="bg-slate-800 border-slate-700 font-sans h-12 text-lg"
                                     value={formData.code}
                                     onChange={e => setFormData({ ...formData, code: e.target.value })}
                                 />
@@ -194,20 +215,54 @@ export default function CouponsCentralPage() {
 
                             <div className="space-y-2">
                                 <Label className="text-xs uppercase text-slate-500 font-black tracking-widest">Destinatário</Label>
-                                <Select
-                                    value={formData.client_id}
-                                    onValueChange={v => setFormData({ ...formData, client_id: v })}
-                                >
-                                    <SelectTrigger className="bg-slate-800 border-slate-700 h-11 w-full text-left">
-                                        <SelectValue placeholder="Selecione um cliente" />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-100 max-h-[300px] z-[9999]">
-                                        <SelectItem value="global" className="font-bold text-blue-400">🌍 Global (Qualquer Cliente)</SelectItem>
-                                        {(clients || []).map(c => (
-                                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <Popover open={clientSearchOpen} onOpenChange={setClientSearchOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            aria-expanded={clientSearchOpen}
+                                            className="w-full justify-between bg-slate-800 border-slate-700 h-12 font-medium"
+                                        >
+                                            <span className="truncate">{selectedClientName}</span>
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-slate-900 border-slate-800 shadow-2xl z-[9999]" align="start">
+                                        <Command className="bg-transparent text-slate-100">
+                                            <CommandInput placeholder="Buscar cliente..." className="h-12 border-none ring-0 focus:ring-0" />
+                                            <CommandList className="max-h-[300px]">
+                                                <CommandEmpty className="py-6 text-center text-sm text-slate-500">Nenhum cliente encontrado.</CommandEmpty>
+                                                <CommandGroup>
+                                                    <CommandItem
+                                                        value="global"
+                                                        onSelect={() => {
+                                                            setFormData({ ...formData, client_id: 'global' });
+                                                            setClientSearchOpen(false);
+                                                        }}
+                                                        className="py-3 cursor-pointer aria-selected:bg-blue-600/20 aria-selected:text-blue-400"
+                                                    >
+                                                        <Check className={cn("mr-2 h-4 w-4 text-blue-400", formData.client_id === 'global' ? "opacity-100" : "opacity-0")} />
+                                                        <span className="font-bold">🌍 Global (Qualquer Cliente)</span>
+                                                    </CommandItem>
+                                                    {clients.map((client) => (
+                                                        <CommandItem
+                                                            key={client.id}
+                                                            value={client.name}
+                                                            onSelect={() => {
+                                                                setFormData({ ...formData, client_id: client.id });
+                                                                setClientSearchOpen(false);
+                                                            }}
+                                                            className="py-3 cursor-pointer aria-selected:bg-slate-800 aria-selected:text-white"
+                                                        >
+                                                            <Check className={cn("mr-2 h-4 w-4 text-blue-500", formData.client_id === client.id ? "opacity-100" : "opacity-0")} />
+                                                            {client.name}
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -217,7 +272,7 @@ export default function CouponsCentralPage() {
                                         value={formData.discount_type}
                                         onValueChange={v => setFormData({ ...formData, discount_type: v })}
                                     >
-                                        <SelectTrigger className="bg-slate-800 border-slate-700 h-11">
+                                        <SelectTrigger className="bg-slate-800 border-slate-700 h-12">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent className="bg-slate-900 border-slate-800 text-slate-100 z-[9999]">
@@ -231,7 +286,7 @@ export default function CouponsCentralPage() {
                                     <Input
                                         type="number"
                                         placeholder="0.00"
-                                        className="bg-slate-800 border-slate-700 h-11"
+                                        className="bg-slate-800 border-slate-700 h-12"
                                         value={formData.discount_value}
                                         onChange={e => setFormData({ ...formData, discount_value: e.target.value })}
                                     />
@@ -242,95 +297,95 @@ export default function CouponsCentralPage() {
                                 <Label className="text-xs uppercase text-slate-500 font-black tracking-widest">Data de Expiração</Label>
                                 <Input
                                     type="date"
-                                    className="bg-slate-800 border-slate-700 h-11"
+                                    className="bg-slate-800 border-slate-700 h-12"
                                     value={formData.expires_at}
                                     onChange={e => setFormData({ ...formData, expires_at: e.target.value })}
                                 />
                             </div>
 
-                            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700">
-                                <div className="space-y-0.5">
-                                    <Label className="text-sm font-bold text-slate-100">Cupom de Aniversário</Label>
-                                    <p className="text-[10px] text-slate-500">Marcar como benefício especial de aniversário.</p>
+                            <div className="flex items-center justify-between p-4 bg-blue-600/5 rounded-xl border border-blue-500/20">
+                                <div className="space-y-1">
+                                    <Label className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                                        <Clock className="w-4 h-4 text-amber-500" /> Especial de Aniversário 🎂
+                                    </Label>
+                                    <p className="text-[10px] text-slate-500 max-w-[200px]">Marque para destacar este cupom como um presente de aniversário.</p>
                                 </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only peer"
-                                        checked={formData.is_birthday}
-                                        onChange={e => setFormData({ ...formData, is_birthday: e.target.checked })}
-                                    />
-                                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                </label>
+                                <Switch
+                                    checked={formData.is_birthday}
+                                    onCheckedChange={v => setFormData({ ...formData, is_birthday: v })}
+                                    className="data-[state=checked]:bg-blue-600"
+                                />
                             </div>
                         </div>
 
-                        <DialogFooter className="gap-2">
-                            <Button variant="ghost" onClick={() => setIsCreateOpen(false)} className="text-xs font-bold uppercase tracking-widest">Cancelar</Button>
+                        <DialogFooter className="gap-2 sm:gap-0 mt-2">
+                            <Button variant="ghost" onClick={() => setIsCreateOpen(false)} className="text-xs font-bold uppercase tracking-widest h-12">Cancelar</Button>
                             <Button
-                                className="bg-blue-600 hover:bg-blue-700 font-bold h-11 flex-1 shadow-lg shadow-blue-600/20"
+                                className="bg-blue-600 hover:bg-blue-700 font-bold h-12 flex-1 shadow-lg shadow-blue-600/20"
                                 onClick={handleCreate}
                                 disabled={isSubmitting}
                             >
                                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                                Gerar Cupom
+                                Criar Cupom
                             </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
             </div>
 
-            <Card className="bg-slate-900 border-slate-800">
+            <Card className="bg-slate-900 border-slate-800 shadow-xl">
                 <CardHeader className="pb-3 px-6">
                     <div className="flex flex-col md:flex-row md:items-center gap-4">
                         <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5" />
                             <Input
-                                placeholder="Buscar por código ou cliente..."
-                                className="bg-slate-800 border-slate-700 pl-10 h-11"
+                                placeholder="Buscar código ou nome do cliente..."
+                                className="bg-slate-800 border-slate-700 pl-11 h-12 text-base transition-all focus:ring-2 focus:ring-blue-600/20"
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 text-xs font-bold uppercase tracking-wider h-11 px-4">
+                        <div className="flex items-center gap-3">
+                            <Button variant="outline" className="bg-slate-800 border-slate-700 h-12 px-5 font-bold text-xs uppercase tracking-widest">
                                 <Filter className="w-4 h-4 mr-2" /> Filtrar
                             </Button>
-                            <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 text-xs font-bold uppercase tracking-wider h-11 px-4" onClick={fetchData}>
+                            <Button variant="outline" className="bg-slate-800 border-slate-700 h-12 px-5 font-bold text-xs uppercase tracking-widest" onClick={fetchData}>
                                 <Loader2 className={cn("w-4 h-4 mr-2", loading && "animate-spin")} /> Atualizar
                             </Button>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <div className="overflow-x-auto overflow-y-hidden">
+                    <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-slate-950/50 border-b border-slate-800">
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Código</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Destinatário</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Desconto</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Expiração</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Status</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Ações</th>
+                                    <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Código</th>
+                                    <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Destinatário</th>
+                                    <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Desconto</th>
+                                    <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Expiração</th>
+                                    <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Status</th>
+                                    <th className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Ações</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800">
                                 {loading ? (
                                     <tr>
-                                        <td colSpan={6} className="px-6 py-20 text-center">
-                                            <div className="flex flex-col items-center gap-4">
-                                                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                                                <span className="text-slate-500 uppercase text-[10px] font-black tracking-widest">Carregando vouchers...</span>
+                                        <td colSpan={6} className="px-6 py-24 text-center">
+                                            <div className="flex flex-col items-center gap-6">
+                                                <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
+                                                <span className="text-slate-500 uppercase text-[10px] font-black tracking-widest animate-pulse">Consultando base de vouchers...</span>
                                             </div>
                                         </td>
                                     </tr>
                                 ) : filteredVouchers.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="px-6 py-20 text-center">
-                                            <div className="flex flex-col items-center gap-4">
-                                                <Ticket className="w-12 h-12 text-slate-800" />
-                                                <div className="text-slate-600 uppercase text-[10px] font-black tracking-widest">Nenhum cupom encontrado.</div>
+                                        <td colSpan={6} className="px-6 py-24 text-center">
+                                            <div className="flex flex-col items-center gap-6">
+                                                <div className="w-20 h-20 rounded-full bg-slate-800/50 flex items-center justify-center">
+                                                    <Ticket className="w-10 h-10 text-slate-700" />
+                                                </div>
+                                                <div className="text-slate-600 uppercase text-xs font-black tracking-[0.2em]">Nenhum cupom ativo no momento.</div>
                                             </div>
                                         </td>
                                     </tr>
@@ -339,59 +394,63 @@ export default function CouponsCentralPage() {
                                         const status = getStatus(v);
                                         return (
                                             <tr key={v.id} className="hover:bg-slate-800/30 transition-colors group">
-                                                <td className="px-6 py-4">
-                                                    <div className="inline-flex items-center gap-2 px-2 py-1 rounded bg-blue-500/10 text-blue-400 font-mono font-bold text-xs uppercase border border-blue-500/20">
-                                                        <Ticket className="w-3 h-3" /> {v.code}
+                                                <td className="px-6 py-5">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 font-bold text-sm border border-blue-500/20">
+                                                            <Ticket className="w-3.5 h-3.5" /> {v.code}
+                                                        </div>
                                                         {v.is_birthday && (
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" title="Aniversário" />
+                                                            <div className="w-8 h-8 rounded-full bg-pink-500/10 flex items-center justify-center text-pink-500 animate-bounce" title="Voucher de Aniversário 🎂">
+                                                                🎂
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-2">
+                                                <td className="px-6 py-5">
+                                                    <div className="flex items-center gap-3">
                                                         {v.client_id ? (
                                                             <>
-                                                                <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] text-slate-500">
-                                                                    <User size={12} />
+                                                                <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
+                                                                    <User size={14} />
                                                                 </div>
-                                                                <span className="text-xs font-bold text-slate-200">{v.clients?.name}</span>
+                                                                <span className="text-sm font-bold text-slate-200">{v.clients?.name}</span>
                                                             </>
                                                         ) : (
-                                                            <span className="text-xs font-bold text-emerald-500 flex items-center gap-2">
+                                                            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest font-sans">
                                                                 🌍 Global
-                                                            </span>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-2 text-xs font-black text-slate-100">
+                                                <td className="px-6 py-5">
+                                                    <div className="flex items-center gap-2 text-sm font-black text-slate-100">
                                                         {v.discount_type === 'percentage' ? (
-                                                            <><Percent size={12} className="text-slate-500" /> {v.discount_value}%</>
+                                                            <><Percent size={14} className="text-blue-500" /> {v.discount_value}% OFF</>
                                                         ) : (
-                                                            <><DollarSign size={12} className="text-slate-500" /> R$ {v.discount_value.toFixed(2).replace('.', ',')}</>
+                                                            <><DollarSign size={14} className="text-emerald-500" /> R$ {v.discount_value.toFixed(2).replace('.', ',')}</>
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 text-xs text-slate-500">
-                                                    {v.expires_at ? format(new Date(v.expires_at), 'dd/MM/yyyy', { locale: ptBR }) : 'Sem limite'}
+                                                <td className="px-6 py-5 text-sm text-slate-500 font-medium">
+                                                    {v.expires_at ? format(new Date(v.expires_at), 'dd/MM/yyyy', { locale: ptBR }) : 'Permanente'}
                                                 </td>
-                                                <td className="px-6 py-4 text-center">
+                                                <td className="px-6 py-5 text-center">
                                                     <span className={cn(
-                                                        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider",
+                                                        "inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter border",
                                                         status.color
                                                     )}>
-                                                        <status.icon size={10} />
+                                                        <status.icon size={12} />
                                                         {status.label}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 text-right">
+                                                <td className="px-6 py-5 text-right">
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="h-8 w-8 p-0 text-slate-500 hover:text-red-500 hover:bg-red-500/10"
+                                                        className="h-10 w-10 p-0 text-slate-600 hover:text-rose-500 hover:bg-rose-500/10 rounded-full transition-all opacity-0 group-hover:opacity-100"
                                                         onClick={() => handleDelete(v.id)}
                                                     >
-                                                        <Trash2 className="w-4 h-4" />
+                                                        <Trash2 className="w-5 h-5" />
                                                     </Button>
                                                 </td>
                                             </tr>
@@ -405,28 +464,34 @@ export default function CouponsCentralPage() {
             </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="bg-slate-900 border-slate-800 border-l-4 border-l-blue-500">
+                <Card className="bg-slate-900 border-slate-800 border-t-4 border-t-blue-500 shadow-xl">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-500">Total Ativos</CardTitle>
+                        <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Cupons Disponíveis</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-black text-slate-100">{vouchers.filter(v => !v.used_at && (!v.expires_at || new Date(v.expires_at) > new Date())).length}</div>
+                    <CardContent className="flex items-center justify-between">
+                        <div className="text-4xl font-black text-slate-100">{vouchers.filter(v => !v.used_at && (!v.expires_at || new Date(v.expires_at) > new Date())).length}</div>
+                        <Ticket className="w-8 h-8 text-blue-500 opacity-20" />
                     </CardContent>
                 </Card>
-                <Card className="bg-slate-900 border-slate-800 border-l-4 border-l-emerald-500">
+                <Card className="bg-slate-900 border-slate-800 border-t-4 border-t-emerald-500 shadow-xl">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-500">Total Usados</CardTitle>
+                        <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Uso Total</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-black text-slate-100">{vouchers.filter(v => v.used_at).length}</div>
+                    <CardContent className="flex items-center justify-between">
+                        <div className="text-4xl font-black text-slate-100">{vouchers.filter(v => v.used_at).length}</div>
+                        <CheckCircle2 className="w-8 h-8 text-emerald-500 opacity-20" />
                     </CardContent>
                 </Card>
-                <Card className="bg-slate-900 border-slate-800 border-l-4 border-l-amber-500">
+                <Card className="bg-slate-900 border-slate-800 border-t-4 border-t-amber-500 shadow-xl">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-500">Economia Gerada</CardTitle>
+                        <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Total Descontado</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-black text-slate-100">R$ {vouchers.filter(v => v.used_at).reduce((acc, v) => acc + (v.discount_value || 0), 0).toFixed(2).replace('.', ',')}</div>
+                    <CardContent className="flex items-center justify-between">
+                        <div className="text-4xl font-black text-slate-100 flex items-baseline gap-1">
+                            <span className="text-lg text-slate-500 font-black">R$</span>
+                            {vouchers.filter(v => v.used_at).reduce((acc, v) => acc + (v.discount_value || 0), 0).toFixed(0)}
+                        </div>
+                        <DollarSign className="w-8 h-8 text-amber-500 opacity-20" />
                     </CardContent>
                 </Card>
             </div>

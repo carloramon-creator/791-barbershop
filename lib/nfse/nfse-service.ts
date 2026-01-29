@@ -23,7 +23,7 @@ export class NfseService {
 
         // 4. Enviar para SEFAZ (URLs oficiais NFS-e Nacional)
         // No futuro, isso pode vir da configuração do ambiente (homologação vs produção)
-        const urlSefaz = "https://homologacao.nfse.rfb.gov.br/ServicosSefaz/NfseService.svc?wsdl";
+        const urlSefaz = "https://hom.nfse.fazenda.gov.br/ServicosSefaz/NfseService.svc?wsdl";
 
         try {
             const result = await soapService.sendNfse(urlSefaz, signedXml, pfxBuffer, passphrase);
