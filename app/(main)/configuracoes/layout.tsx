@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Building2, Users, Shield, CreditCard } from 'lucide-react';
+import { Building2, Users, Shield, CreditCard, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-provider';
 import { getBusinessTheme } from '@/lib/business-theme';
@@ -16,11 +16,13 @@ export default function ConfiguracoesLayout({
     const { tenant } = useAuth();
     const theme = getBusinessTheme(tenant?.business_type);
 
+
     const tabs = [
         { name: 'Geral', href: '/configuracoes/barbearia', icon: Building2 },
         { name: 'Usuários', href: '/configuracoes/usuarios', icon: Users },
         { name: 'Permissões', href: '/configuracoes/permissoes', icon: Shield },
         { name: 'Plano', href: '/configuracoes/plano', icon: CreditCard },
+        { name: 'Faturas', href: '/configuracoes/faturas', icon: FileText },
     ];
 
     const isCurrentTab = (href: string) => pathname === href;
