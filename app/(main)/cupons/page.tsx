@@ -16,7 +16,8 @@ import {
     AlertCircle,
     Loader2,
     Check,
-    ChevronsUpDown
+    ChevronsUpDown,
+    Gift
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,20 +39,12 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from "@/components/ui/command";
-import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -65,6 +58,7 @@ export default function CouponsCentralPage() {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [clientSearchOpen, setClientSearchOpen] = useState(false);
+    const [clientFilter, setClientFilter] = useState('');
 
     // Form state
     const [formData, setFormData] = useState({
@@ -178,6 +172,10 @@ export default function CouponsCentralPage() {
         ? "🌍 Global (Qualquer Cliente)"
         : (clients.find(c => c.id === formData.client_id)?.name || "Selecionar Cliente...");
 
+    const filteredClients = clients.filter(c =>
+        c.name?.toLowerCase().includes(clientFilter.toLowerCase())
+    );
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -228,39 +226,53 @@ export default function CouponsCentralPage() {
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-slate-900 border-slate-800 shadow-2xl z-[9999]" align="start">
-                                        <Command className="bg-transparent text-slate-100">
-                                            <CommandInput placeholder="Buscar cliente..." className="h-12 border-none ring-0 focus:ring-0" />
-                                            <CommandList className="max-h-[300px]">
-                                                <CommandEmpty className="py-6 text-center text-sm text-slate-500">Nenhum cliente encontrado.</CommandEmpty>
-                                                <CommandGroup>
-                                                    <CommandItem
-                                                        value="global"
-                                                        onSelect={() => {
-                                                            setFormData({ ...formData, client_id: 'global' });
-                                                            setClientSearchOpen(false);
-                                                        }}
-                                                        className="py-3 cursor-pointer aria-selected:bg-blue-600/20 aria-selected:text-blue-400"
-                                                    >
-                                                        <Check className={cn("mr-2 h-4 w-4 text-blue-400", formData.client_id === 'global' ? "opacity-100" : "opacity-0")} />
-                                                        <span className="font-bold">🌍 Global (Qualquer Cliente)</span>
-                                                    </CommandItem>
-                                                    {clients.map((client) => (
-                                                        <CommandItem
-                                                            key={client.id}
-                                                            value={client.name}
-                                                            onSelect={() => {
-                                                                setFormData({ ...formData, client_id: client.id });
-                                                                setClientSearchOpen(false);
-                                                            }}
-                                                            className="py-3 cursor-pointer aria-selected:bg-slate-800 aria-selected:text-white"
-                                                        >
-                                                            <Check className={cn("mr-2 h-4 w-4 text-blue-500", formData.client_id === client.id ? "opacity-100" : "opacity-0")} />
-                                                            {client.name}
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
+                                        <div className="p-2 border-b border-slate-800">
+                                            <div className="relative">
+                                                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                                <Input
+                                                    placeholder="Buscar cliente..."
+                                                    className="pl-8 bg-slate-950 border-none h-10 text-sm focus-visible:ring-0"
+                                                    value={clientFilter}
+                                                    onChange={e => setClientFilter(e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="max-h-[300px] overflow-y-auto p-1 custom-scrollbar">
+                                            <button
+                                                className={cn(
+                                                    "w-full text-left px-3 py-3 rounded-md text-sm transition-colors flex items-center gap-2",
+                                                    formData.client_id === 'global' ? "bg-blue-600/20 text-blue-400" : "hover:bg-slate-800"
+                                                )}
+                                                onClick={() => {
+                                                    setFormData({ ...formData, client_id: 'global' });
+                                                    setClientSearchOpen(false);
+                                                }}
+                                            >
+                                                <Check className={cn("h-4 w-4", formData.client_id === 'global' ? "opacity-100" : "opacity-0")} />
+                                                <span className="font-bold">🌍 Global (Qualquer Cliente)</span>
+                                            </button>
+
+                                            {filteredClients.length === 0 && clientFilter && (
+                                                <div className="py-6 text-center text-sm text-slate-500">Nenhum cliente encontrado.</div>
+                                            )}
+
+                                            {filteredClients.map((client) => (
+                                                <button
+                                                    key={client.id}
+                                                    className={cn(
+                                                        "w-full text-left px-3 py-3 rounded-md text-sm transition-colors flex items-center gap-2",
+                                                        formData.client_id === client.id ? "bg-slate-800 text-white" : "hover:bg-slate-800"
+                                                    )}
+                                                    onClick={() => {
+                                                        setFormData({ ...formData, client_id: client.id });
+                                                        setClientSearchOpen(false);
+                                                    }}
+                                                >
+                                                    <Check className={cn("h-4 w-4 text-blue-500", formData.client_id === client.id ? "opacity-100" : "opacity-0")} />
+                                                    {client.name}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </PopoverContent>
                                 </Popover>
                             </div>
@@ -306,15 +318,18 @@ export default function CouponsCentralPage() {
                             <div className="flex items-center justify-between p-4 bg-blue-600/5 rounded-xl border border-blue-500/20">
                                 <div className="space-y-1">
                                     <Label className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                                        <Clock className="w-4 h-4 text-amber-500" /> Especial de Aniversário 🎂
+                                        <Gift className="w-4 h-4 text-pink-500" /> Especial de Aniversário 🎂
                                     </Label>
                                     <p className="text-[10px] text-slate-500 max-w-[200px]">Marque para destacar este cupom como um presente de aniversário.</p>
                                 </div>
-                                <Switch
-                                    checked={formData.is_birthday}
-                                    onCheckedChange={v => setFormData({ ...formData, is_birthday: v })}
-                                    className="data-[state=checked]:bg-blue-600"
-                                />
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id="is_birthday"
+                                        checked={formData.is_birthday}
+                                        onCheckedChange={(checked) => setFormData({ ...formData, is_birthday: checked === true })}
+                                        className="w-6 h-6 rounded-md border-blue-500/50 data-[state=checked]:bg-blue-600"
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -495,6 +510,22 @@ export default function CouponsCentralPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            <style jsx global>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: #1e293b;
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: #334155;
+                }
+            `}</style>
         </div>
     );
 }
