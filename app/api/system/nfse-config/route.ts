@@ -50,7 +50,7 @@ export async function GET(req: Request) {
  */
 export async function POST(req: Request) {
     try {
-        const { isSystemAdmin } = await getCurrentUserAndTenant();
+        const { isSystemAdmin, user } = await getCurrentUserAndTenant();
         if (!isSystemAdmin) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Acesso negado' }, { status: 403 }));
         }
