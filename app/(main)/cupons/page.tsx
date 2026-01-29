@@ -55,6 +55,7 @@ export default function CouponsCentralPage() {
         client_id: 'global',
         discount_type: 'fixed',
         discount_value: '',
+        is_birthday: false,
         expires_at: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
     });
 
@@ -80,7 +81,11 @@ export default function CouponsCentralPage() {
         try {
             const res = await fetch('/api/barbershop/clients');
             const data = await res.json();
-            if (res.ok) setClients(data || []);
+            if (res.ok) {
+                // Filtra para garantir que temos uma lista válida de clientes
+                const clientList = Array.isArray(data) ? data : (data.clients || []);
+                setClients(clientList.filter((c: any) => c.name));
+            }
         } catch (error) {
             console.error("Erro ao carregar clientes", error);
         }
@@ -112,6 +117,7 @@ export default function CouponsCentralPage() {
                     client_id: 'global',
                     discount_type: 'fixed',
                     discount_value: '',
+                    is_birthday: false,
                     expires_at: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
                 });
                 fetchData();
@@ -196,9 +202,9 @@ export default function CouponsCentralPage() {
                                     <SelectTrigger className="bg-slate-800 border-slate-700">
                                         <SelectValue placeholder="Selecione um cliente" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                                        <SelectItem value="global">🌍 Global (Qualquer Cliente)</SelectItem>
-                                        {clients.map(c => (
+                                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-100 max-h-[250px] overflow-y-auto z-[100]">
+                                        <SelectItem value="global" className="font-bold text-blue-400">🌍 Global (Qualquer Cliente)</SelectItem>
+                                        {(clients || []).map(c => (
                                             <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                                         ))}
                                     </SelectContent>
@@ -241,6 +247,22 @@ export default function CouponsCentralPage() {
                                     value={formData.expires_at}
                                     onChange={e => setFormData({ ...formData, expires_at: e.target.value })}
                                 />
+                            </div>
+
+                            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                                <div className="space-y-0.5">
+                                    <Label className="text-sm font-bold text-slate-100">Cupom de Aniversário</Label>
+                                    <p className="text-[10px] text-slate-500">Marcar como benefício especial de aniversário.</p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={formData.is_birthday}
+                                        onChange={e => setFormData({ ...formData, is_birthday: e.target.checked })}
+                                    />
+                                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
                             </div>
                         </div>
 
