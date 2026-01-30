@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, FileCheck, Shield, Globe, Save, AlertCircle, Zap } from 'lucide-react';
+import { Loader2, FileCheck, Shield, Globe, Save, AlertCircle, Zap, MapPin, Key } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function NfseConfigPage() {
@@ -16,7 +16,10 @@ export default function NfseConfigPage() {
         environment: 'homologacao',
         auto_emit: false,
         certificateUploaded: false,
-        lastUpdated: null
+        lastUpdated: null,
+        municipal_code: '',
+        ipm_username: '',
+        ipm_password: ''
     });
 
     const [files, setFiles] = useState<{ pfxBase64?: string; passphrase?: string }>({});
@@ -36,7 +39,10 @@ export default function NfseConfigPage() {
                     environment: data.environment || 'homologacao',
                     auto_emit: !!data.auto_emit,
                     certificateUploaded: !!data.certificateUploaded,
-                    lastUpdated: data.lastUpdated
+                    lastUpdated: data.lastUpdated,
+                    municipal_code: data.municipal_code || '',
+                    ipm_username: data.ipm_username || '',
+                    ipm_password: data.ipm_password || ''
                 });
             }
         } catch (error) {
@@ -67,7 +73,10 @@ export default function NfseConfigPage() {
                     environment: config.environment,
                     auto_emit: config.auto_emit,
                     pfxBase64: files.pfxBase64,
-                    passphrase: files.passphrase
+                    passphrase: files.passphrase,
+                    municipal_code: config.municipal_code,
+                    ipm_username: config.ipm_username,
+                    ipm_password: config.ipm_password
                 })
             });
 
@@ -104,6 +113,75 @@ export default function NfseConfigPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="bg-slate-900 border-slate-800 md:col-span-2">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <MapPin className="w-5 h-5 text-purple-500" /> Município
+                        </CardTitle>
+                        <CardDescription>Código municipal TOM/IBGE determina qual provedor de NFS-e será usado.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Código Municipal (TOM/IBGE)</Label>
+                            <Input
+                                type="text"
+                                placeholder="Ex: 8303 (São José/SC)"
+                                value={config.municipal_code}
+                                onChange={(e) => setConfig(prev => ({ ...prev, municipal_code: e.target.value }))}
+                                disabled={saving}
+                                className="bg-slate-800 border-slate-700 font-mono"
+                            />
+                            {config.municipal_code === '8303' && (
+                                <p className="text-xs text-purple-400 flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" /> São José/SC - Provedor IPM Fiscal será usado automaticamente
+                                </p>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Credenciais IPM - Só aparece se o município usar IPM */}
+                {config.municipal_code === '8303' && (
+                    <Card className="bg-slate-900 border-slate-800 md:col-span-2 border-2 border-purple-500/30">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Key className="w-5 h-5 text-purple-500" /> Credenciais IPM Fiscal
+                            </CardTitle>
+                            <CardDescription>Credenciais de acesso ao sistema IPM Fiscal (Atende.Net) de São José/SC.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Usuário IPM</Label>
+                                    <Input
+                                        type="text"
+                                        placeholder="usuario_ipm"
+                                        value={config.ipm_username}
+                                        onChange={(e) => setConfig(prev => ({ ...prev, ipm_username: e.target.value }))}
+                                        disabled={saving}
+                                        className="bg-slate-800 border-slate-700"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Senha IPM</Label>
+                                    <Input
+                                        type="password"
+                                        placeholder="senha_ipm"
+                                        value={config.ipm_password}
+                                        onChange={(e) => setConfig(prev => ({ ...prev, ipm_password: e.target.value }))}
+                                        disabled={saving}
+                                        className="bg-slate-800 border-slate-700"
+                                    />
+                                </div>
+                            </div>
+                            <div className="mt-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg flex gap-3 text-xs text-purple-400 leading-relaxed">
+                                <AlertCircle className="w-5 h-5 shrink-0" />
+                                <span>Essas credenciais serão usadas para autenticação no sistema IPM Fiscal. Entre em contato com a prefeitura de São José/SC para obtê-las.</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
                 <Card className="bg-slate-900 border-slate-800">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
