@@ -29,11 +29,15 @@ export async function GET(req: Request) {
         const config = settings?.value || {
             environment: 'homologacao',
             certificateUploaded: false,
-            lastUpdated: null
+            lastUpdated: null,
+            municipal_code: '',
+            ipm_username: '',
+            ipm_password: ''
         };
 
-        // Remove a senha antes de enviar para o front
+        // Remove senhas/credenciais sensíveis antes de enviar para o front
         if (config.passphrase) delete config.passphrase;
+        if (config.ipm_password) delete config.ipm_password; // Novo: remover senha IPM
         if (config.pfxBase64) {
             config.certificateUploaded = true;
             delete config.pfxBase64;
@@ -56,13 +60,15 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { environment, pfxBase64, passphrase, auto_emit } = body;
+        const { environment, pfxBase64, passphrase, auto_emit, municipal_code, ipm_username, ipm_password } = body;
 
         console.log(`[NFSE-POST] Recebendo config de ${user.email}:`, {
             environment,
             hasCertificate: !!pfxBase64,
             hasPassphrase: !!passphrase,
-            auto_emit
+            auto_emit,
+            municipal_code,
+            hasIpmCredentials: !!(ipm_username && ipm_password)
         });
 
         // Busca configuração existente
@@ -76,9 +82,13 @@ export async function POST(req: Request) {
             ...(existing?.value || {}),
             environment: environment || existing?.value?.environment || 'homologacao',
             auto_emit: auto_emit !== undefined ? auto_emit : existing?.value?.auto_emit || false,
+            municipal_code: municipal_code || existing?.value?.municipal_code || '',
+            ipm_username: ipm_username || existing?.value?.ipm_username || '',
+            ipm_password: ipm_password || existing?.value?.ipm_password || '',
             lastUpdated: new Date().toISOString()
         };
 
+        // Certificado e senha (Nacional)
         if (pfxBase64) newValue.pfxBase64 = pfxBase64;
         if (passphrase) newValue.passphrase = passphrase;
 
