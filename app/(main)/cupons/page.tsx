@@ -90,7 +90,7 @@ export default function CouponsCentralPage() {
 
     const fetchClients = async () => {
         try {
-            const res = await fetch('/api/barbershop/clients');
+            const res = await fetch('/api/clients');
             const data = await res.json();
             if (res.ok) {
                 const list = Array.isArray(data) ? data : (data.clients || []);

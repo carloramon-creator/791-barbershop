@@ -40,10 +40,14 @@ function BarberReportContent() {
                 setBarbers(allBarbers || []);
 
                 // Filtragem Client-Side
+                // Filtragem Client-Side - Normalizando datas para evitar problemas com fuso
                 const filtered = (allSales || []).filter((s: any) => {
-                    const date = s.created_at.split('T')[0];
+                    const saleDate = new Date(s.created_at);
+                    // Ajuste de fuso para comparação local (YYYY-MM-DD)
+                    const localDate = new Date(saleDate.getTime() - (saleDate.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
                     const barberMatch = ids.length === 0 || ids.includes(s.barber_id);
-                    const dateMatch = (!start || date >= start) && (!end || date <= end);
+                    const dateMatch = (!start || localDate >= start) && (!end || localDate <= end);
                     return barberMatch && dateMatch;
                 });
 
@@ -106,7 +110,9 @@ function BarberReportContent() {
                             <h2 className="text-xl font-bold uppercase">{getBarberName(bId)}</h2>
                             <div className="text-right">
                                 <span className="text-xs text-gray-500">Total Produzido</span>
-                                <div className="font-bold text-lg">R$ {totalValue.toFixed(2)}</div>
+                                <div className="font-bold text-lg">
+                                    {totalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                </div>
                             </div>
                         </div>
 
@@ -129,8 +135,8 @@ function BarberReportContent() {
                                                 {sale.client_queue?.client_name || 'BALCÃO'}
                                             </td>
                                             <td className="py-2 px-2 border-t border-gray-100 capitalize">{sale.payment_method === 'credit_card' ? 'Cartão' : sale.payment_method}</td>
-                                            <td className="py-2 px-2 border-t border-gray-100 text-right font-bold">R$ {Number(sale.total_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                                            <td className="py-2 px-2 border-t border-gray-100 text-right text-gray-500">R$ {Number(sale.commission_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                            <td className="py-2 px-2 border-t border-gray-100 text-right font-bold">{Number(sale.total_amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                            <td className="py-2 px-2 border-t border-gray-100 text-right text-gray-500">{Number(sale.commission_value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                                         </tr>
                                         {/* Detalhes dos Itens */}
                                         {sale.sale_items && sale.sale_items.length > 0 && (
@@ -140,7 +146,7 @@ function BarberReportContent() {
                                                         {sale.sale_items.map((item: any, idx: number) => (
                                                             <span key={idx} className="flex items-center gap-1">
                                                                 <span className="font-bold">• {item.products?.name || item.services?.name || 'Item'}</span>
-                                                                <span className="italic">({item.quantity}x R$ {Number(item.price).toFixed(2)})</span>
+                                                                <span className="italic">({item.quantity}x {Number(item.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})</span>
                                                             </span>
                                                         ))}
                                                     </div>
@@ -153,8 +159,8 @@ function BarberReportContent() {
                             <tfoot>
                                 <tr className="border-t border-black font-bold bg-gray-50">
                                     <td colSpan={3} className="py-3 px-2 text-right">SUBTOTAL</td>
-                                    <td className="py-3 px-2 text-right">R$ {totalValue.toFixed(2)}</td>
-                                    <td className="py-3 px-2 text-right">R$ {totalCommission.toFixed(2)}</td>
+                                    <td className="py-3 px-2 text-right">{totalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                    <td className="py-3 px-2 text-right">{totalCommission.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -164,8 +170,8 @@ function BarberReportContent() {
                                 <span className="font-bold">Resumo:</span> {salesList.length} atendimentos realizados.
                             </div>
                             <div className="flex gap-4">
-                                <div>Liquidado: <span className="font-bold">R$ {(totalValue - totalCommission).toFixed(2)}</span></div>
-                                <div>À Pagar (Comissão): <span className="font-bold text-blue-600">R$ {totalCommission.toFixed(2)}</span></div>
+                                <div>Liquidado: <span className="font-bold">{(totalValue - totalCommission).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+                                <div>À Pagar (Comissão): <span className="font-bold text-blue-600">{(totalCommission).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
                             </div>
                         </div>
                     </div>

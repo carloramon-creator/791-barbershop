@@ -9,13 +9,20 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url);
         const period = searchParams.get('period') || 'today'; // today, week, fortnight, month
 
-        let startDate = startOfDay(new Date());
-        const endDate = endOfDay(new Date());
+        // Ajuste de fuso horário (-3h para Brasília)
+        const now = new Date();
+        const userNow = new Date(now.getTime() - (3 * 60 * 60 * 1000));
 
-        if (period === 'week') startDate = startOfDay(subWeeks(new Date(), 1));
-        else if (period === 'fortnight') startDate = startOfDay(subDays(new Date(), 15));
-        else if (period === 'month') startDate = startOfDay(subMonths(new Date(), 1));
+        let startDate = startOfDay(userNow);
+        const endDate = endOfDay(userNow);
 
+        if (period === 'week') startDate = startOfDay(subWeeks(userNow, 1));
+        else if (period === 'fortnight') startDate = startOfDay(subDays(userNow, 15));
+        else if (period === 'month') startDate = startOfDay(subMonths(userNow, 1));
+
+        // Para evitar problemas de fuso no banco, usamos o ISO do início e fim do dia "ajustado"
+        // mas o banco armazena em UTC. Então precisamos converter o início do dia local para UTC.
+        // O startOfDay(userNow) gera 00:00 no fuso ajustado.
         const startIso = startDate.toISOString();
         const endIso = endDate.toISOString();
 
