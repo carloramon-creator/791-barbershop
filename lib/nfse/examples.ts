@@ -1,6 +1,11 @@
 /**
  * Exemplos de uso do sistema NFS-e com seleção automática de provedor
+ * 
+ * NOTA: Este arquivo contém apenas exemplos de código para documentação.
+ * Para usar esses exemplos, copie e adapte para seu contexto específico.
  */
+
+/*
 
 import nfseService, { TenantFiscalConfig } from '@/lib/nfse/nfse-service';
 import { DPSData } from '@/lib/nfse/xml-service';
@@ -43,15 +48,15 @@ async function exemploEmissaoAutomatica() {
     try {
         // O método emitNfseAuto() determina automaticamente qual provedor usar
         const result = await nfseService.emitNfseAuto(dpsData, tenantConfigSaoJose);
-
+        
         console.log('✅ NFS-e emitida com sucesso!');
         console.log('Número da nota:', result.invoiceId);
         console.log('Status:', result.status);
-
+        
         if (result.accessLink) {
             console.log('Link de acesso:', result.accessLink);
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error('❌ Erro na emissão:', error.message);
     }
 }
@@ -62,7 +67,22 @@ async function exemploEmissaoAutomatica() {
 
 async function exemploEmissaoNacional() {
     const dpsData: DPSData = {
-        // ... mesmos dados acima
+        numero: '00001',
+        serie: '001',
+        dataEmissao: new Date().toISOString(),
+        prestador: {
+            cnpj: '12345678000100',
+            inscricaoMunicipal: '123456'
+        },
+        tomador: {
+            cpf: '12345678900',
+            razaoSocial: 'João da Silva'
+        },
+        servico: {
+            codigoItemListaServico: '0501',
+            valorServicos: 100.00,
+            discriminacao: 'Corte de cabelo'
+        }
     };
 
     // Configuração para município que usa o padrão Nacional
@@ -76,7 +96,7 @@ async function exemploEmissaoNacional() {
     try {
         const result = await nfseService.emitNfseAuto(dpsData, tenantConfigNacional);
         console.log('✅ NFS-e emitida via Provedor Nacional');
-    } catch (error) {
+    } catch (error: any) {
         console.error('❌ Erro:', error.message);
     }
 }
@@ -87,7 +107,22 @@ async function exemploEmissaoNacional() {
 
 async function exemploEmissaoManual() {
     const dpsData: DPSData = {
-        // ... dados da NFS-e
+        numero: '00001',
+        serie: '001',
+        dataEmissao: new Date().toISOString(),
+        prestador: {
+            cnpj: '12345678000100',
+            inscricaoMunicipal: '123456'
+        },
+        tomador: {
+            cpf: '12345678900',
+            razaoSocial: 'João da Silva'
+        },
+        servico: {
+            codigoItemListaServico: '0501',
+            valorServicos: 100.00,
+            discriminacao: 'Corte de cabelo'
+        }
     };
 
     // Forçar uso do provedor IPM manualmente
@@ -105,9 +140,9 @@ async function exemploEmissaoManual() {
             'ipm', // providerType fixo
             credentials
         );
-
+        
         console.log('✅ Emitido via IPM (manual)');
-    } catch (error) {
+    } catch (error: any) {
         console.error('❌ Erro:', error.message);
     }
 }
@@ -118,7 +153,7 @@ async function exemploEmissaoManual() {
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: NextRequest) {
     try {
@@ -129,6 +164,7 @@ export async function POST(req: NextRequest) {
         }
 
         // 2. Buscar dados do tenant
+        const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_KEY!);
         const { data: tenant, error: tenantError } = await supabase
             .from('tenant')
             .select('fiscal_config')
@@ -173,8 +209,8 @@ export async function POST(req: NextRequest) {
 
     } catch (error: any) {
         console.error('[API /emit-nfse] Erro:', error);
-        return NextResponse.json({
-            error: error.message
+        return NextResponse.json({ 
+            error: error.message 
         }, { status: 500 });
     }
 }
@@ -183,30 +219,32 @@ export async function POST(req: NextRequest) {
 // EXEMPLO 5: Adicionar novos municípios ao IPM
 // ============================================
 
-/**
- * Para adicionar suporte a um novo município IPM:
- * 
- * 1. Edite /lib/nfse/provider-mapping.ts
- * 2. Adicione o código municipal e o slug da cidade:
- * 
- * export const MUNICIPAL_CODE_TO_PROVIDER: Record<string, 'national' | 'ipm'> = {
- *     '8303': 'ipm', // São José/SC
- *     '4205407': 'ipm', // Florianópolis/SC (EXEMPLO)
- * };
- * 
- * export const MUNICIPAL_CODE_TO_CITY_SLUG: Record<string, string> = {
- *     '8303': 'saojose',
- *     '4205407': 'florianopolis', // EXEMPLO
- * };
- * 
- * 3. Configure as credenciais IPM no banco de dados (coluna tenant.fiscal_config):
- * {
- *     "municipal_code": "4205407",
- *     "pfxBase64": "...",
- *     "passphrase": "...",
- *     "ipm_username": "usuario_floripa",
- *     "ipm_password": "senha_floripa"
- * }
- * 
- * 4. Pronto! O sistema automaticamente usará o provedor IPM para esse município.
- */
+Para adicionar suporte a um novo município IPM:
+
+1. Edite /lib/nfse/provider-mapping.ts
+2. Adicione o código municipal e o slug da cidade:
+
+export const MUNICIPAL_CODE_TO_PROVIDER: Record<string, 'national' | 'ipm'> = {
+    '8303': 'ipm', // São José/SC
+    '4205407': 'ipm', // Florianópolis/SC (EXEMPLO)
+};
+
+export const MUNICIPAL_CODE_TO_CITY_SLUG: Record<string, string> = {
+    '8303': 'saojose',
+    '4205407': 'florianopolis', // EXEMPLO
+};
+
+3. Configure as credenciais IPM no banco de dados (coluna tenant.fiscal_config):
+{
+    "municipal_code": "4205407",
+    "pfxBase64": "...",
+    "passphrase": "...",
+    "ipm_username": "usuario_floripa",
+    "ipm_password": "senha_floripa"
+}
+
+4. Pronto! O sistema automaticamente usará o provedor IPM para esse município.
+
+*/
+
+export { };
