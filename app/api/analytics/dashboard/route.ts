@@ -9,22 +9,32 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url);
         const period = searchParams.get('period') || 'today'; // today, week, fortnight, month
 
-        // Ajuste de fuso horário (-3h para Brasília)
+        // Ajuste robusto de fuso horário para o Dashboard (Brasília -03:00)
+        // O dia em Brasília começa às 03:00:00 UTC.
+
         const now = new Date();
-        const userNow = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+        const startOfTodayUTC = startOfDay(now);
+        const brStartOfDay = new Date(startOfTodayUTC);
+        brStartOfDay.setUTCHours(3);
 
-        let startDate = startOfDay(userNow);
-        const endDate = endOfDay(userNow);
+        // Se agora for antes das 03:00 UTC, o dia de hoje (em Brasília) ainda é o dia anterior UTC.
+        if (now < brStartOfDay) {
+            brStartOfDay.setUTCDate(brStartOfDay.getUTCDate() - 1);
+        }
 
-        if (period === 'week') startDate = startOfDay(subWeeks(userNow, 1));
-        else if (period === 'fortnight') startDate = startOfDay(subDays(userNow, 15));
-        else if (period === 'month') startDate = startOfDay(subMonths(userNow, 1));
+        let startDate = new Date(brStartOfDay);
+        const endDate = new Date(brStartOfDay);
+        endDate.setUTCDate(endDate.getUTCDate() + 1);
+        endDate.setUTCHours(2, 59, 59, 999); // Fim do dia em Brasília (02:59:59 UTC do dia seguinte)
 
-        // Para evitar problemas de fuso no banco, usamos o ISO do início e fim do dia "ajustado"
-        // mas o banco armazena em UTC. Então precisamos converter o início do dia local para UTC.
-        // O startOfDay(userNow) gera 00:00 no fuso ajustado.
+        if (period === 'week') startDate = subWeeks(startDate, 1);
+        else if (period === 'fortnight') startDate = subDays(startDate, 15);
+        else if (period === 'month') startDate = subMonths(startDate, 1);
+
         const startIso = startDate.toISOString();
         const endIso = endDate.toISOString();
+
+        console.log(`[DASHBOARD DEBUG] Period: ${period} | Range: ${startIso} to ${endIso}`);
 
         // 1. Faturamento no período (Consolidado: sales + vendas)
         // Otimizado: somando via rpc ou pelo menos reduzindo tráfego

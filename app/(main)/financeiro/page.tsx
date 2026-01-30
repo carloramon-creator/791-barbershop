@@ -198,12 +198,21 @@ export default function FinanceiroPage() {
 
     if (role !== 'owner') return <div className="p-8 text-red-500">Acesso restrito ao proprietário.</div>;
 
-    const todayStr = new Date().toISOString().split('T')[0];
-    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+    // Helper robusto para pegar YYYY-MM-DD local (Brasília)
+    const getLocalDateStr = (iso: string) => {
+        if (!iso) return '';
+        const d = new Date(iso);
+        // Ajuste de fuso manual para garantir Brasília (-3h) em qualquer lugar
+        const brDate = new Date(d.getTime() - (3 * 60 * 60 * 1000));
+        return brDate.toISOString().split('T')[0];
+    };
+
+    const todayStr = getLocalDateStr(new Date().toISOString());
+    const currentMonth = todayStr.slice(0, 7); // YYYY-MM
 
     // Total Revenue: Sales (until today) + Finance Revenue (paid OR until today)
     const totalRevenue = sales
-        .filter(s => s.created_at.split('T')[0] <= todayStr)
+        .filter(s => getLocalDateStr(s.created_at) <= todayStr)
         .reduce((acc, s) => acc + Number(s.total_amount), 0) +
         financeRecords
             .filter(r => (r.type === 'revenue' || (r.type as any) === 'income') && (r.is_paid || r.date <= todayStr))
@@ -234,9 +243,9 @@ export default function FinanceiroPage() {
 
     const filteredRecords: FinanceItem[] = view === 'main'
         ? [
-            ...sales.filter(s => s.created_at.split('T')[0] <= todayStr).map(s => ({
+            ...sales.filter(s => getLocalDateStr(s.created_at) <= todayStr).map(s => ({
                 id: s.id,
-                date: s.created_at.split('T')[0],
+                date: getLocalDateStr(s.created_at),
                 created_at: s.created_at,
                 description: `Venda #${s.id.slice(-4)}`,
                 type: 'revenue',
