@@ -28,7 +28,7 @@ export class WhatsAppAgent {
 
         // 3. Fluxos de Fila (QUEUE)
         if (session.state.startsWith('queue_')) {
-            return this.handleQueueFlow(from, session, text, buttonId);
+            return this.handleQueueFlow(from, session, text);
         }
 
         // Fallback genérico
