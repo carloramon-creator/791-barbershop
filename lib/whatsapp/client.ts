@@ -1,11 +1,12 @@
 /**
  * WhatsApp Cloud API Client
- * Oficial Meta Integration
+ * Oficial Meta Integration - Multi-tenant support
  */
 
-const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
-const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
-const API_VERSION = 'v19.0';
+export interface WhatsAppCredentials {
+    accessToken: string;
+    phoneNumberId: string;
+}
 
 export interface WhatsAppMessagePayload {
     messaging_product: 'whatsapp';
@@ -21,22 +22,24 @@ export interface WhatsAppMessagePayload {
 }
 
 export class WhatsAppClient {
-    private static baseUrl = `https://graph.facebook.com/${API_VERSION}/${PHONE_NUMBER_ID}/messages`;
+    private static getBaseUrl(phoneNumberId: string) {
+        return `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`;
+    }
 
     /**
-     * Envia uma mensagem via WhatsApp Cloud API
+     * Envia uma mensagem via WhatsApp Cloud API usando credenciais específicas
      */
-    static async sendMessage(payload: WhatsAppMessagePayload) {
-        if (!WHATSAPP_ACCESS_TOKEN || !PHONE_NUMBER_ID) {
-            console.error('[WHATSAPP] Credenciais ausentes (Token ou Phone ID)');
+    static async sendMessage(creds: WhatsAppCredentials, payload: WhatsAppMessagePayload) {
+        if (!creds.accessToken || !creds.phoneNumberId) {
+            console.error('[WHATSAPP] Credenciais ausentes');
             return null;
         }
 
         try {
-            const response = await fetch(this.baseUrl, {
+            const response = await fetch(this.getBaseUrl(creds.phoneNumberId), {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+                    'Authorization': `Bearer ${creds.accessToken}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(payload),
@@ -57,10 +60,10 @@ export class WhatsAppClient {
     }
 
     /**
-     * Atalho para enviar texto simples
+     * Atalhos para enviar texto simples
      */
-    static async sendText(to: string, text: string) {
-        return this.sendMessage({
+    static async sendText(creds: WhatsAppCredentials, to: string, text: string) {
+        return this.sendMessage(creds, {
             messaging_product: 'whatsapp',
             to,
             type: 'text',
@@ -71,8 +74,8 @@ export class WhatsAppClient {
     /**
      * Atalho para enviar template
      */
-    static async sendTemplate(to: string, templateName: string, langCode = 'pt_BR', components: any[] = []) {
-        return this.sendMessage({
+    static async sendTemplate(creds: WhatsAppCredentials, to: string, templateName: string, langCode = 'pt_BR', components: any[] = []) {
+        return this.sendMessage(creds, {
             messaging_product: 'whatsapp',
             to,
             type: 'template',

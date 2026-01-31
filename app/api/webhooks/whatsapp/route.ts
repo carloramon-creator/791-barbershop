@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { WhatsAppClient } from '@/lib/whatsapp/client';
-// import { WhatsAppAgent } from '@/lib/whatsapp/agent'; // Ainda será criado
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
 
 /**
  * Webhook principal para integração com WhatsApp Cloud API
+ * Suporte Multi-tenant dinâmico
  */
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -30,6 +30,27 @@ export async function POST(req: Request) {
             const entry = body.entry?.[0];
             const change = entry?.changes?.[0];
             const value = change?.value;
+
+            // 1. Identificar a barbearia pelo phone_number_id do destinatário
+            const metadata = value?.metadata;
+            const phoneNumberId = metadata?.phone_number_id;
+
+            if (!phoneNumberId) {
+                return NextResponse.json({ error: 'No phone_number_id found' }, { status: 400 });
+            }
+
+            // Buscar configuração da barbearia no banco de dados
+            const { data: config, error: configError } = await getSupabaseAdmin()
+                .from('whatsapp_configs')
+                .select('tenant_id, access_token')
+                .eq('phone_number_id', phoneNumberId)
+                .single();
+
+            if (configError || !config) {
+                console.error(`[WHATSAPP_WEBHOOK] Barbearia não encontrada para o ID: ${phoneNumberId}`);
+                return NextResponse.json({ error: 'Tenant not configured' }, { status: 404 });
+            }
+
             const message = value?.messages?.[0];
 
             if (message) {
@@ -43,7 +64,6 @@ export async function POST(req: Request) {
                     raw: message
                 };
 
-                // Extrair texto ou clique em botão
                 if (type === 'text') {
                     normalizedPayload.text = message.text?.body;
                 } else if (type === 'interactive') {
@@ -59,11 +79,17 @@ export async function POST(req: Request) {
                     }
                 }
 
-                console.log('[WHATSAPP_WEBHOOK] Mensagem recebida:', normalizedPayload.from, normalizedPayload.text);
+                console.log(`[WHATSAPP_WEBHOOK] Tenant ${config.tenant_id} - Mensagem de ${phone}: ${normalizedPayload.text}`);
 
-                // Chamar o Agente para processar a lógica
+                // 2. Chamar o Agente com o contexto da barbearia correta
                 const { WhatsAppAgent } = await import('@/lib/whatsapp/agent');
-                await WhatsAppAgent.handleMessage(normalizedPayload);
+                await WhatsAppAgent.handleMessage({
+                    tenantId: config.tenant_id,
+                    creds: {
+                        accessToken: config.access_token,
+                        phoneNumberId: phoneNumberId
+                    }
+                }, normalizedPayload);
             }
 
             return NextResponse.json({ success: true });
