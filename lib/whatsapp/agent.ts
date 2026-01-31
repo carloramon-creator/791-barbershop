@@ -112,7 +112,7 @@ export class WhatsAppAgent {
                 await WhatsAppClient.sendText(ctx.creds, phone, `✅ *Agendamento Confirmado!* Te esperamos em ${context.datetime}. Qualquer dúvida é só chamar!`);
                 return WhatsAppSession.clear(ctx.tenantId, phone);
             }
-            await WhatsAppClient.sendText(phone, "Agendamento cancelado. Se precisar de algo, é só mandar AGENDAR novamente.");
+            await WhatsAppClient.sendText(ctx.creds, phone, "Agendamento cancelado. Se precisar de algo, é só mandar AGENDAR novamente.");
             return WhatsAppSession.clear(ctx.tenantId, phone);
         }
     }
