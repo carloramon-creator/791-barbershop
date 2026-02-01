@@ -36,6 +36,7 @@ export class WhatsAppClient {
         }
 
         try {
+            console.log(`[WHATSAPP_CLIENT] Fazendo POST para ${this.getBaseUrl(creds.phoneNumberId)} enviando para ${payload.to}`);
             const response = await fetch(this.getBaseUrl(creds.phoneNumberId), {
                 method: 'POST',
                 headers: {

@@ -24,6 +24,7 @@ export class WhatsAppAgent {
 
         // 1. Detecção de Intenção Inicial (se estiver em IDLE)
         if (session.state === 'idle') {
+            console.log(`[WHATSAPP_AGENT] Entrando em handleIdleState para ${from}`);
             return this.handleIdleState(ctx, from, text, buttonId);
         }
 
@@ -61,7 +62,8 @@ export class WhatsAppAgent {
         }
 
         // Não entendeu
-        await WhatsAppClient.sendText(ctx.creds, phone, "Olá! Sou o assistente da barbearia. 💈\n\nComo posso te ajudar hoje?\n\nDigite *AGENDAR* para marcar um horário ou *FILA* para entrar na fila de espera.");
+        console.log(`[WHATSAPP_AGENT] Não entendi a intenção. Enviando menu inicial para ${phone}`);
+        return WhatsAppClient.sendText(ctx.creds, phone, "Olá! Sou o assistente da barbearia. 💈\n\nComo posso te ajudar hoje?\n\nDigite *AGENDAR* para marcar um horário ou *FILA* para entrar na fila de espera.");
     }
 
     /**
