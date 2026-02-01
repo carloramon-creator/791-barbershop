@@ -527,8 +527,7 @@ export class WhatsAppAgent {
                 tenant_id: tenantId,
                 phone,
                 name: name || 'Cliente WhatsApp',
-                birth_date: birthDate || null,
-                source: 'whatsapp'
+                birth_date: birthDate || null
             })
             .select()
             .single();
