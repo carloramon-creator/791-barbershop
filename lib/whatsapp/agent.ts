@@ -18,29 +18,33 @@ export class WhatsAppAgent {
      */
     static async handleMessage(ctx: AgentContext, payload: { from: string, text: string, buttonId?: string, messageType: string }) {
         const { from, text, buttonId } = payload;
-        const session = await WhatsAppSession.get(ctx.tenantId, from);
+        try {
+            const session = await WhatsAppSession.get(ctx.tenantId, from);
 
-        console.log(`[WHATSAPP_AGENT] Processing message for Tenant ${ctx.tenantId} from ${from}. State: ${session.state}`);
+            console.log(`[WHATSAPP_AGENT] Processing message for Tenant ${ctx.tenantId} from ${from}. State: ${session.state}`);
 
-        // 1. Detecção de Intenção Inicial (se estiver em IDLE)
-        if (session.state === 'idle') {
-            console.log(`[WHATSAPP_AGENT] Entrando em handleIdleState para ${from}`);
-            return this.handleIdleState(ctx, from, text, buttonId);
+            // 1. Detecção de Intenção Inicial (se estiver em IDLE)
+            if (session.state === 'idle') {
+                console.log(`[WHATSAPP_AGENT] Entrando em handleIdleState para ${from}`);
+                return await this.handleIdleState(ctx, from, text, buttonId);
+            }
+
+            // 2. Fluxos de Agendamento (BOOKING)
+            if (session.state.startsWith('booking_')) {
+                return await this.handleBookingFlow(ctx, from, session, text, buttonId);
+            }
+
+            // 3. Fluxos de Fila (QUEUE)
+            if (session.state.startsWith('queue_')) {
+                return await this.handleQueueFlow(ctx, from, session, text);
+            }
+
+            // Fallback genérico
+            await WhatsAppClient.sendText(ctx.creds, from, "Desculpe, me perdi um pouco. Digite AGENDAR ou FILA para recomeçarmos. 🙂");
+            await WhatsAppSession.clear(ctx.tenantId, from);
+        } catch (error: any) {
+            console.error('[WHATSAPP_AGENT_CRASH]', error.message, error.stack);
         }
-
-        // 2. Fluxos de Agendamento (BOOKING)
-        if (session.state.startsWith('booking_')) {
-            return this.handleBookingFlow(ctx, from, session, text, buttonId);
-        }
-
-        // 3. Fluxos de Fila (QUEUE)
-        if (session.state.startsWith('queue_')) {
-            return this.handleQueueFlow(ctx, from, session, text);
-        }
-
-        // Fallback genérico
-        await WhatsAppClient.sendText(ctx.creds, from, "Desculpe, me perdi um pouco. Digite AGENDAR ou FILA para recomeçarmos. 🙂");
-        await WhatsAppSession.clear(ctx.tenantId, from);
     }
 
     /**
