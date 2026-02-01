@@ -105,6 +105,15 @@ export async function POST(req: Request) {
                 })();
             }
 
+            // 3. Tratar Status de Entrega (para saber por que não chega)
+            const status = value?.statuses?.[0];
+            if (status) {
+                console.warn(`[WHATSAPP_STATUS] Msg: ${status.id} - Status: ${status.status} - Para: ${status.recipient_id}`);
+                if (status.errors) {
+                    console.error('[WHATSAPP_STATUS_ERROR]', JSON.stringify(status.errors, null, 2));
+                }
+            }
+
             return NextResponse.json({ success: true }, { status: 200 });
         }
 
