@@ -52,6 +52,7 @@ export class WhatsAppClient {
                 return { success: false, error: data };
             }
 
+            console.log('[WHATSAPP_CLIENT] Mensagem enviada com sucesso:', data.messages?.[0]?.id);
             return { success: true, data };
         } catch (error) {
             console.error('[WHATSAPP_FETCH_ERROR]', error);

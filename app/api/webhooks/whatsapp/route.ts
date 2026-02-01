@@ -91,6 +91,7 @@ export async function POST(req: Request) {
                         phoneNumberId: phoneNumberId
                     }
                 }, normalizedPayload);
+                console.log(`[WHATSAPP_WEBHOOK] Processamento concluído para ${phone}`);
             }
 
             return NextResponse.json({ success: true });
