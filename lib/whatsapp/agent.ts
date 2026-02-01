@@ -22,12 +22,18 @@ export class WhatsAppAgent {
         const { from, text, buttonId } = payload;
         try {
             const session = await WhatsAppSession.get(ctx.tenantId, from);
+            const input = (text || '').toUpperCase();
 
             console.log(`[WHATSAPP_AGENT] Processing message for Tenant ${ctx.tenantId} from ${from}. State: ${session.state}`);
 
-            // 1. Detecção de Intenção Inicial (se estiver em IDLE)
-            if (session.state === 'idle') {
-                console.log(`[WHATSAPP_AGENT] Entrando em handleIdleState para ${from}`);
+            // Comandos Globais de Reset
+            if (input === 'MENU' || input === 'SAIR' || input === 'CANCELAR' || input === 'OI' || input === 'OLA' || input === 'OLÁ') {
+                await WhatsAppSession.clear(ctx.tenantId, from);
+                return await this.handleIdleState(ctx, from);
+            }
+
+            // 1. Detecção de Intenção Inicial (se estiver em IDLE ou se enviar uma palavra-chave agnóstica de estado)
+            if (session.state === 'idle' || input === 'AGENDAR' || input === 'FILA') {
                 return await this.handleIdleState(ctx, from, text, buttonId);
             }
 
@@ -38,12 +44,11 @@ export class WhatsAppAgent {
 
             // 3. Fluxos de Fila (QUEUE)
             if (session.state.startsWith('queue_')) {
-                return await this.handleQueueFlow(ctx, from, session, text);
+                return await this.handleQueueFlow(ctx, from, session, text, buttonId);
             }
 
             // Fallback genérico
-            await WhatsAppClient.sendText(ctx.creds, from, "Desculpe, me perdi um pouco. Digite AGENDAR ou FILA para recomeçarmos. 🙂");
-            await WhatsAppSession.clear(ctx.tenantId, from);
+            return await this.handleIdleState(ctx, from);
         } catch (error: any) {
             console.error('[WHATSAPP_AGENT_CRASH]', error.message, error.stack);
         }
@@ -55,8 +60,18 @@ export class WhatsAppAgent {
     private static async handleIdleState(ctx: AgentContext, phone: string, text: string = '', buttonId?: string) {
         const input = text.toUpperCase();
 
+        // 0. Buscar Configurações do Tenant para saber o que oferecer
+        const { data: tenant } = await getSupabaseAdmin()
+            .from('tenants')
+            .select('module_queue_enabled, module_appointments_enabled')
+            .eq('id', ctx.tenantId)
+            .single();
+
+        const queueEnabled = tenant?.module_queue_enabled ?? true;
+        const apptEnabled = tenant?.module_appointments_enabled ?? true;
+
         // Intenção: AGENDAR
-        if (input.includes('AGENDAR') || input.includes('MARCAR') || buttonId === 'BOOKING_START' || buttonId === 'BIRTHDAY_AGENDAR') {
+        if (apptEnabled && (input.includes('AGENDAR') || input.includes('MARCAR') || buttonId === 'BOOKING_START' || buttonId === 'BIRTHDAY_AGENDAR')) {
             await WhatsAppSession.update(ctx.tenantId, phone, 'booking_select_service', { coupon: buttonId === 'BIRTHDAY_AGENDAR' ? 'BIRTHDAY' : null });
 
             const services = await this.listServices(ctx.tenantId);
@@ -81,7 +96,7 @@ export class WhatsAppAgent {
         }
 
         // Intenção: FILA
-        if (input.includes('FILA') || input.includes('ESPERA') || buttonId === 'QUEUE_START' || buttonId === 'BIRTHDAY_FILA') {
+        if (queueEnabled && (input.includes('FILA') || input.includes('ESPERA') || buttonId === 'QUEUE_START' || buttonId === 'BIRTHDAY_FILA')) {
             await WhatsAppSession.update(ctx.tenantId, phone, 'queue_confirm', { coupon: buttonId === 'BIRTHDAY_FILA' ? 'BIRTHDAY' : null });
             return WhatsAppClient.sendButtons(ctx.creds, phone, "Você gostaria de entrar na fila agora?", [
                 { id: 'QUEUE_YES', title: 'Sim, entrar na fila' },
@@ -89,15 +104,20 @@ export class WhatsAppAgent {
             ]);
         }
 
-        // Menu Inicial com Botões
+        // Menu Inicial Dinâmico
+        const buttons = [];
+        if (apptEnabled) buttons.push({ id: 'BOOKING_START', title: 'Agendar Horário' });
+        if (queueEnabled) buttons.push({ id: 'QUEUE_START', title: 'Entrar na Fila' });
+
+        if (buttons.length === 0) {
+            return WhatsAppClient.sendText(ctx.creds, phone, "Olá! No momento estamos sem serviços disponíveis para agendamento online. Por favor, entre em contato via telefone.");
+        }
+
         return WhatsAppClient.sendButtons(
             ctx.creds,
             phone,
             "Olá! Sou o assistente da barbearia. 💈\n\nComo posso te ajudar hoje?",
-            [
-                { id: 'BOOKING_START', title: 'Agendar Horário' },
-                { id: 'QUEUE_START', title: 'Entrar na Fila' }
-            ]
+            buttons
         );
     }
 
@@ -118,13 +138,13 @@ export class WhatsAppAgent {
                 context.serviceName = service.name;
                 await WhatsAppSession.update(ctx.tenantId, phone, 'booking_select_barber', context);
 
-                const barbers = await this.listBarbers(ctx.tenantId);
+                const barbers = await this.listBarbers(ctx.tenantId, service.id);
                 if (!barbers || barbers.length === 0) {
-                    // Se não tiver barbeiros específicos ativos, vai para "Qualquer"
+                    // Se não tiver barbeiros específicos ativos para esse serviço, vai para "Qualquer"
                     context.barberId = null;
                     context.barberName = 'Qualquer barbeiro';
                     await WhatsAppSession.update(ctx.tenantId, phone, 'booking_select_datetime', context);
-                    return WhatsAppClient.sendText(ctx.creds, phone, "Ótima escolha! Para que dia e horário você deseja agendar? (Ex: hoje 15:00, amanhã às 10:30)");
+                    return WhatsAppClient.sendText(ctx.creds, phone, "Ótima escolha! Para que dia e horário você deseja agendar? (Ex: hoje 15:00, amanhã às 10:30)\n\n_Digite *MENU* para voltar_");
                 }
 
                 return WhatsAppClient.sendList(
@@ -136,7 +156,7 @@ export class WhatsAppAgent {
                         title: "Nossa Equipe",
                         rows: [
                             { id: 'ANY_BARBER', title: 'Qualquer um', description: 'O que estiver disponível mais rápido' },
-                            ...barbers.map(b => ({ id: b.id, title: b.name }))
+                            ...barbers.map(b => ({ id: b.id, title: b.nickname || b.name }))
                         ]
                     }]
                 );
@@ -185,7 +205,7 @@ export class WhatsAppAgent {
                 context.barberName = barber.name;
             }
             await WhatsAppSession.update(ctx.tenantId, phone, 'booking_select_datetime', context);
-            return WhatsAppClient.sendText(ctx.creds, phone, "Para que dia e horário? (Ex: hoje 15:00, amanhã às 10:30)");
+            return WhatsAppClient.sendText(ctx.creds, phone, "Para que dia e horário? (Ex: hoje 15:00, amanhã às 10:30)\n\n_Digite *CANCELAR* para sair_");
         }
 
         // 4.3 Confirmar Agendamento
@@ -352,14 +372,21 @@ export class WhatsAppAgent {
         return data;
     }
 
-    private static async listBarbers(tenantId: string) {
-        const { data } = await getSupabaseAdmin()
+    private static async listBarbers(tenantId: string, serviceId?: string) {
+        let query = getSupabaseAdmin()
             .from('barbers')
-            .select('id, name')
+            .select('id, name, nickname, service_ids')
             .eq('tenant_id', tenantId)
             .eq('is_active', true)
-            .order('name')
-            .limit(10);
+            .order('name');
+
+        const { data } = await query;
+
+        // Filtro manual se vier serviceId (já que service_ids é array json)
+        if (serviceId && data) {
+            return data.filter(b => b.service_ids?.includes(serviceId));
+        }
+
         return data;
     }
 
