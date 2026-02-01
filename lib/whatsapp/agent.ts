@@ -1,3 +1,5 @@
+import { WhatsAppClient, WhatsAppCredentials } from './client';
+import { WhatsAppSession } from './session';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { addMinutes, parse, format, isAfter, startOfToday, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -54,20 +56,49 @@ export class WhatsAppAgent {
         const input = text.toUpperCase();
 
         // Intenção: AGENDAR
-        if (input.includes('AGENDAR') || input.includes('MARCAR') || input.includes('HORÁRIO') || buttonId === 'BIRTHDAY_AGENDAR') {
+        if (input.includes('AGENDAR') || input.includes('MARCAR') || buttonId === 'BOOKING_START' || buttonId === 'BIRTHDAY_AGENDAR') {
             await WhatsAppSession.update(ctx.tenantId, phone, 'booking_select_service', { coupon: buttonId === 'BIRTHDAY_AGENDAR' ? 'BIRTHDAY' : null });
-            return WhatsAppClient.sendText(ctx.creds, phone, "Perfeito! Qual serviço você gostaria de realizar? (Ex: Corte, Barba, Combo...)");
+
+            const services = await this.listServices(ctx.tenantId);
+            if (!services || services.length === 0) {
+                return WhatsAppClient.sendText(ctx.creds, phone, "Nenhum serviço disponível no momento. Por favor, tente mais tarde.");
+            }
+
+            return WhatsAppClient.sendList(
+                ctx.creds,
+                phone,
+                "Perfeito! Qual serviço você gostaria de realizar?",
+                "Ver Serviços",
+                [{
+                    title: "Serviços Disponíveis",
+                    rows: services.map(s => ({
+                        id: s.id,
+                        title: s.name,
+                        description: `R$ ${s.price}`
+                    }))
+                }]
+            );
         }
 
         // Intenção: FILA
-        if (input.includes('FILA') || input.includes('ESPERA') || buttonId === 'BIRTHDAY_FILA') {
+        if (input.includes('FILA') || input.includes('ESPERA') || buttonId === 'QUEUE_START' || buttonId === 'BIRTHDAY_FILA') {
             await WhatsAppSession.update(ctx.tenantId, phone, 'queue_confirm', { coupon: buttonId === 'BIRTHDAY_FILA' ? 'BIRTHDAY' : null });
-            return WhatsAppClient.sendText(ctx.creds, phone, "Você gostaria de entrar na fila agora? Responda SIM ou NÃO.");
+            return WhatsAppClient.sendButtons(ctx.creds, phone, "Você gostaria de entrar na fila agora?", [
+                { id: 'QUEUE_YES', title: 'Sim, entrar na fila' },
+                { id: 'QUEUE_NO', title: 'Não, agora não' }
+            ]);
         }
 
-        // Não entendeu
-        console.log(`[WHATSAPP_AGENT] Não entendi a intenção. Enviando menu inicial para ${phone}`);
-        return WhatsAppClient.sendText(ctx.creds, phone, "Olá! Sou o assistente da barbearia. 💈\n\nComo posso te ajudar hoje?\n\nDigite *AGENDAR* para marcar um horário ou *FILA* para entrar na fila de espera.");
+        // Menu Inicial com Botões
+        return WhatsAppClient.sendButtons(
+            ctx.creds,
+            phone,
+            "Olá! Sou o assistente da barbearia. 💈\n\nComo posso te ajudar hoje?",
+            [
+                { id: 'BOOKING_START', title: 'Agendar Horário' },
+                { id: 'QUEUE_START', title: 'Entrar na Fila' }
+            ]
+        );
     }
 
     /**
@@ -79,48 +110,76 @@ export class WhatsAppAgent {
 
         // 4.1 Selecionar Serviço
         if (state === 'booking_select_service') {
-            const input = text.toUpperCase();
-            if (input.includes('QUAIS') || input.includes('LISTA') || input.includes('OPÇÕES')) {
-                const services = await this.listServices(ctx.tenantId);
-                const list = services?.map(s => `• ${s.name}`).join('\n') || 'Nenhum serviço encontrado.';
-                return WhatsAppClient.sendText(ctx.creds, phone, `Temos os seguintes serviços:\n\n${list}\n\nQual deles você deseja?`);
-            }
+            // Se o usuário mandou o ID via lista ou o nome via texto
+            const service = await this.searchService(ctx.tenantId, buttonId || text);
 
-            const service = await this.searchService(ctx.tenantId, text);
             if (service) {
                 context.serviceId = service.id;
                 context.serviceName = service.name;
                 await WhatsAppSession.update(ctx.tenantId, phone, 'booking_select_barber', context);
-                return WhatsAppClient.sendText(ctx.creds, phone, `Beleza, serviço *${service.name}*. Tem algum barbeiro preferido? Se não, responda *QUALQUER* ou peça a *LISTA*.`);
+
+                const barbers = await this.listBarbers(ctx.tenantId);
+                if (!barbers || barbers.length === 0) {
+                    // Se não tiver barbeiros específicos ativos, vai para "Qualquer"
+                    context.barberId = null;
+                    context.barberName = 'Qualquer barbeiro';
+                    await WhatsAppSession.update(ctx.tenantId, phone, 'booking_select_datetime', context);
+                    return WhatsAppClient.sendText(ctx.creds, phone, "Ótima escolha! Para que dia e horário você deseja agendar? (Ex: hoje 15:00, amanhã às 10:30)");
+                }
+
+                return WhatsAppClient.sendList(
+                    ctx.creds,
+                    phone,
+                    `Beleza, serviço *${service.name}*. Tem algum barbeiro preferido?`,
+                    "Ver Barbeiros",
+                    [{
+                        title: "Nossa Equipe",
+                        rows: [
+                            { id: 'ANY_BARBER', title: 'Qualquer um', description: 'O que estiver disponível mais rápido' },
+                            ...barbers.map(b => ({ id: b.id, title: b.name }))
+                        ]
+                    }]
+                );
             }
 
-            const services = await this.listServices(ctx.tenantId);
-            const list = services?.map(s => `• ${s.name}`).join('\n') || '';
-            let msg = "Não encontrei esse serviço. Pode digitar novamente? (Ex: Corte, Barba)";
-            if (list) msg += `\n\nOpções disponíveis:\n${list}`;
-
-            return WhatsAppClient.sendText(ctx.creds, phone, msg);
+            // Fallback se não selecionou nada válido
+            const servicesResult = await this.listServices(ctx.tenantId);
+            const services = servicesResult || [];
+            return WhatsAppClient.sendList(
+                ctx.creds,
+                phone,
+                "Não consegui identificar o serviço. Por favor, selecione na lista abaixo:",
+                "Ver Serviços",
+                [{
+                    title: "Serviços Disponíveis",
+                    rows: services.map((s: any) => ({ id: s.id, title: s.name }))
+                }]
+            );
         }
 
         // 4.2 Selecionar Barbeiro
         if (state === 'booking_select_barber') {
-            const input = text.toUpperCase();
-
-            if (input === 'QUALQUER') {
+            if (buttonId === 'ANY_BARBER' || text.toUpperCase() === 'QUALQUER') {
                 context.barberId = null;
                 context.barberName = 'Qualquer barbeiro';
-            } else if (input.includes('QUAIS') || input.includes('LISTA') || input.includes('NOMES')) {
-                const barbers = await this.listBarbers(ctx.tenantId);
-                const list = barbers?.map(b => `• ${b.name}`).join('\n') || 'Nenhum barbeiro encontrado.';
-                return WhatsAppClient.sendText(ctx.creds, phone, `Atualmente temos estes barbeiros:\n\n${list}\n\nQual deles você prefere? (Ou responda *QUALQUER*)`);
             } else {
-                const barber = await this.searchBarber(ctx.tenantId, text);
+                const barber = await this.searchBarber(ctx.tenantId, buttonId || text);
                 if (!barber) {
-                    const barbers = await this.listBarbers(ctx.tenantId);
-                    const list = barbers?.map(b => `• ${b.name}`).join('\n') || '';
-                    let msg = "Não encontrei esse barbeiro. Pode digitar o nome dele ou *QUALQUER*?";
-                    if (list) msg += `\n\nBarbeiros disponíveis:\n${list}`;
-                    return WhatsAppClient.sendText(ctx.creds, phone, msg);
+                    const barbersResult = await this.listBarbers(ctx.tenantId);
+                    const barbers = barbersResult || [];
+                    return WhatsAppClient.sendList(
+                        ctx.creds,
+                        phone,
+                        "Não encontrei esse barbeiro. Pode selecionar um na lista ou escolher 'Qualquer um':",
+                        "Ver Barbeiros",
+                        [{
+                            title: "Nossa Equipe",
+                            rows: [
+                                { id: 'ANY_BARBER', title: 'Qualquer um' },
+                                ...barbers.map(b => ({ id: b.id, title: b.name }))
+                            ]
+                        }]
+                    );
                 }
                 context.barberId = barber.id;
                 context.barberName = barber.name;
@@ -133,12 +192,20 @@ export class WhatsAppAgent {
         if (state === 'booking_select_datetime') {
             context.datetime = text;
             await WhatsAppSession.update(ctx.tenantId, phone, 'booking_confirm', context);
-            return WhatsAppClient.sendText(ctx.creds, phone, `Certo! Vou marcar *${context.serviceName}* com *${context.barberName}* para *${text}*. Confirma? (Responda SIM ou NÃO)`);
+            return WhatsAppClient.sendButtons(
+                ctx.creds,
+                phone,
+                `Certo! Vou marcar *${context.serviceName}* com *${context.barberName}* para *${text}*. Confirma?`,
+                [
+                    { id: 'CONFIRM_YES', title: 'SIM, confirmar' },
+                    { id: 'CONFIRM_NO', title: 'NÃO, cancelar' }
+                ]
+            );
         }
 
         // 4.4 Finalizar
         if (state === 'booking_confirm') {
-            if (text.toUpperCase().includes('SIM')) {
+            if (buttonId === 'CONFIRM_YES' || text.toUpperCase().includes('SIM')) {
                 try {
                     // 1. Resolver Cliente
                     const clientId = await this.getOrCreateClient(ctx.tenantId, phone);
@@ -191,8 +258,8 @@ export class WhatsAppAgent {
     /**
      * Fluxo de Fila
      */
-    private static async handleQueueFlow(ctx: AgentContext, phone: string, session: any, text: string) {
-        if (text.toUpperCase().includes('SIM')) {
+    private static async handleQueueFlow(ctx: AgentContext, phone: string, session: any, text: string, buttonId?: string) {
+        if (buttonId === 'QUEUE_YES' || text.toUpperCase().includes('SIM')) {
             try {
                 const clientId = await this.getOrCreateClient(ctx.tenantId, phone);
 
@@ -235,7 +302,16 @@ export class WhatsAppAgent {
     // --- Helpers de busca filtrando por TenantId ---
 
     private static async searchService(tenantId: string, query: string) {
-        const { data } = await getSupabaseAdmin()
+        const admin = getSupabaseAdmin();
+
+        // 1. Tentar por UUID exato (se vier do buttonId)
+        if (query.length > 30 && query.includes('-')) {
+            const { data } = await admin.from('services').select('id, name').eq('id', query).single();
+            if (data) return data;
+        }
+
+        // 2. Tentar por nome
+        const { data } = await admin
             .from('services')
             .select('id, name')
             .eq('tenant_id', tenantId)
@@ -246,7 +322,16 @@ export class WhatsAppAgent {
     }
 
     private static async searchBarber(tenantId: string, query: string) {
-        const { data } = await getSupabaseAdmin()
+        const admin = getSupabaseAdmin();
+
+        // 1. Tentar por UUID exato
+        if (query.length > 30 && query.includes('-')) {
+            const { data } = await admin.from('barbers').select('id, name').eq('id', query).single();
+            if (data) return data;
+        }
+
+        // 2. Tentar por nome
+        const { data } = await admin
             .from('barbers')
             .select('id, name')
             .eq('tenant_id', tenantId)
@@ -260,8 +345,9 @@ export class WhatsAppAgent {
     private static async listServices(tenantId: string) {
         const { data } = await getSupabaseAdmin()
             .from('services')
-            .select('name')
+            .select('id, name, price')
             .eq('tenant_id', tenantId)
+            .order('name')
             .limit(10);
         return data;
     }
@@ -269,9 +355,10 @@ export class WhatsAppAgent {
     private static async listBarbers(tenantId: string) {
         const { data } = await getSupabaseAdmin()
             .from('barbers')
-            .select('name')
+            .select('id, name')
             .eq('tenant_id', tenantId)
             .eq('is_active', true)
+            .order('name')
             .limit(10);
         return data;
     }

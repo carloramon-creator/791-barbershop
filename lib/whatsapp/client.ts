@@ -96,6 +96,53 @@ export class WhatsAppClient {
     }
 
     /**
+     * Atalho para enviar botões interativos (Máximo 3)
+     */
+    static async sendButtons(creds: WhatsAppCredentials, to: string, body: string, buttons: { id: string, title: string }[]) {
+        return this.sendMessage(creds, {
+            messaging_product: 'whatsapp',
+            to,
+            type: 'interactive',
+            interactive: {
+                type: 'button',
+                body: { text: body },
+                action: {
+                    buttons: buttons.map(btn => ({
+                        type: 'reply',
+                        reply: { id: btn.id, title: btn.title }
+                    }))
+                }
+            }
+        });
+    }
+
+    /**
+     * Atalho para enviar listas interativas (Máximo 10 itens)
+     */
+    static async sendList(creds: WhatsAppCredentials, to: string, body: string, buttonText: string, sections: { title: string, rows: { id: string, title: string, description?: string }[] }[]) {
+        return this.sendMessage(creds, {
+            messaging_product: 'whatsapp',
+            to,
+            type: 'interactive',
+            interactive: {
+                type: 'list',
+                body: { text: body },
+                action: {
+                    button: buttonText,
+                    sections: sections.map(sec => ({
+                        title: sec.title,
+                        rows: sec.rows.map(row => ({
+                            id: row.id,
+                            title: row.title,
+                            description: row.description
+                        }))
+                    }))
+                }
+            }
+        });
+    }
+
+    /**
      * Atalho para enviar template
      */
     static async sendTemplate(creds: WhatsAppCredentials, to: string, templateName: string, langCode = 'pt_BR', components: any[] = []) {
