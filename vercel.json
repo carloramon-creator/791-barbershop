@@ -11,6 +11,14 @@
         {
             "path": "/api/cron/generate-billings",
             "schedule": "0 6 * * *"
+        },
+        {
+            "path": "/api/whatsapp/jobs?trigger=BIRTHDAY_JOB",
+            "schedule": "0 9 * * *"
+        },
+        {
+            "path": "/api/whatsapp/jobs?trigger=REMINDER_JOB",
+            "schedule": "*/30 * * * *"
         }
     ]
 }

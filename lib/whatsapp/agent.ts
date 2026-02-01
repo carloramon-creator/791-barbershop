@@ -32,17 +32,25 @@ export class WhatsAppAgent {
                 return await this.handleIdleState(ctx, from);
             }
 
-            // 1. Detecção de Intenção Inicial (se estiver em IDLE ou se enviar uma palavra-chave agnóstica de estado)
+            // 1. Fluxos de Registro (REGISTRATION)
+            if (session.state === 'registration_name') {
+                return await this.handleRegistrationName(ctx, from, session, text);
+            }
+            if (session.state === 'registration_birthday') {
+                return await this.handleRegistrationBirthday(ctx, from, session, text);
+            }
+
+            // 2. Detecção de Intenção Inicial (se estiver em IDLE ou se enviar uma palavra-chave agnóstica de estado)
             if (session.state === 'idle' || input === 'AGENDAR' || input === 'FILA') {
                 return await this.handleIdleState(ctx, from, text, buttonId);
             }
 
-            // 2. Fluxos de Agendamento (BOOKING)
+            // 3. Fluxos de Agendamento (BOOKING)
             if (session.state.startsWith('booking_')) {
                 return await this.handleBookingFlow(ctx, from, session, text, buttonId);
             }
 
-            // 3. Fluxos de Fila (QUEUE)
+            // 4. Fluxos de Fila (QUEUE)
             if (session.state.startsWith('queue_')) {
                 return await this.handleQueueFlow(ctx, from, session, text, buttonId);
             }
@@ -60,7 +68,23 @@ export class WhatsAppAgent {
     private static async handleIdleState(ctx: AgentContext, phone: string, text: string = '', buttonId?: string) {
         const input = text.toUpperCase();
 
-        // 0. Buscar Configurações do Tenant para saber o que oferecer
+        // 0. Buscar Cadastro do Cliente para ver se precisamos de registro
+        const { data: client } = await getSupabaseAdmin()
+            .from('clients')
+            .select('id, name, birth_date')
+            .eq('tenant_id', ctx.tenantId)
+            .eq('phone', phone)
+            .maybeSingle();
+
+        // Se não tem nome (novo) ou o nome é o padrão "Cliente WhatsApp", ou não tem data de nascimento
+        if (!client || !client.name || client.name === 'Cliente WhatsApp' || !client.birth_date) {
+            await WhatsAppSession.update(ctx.tenantId, phone, 'registration_name', {
+                originalAction: buttonId || (input.includes('AGENDAR') ? 'BOOKING_START' : input.includes('FILA') ? 'QUEUE_START' : null)
+            });
+            return WhatsAppClient.sendText(ctx.creds, phone, "Olá! Notei que é sua primeira vez por aqui. 💈\n\nPara começarmos, *qual é o seu nome completo?*");
+        }
+
+        // 1. Buscar Configurações do Tenant para saber o que oferecer
         const { data: tenant } = await getSupabaseAdmin()
             .from('tenants')
             .select('module_queue_enabled, module_appointments_enabled')
@@ -122,6 +146,45 @@ export class WhatsAppAgent {
     }
 
     /**
+     * Fluxo de Registro: Nome
+     */
+    private static async handleRegistrationName(ctx: AgentContext, phone: string, session: any, text: string) {
+        if (!text || text.length < 3) {
+            return WhatsAppClient.sendText(ctx.creds, phone, "Por favor, digite seu nome completo para continuarmos.");
+        }
+
+        session.context.name = text;
+        await WhatsAppSession.update(ctx.tenantId, phone, 'registration_birthday', session.context);
+        return WhatsAppClient.sendText(ctx.creds, phone, `Prazer, *${text}*! 😊\n\nAgora, qual sua *data de nascimento*? (Ex: 25/12/1990)`);
+    }
+
+    /**
+     * Fluxo de Registro: Aniversário
+     */
+    private static async handleRegistrationBirthday(ctx: AgentContext, phone: string, session: any, text: string) {
+        // Validar formato DD/MM/AAAA
+        const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+        const match = text.match(dateRegex);
+
+        if (!match) {
+            return WhatsAppClient.sendText(ctx.creds, phone, "Formato inválido. Por favor, digite no formato *DD/MM/AAAA* (ex: 15/05/1995).");
+        }
+
+        const [_, day, month, year] = match;
+        const isoDate = `${year}-${month}-${day}`;
+
+        // Salvar tudo no banco
+        await this.getOrCreateClient(ctx.tenantId, phone, session.context.name, isoDate);
+
+        await WhatsAppClient.sendText(ctx.creds, phone, "Cadastro concluído com sucesso! ✅");
+
+        // Retomar o que o usuário queria fazer originalmente
+        const originalAction = session.context.originalAction;
+        await WhatsAppSession.clear(ctx.tenantId, phone);
+        return await this.handleIdleState(ctx, phone, '', originalAction);
+    }
+
+    /**
      * Fluxo de Agendamento
      */
     private static async handleBookingFlow(ctx: AgentContext, phone: string, session: any, text: string, buttonId?: string) {
@@ -140,11 +203,12 @@ export class WhatsAppAgent {
 
                 const barbers = await this.listBarbers(ctx.tenantId, service.id);
                 if (!barbers || barbers.length === 0) {
-                    // Se não tiver barbeiros específicos ativos para esse serviço, vai para "Qualquer"
+                    // Se não tiver barbeiros específicos para esse serviço, avisa mas permite escolher "Qualquer"
+                    // ou simplesmente informa que o agendamento será com "Qualquer barbeiro" disponível.
                     context.barberId = null;
                     context.barberName = 'Qualquer barbeiro';
                     await WhatsAppSession.update(ctx.tenantId, phone, 'booking_select_datetime', context);
-                    return WhatsAppClient.sendText(ctx.creds, phone, "Ótima escolha! Para que dia e horário você deseja agendar? (Ex: hoje 15:00, amanhã às 10:30)\n\n_Digite *MENU* para voltar_");
+                    return WhatsAppClient.sendText(ctx.creds, phone, `Beleza! Para o serviço *${service.name}*, não temos um barbeiro específico agora, então marcaremos com o que estiver disponível.\n\nPara que dia e horário você deseja agendar? (Ex: hoje 15:00, amanhã às 10:30)`);
                 }
 
                 return WhatsAppClient.sendList(
@@ -208,10 +272,17 @@ export class WhatsAppAgent {
             return WhatsAppClient.sendText(ctx.creds, phone, "Para que dia e horário? (Ex: hoje 15:00, amanhã às 10:30)\n\n_Digite *CANCELAR* para sair_");
         }
 
-        // 4.3 Confirmar Agendamento
+        // 4.3 Selecionar Data/Hora
         if (state === 'booking_select_datetime') {
+            const startTime = this.parseDateTime(text);
+            if (!startTime) {
+                return WhatsAppClient.sendText(ctx.creds, phone, "Não consegui entender a data/horário. Pode digitar novamente? (Ex: hoje 15:00, amanhã às 10:30)");
+            }
+
             context.datetime = text;
+            context.startTimeISO = startTime.toISOString();
             await WhatsAppSession.update(ctx.tenantId, phone, 'booking_confirm', context);
+
             return WhatsAppClient.sendButtons(
                 ctx.creds,
                 phone,
@@ -228,12 +299,21 @@ export class WhatsAppAgent {
             if (buttonId === 'CONFIRM_YES' || text.toUpperCase().includes('SIM')) {
                 try {
                     // 1. Resolver Cliente
-                    const clientId = await this.getOrCreateClient(ctx.tenantId, phone);
+                    const clientResponse = await getSupabaseAdmin()
+                        .from('clients')
+                        .select('id, name')
+                        .eq('tenant_id', ctx.tenantId)
+                        .eq('phone', phone)
+                        .maybeSingle();
 
-                    // 2. Resolver Data/Hora
-                    const startTime = this.parseDateTime(context.datetime);
-                    if (!startTime) {
-                        return WhatsAppClient.sendText(ctx.creds, phone, "Não consegui entender a data/horário. Pode digitar novamente? (Ex: amanhã às 15:00)");
+                    const clientId = clientResponse.data?.id || await this.getOrCreateClient(ctx.tenantId, phone);
+                    const clientName = clientResponse.data?.name || 'Cliente WhatsApp';
+
+                    // 2. Resolver Data/Hora (preferir o ISO salvo se existir, senão parseia de novo)
+                    const startTime = context.startTimeISO ? new Date(context.startTimeISO) : this.parseDateTime(context.datetime);
+
+                    if (!startTime || isNaN(startTime.getTime())) {
+                        return WhatsAppClient.sendText(ctx.creds, phone, "Não consegui entender a data/horário. Pode digitar novamente? (Ex: amanhã às 15:00 ou hoje 10:30)");
                     }
 
                     // 3. Pegar duração do serviço para setar end_time
@@ -253,7 +333,7 @@ export class WhatsAppAgent {
                             tenant_id: ctx.tenantId,
                             client_id: clientId,
                             client_phone: phone,
-                            client_name: 'Cliente WhatsApp', // Poderíamos perguntar o nome no futuro
+                            client_name: clientName,
                             barber_id: context.barberId,
                             service_id: context.serviceId,
                             start_time: startTime.toISOString(),
@@ -281,7 +361,15 @@ export class WhatsAppAgent {
     private static async handleQueueFlow(ctx: AgentContext, phone: string, session: any, text: string, buttonId?: string) {
         if (buttonId === 'QUEUE_YES' || text.toUpperCase().includes('SIM')) {
             try {
-                const clientId = await this.getOrCreateClient(ctx.tenantId, phone);
+                const { data: client } = await getSupabaseAdmin()
+                    .from('clients')
+                    .select('id, name')
+                    .eq('tenant_id', ctx.tenantId)
+                    .eq('phone', phone)
+                    .maybeSingle();
+
+                const clientId = client?.id || await this.getOrCreateClient(ctx.tenantId, phone);
+                const clientName = client?.name || 'Cliente WhatsApp';
 
                 // Pegar última posição para definir a nova
                 const { data: lastInQueue } = await getSupabaseAdmin()
@@ -300,7 +388,7 @@ export class WhatsAppAgent {
                     .insert({
                         tenant_id: ctx.tenantId,
                         client_id: clientId,
-                        client_name: 'Cliente WhatsApp',
+                        client_name: clientName,
                         client_phone: phone,
                         status: 'waiting',
                         position: nextPosition
@@ -392,47 +480,76 @@ export class WhatsAppAgent {
 
     // --- Core Helpers ---
 
-    private static async getOrCreateClient(tenantId: string, phone: string) {
+    private static async getOrCreateClient(tenantId: string, phone: string, name?: string, birthDate?: string) {
         const admin = getSupabaseAdmin();
         const { data: existing } = await admin
             .from('clients')
-            .select('id')
+            .select('id, name, birth_date')
             .eq('tenant_id', tenantId)
             .eq('phone', phone)
             .maybeSingle();
 
-        if (existing) return existing.id;
+        if (existing) {
+            // Se já existe mas estamos atualizando dados (vindo do fluxo de registro)
+            if (name || birthDate) {
+                await admin
+                    .from('clients')
+                    .update({
+                        name: name || existing.name,
+                        birth_date: birthDate || existing.birth_date
+                    })
+                    .eq('id', existing.id);
+            }
+            return existing.id;
+        }
 
-        const { data: created } = await admin
+        const { data: created, error } = await admin
             .from('clients')
             .insert({
                 tenant_id: tenantId,
-                phone: phone,
-                name: 'Cliente WhatsApp',
+                phone,
+                name: name || 'Cliente WhatsApp',
+                birth_date: birthDate || null,
                 source: 'whatsapp'
             })
-            .select('id')
+            .select()
             .single();
 
-        return created?.id;
+        if (error) throw error;
+        return created.id;
     }
 
     private static parseDateTime(input: string): Date | null {
-        const text = input.toLowerCase();
+        // Normalizar entrada removendo acentos e caracteres estranhos como backticks
+        const text = input.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[`]/g, '');
         let targetDate = startOfToday();
 
-        if (text.includes('amanhã')) {
+        console.log(`[PARSE_DATETIME] Parsing: "${text}"`);
+
+        if (text.includes('amanha')) {
             targetDate = addDays(targetDate, 1);
-        } else if (text.includes('depois de amanhã')) {
+        } else if (text.includes('depois de amanha')) {
             targetDate = addDays(targetDate, 2);
+        } else if (text.includes('hoje')) {
+            // Já é hoje por padrão
         }
 
-        // Tentar extrair HH:mm
-        const timeMatch = text.match(/(\d{1,2})[:h](\d{2})?/);
+        // Tentar extrair HH:mm ou apenas HH
+        // Formatos aceitos: "15:00", "15:30", "15h30", "15h", "15" (se for entre 7 e 22h)
+        const timeMatch = text.match(/(\d{1,2})([:h])?(\d{2})?/);
         if (timeMatch) {
-            const hours = parseInt(timeMatch[1], 10);
-            const minutes = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+            let hours = parseInt(timeMatch[1], 10);
+            const minutes = timeMatch[3] ? parseInt(timeMatch[3], 10) : 0;
+
+            // Heurística para quando mandarem só o número (ex: "hoje 15")
+            // Se o separador (match[2]) não estiver presente e o número for menor que 7, provavelmente não é hora comercial ou é confuso
+            if (!timeMatch[2] && hours < 7) {
+                console.warn(`[PARSE_DATETIME] Hora suspeita ignore: ${hours}`);
+                // Podemos tentar outro match ou falhar se não tiver contexto textual de tempo
+            }
+
             targetDate.setHours(hours, minutes, 0, 0);
+            console.log(`[PARSE_DATETIME] Result: ${targetDate.toISOString()}`);
             return targetDate;
         }
 
