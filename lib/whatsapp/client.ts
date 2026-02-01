@@ -34,7 +34,17 @@ export class WhatsAppClient {
      */
     private static normalizeNumber(phone: string): string {
         let clean = phone.replace(/\D/g, '');
-        console.log(`[WHATSAPP_CLIENT] Usando número conforme recebido do Meta: ${clean}`);
+
+        // Se for Brasil (55) e tiver 12 dígitos (ex: 55 48 9130 5547)
+        // Adicionamos o 9 para ficar no formato do Sandbox (55 48 9 9130 5547)
+        if (clean.startsWith('55') && clean.length === 12) {
+            const ddd = clean.substring(2, 4);
+            const rest = clean.substring(4);
+            const normalized = `55${ddd}9${rest}`;
+            console.log(`[WHATSAPP_FIX] Normalizando número: ${clean} -> ${normalized}`);
+            return normalized;
+        }
+
         return clean;
     }
 
