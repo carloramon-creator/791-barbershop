@@ -77,11 +77,19 @@ export class WhatsAppAgent {
             .maybeSingle();
 
         // Se não tem nome (novo) ou o nome é o padrão "Cliente WhatsApp", ou não tem data de nascimento
-        if (!client || !client.name || client.name === 'Cliente WhatsApp' || !client.birth_date) {
+        if (!client || !client.name || client.name === 'Cliente WhatsApp') {
             await WhatsAppSession.update(ctx.tenantId, phone, 'registration_name', {
                 originalAction: buttonId || (input.includes('AGENDAR') ? 'BOOKING_START' : input.includes('FILA') ? 'QUEUE_START' : null)
             });
             return WhatsAppClient.sendText(ctx.creds, phone, "Olá! Notei que é sua primeira vez por aqui. 💈\n\nPara começarmos, *qual é o seu nome completo?*");
+        }
+
+        if (!client.birth_date) {
+            await WhatsAppSession.update(ctx.tenantId, phone, 'registration_birthday', {
+                name: client.name,
+                originalAction: buttonId || (input.includes('AGENDAR') ? 'BOOKING_START' : input.includes('FILA') ? 'QUEUE_START' : null)
+            });
+            return WhatsAppClient.sendText(ctx.creds, phone, `Olá ${client.name}! 👋\n\nEstamos atualizando nosso cadastro e precisamos da sua *data de nascimento*. (Ex: 25/12/1990)`);
         }
 
         // 1. Buscar Configurações do Tenant para saber o que oferecer
@@ -162,26 +170,33 @@ export class WhatsAppAgent {
      * Fluxo de Registro: Aniversário
      */
     private static async handleRegistrationBirthday(ctx: AgentContext, phone: string, session: any, text: string) {
-        // Validar formato DD/MM/AAAA
-        const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
-        const match = text.match(dateRegex);
+        try {
+            // Validar formato DD/MM/AAAA
+            const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+            const match = text.match(dateRegex);
 
-        if (!match) {
-            return WhatsAppClient.sendText(ctx.creds, phone, "Formato inválido. Por favor, digite no formato *DD/MM/AAAA* (ex: 15/05/1995).");
+            if (!match) {
+                return WhatsAppClient.sendText(ctx.creds, phone, "Formato inválido. Por favor, digite no formato *DD/MM/AAAA* (ex: 15/05/1995).");
+            }
+
+            const [_, day, month, year] = match;
+            const isoDate = `${year}-${month}-${day}`;
+
+            console.log(`[REGISTRATION] Updating client ${phone} with name ${session.context.name} and birth ${isoDate}`);
+
+            // Salvar tudo no banco
+            await this.getOrCreateClient(ctx.tenantId, phone, session.context.name, isoDate);
+
+            await WhatsAppClient.sendText(ctx.creds, phone, "Cadastro concluído com sucesso! ✅");
+
+            // Retomar o que o usuário queria fazer originalmente
+            const originalAction = session.context.originalAction;
+            await WhatsAppSession.clear(ctx.tenantId, phone);
+            return await this.handleIdleState(ctx, phone, '', originalAction);
+        } catch (error: any) {
+            console.error('[REGISTRATION_ERROR]', error.message);
+            return WhatsAppClient.sendText(ctx.creds, phone, "Ops, tive um erro ao salvar seu cadastro. Tente novamente mais tarde.");
         }
-
-        const [_, day, month, year] = match;
-        const isoDate = `${year}-${month}-${day}`;
-
-        // Salvar tudo no banco
-        await this.getOrCreateClient(ctx.tenantId, phone, session.context.name, isoDate);
-
-        await WhatsAppClient.sendText(ctx.creds, phone, "Cadastro concluído com sucesso! ✅");
-
-        // Retomar o que o usuário queria fazer originalmente
-        const originalAction = session.context.originalAction;
-        await WhatsAppSession.clear(ctx.tenantId, phone);
-        return await this.handleIdleState(ctx, phone, '', originalAction);
     }
 
     /**
