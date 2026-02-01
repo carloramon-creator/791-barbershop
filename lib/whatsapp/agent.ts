@@ -195,7 +195,8 @@ export class WhatsAppAgent {
             return await this.handleIdleState(ctx, phone, '', originalAction);
         } catch (error: any) {
             console.error('[REGISTRATION_ERROR]', error.message);
-            return WhatsAppClient.sendText(ctx.creds, phone, "Ops, tive um erro ao salvar seu cadastro. Tente novamente mais tarde.");
+            // DEBUG: Expor erro para o usuário corrigir o problema
+            return WhatsAppClient.sendText(ctx.creds, phone, `Ops, tive um erro ao salvar seu cadastro: ${error.message || JSON.stringify(error)}. Tente novamente.`);
         }
     }
 
@@ -507,13 +508,15 @@ export class WhatsAppAgent {
         if (existing) {
             // Se já existe mas estamos atualizando dados (vindo do fluxo de registro)
             if (name || birthDate) {
-                await admin
+                const { error: updateError } = await admin
                     .from('clients')
                     .update({
                         name: name || existing.name,
                         birth_date: birthDate || existing.birth_date
                     })
                     .eq('id', existing.id);
+
+                if (updateError) throw updateError;
             }
             return existing.id;
         }
