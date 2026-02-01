@@ -26,6 +26,9 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
 
+        // Log do body completo para depuração extrema
+        // console.log('[WHATSAPP_WEBHOOK_BODY]', JSON.stringify(body, null, 2));
+
         // Verificar se é uma mensagem do WhatsApp
         if (body.object === 'whatsapp_business_account') {
             const entry = body.entry?.[0];
@@ -37,69 +40,77 @@ export async function POST(req: Request) {
             const phoneNumberId = metadata?.phone_number_id;
 
             if (!phoneNumberId) {
-                return NextResponse.json({ error: 'No phone_number_id found' }, { status: 400 });
-            }
-
-            // Buscar configuração da barbearia no banco de dados
-            const { data: config, error: configError } = await getSupabaseAdmin()
-                .from('whatsapp_configs')
-                .select('tenant_id, access_token')
-                .eq('phone_number_id', phoneNumberId)
-                .single();
-
-            if (configError || !config) {
-                console.error(`[WHATSAPP_WEBHOOK] Barbearia não encontrada para o ID: ${phoneNumberId}`);
-                return NextResponse.json({ error: 'Tenant not configured' }, { status: 404 });
+                return NextResponse.json({ error: 'No phone_number_id found' }, { status: 200 });
             }
 
             const message = value?.messages?.[0];
 
             if (message) {
-                const phone = message.from;
-                const type = message.type;
+                // Responder 200 OK IMEDIATAMENTE para o Meta não reenviar
+                // O processamento real acontece "em paralelo"
+                (async () => {
+                    try {
+                        // Buscar configuração da barbearia no banco de dados
+                        const { data: config, error: configError } = await getSupabaseAdmin()
+                            .from('whatsapp_configs')
+                            .select('tenant_id, access_token')
+                            .eq('phone_number_id', phoneNumberId)
+                            .single();
 
-                let normalizedPayload: any = {
-                    trigger: 'INCOMING_MESSAGE',
-                    from: phone,
-                    messageType: type,
-                    raw: message
-                };
+                        if (configError || !config) {
+                            console.error(`[WHATSAPP_WEBHOOK] Barbearia não encontrada para o ID: ${phoneNumberId}`);
+                            return;
+                        }
 
-                if (type === 'text') {
-                    normalizedPayload.text = message.text?.body;
-                } else if (type === 'interactive') {
-                    const interactive = message.interactive;
-                    if (interactive.type === 'button_reply') {
-                        normalizedPayload.buttonId = interactive.button_reply?.id;
-                        normalizedPayload.text = interactive.button_reply?.title;
-                        normalizedPayload.messageType = 'button';
-                    } else if (interactive.type === 'list_reply') {
-                        normalizedPayload.buttonId = interactive.list_reply?.id;
-                        normalizedPayload.text = interactive.list_reply?.title;
-                        normalizedPayload.messageType = 'list';
+                        const phone = message.from;
+                        const type = message.type;
+
+                        let normalizedPayload: any = {
+                            trigger: 'INCOMING_MESSAGE',
+                            from: phone,
+                            messageType: type,
+                            raw: message
+                        };
+
+                        if (type === 'text') normalizedPayload.text = message.text?.body;
+                        else if (type === 'interactive') {
+                            const interactive = message.interactive;
+                            if (interactive.type === 'button_reply') {
+                                normalizedPayload.buttonId = interactive.button_reply?.id;
+                                normalizedPayload.text = interactive.button_reply?.title;
+                                normalizedPayload.messageType = 'button';
+                            } else if (interactive.type === 'list_reply') {
+                                normalizedPayload.buttonId = interactive.list_reply?.id;
+                                normalizedPayload.text = interactive.list_reply?.title;
+                                normalizedPayload.messageType = 'list';
+                            }
+                        }
+
+                        console.log(`[WHATSAPP_WEBHOOK] Tenant ${config.tenant_id} - Mensagem de ${phone}: ${normalizedPayload.text}`);
+
+                        // 2. Chamar o Agente com o contexto da barbearia correta
+                        const { WhatsAppAgent } = await import('@/lib/whatsapp/agent');
+                        await WhatsAppAgent.handleMessage({
+                            tenantId: config.tenant_id,
+                            creds: {
+                                accessToken: config.access_token,
+                                phoneNumberId: phoneNumberId
+                            }
+                        }, normalizedPayload);
+
+                        console.log(`[WHATSAPP_WEBHOOK] Fim do processamento para ${phone}`);
+                    } catch (err: any) {
+                        console.error('[WHATSAPP_ASYNC_ERROR]', err.message);
                     }
-                }
-
-                console.log(`[WHATSAPP_WEBHOOK] Tenant ${config.tenant_id} - Mensagem de ${phone}: ${normalizedPayload.text}`);
-
-                // 2. Chamar o Agente com o contexto da barbearia correta
-                const { WhatsAppAgent } = await import('@/lib/whatsapp/agent');
-                await WhatsAppAgent.handleMessage({
-                    tenantId: config.tenant_id,
-                    creds: {
-                        accessToken: config.access_token,
-                        phoneNumberId: phoneNumberId
-                    }
-                }, normalizedPayload);
-                console.log(`[WHATSAPP_WEBHOOK] Processamento concluído para ${phone}`);
+                })();
             }
 
-            return NextResponse.json({ success: true });
+            return NextResponse.json({ success: true }, { status: 200 });
         }
 
-        return NextResponse.json({ error: 'Not a WhatsApp business account event' }, { status: 404 });
+        return NextResponse.json({ error: 'Not a WhatsApp event' }, { status: 200 });
     } catch (error: any) {
         console.error('[WHATSAPP_WEBHOOK_ERROR]', error.message);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: error.message }, { status: 200 });
     }
 }
