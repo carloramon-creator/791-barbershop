@@ -29,11 +29,33 @@ export class WhatsAppClient {
     /**
      * Envia uma mensagem via WhatsApp Cloud API usando credenciais específicas
      */
+    /**
+     * Normaliza números brasileiros para garantir o nono dígito no envio
+     */
+    private static normalizeNumber(phone: string): string {
+        let clean = phone.replace(/\D/g, '');
+
+        // Se for Brasil (55) e tiver 12 dígitos (55 + DDD + 8 números)
+        // Adiciona o 9 após o DDD: 55 + DDD + 9 + 8 números
+        if (clean.startsWith('55') && clean.length === 12) {
+            const ddd = clean.substring(2, 4);
+            const number = clean.substring(4);
+            const normalized = `55${ddd}9${number}`;
+            console.log(`[WHATSAPP_CLIENT] Normalizando número BR: ${clean} -> ${normalized}`);
+            return normalized;
+        }
+
+        return clean;
+    }
+
     static async sendMessage(creds: WhatsAppCredentials, payload: WhatsAppMessagePayload) {
         if (!creds.accessToken || !creds.phoneNumberId) {
             console.error('[WHATSAPP] Credenciais ausentes');
             return null;
         }
+
+        // Normalizar o destinatário
+        payload.to = this.normalizeNumber(payload.to);
 
         try {
             console.log(`[WHATSAPP_CLIENT] Fazendo POST para ${this.getBaseUrl(creds.phoneNumberId)} enviando para ${payload.to}`);
