@@ -23,7 +23,7 @@ export interface WhatsAppMessagePayload {
 
 export class WhatsAppClient {
     private static getBaseUrl(phoneNumberId: string) {
-        return `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`;
+        return `https://graph.facebook.com/v22.0/${phoneNumberId}/messages`;
     }
 
     /**
