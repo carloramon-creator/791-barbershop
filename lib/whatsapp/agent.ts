@@ -79,24 +79,49 @@ export class WhatsAppAgent {
 
         // 4.1 Selecionar Serviço
         if (state === 'booking_select_service') {
+            const input = text.toUpperCase();
+            if (input.includes('QUAIS') || input.includes('LISTA') || input.includes('OPÇÕES')) {
+                const services = await this.listServices(ctx.tenantId);
+                const list = services?.map(s => `• ${s.name}`).join('\n') || 'Nenhum serviço encontrado.';
+                return WhatsAppClient.sendText(ctx.creds, phone, `Temos os seguintes serviços:\n\n${list}\n\nQual deles você deseja?`);
+            }
+
             const service = await this.searchService(ctx.tenantId, text);
             if (service) {
                 context.serviceId = service.id;
                 context.serviceName = service.name;
                 await WhatsAppSession.update(ctx.tenantId, phone, 'booking_select_barber', context);
-                return WhatsAppClient.sendText(ctx.creds, phone, `Beleza, serviço *${service.name}*. Tem algum barbeiro preferido? Se não, responda *QUALQUER*.`);
+                return WhatsAppClient.sendText(ctx.creds, phone, `Beleza, serviço *${service.name}*. Tem algum barbeiro preferido? Se não, responda *QUALQUER* ou peça a *LISTA*.`);
             }
-            return WhatsAppClient.sendText(ctx.creds, phone, "Não encontrei esse serviço. Pode digitar novamente? (Ex: Corte, Barba)");
+
+            const services = await this.listServices(ctx.tenantId);
+            const list = services?.map(s => `• ${s.name}`).join('\n') || '';
+            let msg = "Não encontrei esse serviço. Pode digitar novamente? (Ex: Corte, Barba)";
+            if (list) msg += `\n\nOpções disponíveis:\n${list}`;
+
+            return WhatsAppClient.sendText(ctx.creds, phone, msg);
         }
 
         // 4.2 Selecionar Barbeiro
         if (state === 'booking_select_barber') {
-            if (text.toUpperCase() === 'QUALQUER') {
+            const input = text.toUpperCase();
+
+            if (input === 'QUALQUER') {
                 context.barberId = null;
                 context.barberName = 'Qualquer barbeiro';
+            } else if (input.includes('QUAIS') || input.includes('LISTA') || input.includes('NOMES')) {
+                const barbers = await this.listBarbers(ctx.tenantId);
+                const list = barbers?.map(b => `• ${b.name}`).join('\n') || 'Nenhum barbeiro encontrado.';
+                return WhatsAppClient.sendText(ctx.creds, phone, `Atualmente temos estes barbeiros:\n\n${list}\n\nQual deles você prefere? (Ou responda *QUALQUER*)`);
             } else {
                 const barber = await this.searchBarber(ctx.tenantId, text);
-                if (!barber) return WhatsAppClient.sendText(ctx.creds, phone, "Não encontrei esse barbeiro. Pode digitar o nome dele ou *QUALQUER*?");
+                if (!barber) {
+                    const barbers = await this.listBarbers(ctx.tenantId);
+                    const list = barbers?.map(b => `• ${b.name}`).join('\n') || '';
+                    let msg = "Não encontrei esse barbeiro. Pode digitar o nome dele ou *QUALQUER*?";
+                    if (list) msg += `\n\nBarbeiros disponíveis:\n${list}`;
+                    return WhatsAppClient.sendText(ctx.creds, phone, msg);
+                }
                 context.barberId = barber.id;
                 context.barberName = barber.name;
             }
@@ -157,6 +182,24 @@ export class WhatsAppAgent {
             .ilike('name', `%${query}%`)
             .limit(1)
             .maybeSingle();
+        return data;
+    }
+
+    private static async listServices(tenantId: string) {
+        const { data } = await getSupabaseAdmin()
+            .from('services')
+            .select('name')
+            .eq('tenant_id', tenantId)
+            .limit(10);
+        return data;
+    }
+
+    private static async listBarbers(tenantId: string) {
+        const { data } = await getSupabaseAdmin()
+            .from('barbers')
+            .select('name')
+            .eq('tenant_id', tenantId)
+            .limit(10);
         return data;
     }
 }
