@@ -1,6 +1,6 @@
-import { WhatsAppClient, WhatsAppCredentials } from './client';
-import { WhatsAppSession } from './session';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { addMinutes, parse, format, isAfter, startOfToday, addDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export interface AgentContext {
     tenantId: string;
@@ -139,9 +139,49 @@ export class WhatsAppAgent {
         // 4.4 Finalizar
         if (state === 'booking_confirm') {
             if (text.toUpperCase().includes('SIM')) {
-                // TODO: Chamar criação real de booking no DB filtrando por tenantId
-                await WhatsAppClient.sendText(ctx.creds, phone, `✅ *Agendamento Confirmado!* Te esperamos em ${context.datetime}. Qualquer dúvida é só chamar!`);
-                return WhatsAppSession.clear(ctx.tenantId, phone);
+                try {
+                    // 1. Resolver Cliente
+                    const clientId = await this.getOrCreateClient(ctx.tenantId, phone);
+
+                    // 2. Resolver Data/Hora
+                    const startTime = this.parseDateTime(context.datetime);
+                    if (!startTime) {
+                        return WhatsAppClient.sendText(ctx.creds, phone, "Não consegui entender a data/horário. Pode digitar novamente? (Ex: amanhã às 15:00)");
+                    }
+
+                    // 3. Pegar duração do serviço para setar end_time
+                    const { data: service } = await getSupabaseAdmin()
+                        .from('services')
+                        .select('duration_minutes')
+                        .eq('id', context.serviceId)
+                        .single();
+
+                    const duration = service?.duration_minutes || 30;
+                    const endTime = addMinutes(startTime, duration);
+
+                    // 4. Criar Agendamento Real
+                    const { error: insertError } = await getSupabaseAdmin()
+                        .from('appointments')
+                        .insert({
+                            tenant_id: ctx.tenantId,
+                            client_id: clientId,
+                            client_phone: phone,
+                            client_name: 'Cliente WhatsApp', // Poderíamos perguntar o nome no futuro
+                            barber_id: context.barberId,
+                            service_id: context.serviceId,
+                            start_time: startTime.toISOString(),
+                            end_time: endTime.toISOString(),
+                            status: 'scheduled'
+                        });
+
+                    if (insertError) throw insertError;
+
+                    await WhatsAppClient.sendText(ctx.creds, phone, `✅ *Agendamento Confirmado!* Te esperamos em ${format(startTime, "eeee, dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}. Qualquer dúvida é só chamar!`);
+                    return WhatsAppSession.clear(ctx.tenantId, phone);
+                } catch (err: any) {
+                    console.error('[WHATSAPP_BOOKING_ERROR]', err.message);
+                    return WhatsAppClient.sendText(ctx.creds, phone, "Ops, tive um erro ao salvar seu agendamento. Por favor, tente novamente em alguns instantes ou ligue para a barbearia.");
+                }
             }
             await WhatsAppClient.sendText(ctx.creds, phone, "Agendamento cancelado. Se precisar de algo, é só mandar AGENDAR novamente.");
             return WhatsAppSession.clear(ctx.tenantId, phone);
@@ -153,9 +193,40 @@ export class WhatsAppAgent {
      */
     private static async handleQueueFlow(ctx: AgentContext, phone: string, session: any, text: string) {
         if (text.toUpperCase().includes('SIM')) {
-            // TODO: Chamar criação real de fila no DB filtrando por tenantId
-            await WhatsAppClient.sendText(ctx.creds, phone, "✅ *Você entrou na fila!* Sua posição é a 3ª e o tempo estimado de espera é de 45 minutos. Te avisaremos por aqui quando sua vez estiver chegando.");
-            return WhatsAppSession.clear(ctx.tenantId, phone);
+            try {
+                const clientId = await this.getOrCreateClient(ctx.tenantId, phone);
+
+                // Pegar última posição para definir a nova
+                const { data: lastInQueue } = await getSupabaseAdmin()
+                    .from('client_queue')
+                    .select('position')
+                    .eq('tenant_id', ctx.tenantId)
+                    .eq('status', 'waiting')
+                    .order('position', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                const nextPosition = (lastInQueue?.position || 0) + 1;
+
+                const { error: insertError } = await getSupabaseAdmin()
+                    .from('client_queue')
+                    .insert({
+                        tenant_id: ctx.tenantId,
+                        client_id: clientId,
+                        client_name: 'Cliente WhatsApp',
+                        client_phone: phone,
+                        status: 'waiting',
+                        position: nextPosition
+                    });
+
+                if (insertError) throw insertError;
+
+                await WhatsAppClient.sendText(ctx.creds, phone, `✅ *Você entrou na fila!* Sua posição é a ${nextPosition}ª. Te avisaremos por aqui quando sua vez estiver chegando!`);
+                return WhatsAppSession.clear(ctx.tenantId, phone);
+            } catch (err: any) {
+                console.error('[WHATSAPP_QUEUE_ERROR]', err.message);
+                return WhatsAppClient.sendText(ctx.creds, phone, "Erro ao entrar na fila. Tente novamente mais tarde.");
+            }
         }
         await WhatsAppClient.sendText(ctx.creds, phone, "Entendido. Se mudar de ideia, é só mandar FILA.");
         return WhatsAppSession.clear(ctx.tenantId, phone);
@@ -179,6 +250,7 @@ export class WhatsAppAgent {
             .from('barbers')
             .select('id, name')
             .eq('tenant_id', tenantId)
+            .eq('is_active', true)
             .ilike('name', `%${query}%`)
             .limit(1)
             .maybeSingle();
@@ -199,7 +271,57 @@ export class WhatsAppAgent {
             .from('barbers')
             .select('name')
             .eq('tenant_id', tenantId)
+            .eq('is_active', true)
             .limit(10);
         return data;
+    }
+
+    // --- Core Helpers ---
+
+    private static async getOrCreateClient(tenantId: string, phone: string) {
+        const admin = getSupabaseAdmin();
+        const { data: existing } = await admin
+            .from('clients')
+            .select('id')
+            .eq('tenant_id', tenantId)
+            .eq('phone', phone)
+            .maybeSingle();
+
+        if (existing) return existing.id;
+
+        const { data: created } = await admin
+            .from('clients')
+            .insert({
+                tenant_id: tenantId,
+                phone: phone,
+                name: 'Cliente WhatsApp',
+                source: 'whatsapp'
+            })
+            .select('id')
+            .single();
+
+        return created?.id;
+    }
+
+    private static parseDateTime(input: string): Date | null {
+        const text = input.toLowerCase();
+        let targetDate = startOfToday();
+
+        if (text.includes('amanhã')) {
+            targetDate = addDays(targetDate, 1);
+        } else if (text.includes('depois de amanhã')) {
+            targetDate = addDays(targetDate, 2);
+        }
+
+        // Tentar extrair HH:mm
+        const timeMatch = text.match(/(\d{1,2})[:h](\d{2})?/);
+        if (timeMatch) {
+            const hours = parseInt(timeMatch[1], 10);
+            const minutes = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+            targetDate.setHours(hours, minutes, 0, 0);
+            return targetDate;
+        }
+
+        return null;
     }
 }
