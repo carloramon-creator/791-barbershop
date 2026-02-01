@@ -22,6 +22,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+    console.log('[WHATSAPP_WEBHOOK] Recebendo POST do Meta...');
     try {
         const body = await req.json();
 

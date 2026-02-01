@@ -1,10 +1,17 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from './lib/supabase-server';
 
-const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+async function findTenant() {
+  const { data, error } = await getSupabaseAdmin()
+    .from('tenants')
+    .select('id, name')
+    .limit(1);
 
-async function run() {
-  const { data, error } = await sb.from('tenants').select('id, name');
-  if (error) console.error(error);
-  else console.log(JSON.stringify(data, null, 2));
+  if (error) {
+    console.error('Erro ao buscar tenant:', error);
+    return;
+  }
+
+  console.log('Tenant encontrado:', data);
 }
-run();
+
+findTenant();
