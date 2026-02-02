@@ -990,7 +990,7 @@ export class WhatsAppAgent {
             .eq('tenant_id', ctx.tenantId)
             .or(`client_phone.eq.${phone},client_phone.eq.${phoneWithout55},client_phone.eq.${phoneWith55}`)
             .gte('start_time', todayStart.toISOString())
-            .neq('status', 'cancelled')
+            .not('status', 'in', '("cancelled","completed","finished")')
             .order('start_time', { ascending: true });
 
         // 2. Buscar Posição na Fila
@@ -1015,9 +1015,7 @@ export class WhatsAppAgent {
                 const dateFixed = format(brTime, "dd/MM 'às' HH:mm", { locale: ptBR });
 
                 const barber = (a.barbers as any)?.nickname || (a.barbers as any)?.name || 'Profissional';
-                const statusIcon = a.status === 'completed' || a.status === 'finished' ? '✅' : '⏳';
-                const statusLabel = a.status === 'completed' || a.status === 'finished' ? ' (Concluído)' : '';
-                message += `• ${statusIcon} ${dateFixed} com ${barber}${statusLabel}\n`;
+                message += `• 🗓️ ${dateFixed} com ${barber}\n`;
             });
             message += `\n`;
         }

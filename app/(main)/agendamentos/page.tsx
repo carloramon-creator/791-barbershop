@@ -166,6 +166,7 @@ export default function AppointmentsPage() {
                 // Filtra no client-side apenas os não finalizados (scheduled ou in_service)
                 const pending = (data || []).filter((a: any) =>
                     a.status !== 'completed' &&
+                    a.status !== 'finished' &&
                     a.status !== 'cancelled'
                 );
 
