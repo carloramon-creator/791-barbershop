@@ -328,7 +328,13 @@ export class WhatsAppAgent {
             context.selectedDate === format(new Date(), 'yyyy-MM-dd')
         ).filter(s => s.available);
 
-        if (!allSlots.length) return WhatsAppClient.sendText(ctx.creds, phone, "Sem horários livres para esta data.");
+        if (!allSlots.length) {
+            await WhatsAppSession.clear(ctx.tenantId, phone);
+            return WhatsAppClient.sendButtons(ctx.creds, phone, "Desculpe, não encontrei horários livres para esta data. Gostaria de tentar outro dia ou serviço?", [
+                { id: 'AGENDAR', title: '📅 Tentar Novamente' },
+                { id: 'MENU', title: '🏠 Voltar ao Menu' }
+            ]);
+        }
 
         let filteredSlots = allSlots;
         let periodLabel = "";
