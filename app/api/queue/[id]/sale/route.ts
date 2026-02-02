@@ -95,18 +95,36 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         const voucherCode = body.voucher_code;
 
         if (voucherCode && servicesTotal > 0) {
+            // Buscamos o voucher. Se for global (client_id null), não filtramos por used_at aqui,
+            // pois o controle de uso é feito via histórico de vendas por cliente.
             const { data: voucher } = await client
                 .from('client_vouchers')
                 .select('*')
                 .eq('code', voucherCode.trim().toUpperCase())
                 .eq('tenant_id', tenant.id)
-                .is('used_at', null)
                 .gte('expires_at', new Date().toISOString())
+                .or(`used_at.is.null,client_id.is.null`) // Vouchers globais não têm client_id e podem não ter used_at
                 .single();
 
             if (voucher) {
                 // Verificar se o voucher é deste cliente ou genérico (se client_id for null)
                 if (!voucher.client_id || voucher.client_id === queueItem.client_id) {
+
+                    // Se for voucher GLOBAL (client_id is null), verificar se este cliente já usou este voucher antes
+                    if (!voucher.client_id) {
+                        const { data: previousUsage } = await client
+                            .from('sales')
+                            .select('id')
+                            .eq('client_id', queueItem.client_id)
+                            .eq('voucher_id', voucher.id)
+                            .maybeSingle();
+
+                        if (previousUsage) {
+                            // Cliente já usou este cupom global. Ignorar desconto.
+                            return;
+                        }
+                    }
+
                     if (voucher.discount_type === 'percentage') {
                         discountAmount = (servicesTotal * Number(voucher.discount_value)) / 100;
                     } else {
@@ -115,8 +133,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                     voucherId = voucher.id;
                     totalAmount = Math.max(0, totalAmount - discountAmount);
 
-                    // Marcar voucher como usado
-                    await client.from('client_vouchers').update({ used_at: new Date().toISOString() }).eq('id', voucher.id);
+                    // Marcar voucher como usado APENAS se for individual (client_id definido)
+                    if (voucher.client_id) {
+                        await client.from('client_vouchers').update({ used_at: new Date().toISOString() }).eq('id', voucher.id);
+                    }
                 }
             }
         }

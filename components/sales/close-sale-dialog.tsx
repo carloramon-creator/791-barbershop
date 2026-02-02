@@ -183,9 +183,9 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                 return;
             }
 
-            if (voucher.used_at) {
+            if (voucher.client_id && voucher.used_at) {
                 setIsVoucherValid(false);
-                setVoucherError('Cupom já utilizado.');
+                setVoucherError('Este cupom individual já foi utilizado.');
                 return;
             }
 
