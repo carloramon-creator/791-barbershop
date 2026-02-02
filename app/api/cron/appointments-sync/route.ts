@@ -21,6 +21,9 @@ export async function GET(req: Request) {
 
         const supabase = getSupabaseAdmin();
         const now = new Date();
+
+        console.log(`[CRON_SYNC] Started at ${now.toISOString()}. Firebase apps: ${firebaseAdmin.apps.length}`);
+
         const results = {
             '24h': { push: 0, whatsapp: 0 },
             '1h': { push: 0, whatsapp: 0 },
@@ -59,8 +62,10 @@ export async function GET(req: Request) {
         ];
 
         for (const window of windows) {
-            const targetStart = new Date(now.getTime() + (window.minutes - 15) * 60000);
-            const targetEnd = new Date(now.getTime() + (window.minutes + 15) * 60000);
+            const targetStart = new Date(now.getTime() + (window.minutes - 20) * 60000);
+            const targetEnd = new Date(now.getTime() + (window.minutes + 20) * 60000);
+
+            console.log(`[CRON_SYNC] Checking window ${window.type}: [${targetStart.toISOString()} - ${targetEnd.toISOString()}]`);
 
             const { data: appts, error } = await (supabase as any)
                 .from('appointments')
