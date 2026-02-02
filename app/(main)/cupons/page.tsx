@@ -17,8 +17,10 @@ import {
     Loader2,
     Check,
     ChevronsUpDown,
-    Gift
+    Gift,
+    MessageSquare
 } from 'lucide-react';
+import { WhatsAppBroadcastDialog } from '@/components/whatsapp/whatsapp-broadcast-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -68,6 +70,14 @@ export default function CouponsCentralPage() {
         discount_value: '',
         is_birthday: false,
         expires_at: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+    });
+
+    // Broadcast state
+    const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
+    const [broadcastConfig, setBroadcastConfig] = useState<any>({
+        message: '',
+        target: 'all',
+        clientIds: []
     });
 
     useEffect(() => {
@@ -192,6 +202,17 @@ export default function CouponsCentralPage() {
                             <Plus className="w-5 h-5" /> Novo Cupom
                         </Button>
                     </DialogTrigger>
+
+                    <Button
+                        variant="outline"
+                        onClick={() => {
+                            setBroadcastConfig({ message: '', target: 'all', clientIds: [] });
+                            setIsBroadcastOpen(true);
+                        }}
+                        className="bg-slate-800 border-slate-700 text-slate-100 font-bold gap-2 px-6 h-10"
+                    >
+                        <MessageSquare className="w-5 h-5 text-blue-500" /> Divulgar via WhatsApp
+                    </Button>
                     <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-md shadow-2xl overflow-hidden">
                         <DialogHeader>
                             <DialogTitle>Criar Novo Voucher</DialogTitle>
@@ -462,6 +483,23 @@ export default function CouponsCentralPage() {
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
+                                                        className="h-10 w-10 p-0 text-slate-600 hover:text-blue-500 hover:bg-blue-500/10 rounded-full transition-all opacity-0 group-hover:opacity-100"
+                                                        title="Enviar via WhatsApp"
+                                                        onClick={() => {
+                                                            const discountLabel = v.discount_type === 'percentage' ? `${v.discount_value}%` : `R$ ${v.discount_value}`;
+                                                            setBroadcastConfig({
+                                                                message: `Olá, {{nome}}! 👋 Você ganhou um cupom de *${discountLabel}* para usar na barbearia! Use o código *${v.code}*.\n\nVálido até: ${v.expires_at ? format(new Date(v.expires_at), 'dd/MM') : 'Permanente'}`,
+                                                                target: v.client_id ? 'specific' : 'all',
+                                                                clientIds: v.client_id ? [v.client_id] : []
+                                                            });
+                                                            setIsBroadcastOpen(true);
+                                                        }}
+                                                    >
+                                                        <MessageSquare className="w-5 h-5" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
                                                         className="h-10 w-10 p-0 text-slate-600 hover:text-rose-500 hover:bg-rose-500/10 rounded-full transition-all opacity-0 group-hover:opacity-100"
                                                         onClick={() => handleDelete(v.id)}
                                                     >
@@ -510,6 +548,14 @@ export default function CouponsCentralPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            <WhatsAppBroadcastDialog
+                open={isBroadcastOpen}
+                onOpenChange={setIsBroadcastOpen}
+                initialMessage={broadcastConfig.message}
+                initialTarget={broadcastConfig.target}
+                initialClientIds={broadcastConfig.clientIds}
+            />
 
             <style jsx global>{`
                 .custom-scrollbar::-webkit-scrollbar {

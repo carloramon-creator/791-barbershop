@@ -18,9 +18,16 @@ export async function GET(req: Request) {
         }
 
         const supabase = getSupabaseAdmin();
-        const today = new Date();
-        const month = today.getMonth() + 1;
-        const day = today.getDate();
+
+        // Ajuste robusto de fuso (Brasília)
+        const brTime = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'America/Sao_Paulo',
+            month: 'numeric',
+            day: 'numeric'
+        }).formatToParts(new Date());
+
+        const month = parseInt(brTime.find(p => p.type === 'month')?.value || '0', 10);
+        const day = parseInt(brTime.find(p => p.type === 'day')?.value || '0', 10);
 
         // 1. Buscar clientes que fazem aniversário hoje
         // Usamos extração de mês/dia para ignorar o ano
@@ -86,7 +93,7 @@ export async function GET(req: Request) {
                         apns: { payload: { aps: { sound: 'default' } } },
                         webpush: {
                             fcmOptions: {
-                                link: `https://app.791barber.com/queue/status` // Onde ele vê o status/notificação
+                                link: `https://app.791barber.com/cliente/agendamento`
                             }
                         }
                     });

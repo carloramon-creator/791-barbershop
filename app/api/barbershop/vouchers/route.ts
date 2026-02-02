@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant } from '@/lib/server-utils';
+import { firebaseAdmin } from '@/lib/firebase-admin';
+import { WhatsAppClient } from '@/lib/whatsapp/client';
 
 /**
  * CRUD de Vouchers da Barbearia
@@ -56,6 +58,53 @@ export async function POST(req: Request) {
             .single();
 
         if (error) throw error;
+
+        // --- NOTIFICAÇÃO AUTOMÁTICA ---
+        if (client_id) {
+            try {
+                const { data: client } = await getSupabaseAdmin()
+                    .from('clients')
+                    .select('name, phone, fcm_token')
+                    .eq('id', client_id)
+                    .single();
+
+                if (client) {
+                    const firstName = client.name.split(' ')[0] || 'Cliente';
+                    const discountLabel = discount_type === 'percentage' ? `${discount_value}%` : `R$ ${discount_value}`;
+                    const title = is_birthday ? `Parabéns, ${firstName}! 🎂` : `Você ganhou um cupom! 🏷️`;
+                    const body = `Use o código ${code.toUpperCase()} e ganhe ${discountLabel} de desconto.`;
+
+                    // 1. Push Notification
+                    if (client.fcm_token && firebaseAdmin.apps.length > 0) {
+                        try {
+                            await firebaseAdmin.messaging().send({
+                                token: client.fcm_token,
+                                notification: { title, body },
+                                android: { priority: 'high' },
+                                apns: { payload: { aps: { sound: 'default' } } }
+                            });
+                        } catch (e) { console.error('[PUSH ERROR]', e); }
+                    }
+
+                    // 2. WhatsApp
+                    const { data: config } = await getSupabaseAdmin()
+                        .from('whatsapp_configs')
+                        .select('phone_number_id, access_token')
+                        .eq('tenant_id', tenant.id)
+                        .maybeSingle();
+
+                    if (config && config.access_token && config.phone_number_id && client.phone) {
+                        try {
+                            const creds = { accessToken: config.access_token, phoneNumberId: config.phone_number_id };
+                            const waBody = `Olá, *${firstName}*! 👋\n\n${title}\n\n${body}${is_birthday ? '\n\nAproveite seu dia!' : ''}`;
+                            await WhatsAppClient.sendText(creds, client.phone, waBody);
+                        } catch (e) { console.error('[WHATSAPP ERROR]', e); }
+                    }
+                }
+            } catch (notifyErr) {
+                console.error('[NOTIFY VOUCHER ERROR]', notifyErr);
+            }
+        }
 
         return NextResponse.json(voucher);
     } catch (error: any) {

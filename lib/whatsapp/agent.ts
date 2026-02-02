@@ -593,7 +593,8 @@ export class WhatsAppAgent {
             if (!finalBarberId) throw new Error("Sem profissionais disponíveis para finalizar.");
 
             // Calcular Fim
-            const start = addHours(parseISO(startTimeISO), 3);
+            // Forçamos o fuso -03:00 para garantir que o horário do cliente seja salvo corretamente como UTC no banco
+            const start = new Date(startTimeISO + '-03:00');
             const { data: service } = await getSupabaseAdmin()
                 .from('services')
                 .select('name, duration_minutes')
@@ -1002,9 +1003,16 @@ export class WhatsAppAgent {
         if (appointments && appointments.length > 0) {
             message += `🗓️ *Agendamentos:*\n`;
             appointments.forEach(a => {
-                const date = format(subHours(parseISO(a.start_time), 3), "dd/MM 'às' HH:mm", { locale: ptBR });
+                // Conversão robusta para exibição (sempre -3h relativo ao UTC salvo)
+                const d = new Date(a.start_time);
+                const date = format(subHours(d, d.getTimezoneOffset() === 0 ? 3 : 0), "dd/MM 'às' HH:mm", { locale: ptBR });
+                // NOTA: Se o servidor já está em -3h, o getTimezoneOffset será 180. Se for 0 (UTC), subtraímos 3.
+                // Mas para ser 100% à prova de balas independente do servidor:
+                const brTime = new Date(d.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+                const dateFixed = format(brTime, "dd/MM 'às' HH:mm", { locale: ptBR });
+
                 const barber = (a.barbers as any)?.nickname || (a.barbers as any)?.name || 'Profissional';
-                message += `• ${date} com ${barber}\n`;
+                message += `• ${dateFixed} com ${barber}\n`;
             });
             message += `\n`;
         }

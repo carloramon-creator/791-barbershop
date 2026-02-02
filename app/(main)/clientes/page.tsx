@@ -54,6 +54,7 @@ import Image from 'next/image';
 import { supabaseClient } from '@/lib/supabase-client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { WhatsAppBroadcastDialog } from '@/components/whatsapp/whatsapp-broadcast-dialog';
 
 interface Client {
     id: string;
@@ -91,6 +92,14 @@ export default function ClientsPage() {
         discount_value: 0,
         expires_at: '',
         is_birthday: false
+    });
+
+    // Broadcast state
+    const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
+    const [broadcastConfig, setBroadcastConfig] = useState<any>({
+        message: '',
+        target: 'all',
+        clientIds: []
     });
 
     // Form State
@@ -303,6 +312,17 @@ export default function ClientsPage() {
                     <Plus size={20} />
                     Novo {texts.client}
                 </Button>
+                <Button
+                    variant="outline"
+                    onClick={() => {
+                        setBroadcastConfig({ message: '', target: 'all', clientIds: [] });
+                        setIsBroadcastOpen(true);
+                    }}
+                    className="bg-slate-800 border-slate-700 text-slate-100 font-bold gap-2 h-12 px-6 rounded-xl shadow-lg shadow-blue-500/5 active:scale-95 transition-transform"
+                >
+                    <MessageSquare size={20} className="text-blue-500" />
+                    Broadcast WhatsApp
+                </Button>
             </div>
 
             {/* Search & Stats */}
@@ -407,6 +427,15 @@ export default function ClientsPage() {
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem onClick={() => handleViewVouchers(client)} className="gap-2 text-blue-400 focus:bg-blue-400/10 focus:text-blue-400 cursor-pointer">
                                                                 <Ticket size={16} /> Ver Cupons / Fidelidade
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                onClick={() => {
+                                                                    setBroadcastConfig({ message: '', target: 'specific', clientIds: [client.id] });
+                                                                    setIsBroadcastOpen(true);
+                                                                }}
+                                                                className="gap-2 text-indigo-400 focus:bg-indigo-400/10 focus:text-indigo-400 cursor-pointer"
+                                                            >
+                                                                <MessageSquare size={16} /> Enviar Mensagem Direta
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator className="bg-slate-800" />
                                                             <DropdownMenuItem onClick={() => handleDelete(client.id)} className="gap-2 text-red-400 focus:bg-red-400/10 focus:text-red-400 cursor-pointer">
@@ -793,6 +822,13 @@ export default function ClientsPage() {
                     </div>
                 </DialogContent>
             </Dialog>
+            <WhatsAppBroadcastDialog
+                open={isBroadcastOpen}
+                onOpenChange={setIsBroadcastOpen}
+                initialMessage={broadcastConfig.message}
+                initialTarget={broadcastConfig.target}
+                initialClientIds={broadcastConfig.clientIds}
+            />
         </div >
     );
 }

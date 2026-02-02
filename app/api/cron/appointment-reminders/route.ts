@@ -24,19 +24,19 @@ export async function GET(req: Request) {
         const windows = [
             {
                 type: '1_DAY',
-                targetTime: addMinutes(now, 24 * 60),
+                minutes: 24 * 60,
                 message: (name: string, date: string, time: string, service: string) =>
                     `Olá, *${name}*! 👋 Passando para lembrar do seu agendamento de *amanhã* (${date}) às *${time}* para *${service}*. Confirmado?`
             },
             {
                 type: '1_HOUR',
-                targetTime: addMinutes(now, 60),
+                minutes: 60,
                 message: (name: string, date: string, time: string, service: string) =>
                     `Olá, *${name}*! 👋 Seu agendamento para *${service}* é daqui a *1 hora* (${time}). Já estamos te esperando!`
             },
             {
                 type: '30_MIN',
-                targetTime: addMinutes(now, 30),
+                minutes: 30,
                 message: (name: string, date: string, time: string, service: string) =>
                     `Olá, *${name}*! 👋 Faltam apenas *30 minutos* para o seu horário das *${time}* (${service}). Até logo!`
             }
@@ -49,29 +49,34 @@ export async function GET(req: Request) {
         };
 
         for (const window of windows) {
-            const start = startOfMinute(window.targetTime).toISOString();
-            const end = endOfMinute(window.targetTime).toISOString();
+            // Janela: de (agora + X min - 15 min) até (agora + X min + 15 min)
+            const targetStart = new Date(now.getTime() + (window.minutes - 15) * 60000);
+            const targetEnd = new Date(now.getTime() + (window.minutes + 15) * 60000);
+
+            // Mapeamento de tipo para coluna
+            const colMap: any = {
+                '1_DAY': 'notified_24h',
+                '1_HOUR': 'notified_1h',
+                '30_MIN': 'notified_30m'
+            };
+            const col = colMap[window.type];
 
             // Buscar agendamentos na janela de tempo que ainda não receberam ESSE lembrete específico
-            // A coluna notification_status pode armazenar JSON ou tags: ['1_DAY_SENT', '1_HOUR_SENT', ...]
             const { data: appts, error } = await supabase
                 .from('appointments')
-                .select('*, services(name), barbers(name)')
+                .select('*, services(name), barbers(name, nickname)')
                 .eq('status', 'scheduled')
-                .gte('start_time', start)
-                .lte('start_time', end);
+                .eq(col, false) // Usa a coluna booleana correta
+                .gte('start_time', targetStart.toISOString())
+                .lte('start_time', targetEnd.toISOString());
 
-            if (error) throw error;
+            if (error) {
+                console.error(`[CRON ERROR] Fetching ${window.type}:`, error);
+                continue;
+            }
 
             for (const appt of appts) {
                 try {
-                    // Verificar se já enviamos esse tipo de lembrete
-                    const sentLogs = appt.notification_logs || [];
-                    if (sentLogs.includes(window.type)) {
-                        results.skipped++;
-                        continue;
-                    }
-
                     // Buscar config de WhatsApp do tenant
                     const { data: wapConfig } = await supabase
                         .from('whatsapp_configs')
@@ -79,7 +84,10 @@ export async function GET(req: Request) {
                         .eq('tenant_id', appt.tenant_id)
                         .maybeSingle();
 
-                    if (!wapConfig || !wapConfig.access_token) continue;
+                    if (!wapConfig || !wapConfig.access_token) {
+                        results.skipped++;
+                        continue;
+                    }
 
                     const creds = {
                         accessToken: wapConfig.access_token,
@@ -87,27 +95,36 @@ export async function GET(req: Request) {
                     };
 
                     const firstName = appt.client_name?.split(' ')[0] || 'Cliente';
-                    const time = format(new Date(appt.start_time), 'HH:mm');
-                    const date = format(new Date(appt.start_time), 'dd/MM');
-                    const serviceName = appt.services?.name || 'Serviço';
+
+                    // Conversão robusta de fuso para exibição na mensagem
+                    const brTimeStr = new Intl.DateTimeFormat('pt-BR', {
+                        timeZone: 'America/Sao_Paulo',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        day: '2-digit',
+                        month: '2-digit'
+                    }).format(new Date(appt.start_time));
+
+                    const [dateStr, timeStr] = brTimeStr.split(', ');
+
+                    const serviceName = appt.services?.name || appt.notes?.replace('Serviço: ', '').replace('Serviços: ', '') || 'seu horário';
 
                     await WhatsAppClient.sendText(
                         creds,
                         appt.client_phone,
-                        window.message(firstName, date, time, serviceName)
+                        window.message(firstName, dateStr, timeStr, serviceName)
                     );
 
-                    // Registrar que enviamos
+                    // Marcar como enviado na coluna correta
                     await supabase
                         .from('appointments')
-                        .update({
-                            notification_logs: [...sentLogs, window.type]
-                        })
+                        .update({ [col]: true })
                         .eq('id', appt.id);
 
                     results.sent++;
                 } catch (err: any) {
                     results.errors.push(`Appt ${appt.id}: ${err.message}`);
+                    console.error(`[REMINDER_SEND_ERROR] Appt ${appt.id}:`, err);
                 }
             }
         }

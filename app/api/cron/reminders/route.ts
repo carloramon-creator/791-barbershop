@@ -21,86 +21,46 @@ export async function GET(req: Request) {
             errors: [] as string[]
         };
 
-        // 1. LEMBRETE 24 HORAS ANTES
-        const target24hStart = new Date(now.getTime() + (24 * 60 - 10) * 60000);
-        const target24hEnd = new Date(now.getTime() + (24 * 60 + 10) * 60000);
+        const lookups = [
+            { col: 'notified_24h', minutes: 24 * 60, title: 'Lembrete: Amanhã', getBody: (apt: any) => `Seu agendamento está confirmado para amanhã às ${formatTime(apt.start_time)}. Te esperamos!` },
+            { col: 'notified_1h', minutes: 60, title: 'Falta pouco!', getBody: (apt: any) => `Lembrete: Você tem um agendamento às ${formatTime(apt.start_time)}.` },
+            { col: 'notified_30m', minutes: 30, title: '30 minutos para seu horário', getBody: (apt: any) => `Estamos te aguardando. Até logo!` },
+        ];
 
-        const { data: apts24h } = await getSupabaseAdmin()
-            .from('appointments')
-            .select('*, clients(fcm_token), tenants(name)')
-            .eq('status', 'scheduled')
-            .eq('notified_24h', false)
-            .gte('start_time', target24hStart.toISOString())
-            .lte('start_time', target24hEnd.toISOString());
+        for (const lookup of lookups) {
+            // Janela: de (agora + X min - 15 min) até (agora + X min + 15 min)
+            // Isso garante que mesmo se o cron atrasar 5-10 min, ele pegue o agendamento.
+            const targetStart = new Date(now.getTime() + (lookup.minutes - 15) * 60000);
+            const targetEnd = new Date(now.getTime() + (lookup.minutes + 15) * 60000);
 
-        if (apts24h) {
-            for (const apt of apts24h) {
-                const token = apt.clients?.fcm_token;
-                if (token) {
-                    try {
-                        await sendPush(token, {
-                            title: `Lembrete: Amanhã na ${apt.tenants?.name}`,
-                            body: `Seu agendamento está confirmado para amanhã às ${formatTime(apt.start_time)}. Te esperamos!`,
-                        });
-                        await getSupabaseAdmin().from('appointments').update({ notified_24h: true }).eq('id', apt.id);
-                        results['24h']++;
-                    } catch (e: any) { results.errors.push(`24h-${apt.id}: ${e.message}`); }
-                }
-            }
-        }
+            const { data: appts } = await getSupabaseAdmin()
+                .from('appointments')
+                .select('*, clients(fcm_token), tenants(name)')
+                .eq('status', 'scheduled')
+                .eq(lookup.col, false)
+                .gte('start_time', targetStart.toISOString())
+                .lte('start_time', targetEnd.toISOString());
 
-        // 2. LEMBRETE 1 HORA ANTES
-        const target1hStart = new Date(now.getTime() + (60 - 10) * 60000);
-        const target1hEnd = new Date(now.getTime() + (60 + 10) * 60000);
+            if (appts) {
+                for (const apt of appts) {
+                    const token = apt.clients?.fcm_token;
+                    if (token) {
+                        try {
+                            await sendPush(token, {
+                                title: lookup.title + (apt.tenants?.name ? ` na ${apt.tenants.name}` : ''),
+                                body: lookup.getBody(apt),
+                            });
+                            await getSupabaseAdmin()
+                                .from('appointments')
+                                .update({ [lookup.col]: true })
+                                .eq('id', apt.id);
 
-        const { data: apts1h } = await getSupabaseAdmin()
-            .from('appointments')
-            .select('*, clients(fcm_token), tenants(name)')
-            .eq('status', 'scheduled')
-            .eq('notified_1h', false)
-            .gte('start_time', target1hStart.toISOString())
-            .lte('start_time', target1hEnd.toISOString());
-
-        if (apts1h) {
-            for (const apt of apts1h) {
-                const token = apt.clients?.fcm_token;
-                if (token) {
-                    try {
-                        await sendPush(token, {
-                            title: `Falta pouco! 1 hora para seu horário`,
-                            body: `Lembrete: Você tem um agendamento na ${apt.tenants?.name} às ${formatTime(apt.start_time)}.`,
-                        });
-                        await getSupabaseAdmin().from('appointments').update({ notified_1h: true }).eq('id', apt.id);
-                        results['1h']++;
-                    } catch (e: any) { results.errors.push(`1h-${apt.id}: ${e.message}`); }
-                }
-            }
-        }
-
-        // 3. LEMBRETE 30 MINUTOS ANTES
-        const target30mStart = new Date(now.getTime() + (30 - 10) * 60000);
-        const target30mEnd = new Date(now.getTime() + (30 + 10) * 60000);
-
-        const { data: apts30m } = await getSupabaseAdmin()
-            .from('appointments')
-            .select('*, clients(fcm_token), tenants(name)')
-            .eq('status', 'scheduled')
-            .eq('notified_30m', false)
-            .gte('start_time', target30mStart.toISOString())
-            .lte('start_time', target30mEnd.toISOString());
-
-        if (apts30m) {
-            for (const apt of apts30m) {
-                const token = apt.clients?.fcm_token;
-                if (token) {
-                    try {
-                        await sendPush(token, {
-                            title: `Seu agendamento é daqui a 30 min`,
-                            body: `Estamos te aguardando na ${apt.tenants?.name}. Até logo!`,
-                        });
-                        await getSupabaseAdmin().from('appointments').update({ notified_30m: true }).eq('id', apt.id);
-                        results['30m']++;
-                    } catch (e: any) { results.errors.push(`30m-${apt.id}: ${e.message}`); }
+                            const key = lookup.col.split('_')[1] as '24h' | '1h' | '30m';
+                            results[key]++;
+                        } catch (e: any) {
+                            results.errors.push(`${lookup.col}-${apt.id}: ${e.message}`);
+                        }
+                    }
                 }
             }
         }
@@ -129,8 +89,10 @@ async function sendPush(token: string, payload: { title: string, body: string })
 
 function formatTime(iso: string) {
     const d = new Date(iso);
-    // Ajuste simples para o fuso do usuário (considerando que o server está em UTC e a barbearia em -3)
-    // Para um sistema real, usaríamos o timezone do tenant.
-    d.setHours(d.getHours() - 3);
-    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const brTime = new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        hour: '2-digit',
+        minute: '2-digit'
+    }).format(d);
+    return brTime;
 }

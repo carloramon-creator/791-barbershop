@@ -56,7 +56,22 @@ export async function POST(req: Request) {
             }
         }
 
-        // 2. Criar Agendamento
+        // 2. Buscar nomes dos serviços para popular 'notes' (usado pelo Dashboard)
+        let serviceNames = '';
+        try {
+            const { data: services } = await getSupabaseAdmin()
+                .from('services')
+                .select('name')
+                .in('id', service_ids);
+
+            if (services && services.length > 0) {
+                serviceNames = services.map(s => s.name).join(', ');
+            }
+        } catch (e) {
+            console.error('[PUBLIC_APPOINTMENT_SERVICE_NAMES_ERROR]', e);
+        }
+
+        // 3. Criar Agendamento
         const { data: appointment, error: aptError } = await getSupabaseAdmin()
             .from('appointments')
             .insert({
@@ -69,7 +84,8 @@ export async function POST(req: Request) {
                 end_time,
                 service_id: service_ids[0], // Fallback para compatibilidade com schema legado se necessário
                 service_ids,
-                status
+                status,
+                notes: serviceNames ? `Serviços: ${serviceNames}` : null
             })
             .select()
             .single();
