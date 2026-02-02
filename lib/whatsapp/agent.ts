@@ -124,8 +124,19 @@ export class WhatsAppAgent {
         }
     }
 
-    private static async handleBookingFlow(ctx: AgentContext, phone: string, session: any, text: string, buttonId?: string) {
+    private static async handleBookingFlow(ctx: AgentContext, phone: string, session: any, text: string, buttonId?: string): Promise<any> {
         const { state, context } = session;
+
+        if (buttonId === 'BACK_TO_DATE') return this.presentDateSelection(ctx, phone, context);
+        if (buttonId === 'BACK_TO_BARBER') {
+            const barbers = await this.listBarbers(ctx.tenantId, context.serviceId);
+            const rows = [
+                { id: 'ANY_BARBER_BOOKING', title: 'Qualquer um', description: 'Mais rápido' },
+                ...(barbers || []).slice(0, 9).map(b => ({ id: b.id, title: b.nickname || b.name }))
+            ];
+            await WhatsAppSession.update(ctx.tenantId, phone, 'booking_select_barber', context);
+            return WhatsAppClient.sendList(ctx.creds, phone, `Serviço: *${context.serviceName}*. Algum profissional de preferência?`, "Ver Profissionais", [{ title: "Profissionais", rows }]);
+        }
 
         if (state === 'booking_select_service') {
             const service = await this.searchService(ctx.tenantId, buttonId || text);
@@ -157,6 +168,10 @@ export class WhatsAppAgent {
         }
 
         if (state === 'booking_select_date') {
+            if (buttonId === 'BACK_TO_BARBER') {
+                await WhatsAppSession.update(ctx.tenantId, phone, 'booking_select_service', context);
+                return this.handleBookingFlow(ctx, phone, { state: 'booking_select_service', context }, context.serviceName);
+            }
             if (!/^\d{4}-\d{2}-\d{2}$/.test(buttonId || '')) return WhatsAppClient.sendText(ctx.creds, phone, "Data inválida.");
             context.selectedDate = buttonId;
             return this.presentTimeSelection(ctx, phone, context);
@@ -329,10 +344,9 @@ export class WhatsAppAgent {
         ).filter(s => s.available);
 
         if (!allSlots.length) {
-            await WhatsAppSession.clear(ctx.tenantId, phone);
-            return WhatsAppClient.sendButtons(ctx.creds, phone, "Desculpe, não encontrei horários livres para esta data. Gostaria de tentar outro dia ou serviço?", [
-                { id: 'AGENDAR', title: '📅 Tentar Novamente' },
-                { id: 'MENU', title: '🏠 Voltar ao Menu' }
+            return WhatsAppClient.sendButtons(ctx.creds, phone, "Desculpe, não encontrei horários livres para esta data. O que deseja fazer?", [
+                { id: 'BACK_TO_DATE', title: '📅 Outra Data' },
+                { id: 'BACK_TO_BARBER', title: '💈 Trocar Barbeiro' }
             ]);
         }
 
