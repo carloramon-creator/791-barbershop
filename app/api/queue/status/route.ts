@@ -42,19 +42,9 @@ export async function GET() {
             const attendingItem = barberQueue.find(q => q.status === 'attending');
             const waitingItems = barberQueue.filter(q => q.status === 'waiting');
 
-            // --- SELF HEALING STATUS CHECK ---
-            // Corrige inconsistências entre o status do barbeiro e a fila real
+            // --- SELF HEALING STATUS CHECK (DISABLED DUE TO PERFORMANCE) ---
             let currentStatus = barber.status;
-            if (currentStatus === 'busy' && !attendingItem) {
-                // Diz que está ocupado, mas não tem ninguém sendo atendido -> LIVRE
-                getSupabaseAdmin().from('barbers').update({ status: 'available' }).eq('id', barber.id).then();
-                currentStatus = 'available';
-            } else if (currentStatus === 'available' && attendingItem) {
-                // Diz que está livre, mas tem alguém sendo atendido -> OCUPADO
-                getSupabaseAdmin().from('barbers').update({ status: 'busy' }).eq('id', barber.id).then();
-                currentStatus = 'busy';
-            }
-            // ---------------------------------
+            // ---------------------------------------------------------------
 
             // Usa a média do cadastro (futuramente pode ser calculado via histórico real)
             const avgTime = barber.avg_time_minutes || 30;
