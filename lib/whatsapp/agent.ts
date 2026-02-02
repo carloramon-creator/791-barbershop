@@ -253,6 +253,7 @@ export class WhatsAppAgent {
             const service = await this.searchService(ctx.tenantId, buttonId || text);
 
             if (service) {
+                console.log(`[BOOKING] Service found: ${service.name} (${service.id})`);
                 context.serviceId = service.id;
                 context.serviceName = service.name;
                 context.servicePrice = service.price; // Save price for summary if needed
@@ -265,6 +266,8 @@ export class WhatsAppAgent {
                     if (allBarbers && allBarbers.length > 0) barbers = allBarbers;
                 }
 
+                const displayedBarbers = (barbers || []).slice(0, 9);
+
                 return WhatsAppClient.sendList(
                     ctx.creds,
                     phone,
@@ -274,7 +277,7 @@ export class WhatsAppAgent {
                         title: "Profissionais",
                         rows: [
                             { id: 'ANY_BARBER_BOOKING', title: 'Qualquer um', description: 'Ver horários de todos' },
-                            ...(barbers || []).map(b => ({ id: b.id, title: b.nickname || b.name }))
+                            ...displayedBarbers.map(b => ({ id: b.id, title: b.nickname || b.name }))
                         ]
                     }]
                 );
@@ -393,7 +396,8 @@ export class WhatsAppAgent {
             if (buttonId === 'CHANGE_BARBER') {
                 await WhatsAppSession.update(ctx.tenantId, phone, 'booking_select_barber', { ...context });
                 const barbers = await this.listBarbers(ctx.tenantId, context.serviceId);
-                return WhatsAppClient.sendList(ctx.creds, phone, "Selecione o profissional:", "Ver Profissionais", [{ title: "Profissionais", rows: [{ id: 'ANY_BARBER_BOOKING', title: 'Qualquer um' }, ...barbers.map(b => ({ id: b.id, title: b.name }))] }]);
+                const displayedBarbers = (barbers || []).slice(0, 9);
+                return WhatsAppClient.sendList(ctx.creds, phone, "Selecione o profissional:", "Ver Profissionais", [{ title: "Profissionais", rows: [{ id: 'ANY_BARBER_BOOKING', title: 'Qualquer um' }, ...displayedBarbers.map(b => ({ id: b.id, title: b.nickname || b.name }))] }]);
             }
             if (buttonId === 'CHANGE_DATE') {
                 return this.presentDateSelection(ctx, phone, context);
@@ -722,6 +726,8 @@ export class WhatsAppAgent {
                 return WhatsAppClient.sendText(ctx.creds, phone, "Desculpe, não há profissionais disponíveis online no momento para entrar na fila.");
             }
 
+            const displayedStats = (barbersStats || []).slice(0, 9);
+
             return WhatsAppClient.sendList(
                 ctx.creds,
                 phone,
@@ -731,7 +737,7 @@ export class WhatsAppAgent {
                     title: "Opções de Fila",
                     rows: [
                         { id: 'ANY_BARBER_QUEUE', title: 'Qualquer um', description: 'Menor tempo de espera' },
-                        ...barbersStats.map(b => ({
+                        ...displayedStats.map(b => ({
                             id: b.id,
                             title: b.nickname || b.name,
                             description: `Fila: ${b.queueSize} pessoa(s) (~${b.estimatedWait} min)`
@@ -788,7 +794,7 @@ export class WhatsAppAgent {
 
         // 1. Tentar por UUID exato (se vier do buttonId)
         if (query.length > 30 && query.includes('-')) {
-            const { data } = await admin.from('services').select('id, name, price').eq('id', query).single();
+            const { data } = await admin.from('services').select('id, name, price').eq('id', query).eq('tenant_id', tenantId).maybeSingle();
             if (data) return data;
         }
 
