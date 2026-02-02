@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { firebaseAdmin } from '@/lib/firebase-admin';
+import { WhatsAppClient } from '@/lib/whatsapp/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,11 +31,15 @@ export async function GET(req: Request) {
 
         if (fetchError) throw fetchError;
 
-        // Filtragem manual pela data (Supabase não permite EXTRACT direto fácil via JS SDK puro sem rpc)
+        // Filtragem robusta pela data (ignorando fuso horário)
         const filteredClients = birthdayClients?.filter(c => {
             if (!c.birth_date) return false;
-            const bday = new Date(c.birth_date);
-            return bday.getMonth() + 1 === month && bday.getDate() === day;
+            // c.birth_date é YYYY-MM-DD
+            const parts = c.birth_date.split('-');
+            if (parts.length !== 3) return false;
+            const bMonth = parseInt(parts[1], 10);
+            const bDay = parseInt(parts[2], 10);
+            return bMonth === month && bDay === day;
         }) || [];
 
         const results = {
@@ -86,6 +91,33 @@ export async function GET(req: Request) {
                         }
                     });
                     results.pushes_sent++;
+                }
+
+                // 4. Enviar WhatsApp (Novo)
+                const { data: config } = await supabase
+                    .from('whatsapp_configs')
+                    .select('phone_number_id, access_token')
+                    .eq('tenant_id', client.tenant_id)
+                    .maybeSingle();
+
+                if (config && config.access_token && config.phone_number_id) {
+                    const creds = {
+                        accessToken: config.access_token,
+                        phoneNumberId: config.phone_number_id
+                    };
+
+                    const cleanPhone = client.phone.replace(/\D/g, '');
+                    if (cleanPhone.length >= 10) {
+                        const welcomeName = client.name.split(' ')[0];
+                        await WhatsAppClient.sendButtons(
+                            creds,
+                            cleanPhone,
+                            `Parabéns, ${welcomeName}! 🎂✨\n\nHoje o presente é por nossa conta! Você ganhou um cupom de *10% de desconto* para usar em qualquer serviço nos próximos 30 dias.\n\nCupom: *${voucherCode}*`,
+                            [
+                                { id: 'BIRTHDAY_AGENDAR', title: 'Agendar Agora ✂️' }
+                            ]
+                        );
+                    }
                 }
 
             } catch (err: any) {
