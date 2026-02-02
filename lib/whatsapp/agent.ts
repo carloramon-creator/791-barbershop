@@ -293,6 +293,7 @@ export class WhatsAppAgent {
 
                 if (result && !result.success) {
                     console.error(`[BOOKING] [${phone}] Failed to send barbers list:`, result.error);
+                    return WhatsAppClient.sendText(ctx.creds, phone, "Ops! Tive um problema técnico ao listar os profissionais. Por favor, tente selecionar o serviço novamente.");
                 }
                 return result;
             }
