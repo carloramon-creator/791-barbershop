@@ -362,7 +362,7 @@ export class WhatsAppAgent {
             return WhatsAppClient.sendList(ctx.creds, phone, "Temos muitos horários! Escolha um período:", "Ver Períodos", [{ title: "Períodos", rows }]);
         }
 
-        const rows = filteredSlots.slice(0, 10).map(s => ({ id: s.time, title: s.time }));
+        const rows: any[] = filteredSlots.slice(0, 10).map(s => ({ id: s.time, title: s.time }));
         if (filterPeriod) {
             rows.push({ id: 'PERIOD_ALL', title: '↩️ Outros Períodos', description: 'Voltar para seleção de períodos' });
         }
