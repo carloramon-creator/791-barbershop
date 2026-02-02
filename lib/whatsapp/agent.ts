@@ -1,7 +1,7 @@
 import { WhatsAppClient, WhatsAppCredentials } from './client';
 import { WhatsAppSession } from './session';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { addMinutes, parse, format, isAfter, startOfToday, addDays, isSunday, setHours, setMinutes, isBefore, isEqual, parseISO } from 'date-fns';
+import { addMinutes, parse, format, isAfter, startOfToday, addDays, isSunday, setHours, setMinutes, isBefore, isEqual, parseISO, addHours, subHours } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { getAvailableSlots } from '../availability-utils';
 
@@ -443,9 +443,10 @@ export class WhatsAppAgent {
     private static async presentDateSelection(ctx: AgentContext, phone: string, context: any) {
         await WhatsAppSession.update(ctx.tenantId, phone, 'booking_select_date', context);
 
-        // Gerar próximos 7 dias úteis
+        // Gerar próximos 7 dias úteis (Respeitando fuso BR para "Hoje")
         const dates = [];
-        let current = startOfToday();
+        const nowBr = subHours(new Date(), 3);
+        let current = new Date(nowBr.getFullYear(), nowBr.getMonth(), nowBr.getDate(), 0, 0, 0, 0);
 
         // Loop até ter 7 dias, pulando Domingos (assumindo fechado)
         let count = 0;
@@ -587,7 +588,9 @@ export class WhatsAppAgent {
             if (!finalBarberId) throw new Error("Sem profissionais disponíveis para finalizar.");
 
             // Calcular Fim
-            const start = parseISO(startTimeISO);
+            // O horário que vem do WhatsApp (13:30) é o "Wall Clock" do Brasil.
+            // No banco, salvamos em UTC. Brasil (GMT-3) -> UTC = +3 Horas.
+            const start = addHours(parseISO(startTimeISO), 3);
             const { data: service } = await getSupabaseAdmin()
                 .from('services')
                 .select('duration_minutes')
@@ -610,7 +613,7 @@ export class WhatsAppAgent {
 
             if (error) throw error;
 
-            await WhatsAppClient.sendText(ctx.creds, phone, `✅ *Agendamento Realizado!* \n\nServiço: ${serviceName}\nProfissional: ${barberName}\nData: ${format(start, "dd/MM 'às' HH:mm", { locale: ptBR })}\n\nTe aguardamos!`);
+            await WhatsAppClient.sendText(ctx.creds, phone, `✅ *Agendamento Realizado!* \n\nServiço: ${serviceName}\nProfissional: ${barberName}\nData: ${format(parseISO(startTimeISO), "dd/MM 'às' HH:mm", { locale: ptBR })}\n\nTe aguardamos!`);
             return WhatsAppSession.clear(ctx.tenantId, phone);
 
         } catch (err: any) {

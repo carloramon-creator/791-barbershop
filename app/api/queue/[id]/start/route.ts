@@ -4,7 +4,6 @@ import { getCurrentUserAndTenant } from '@/lib/server-utils';
 
 /**
  * Barbeiro inicia atendimento de um cliente específico da fila.
- * Permite pular a ordem se necessário (ex: cliente prioritário chegou atrasado).
  */
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id: queueId } = await params;
@@ -16,8 +15,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
         }
 
-        // Usar getSupabaseAdmin() para garantir que encontramos o registro, independente de RLS
-        // A segurança é garantida verificando o tenant_id abaixo
         const client = getSupabaseAdmin();
 
         // 1. Buscar o item da fila
@@ -34,17 +31,12 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
         // SEGURANÇA: Verificar se o item pertence ao mesmo tenant do usuário
         if (queueItem.tenant_id !== tenant.id) {
-            console.error('[START_CLIENT] Tentativa de acesso a outro tenant:', queueItem.tenant_id, 'vs', tenant.id);
-            return NextResponse.json({ error: 'Acesso não autorizado a este cliente' }, { status: 403 });
+            return NextResponse.json({ error: 'Acesso não autorizado' }, { status: 403 });
         }
 
         // 2. Verificar se já está sendo atendido
         if (queueItem.status === 'attending') {
             return NextResponse.json({ error: 'Este cliente já está sendo atendido' }, { status: 400 });
-        }
-
-        if (queueItem.status !== 'waiting') {
-            return NextResponse.json({ error: 'Este cliente não está aguardando' }, { status: 400 });
         }
 
         // 3. Finalizar qualquer atendimento em curso do mesmo barbeiro
@@ -75,6 +67,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                 .eq('tenant_id', tenant.id)
                 .maybeSingle();
 
+            console.log(`[WHATSAPP_START] Config encontrada? ${!!wapConfig}. Telefone: ${queueItem.client_phone}`);
+
             if (wapConfig && wapConfig.access_token && queueItem.client_phone) {
                 const { WhatsAppClient } = await import('@/lib/whatsapp/client');
                 const firstName = queueItem.client_name ? queueItem.client_name.split(' ')[0] : 'Cliente';
@@ -84,7 +78,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                     queueItem.client_phone,
                     `Olá, *${firstName}*! Sua vez chegou! 🎉\n\nO barbeiro já está te aguardando. Pode se dirigir à cadeira agora. 💈`
                 );
-                console.log('[WHATSAPP] Notificação de "Sua vez" enviada para', queueItem.client_phone);
+                console.log('[WHATSAPP] Notificação enviada com sucesso');
             }
         } catch (msgError) {
             console.error('[WHATSAPP_START_ERROR]', msgError);
@@ -116,12 +110,12 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                 }
             }
         } catch (pushError) {
-            console.error('[PUSH ERROR] Falha ao enviar notificação:', pushError);
+            console.error('[PUSH ERROR]', pushError);
         }
 
         return NextResponse.json(updatedClient);
     } catch (error: any) {
-        console.error('[START SPECIFIC CLIENT ERROR]', error);
+        console.error('[START_FATAL_ERROR]', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
