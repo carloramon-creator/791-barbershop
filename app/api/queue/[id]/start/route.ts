@@ -67,7 +67,30 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         // 5. Atualizar barbeiro para 'busy'
         await client.from('barbers').update({ status: 'busy' }).eq('id', queueItem.barber_id);
 
-        // 6. Enviar Notificação Push para o cliente
+        // 6. Enviar Notificação WhatsApp (Novo)
+        try {
+            const { data: wapConfig } = await client
+                .from('whatsapp_configs')
+                .select('access_token, phone_number_id')
+                .eq('tenant_id', tenant.id)
+                .maybeSingle();
+
+            if (wapConfig && wapConfig.access_token && queueItem.client_phone) {
+                const { WhatsAppClient } = await import('@/lib/whatsapp/client');
+                const firstName = queueItem.client_name ? queueItem.client_name.split(' ')[0] : 'Cliente';
+
+                await WhatsAppClient.sendText(
+                    { accessToken: wapConfig.access_token, phoneNumberId: wapConfig.phone_number_id },
+                    queueItem.client_phone,
+                    `Olá, *${firstName}*! Sua vez chegou! 🎉\n\nO barbeiro já está te aguardando. Pode se dirigir à cadeira agora. 💈`
+                );
+                console.log('[WHATSAPP] Notificação de "Sua vez" enviada para', queueItem.client_phone);
+            }
+        } catch (msgError) {
+            console.error('[WHATSAPP_START_ERROR]', msgError);
+        }
+
+        // 7. Enviar Notificação Push para o cliente
         try {
             const { data: clientData } = await client
                 .from('clients')

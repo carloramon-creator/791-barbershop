@@ -80,7 +80,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                     await WhatsAppClient.sendText(
                         { accessToken: wapConfig.access_token, phoneNumberId: wapConfig.phone_number_id },
                         clientData.client_phone,
-                        `Obrigado pela preferência, *${firstName}*! ✅\n\nSeu atendimento foi finalizado. Esperamos te ver em breve! 💈`
+                        `Olá, *${firstName}*! Seu atendimento foi finalizado. ✅\n\nAgradecemos a preferência e esperamos te ver em breve! 💈`
                     );
                     console.log('[WHATSAPP] Agradecimento enviado para', clientData.client_phone);
                 }

@@ -3,6 +3,7 @@ import { WhatsAppSession } from './session';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { addMinutes, parse, format, isAfter, startOfToday, addDays, isSunday, setHours, setMinutes, isBefore, isEqual, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { getAvailableSlots } from '../availability-utils';
 
 export interface AgentContext {
     tenantId: string;
@@ -485,13 +486,25 @@ export class WhatsAppAgent {
 
         const selectedDate = parseISO(context.selectedDate + 'T00:00:00');
 
-        // Definir Horário de Funcionamento (Hardcoded por enquanto 09:00 as 19:00 com intervalo almoço 12-13 opcional)
-        // TODO: Pegar do Tenant Config
-        const CONFIG_START_HOUR = 9;
-        const CONFIG_END_HOUR = 19;
-        const SLOT_DURATION = 30; // Minutos (ou pegar do serviço)
+        // 1. Buscar Agendamentos Ocupados
+        const admin = getSupabaseAdmin();
+        const { data: appointments } = await admin
+            .from('appointments')
+            .select('start_time, end_time')
+            .eq('tenant_id', ctx.tenantId)
+            .neq('status', 'cancelled')
+            .gte('start_time', `${context.selectedDate}T00:00:00`)
+            .lte('start_time', `${context.selectedDate}T23:59:59`)
+            .eq(context.barberId ? 'barber_id' : '', context.barberId || '');
 
-        // Pegar duração do serviço
+        // 2. Buscar Configurações do Tenant e Staff
+        const [{ data: tenant }, { data: barber }] = await Promise.all([
+            getSupabaseAdmin().from('tenants').select('opening_hours').eq('id', ctx.tenantId).single(),
+            context.barberId
+                ? getSupabaseAdmin().from('barbers').select('status').eq('id', context.barberId).single()
+                : Promise.resolve({ data: null })
+        ]);
+
         const { data: service } = await getSupabaseAdmin()
             .from('services')
             .select('duration_minutes')
@@ -499,67 +512,16 @@ export class WhatsAppAgent {
             .single();
         const duration = service?.duration_minutes || 30;
 
-        // Gerar slots teoricos
-        const possibleSlots = [];
-        let iter = setMinutes(setHours(selectedDate, CONFIG_START_HOUR), 0);
-        const endDay = setMinutes(setHours(selectedDate, CONFIG_END_HOUR), 0);
-
-        const now = new Date();
-
-        while (isBefore(iter, endDay)) {
-            // Se for HOJE, filtrar passados
-            if (!isBefore(iter, now)) {
-                possibleSlots.push(new Date(iter));
-            } else if (!isEqual(selectedDate, startOfToday())) {
-                // Se não for hoje, adiciona normal
-                possibleSlots.push(new Date(iter));
-            }
-            iter = addMinutes(iter, SLOT_DURATION); // Incremento de slot fixo ou duration? Usar slot fixo p/ lista facilitar
-        }
-
-        // Buscar Agendamentos Ocupados
-        const admin = getSupabaseAdmin();
-        let query = admin
-            .from('appointments')
-            .select('start_time, end_time')
-            .eq('tenant_id', ctx.tenantId)
-            .neq('status', 'cancelled')
-            .gte('start_time', `${context.selectedDate}T00:00:00`)
-            .lte('start_time', `${context.selectedDate}T23:59:59`);
-
-        if (context.barberId) {
-            query = query.eq('barber_id', context.barberId);
-        }
-        // Se barberId for null (Qualquer um), a lógica muda:
-        // Precisamos checar se HÁ ALGUM barbeiro livre nesse slot.
-        // Isso é complexo pois 'unavailable' = 'todos ocupados'.
-        // Para simplificar: se for ANY, mostramos todos os slots onde count(approintments) < count(active_barbers).
-
-        const { data: appointments } = await query;
-        const busyRanges = appointments?.map(a => ({ start: new Date(a.start_time), end: new Date(a.end_time) })) || [];
-
-        // Filtrar slots
-        const availableSlots = possibleSlots.filter(slot => {
-            const slotEnd = addMinutes(slot, duration);
-
-            // Verificar colisão
-            // Se barberId definido: colide se sobrepor qualquer appt dele
-            if (context.barberId) {
-                return !busyRanges.some(busy =>
-                    (isBefore(slot, busy.end) && isAfter(slotEnd, busy.start))
-                );
-            } else {
-                // ANY BARBER logic: check capacity
-                // TODO: Implement capacity check properly. For now, assume Available if < 3 concurrent appts as hack, 
-                // OR simpler: just ignore filtering for ANY_BARBER to demonstrate flow (User requirement was strict though).
-                // Let's do a basic check:
-                // Count overlaps. If Overlaps >= TotalBarbers, then Full.
-                // We need TotalBarbers count.
-                // For safety in this iteration without `totalBarbers` loaded: allow all.
-                // Refinement: Load active barbers count.
-                return true;
-            }
-        });
+        // 3. Obter slots usando o utilitário compartilhado
+        const isToday = context.selectedDate === format(new Date(), 'yyyy-MM-dd');
+        const availableSlots = getAvailableSlots(
+            selectedDate,
+            appointments || [],
+            tenant?.opening_hours,
+            duration,
+            barber?.status,
+            isToday
+        ).filter(s => s.available);
 
         if (availableSlots.length === 0) {
             return WhatsAppClient.sendButtons(
@@ -579,10 +541,10 @@ export class WhatsAppAgent {
             `Horários disponíveis para *${format(selectedDate, 'dd/MM')}*:`,
             "Ver Horários",
             [{
-                title: "Manhã / Tarde",
+                title: "Horários Disponíveis",
                 rows: displayedSlots.map(slot => ({
-                    id: format(slot, 'HH:mm'),
-                    title: format(slot, 'HH:mm'),
+                    id: slot.time,
+                    title: slot.time,
                     description: 'Disponível'
                 }))
             }]
