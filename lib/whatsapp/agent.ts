@@ -520,7 +520,19 @@ export class WhatsAppAgent {
             .eq('is_active', true)
             .order('name');
 
-        const { data } = await query;
+        console.log(`[LIST_BARBERS] Querying for tenant ${tenantId}. ServiceId: ${serviceId || 'NONE'}`);
+
+        const { data, error } = await query;
+
+        if (error) {
+            console.error('[LIST_BARBERS_ERROR]', error);
+            return [];
+        }
+
+        console.log(`[LIST_BARBERS] Found ${data?.length || 0} active barbers raw.`);
+        if (data && data.length > 0) {
+            console.log(`[LIST_BARBERS] Sample: ${JSON.stringify(data[0])}`);
+        }
 
         // Filtro manual se vier serviceId (já que service_ids é array json)
         if (serviceId && data) {
