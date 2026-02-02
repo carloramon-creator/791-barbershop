@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { firebaseAdmin } from '@/lib/firebase-admin';
 import { WhatsAppClient } from '@/lib/whatsapp/client';
+import { subMinutes } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export const dynamic = 'force-dynamic';
@@ -160,11 +161,69 @@ export async function GET(req: Request) {
             }
         }
 
-        return NextResponse.json({ success: true, results });
+        // 4. Lembrete de Inatividade no WhatsApp (Inatividade > 5 min)
+        try {
+            await handleInactivityReminders();
+        } catch (e) {
+            console.error('[CRON_INACTIVITY_ERROR]', e);
+        }
 
+        return NextResponse.json({ success: true });
     } catch (error: any) {
-        console.error('[CRON SYNC ERROR]', error);
+        console.error('[CRON_FATAL_ERROR]', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
+async function handleInactivityReminders() {
+    const admin = getSupabaseAdmin();
+    const timeoutDate = subMinutes(new Date(), 5).toISOString();
+
+    // Busca sessões que não estão em idle, não foram lembradas recentemente e estão paradas há 5+ min
+    const { data: sessions } = await admin
+        .from('whatsapp_sessions')
+        .select('*')
+        .neq('state', 'idle')
+        .lt('updated_at', timeoutDate)
+        .eq('reminder_count', 0); // Envia apenas um lembrete
+
+    if (!sessions || sessions.length === 0) return;
+
+    for (const session of sessions) {
+        try {
+            // Buscar credenciais do tenant
+            const { data: config } = await admin
+                .from('whatsapp_configs')
+                .select('access_token, phone_number_id')
+                .eq('tenant_id', session.tenant_id)
+                .single();
+
+            if (!config) continue;
+
+            const creds = {
+                accessToken: config.access_token,
+                phoneNumberId: config.phone_number_id
+            };
+
+            await WhatsAppClient.sendButtons(creds, session.phone, "Você ainda está aí? Vi que paramos o seu agendamento. Deseja continuar?", [
+                { id: 'AGENDAR', title: 'Continuar' },
+                { id: 'MENU', title: 'Ir para Menu' }
+            ]);
+
+            // Marcar como lembrado para não repetir
+            await admin
+                .from('whatsapp_sessions')
+                .update({
+                    reminder_count: 1,
+                    last_reminder_at: new Date().toISOString()
+                })
+                .eq('tenant_id', session.tenant_id)
+                .eq('phone', session.phone);
+
+            console.log(`[CRON_REMINDER] Lembrete enviado para ${session.phone} (Tenant: ${session.tenant_id})`);
+        } catch (err) {
+            console.error(`[CRON_REMINDER_ERROR] Session ${session.phone}:`, err);
+        }
     }
 }
 
