@@ -66,13 +66,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
         // 5. Enviar Notificação Push para o cliente
         try {
-            // Buscar dados do cliente para pegar o token
+            // Buscar dados do cliente para pegar o token e telefone
             const { data: clientData } = await client
                 .from('clients')
-                .select('fcm_token')
+                .select('fcm_token, phone, name')
                 .eq('id', nextClient.client_id)
                 .single();
 
+            // 5.1 Push FCM
             if (clientData?.fcm_token) {
                 const { firebaseAdmin } = await import('@/lib/firebase-admin');
                 if (firebaseAdmin.apps.length) {
@@ -91,6 +92,42 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
                     console.log('[PUSH] Notificação enviada para cliente', nextClient.client_id);
                 }
             }
+
+            // 5.2 WhatsApp Notification
+            if (clientData?.phone) {
+                // Tentar enviar WhatsApp
+                try {
+                    const { data: wapConfig } = await client
+                        .from('whatsapp_configs')
+                        .select('access_token, phone_number_id')
+                        .eq('tenant_id', tenant.id)
+                        .maybeSingle();
+
+                    if (wapConfig) {
+                        const { WhatsAppClient } = await import('@/lib/whatsapp/client');
+                        const firstName = clientData.name ? clientData.name.split(' ')[0] : 'Cliente';
+
+                        // Buscar nome do barbeiro
+                        const { data: barberData } = await client
+                            .from('barbers')
+                            .select('nickname, name')
+                            .eq('id', barberId)
+                            .single();
+
+                        const barberName = barberData?.nickname || barberData?.name || 'seu barbeiro';
+
+                        await WhatsAppClient.sendText(
+                            { accessToken: wapConfig.access_token, phoneNumberId: wapConfig.phone_number_id },
+                            clientData.phone,
+                            `Olá *${firstName}*! 👋\n\nSua vez chegou! O profissional *${barberName}* já está te aguardando na cadeira. ✂️`
+                        );
+                        console.log('[WHATSAPP] Notificação de "Sua Vez" enviada para', clientData.phone);
+                    }
+                } catch (wapError) {
+                    console.error('[WHATSAPP_ERROR] Falha ao enviar msg de vez:', wapError);
+                }
+            }
+
         } catch (pushError) {
             console.error('[PUSH ERROR] Falha ao enviar notificação:', pushError);
             // Não falhar a requisição principal por causa do push

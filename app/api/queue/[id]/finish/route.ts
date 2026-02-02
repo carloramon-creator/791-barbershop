@@ -57,6 +57,38 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         // 4. Retornar se o plano permite venda (intermediate, complete, premium ou trial)
         const canCreateSale = ['intermediate', 'complete', 'premium', 'trial'].includes(tenant.plan);
 
+        // 5. Enviar Mensagem de Agradecimento no WhatsApp (Fire and Forget)
+        try {
+            // Buscar telefone e nome do cliente
+            const { data: clientData } = await client
+                .from('client_queue')
+                .select('client_phone, client_name')
+                .eq('id', queueId)
+                .single();
+
+            if (clientData?.client_phone) {
+                const { data: wapConfig } = await client
+                    .from('whatsapp_configs')
+                    .select('access_token, phone_number_id')
+                    .eq('tenant_id', tenant.id)
+                    .maybeSingle();
+
+                if (wapConfig) {
+                    const { WhatsAppClient } = await import('@/lib/whatsapp/client');
+                    const firstName = clientData.client_name ? clientData.client_name.split(' ')[0] : 'Cliente';
+
+                    await WhatsAppClient.sendText(
+                        { accessToken: wapConfig.access_token, phoneNumberId: wapConfig.phone_number_id },
+                        clientData.client_phone,
+                        `Obrigado pela preferência, *${firstName}*! ✅\n\nSeu atendimento foi finalizado. Esperamos te ver em breve! 💈`
+                    );
+                    console.log('[WHATSAPP] Agradecimento enviado para', clientData.client_phone);
+                }
+            }
+        } catch (msgError) {
+            console.error('[WHATSAPP_FINISH_ERROR]', msgError);
+        }
+
         return NextResponse.json({
             message: 'Atendimento finalizado',
             canCreateSale,
