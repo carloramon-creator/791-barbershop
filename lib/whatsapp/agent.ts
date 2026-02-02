@@ -277,15 +277,15 @@ export class WhatsAppAgent {
                     ctx.creds,
                     phone,
                     `Certo, serviço *${service.name.slice(0, 100)}*. Tem algum profissional de preferência?`,
-                    "Escolher Profissional",
+                    "Ver Profissionais",
                     [{
                         title: "Profissionais",
                         rows: [
-                            { id: 'ANY_BARBER_BOOKING', title: 'Qualquer um', description: 'Ver horários de todos' },
+                            { id: 'ANY_BARBER_BOOKING', title: 'Qualquer um', description: 'Atendimento mais rápido' },
                             ...displayedBarbers.map(b => ({
                                 id: b.id,
                                 title: (b.nickname || b.name || 'Profissional').slice(0, 24),
-                                description: 'Disponível'
+                                description: 'Escolher este'
                             }))
                         ]
                     }]
@@ -393,6 +393,7 @@ export class WhatsAppAgent {
                         { id: 'CHANGE_SERVICE', title: 'Serviço' },
                         { id: 'CHANGE_BARBER', title: 'Profissional' },
                         { id: 'CHANGE_DATE', title: 'Data/Horário' }
+                        // { id: 'CHANGE_TIME', title: 'Horário' }, // Already covered by CHANGE_DATE
                     ]
                 );
             }
@@ -420,10 +421,11 @@ export class WhatsAppAgent {
                     [{
                         title: "Profissionais",
                         rows: [
-                            { id: 'ANY_BARBER_BOOKING', title: 'Qualquer um' },
+                            { id: 'ANY_BARBER_BOOKING', title: 'Qualquer um', description: 'Atendimento mais rápido' },
                             ...displayedBarbers.map(b => ({
                                 id: b.id,
-                                title: (b.nickname || b.name || 'Profissional').slice(0, 24)
+                                title: (b.nickname || b.name || 'Profissional').slice(0, 24),
+                                description: 'Escolher este'
                             }))
                         ]
                     }]
