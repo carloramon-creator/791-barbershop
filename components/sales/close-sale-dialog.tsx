@@ -51,6 +51,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
     const [products, setProducts] = useState<Product[]>([]);
     const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'pix'>('cash');
+    const [voucherCode, setVoucherCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [pixData, setPixData] = useState<{ copyText?: string; qrBase64?: string } | null>(null);
 
@@ -178,7 +179,8 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
             const payload = {
                 services: selectedItems.filter(i => i.type === 'service').map(i => ({ id: i.id, qty: i.qty })),
                 products: selectedItems.filter(i => i.type === 'product').map(i => ({ id: i.id, qty: i.qty })),
-                payment_method: paymentMethod
+                payment_method: paymentMethod,
+                voucher_code: voucherCode || null
             };
 
             const res = await Api.createSale(queueId!, payload);
@@ -384,6 +386,29 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                                         </Label>
                                     </div>
                                 </RadioGroup>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label className="text-sm font-bold text-slate-400 uppercase tracking-widest">Cupom de Desconto (Opcional)</Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        placeholder="Ex: NIVER10"
+                                        value={voucherCode}
+                                        onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                                        className="bg-slate-800 border-slate-700 text-slate-100 uppercase font-mono"
+                                    />
+                                    {voucherCode && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setVoucherCode('')}
+                                            className="text-slate-500 hover:text-red-400"
+                                        >
+                                            <X size={14} />
+                                        </Button>
+                                    )}
+                                </div>
+                                <p className="text-[10px] text-slate-500">O cupom será validado e aplicado ao finalizar o atendimento.</p>
                             </div>
 
                             <DialogFooter className="mt-auto pt-6 border-t border-slate-800">

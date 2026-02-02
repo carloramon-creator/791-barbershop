@@ -116,10 +116,11 @@ export async function GET(req: Request) {
                     const cleanPhone = client.phone.replace(/\D/g, '');
                     if (cleanPhone.length >= 10) {
                         const welcomeName = client.name.split(' ')[0];
+                        const label = "R$ 10,00"; // Ajustado para valor fixo conforme solicitado
                         await WhatsAppClient.sendButtons(
                             creds,
                             cleanPhone,
-                            `Parabéns, ${welcomeName}! 🎂✨\n\nHoje o presente é por nossa conta! Você ganhou um cupom de *10% de desconto* para usar em qualquer serviço nos próximos 30 dias.\n\nCupom: *${voucherCode}*`,
+                            `Parabéns, ${welcomeName}! 🎂✨\n\nHoje o presente é por nossa conta! Você ganhou um cupom de *${label} de desconto* para usar em qualquer serviço nos próximos 30 dias.\n\nCupom: *${voucherCode}*`,
                             [
                                 { id: 'BIRTHDAY_AGENDAR', title: 'Agendar Agora ✂️' }
                             ]
