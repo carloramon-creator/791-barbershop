@@ -412,10 +412,24 @@ export class WhatsAppAgent {
 
                 const nextPosition = (lastInQueue?.position || 0) + 1;
 
+                // Buscar um barbeiro ativo para vincular (já que é obrigatório no banco)
+                const { data: barber } = await getSupabaseAdmin()
+                    .from('barbers')
+                    .select('id')
+                    .eq('tenant_id', ctx.tenantId)
+                    .eq('is_active', true)
+                    .limit(1)
+                    .maybeSingle();
+
+                if (!barber) {
+                    return WhatsAppClient.sendText(ctx.creds, phone, "Desculpe, não encontramos nenhum barbeiro disponível no momento para colocar na fila.");
+                }
+
                 const { error: insertError } = await getSupabaseAdmin()
                     .from('client_queue')
                     .insert({
                         tenant_id: ctx.tenantId,
+                        barber_id: barber.id,
                         client_id: clientId,
                         client_name: clientName,
                         client_phone: phone,
