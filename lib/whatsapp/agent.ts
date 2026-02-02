@@ -873,14 +873,16 @@ export class WhatsAppAgent {
     }
 
     private static async listBarbers(tenantId: string, serviceId?: string) {
+        // 1. Buscar todos os barbeiros ativos do tenant
+        // Incluímos o relacionamento com barber_services para saber quais serviços cada um faz
         let query = getSupabaseAdmin()
             .from('barbers')
-            .select('id, name, nickname, service_ids')
+            .select('id, name, nickname, barber_services(service_id)')
             .eq('tenant_id', tenantId)
             .eq('is_active', true)
             .order('name');
 
-        console.log(`[LIST_BARBERS] Querying for tenant ${tenantId}. ServiceId: ${serviceId || 'NONE'}`);
+        console.log(`[LIST_BARBERS] Querying for tenant ${tenantId}. ServiceId filter: ${serviceId || 'NONE'}`);
 
         const { data, error } = await query;
 
@@ -889,17 +891,30 @@ export class WhatsAppAgent {
             return [];
         }
 
-        console.log(`[LIST_BARBERS] Found ${data?.length || 0} active barbers raw.`);
-        if (data && data.length > 0) {
-            console.log(`[LIST_BARBERS] Sample: ${JSON.stringify(data[0])}`);
+        // 2. Mapear e formatar os dados
+        const formattedBarbers = data?.map((b: any) => ({
+            id: b.id,
+            name: b.name,
+            nickname: b.nickname,
+            // Extrair service_ids do relacionamento barber_services
+            service_ids: b.barber_services?.map((bs: any) => bs.service_id) || []
+        })) || [];
+
+        console.log(`[LIST_BARBERS] Found ${formattedBarbers.length} active barbers.`);
+
+        // 3. Filtrar por serviço se fornecido
+        if (serviceId) {
+            const filtered = formattedBarbers.filter(b => b.service_ids.includes(serviceId));
+            console.log(`[LIST_BARBERS] Filtered by service ${serviceId}: ${filtered.length} found.`);
+
+            // Se houver barbeiros para o serviço, retorna eles
+            if (filtered.length > 0) return filtered;
+
+            // Caso contrário, loga e deixa o fallback do handleBookingFlow agir (ou já retorna tudo aqui)
+            console.log(`[LIST_BARBERS] No specific barber found for service ${serviceId}. Returning ALL active.`);
         }
 
-        // Filtro manual se vier serviceId (já que service_ids é array json)
-        if (serviceId && data) {
-            return data.filter(b => Array.isArray(b.service_ids) && b.service_ids.includes(serviceId));
-        }
-
-        return data;
+        return formattedBarbers;
     }
 
     // --- Core Helpers ---
