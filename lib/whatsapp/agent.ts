@@ -69,11 +69,16 @@ export class WhatsAppAgent {
         const input = text.toUpperCase();
 
         // 0. Buscar Cadastro do Cliente para ver se precisamos de registro
+        // Verificar com e sem o DDI 55
+        const phoneWithout55 = phone.startsWith('55') ? phone.slice(2) : phone;
+        const phoneWith55 = phone.startsWith('55') ? phone : `55${phone}`;
+
         const { data: client } = await getSupabaseAdmin()
             .from('clients')
             .select('id, name, birth_date')
             .eq('tenant_id', ctx.tenantId)
-            .eq('phone', phone)
+            .or(`phone.eq.${phone},phone.eq.${phoneWithout55},phone.eq.${phoneWith55}`)
+            .limit(1)
             .maybeSingle();
 
         // Se não tem nome (novo) ou o nome é o padrão "Cliente WhatsApp", ou não tem data de nascimento
@@ -315,11 +320,15 @@ export class WhatsAppAgent {
             if (buttonId === 'CONFIRM_YES' || text.toUpperCase().includes('SIM')) {
                 try {
                     // 1. Resolver Cliente
+                    const phoneWithout55 = phone.startsWith('55') ? phone.slice(2) : phone;
+                    const phoneWith55 = phone.startsWith('55') ? phone : `55${phone}`;
+
                     const clientResponse = await getSupabaseAdmin()
                         .from('clients')
                         .select('id, name')
                         .eq('tenant_id', ctx.tenantId)
-                        .eq('phone', phone)
+                        .or(`phone.eq.${phone},phone.eq.${phoneWithout55},phone.eq.${phoneWith55}`)
+                        .limit(1)
                         .maybeSingle();
 
                     const clientId = clientResponse.data?.id || await this.getOrCreateClient(ctx.tenantId, phone);
@@ -377,11 +386,15 @@ export class WhatsAppAgent {
     private static async handleQueueFlow(ctx: AgentContext, phone: string, session: any, text: string, buttonId?: string) {
         if (buttonId === 'QUEUE_YES' || text.toUpperCase().includes('SIM')) {
             try {
+                const phoneWithout55 = phone.startsWith('55') ? phone.slice(2) : phone;
+                const phoneWith55 = phone.startsWith('55') ? phone : `55${phone}`;
+
                 const { data: client } = await getSupabaseAdmin()
                     .from('clients')
                     .select('id, name')
                     .eq('tenant_id', ctx.tenantId)
-                    .eq('phone', phone)
+                    .or(`phone.eq.${phone},phone.eq.${phoneWithout55},phone.eq.${phoneWith55}`)
+                    .limit(1)
                     .maybeSingle();
 
                 const clientId = client?.id || await this.getOrCreateClient(ctx.tenantId, phone);
@@ -416,7 +429,7 @@ export class WhatsAppAgent {
                 return WhatsAppSession.clear(ctx.tenantId, phone);
             } catch (err: any) {
                 console.error('[WHATSAPP_QUEUE_ERROR]', err.message);
-                return WhatsAppClient.sendText(ctx.creds, phone, "Erro ao entrar na fila. Tente novamente mais tarde.");
+                return WhatsAppClient.sendText(ctx.creds, phone, `Erro ao entrar na fila: ${err.message || JSON.stringify(err)}. Tente novamente.`);
             }
         }
         await WhatsAppClient.sendText(ctx.creds, phone, "Entendido. Se mudar de ideia, é só mandar FILA.");
@@ -498,11 +511,17 @@ export class WhatsAppAgent {
 
     private static async getOrCreateClient(tenantId: string, phone: string, name?: string, birthDate?: string) {
         const admin = getSupabaseAdmin();
+
+        // Verificar variações do telefone (com e sem 55)
+        const phoneWithout55 = phone.startsWith('55') ? phone.slice(2) : phone;
+        const phoneWith55 = phone.startsWith('55') ? phone : `55${phone}`;
+
         const { data: existing } = await admin
             .from('clients')
             .select('id, name, birth_date')
             .eq('tenant_id', tenantId)
-            .eq('phone', phone)
+            .or(`phone.eq.${phone},phone.eq.${phoneWithout55},phone.eq.${phoneWith55}`)
+            .limit(1)
             .maybeSingle();
 
         if (existing) {
