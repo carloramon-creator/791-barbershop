@@ -222,14 +222,23 @@ export class WhatsAppAgent {
                 context.serviceName = service.name;
                 await WhatsAppSession.update(ctx.tenantId, phone, 'booking_select_barber', context);
 
-                const barbers = await this.listBarbers(ctx.tenantId, service.id);
+                let barbers = await this.listBarbers(ctx.tenantId, service.id);
+
+                // FALBACK: Se não tiver barbeiros específicos vinculados a este serviço,
+                // buscar todos os barbeiros ativos para não pular a etapa de escolha.
                 if (!barbers || barbers.length === 0) {
-                    // Se não tiver barbeiros específicos para esse serviço, avisa mas permite escolher "Qualquer"
-                    // ou simplesmente informa que o agendamento será com "Qualquer barbeiro" disponível.
+                    const allBarbers = await this.listBarbers(ctx.tenantId); // Sem filtrar por serviço
+                    if (allBarbers && allBarbers.length > 0) {
+                        barbers = allBarbers;
+                    }
+                }
+
+                if (!barbers || barbers.length === 0) {
+                    // Se REALMENTE não tiver nenhum barbeiro ativo na loja
                     context.barberId = null;
                     context.barberName = 'Qualquer barbeiro';
                     await WhatsAppSession.update(ctx.tenantId, phone, 'booking_select_datetime', context);
-                    return WhatsAppClient.sendText(ctx.creds, phone, `Beleza! Para o serviço *${service.name}*, não temos um barbeiro específico agora, então marcaremos com o que estiver disponível.\n\nPara que dia e horário você deseja agendar? (Ex: hoje 15:00, amanhã às 10:30)`);
+                    return WhatsAppClient.sendText(ctx.creds, phone, `Beleza! Para o serviço *${service.name}*, vamos agendar com o profissional disponível.\n\nPara que dia e horário você deseja agendar? (Ex: hoje 15:00, amanhã às 10:30)`);
                 }
 
                 return WhatsAppClient.sendList(
