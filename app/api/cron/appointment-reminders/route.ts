@@ -62,13 +62,13 @@ export async function GET(req: Request) {
             const col = colMap[window.type];
 
             // Buscar agendamentos na janela de tempo que ainda não receberam ESSE lembrete específico
-            const { data: appts, error } = await (supabase
+            const { data: appts, error } = await (supabase as any)
                 .from('appointments')
                 .select('*, services(name), barbers(name, nickname)')
                 .eq('status', 'scheduled')
                 .eq(col, false) // Usa a coluna booleana correta
                 .gte('start_time', targetStart.toISOString())
-                .lte('start_time', targetEnd.toISOString()) as any);
+                .lte('start_time', targetEnd.toISOString());
 
             if (error) {
                 console.error(`[CRON ERROR] Fetching ${window.type}:`, error);

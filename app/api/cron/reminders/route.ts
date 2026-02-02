@@ -33,13 +33,13 @@ export async function GET(req: Request) {
             const targetStart = new Date(now.getTime() + (lookup.minutes - 15) * 60000);
             const targetEnd = new Date(now.getTime() + (lookup.minutes + 15) * 60000);
 
-            const { data: appts } = await (getSupabaseAdmin()
+            const { data: appts } = await (getSupabaseAdmin() as any)
                 .from('appointments')
                 .select('*, clients(fcm_token), tenants(name)')
                 .eq('status', 'scheduled')
                 .eq(lookup.col, false)
                 .gte('start_time', targetStart.toISOString())
-                .lte('start_time', targetEnd.toISOString()) as any);
+                .lte('start_time', targetEnd.toISOString());
 
             if (appts) {
                 for (const apt of appts) {
