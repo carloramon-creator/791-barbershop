@@ -12,6 +12,7 @@ export async function GET(req: Request) {
         const { tenant } = await getCurrentUserAndTenant();
         const { searchParams } = new URL(req.url);
         const clientId = searchParams.get('clientId');
+        const code = searchParams.get('code');
 
         let query = getSupabaseAdmin()
             .from('client_vouchers')
@@ -26,6 +27,10 @@ export async function GET(req: Request) {
 
         if (clientId) {
             query = query.eq('client_id', clientId);
+        }
+
+        if (code) {
+            query = query.eq('code', code.trim().toUpperCase());
         }
 
         const { data: vouchers, error } = await query;

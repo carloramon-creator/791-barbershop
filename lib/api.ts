@@ -162,6 +162,7 @@ export const Api = {
 
     // Vouchers
     getVouchers: (clientId?: string) => apiFetch(`/api/barbershop/vouchers${clientId ? `?clientId=${clientId}` : ''}`),
+    validateVoucher: (code: string) => apiFetch(`/api/barbershop/vouchers?code=${code}`),
     createVoucher: (payload: Record<string, unknown>) => apiFetch('/api/barbershop/vouchers', { method: 'POST', body: JSON.stringify(payload) }),
     deleteVoucher: (id: string) => apiFetch(`/api/barbershop/vouchers?id=${id}`, { method: 'DELETE' }),
 

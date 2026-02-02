@@ -21,7 +21,9 @@ import {
     QrCode,
     Check,
     Copy,
-    X
+    X,
+    AlertCircle,
+    XCircle
 } from 'lucide-react';
 import { Service, Product } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
@@ -53,7 +55,11 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
     const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'pix'>('cash');
     const [voucherCode, setVoucherCode] = useState('');
+    const [isVoucherValid, setIsVoucherValid] = useState<boolean | null>(null);
+    const [voucherError, setVoucherError] = useState<string | null>(null);
+    const [appliedDiscount, setAppliedDiscount] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [validatingVoucher, setValidatingVoucher] = useState(false);
     const [pixData, setPixData] = useState<{ copyText?: string; qrBase64?: string } | null>(null);
 
     useEffect(() => {
@@ -133,9 +139,12 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
         };
         if (isOpen) {
             setStep('selection');
-            // Só reseta se não vier itens iniciais
-            if (!initialDraftItems) setSelectedItems([]);
+            // Removed: if (!initialDraftItems) setSelectedItems([]); to allow fetchData to correctly populate selectedItems
             setPaymentMethod('cash');
+            setVoucherCode('');
+            setIsVoucherValid(null);
+            setVoucherError(null);
+            setAppliedDiscount(0);
             fetchData();
         }
     }, [isOpen]);
@@ -154,6 +163,61 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
     };
 
     const total = selectedItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
+    const servicesTotal = selectedItems.filter(i => i.type === 'service').reduce((acc, item) => acc + (item.price * item.qty), 0);
+    const finalTotal = Math.max(0, total - appliedDiscount);
+
+    const handleValidateVoucher = async () => {
+        if (!voucherCode.trim()) return;
+        setValidatingVoucher(true);
+        setIsVoucherValid(null);
+        setVoucherError(null);
+        setAppliedDiscount(0);
+
+        try {
+            const vouchers = await Api.validateVoucher(voucherCode.trim());
+            const voucher = vouchers[0];
+
+            if (!voucher) {
+                setIsVoucherValid(false);
+                setVoucherError('Cupom não encontrado.');
+                return;
+            }
+
+            if (voucher.used_at) {
+                setIsVoucherValid(false);
+                setVoucherError('Cupom já utilizado.');
+                return;
+            }
+
+            if (new Date(voucher.expires_at) < new Date()) {
+                setIsVoucherValid(false);
+                setVoucherError('Cupom expirado.');
+                return;
+            }
+
+            setIsVoucherValid(true);
+
+            let disc = 0;
+            if (voucher.discount_type === 'percentage') {
+                disc = (servicesTotal * Number(voucher.discount_value)) / 100;
+            } else {
+                disc = Math.min(Number(voucher.discount_value), servicesTotal);
+            }
+            setAppliedDiscount(disc);
+
+        } catch (err: any) {
+            setIsVoucherValid(false);
+            setVoucherError('Erro ao validar cupom.');
+        } finally {
+            setValidatingVoucher(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isVoucherValid && voucherCode) {
+            handleValidateVoucher();
+        }
+    }, [total]);
 
     const handleSaveDraft = async () => {
         setLoading(true);
@@ -236,7 +300,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex-1 flex flex-col">
+                <div className="flex-1 flex flex-col overflow-hidden">
                     {step === 'selection' && (
                         <>
                             <div className="grid grid-cols-2 gap-0 flex-1 overflow-hidden">
@@ -286,7 +350,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                                         {selectedItems.length === 0 ? (
                                             <div className="text-center py-10 text-slate-600 text-sm">Nenhum item selecionado.</div>
                                         ) : (
-                                            <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+                                            <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
                                                 {selectedItems.map(item => (
                                                     <div key={item.id} className="flex justify-between items-center group">
                                                         <div>
@@ -305,12 +369,60 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                                         )}
                                     </div>
 
-                                    <div className="mt-auto pt-4 border-t border-slate-800 flex justify-between items-center">
-                                        <span className="text-slate-400 font-medium">Total</span>
-                                        <span className="text-2xl font-black text-slate-100">{formatCurrency(total)}</span>
+                                    <div className="mt-auto space-y-4">
+                                        <div className="pt-4 border-t border-slate-800 space-y-3">
+                                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Cupom de Desconto</Label>
+                                            <div className="flex gap-2">
+                                                <div className="relative flex-1">
+                                                    <Input
+                                                        placeholder="Código"
+                                                        value={voucherCode}
+                                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                                            setVoucherCode(e.target.value.toUpperCase());
+                                                            setIsVoucherValid(null);
+                                                            setVoucherError(null);
+                                                            setAppliedDiscount(0);
+                                                        }}
+                                                        className={`bg-slate-900 border-slate-700 text-xs h-9 uppercase font-mono pr-8 ${isVoucherValid === true ? 'border-emerald-500/50' : isVoucherValid === false ? 'border-red-500/50' : ''}`}
+                                                    />
+                                                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                                        {isVoucherValid === true && <Check size={14} className="text-emerald-500" />}
+                                                        {isVoucherValid === false && <XCircle size={14} className="text-red-500" />}
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    size="sm"
+                                                    variant="secondary"
+                                                    className="h-9 px-3 text-xs bg-slate-800 hover:bg-slate-700"
+                                                    onClick={handleValidateVoucher}
+                                                    disabled={validatingVoucher || !voucherCode}
+                                                >
+                                                    {validatingVoucher ? '...' : 'OK'}
+                                                </Button>
+                                            </div>
+                                            {voucherError && <p className="text-[10px] text-red-500 flex items-center gap-1"><AlertCircle size={10} /> {voucherError}</p>}
+                                        </div>
+
+                                        <div className="pt-4 border-t border-slate-800 space-y-2">
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-slate-400">Subtotal</span>
+                                                <span className="text-slate-200">{formatCurrency(total)}</span>
+                                            </div>
+                                            {appliedDiscount > 0 && (
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-emerald-400 flex items-center gap-1">Desconto nos Serviços</span>
+                                                    <span className="text-emerald-400">- {formatCurrency(appliedDiscount)}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-center pt-2">
+                                                <span className="text-slate-400 font-bold">Total Final</span>
+                                                <span className="text-2xl font-black text-slate-100">{formatCurrency(finalTotal)}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+
                             <DialogFooter className="p-6 bg-slate-900 border-t border-slate-800 flex justify-between sm:justify-between">
                                 <div className="flex gap-2">
                                     <Button variant="ghost" className="text-slate-500 hover:text-slate-300" onClick={() => onOpenChange(false)}>Cancelar</Button>
@@ -339,10 +451,18 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                     )}
 
                     {step === 'payment' && (
-                        <div className="p-6 flex flex-col gap-8 flex-1">
+                        <div className="p-6 flex flex-col gap-8 flex-1 overflow-y-auto">
                             <div className="flex items-center justify-between p-4 bg-slate-800/30 rounded-xl border border-slate-800">
-                                <span className="text-slate-400">Valor Total a Pagar</span>
-                                <span className="text-3xl font-black text-white">{formatCurrency(total)}</span>
+                                <div>
+                                    <span className="text-xs font-bold text-slate-500 uppercase block mb-1">Valor Total a Pagar</span>
+                                    <span className="text-3xl font-black text-white">{formatCurrency(finalTotal)}</span>
+                                </div>
+                                {appliedDiscount > 0 && (
+                                    <div className="text-right">
+                                        <span className="text-[10px] font-bold text-emerald-500 uppercase block">Desconto s/ Serviços</span>
+                                        <span className="text-sm font-bold text-emerald-500">{formatCurrency(appliedDiscount)}</span>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="space-y-4">
@@ -389,29 +509,6 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                                 </RadioGroup>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label className="text-sm font-bold text-slate-400 uppercase tracking-widest">Cupom de Desconto (Opcional)</Label>
-                                <div className="flex gap-2">
-                                    <Input
-                                        placeholder="Ex: NIVER10"
-                                        value={voucherCode}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVoucherCode(e.target.value.toUpperCase())}
-                                        className="bg-slate-800 border-slate-700 text-slate-100 uppercase font-mono"
-                                    />
-                                    {voucherCode && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setVoucherCode('')}
-                                            className="text-slate-500 hover:text-red-400"
-                                        >
-                                            <X size={14} />
-                                        </Button>
-                                    )}
-                                </div>
-                                <p className="text-[10px] text-slate-500">O cupom será validado e aplicado ao finalizar o atendimento.</p>
-                            </div>
-
                             <DialogFooter className="mt-auto pt-6 border-t border-slate-800">
                                 <Button variant="ghost" onClick={() => setStep('selection')} disabled={loading}>Voltar</Button>
                                 <Button
@@ -447,7 +544,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                             </div>
 
                             <div className="space-y-4 w-full max-w-sm">
-                                <div className="text-3xl font-black">{formatCurrency(total)}</div>
+                                <div className="text-3xl font-black">{formatCurrency(finalTotal)}</div>
 
                                 <div className="flex gap-2 justify-center">
                                     <Button

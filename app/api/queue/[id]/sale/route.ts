@@ -110,7 +110,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                     if (voucher.discount_type === 'percentage') {
                         discountAmount = (servicesTotal * Number(voucher.discount_value)) / 100;
                     } else {
-                        discountAmount = Math.min(Number(voucher.discount_value), servicesTotal); // Desconto fixo não pode ser maior que o total de serviços
+                        discountAmount = Math.min(Number(voucher.discount_value), servicesTotal);
                     }
                     voucherId = voucher.id;
                     totalAmount = Math.max(0, totalAmount - discountAmount);
