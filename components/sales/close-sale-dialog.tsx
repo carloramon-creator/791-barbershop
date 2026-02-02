@@ -13,6 +13,7 @@ import {
 import Image from "next/image";
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
     Coins,
@@ -394,7 +395,7 @@ export function CloseSaleDialog({ isOpen, onOpenChange, queueId, appointmentId, 
                                     <Input
                                         placeholder="Ex: NIVER10"
                                         value={voucherCode}
-                                        onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVoucherCode(e.target.value.toUpperCase())}
                                         className="bg-slate-800 border-slate-700 text-slate-100 uppercase font-mono"
                                     />
                                     {voucherCode && (

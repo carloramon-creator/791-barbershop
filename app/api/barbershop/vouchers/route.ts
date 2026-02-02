@@ -96,7 +96,7 @@ export async function POST(req: Request) {
                     if (config && config.access_token && config.phone_number_id && client.phone) {
                         try {
                             const creds = { accessToken: config.access_token, phoneNumberId: config.phone_number_id };
-                            const waBody = `Olá, *${firstName}*! 👋\n\n${title}\n\n${body}${is_birthday ? '\n\nAproveite seu dia!' : ''}`;
+                            const waBody = `Olá, *${firstName}*! 👋\n\n${title}\n\nUse o código *${code.toUpperCase()}* e ganhe *${discountLabel}* de desconto.${is_birthday ? '\n\nAproveite seu dia!' : ''}`;
                             await WhatsAppClient.sendText(creds, client.phone, waBody);
                         } catch (e) { console.error('[WHATSAPP ERROR]', e); }
                     }
