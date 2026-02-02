@@ -93,6 +93,24 @@ export async function POST(
                 .eq('id', client.id)
                 .single();
 
+            // WhatsApp Notification
+            const { data: wapConfig } = await getSupabaseAdmin()
+                .from('whatsapp_configs')
+                .select('access_token, phone_number_id')
+                .eq('tenant_id', tenant.id)
+                .maybeSingle();
+
+            if (wapConfig && wapConfig.access_token && appt.client_phone) {
+                const { WhatsAppClient } = await import('@/lib/whatsapp/client');
+                const firstName = appt.client_name ? appt.client_name.split(' ')[0] : 'Cliente';
+                await WhatsAppClient.sendText(
+                    { accessToken: wapConfig.access_token, phoneNumberId: wapConfig.phone_number_id },
+                    appt.client_phone,
+                    `Olá, *${firstName}*! Sua vez chegou! 🎉\n\nO barbeiro já está te aguardando. Pode se dirigir à cadeira agora. 💈`
+                );
+                console.log('[WHATSAPP] Notificação de "Sua vez" enviada via Agendamento');
+            }
+
             if (clientData?.fcm_token) {
                 const { firebaseAdmin } = await import('@/lib/firebase-admin');
                 if (firebaseAdmin.apps.length) {
@@ -111,7 +129,7 @@ export async function POST(
                 }
             }
         } catch (pushError) {
-            console.error('[PUSH ERROR] Falha ao enviar notificação:', pushError);
+            console.error('[NOTIF ERROR] Falha ao enviar notificações:', pushError);
         }
 
         return NextResponse.json({ success: true, queueId: queueEntry.id });

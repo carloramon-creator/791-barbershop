@@ -41,8 +41,8 @@ export class WhatsAppAgent {
                 return await this.handleRegistrationBirthday(ctx, from, session, text);
             }
 
-            // 2. Detecção de Intenção Inicial (se estiver em IDLE ou se enviar uma palavra-chave agnóstica de estado)
-            if (session.state === 'idle' || input === 'AGENDAR' || input === 'FILA') {
+            // 2. Detecção de Intenção Inicial
+            if (session.state === 'idle' || input === 'AGENDAR' || input === 'FILA' || input === 'STATUS' || buttonId === 'VIEW_STATUS') {
                 return await this.handleIdleState(ctx, from, text, buttonId);
             }
 
@@ -182,6 +182,11 @@ export class WhatsAppAgent {
         const buttons = [];
         if (apptEnabled) buttons.push({ id: 'BOOKING_START', title: 'Agendar Horário' });
         if (queueEnabled) buttons.push({ id: 'QUEUE_START', title: 'Entrar na Fila' });
+        buttons.push({ id: 'VIEW_STATUS', title: 'Ver Meus Status' });
+
+        if (input.includes('STATUS') || buttonId === 'VIEW_STATUS') {
+            return this.handleStatusCheck(ctx, phone);
+        }
 
         if (buttons.length === 0) {
             return WhatsAppClient.sendText(ctx.creds, phone, "Olá! No momento estamos sem serviços disponíveis para agendamento online. Por favor, entre em contato via telefone.");
@@ -588,14 +593,14 @@ export class WhatsAppAgent {
             if (!finalBarberId) throw new Error("Sem profissionais disponíveis para finalizar.");
 
             // Calcular Fim
-            // O horário que vem do WhatsApp (13:30) é o "Wall Clock" do Brasil.
-            // No banco, salvamos em UTC. Brasil (GMT-3) -> UTC = +3 Horas.
             const start = addHours(parseISO(startTimeISO), 3);
             const { data: service } = await getSupabaseAdmin()
                 .from('services')
-                .select('duration_minutes')
+                .select('name, duration_minutes')
                 .eq('id', serviceId)
                 .single();
+
+            const currentServiceName = service?.name || serviceName || 'Serviço';
             const duration = service?.duration_minutes || 30;
             const end = addMinutes(start, duration);
 
@@ -606,14 +611,16 @@ export class WhatsAppAgent {
                 client_name: clientName,
                 barber_id: finalBarberId,
                 service_id: serviceId,
+                service_ids: [serviceId],
                 start_time: start.toISOString(),
                 end_time: end.toISOString(),
-                status: 'scheduled'
+                status: 'scheduled',
+                notes: `Serviço: ${currentServiceName}`
             });
 
             if (error) throw error;
 
-            await WhatsAppClient.sendText(ctx.creds, phone, `✅ *Agendamento Realizado!* \n\nServiço: ${serviceName}\nProfissional: ${barberName}\nData: ${format(parseISO(startTimeISO), "dd/MM 'às' HH:mm", { locale: ptBR })}\n\nTe aguardamos!`);
+            await WhatsAppClient.sendText(ctx.creds, phone, `✅ *Agendamento Realizado!* \n\nServiço: ${currentServiceName}\nProfissional: ${barberName}\nData: ${format(parseISO(startTimeISO), "dd/MM 'às' HH:mm", { locale: ptBR })}\n\nTe aguardamos!`);
             return WhatsAppSession.clear(ctx.tenantId, phone);
 
         } catch (err: any) {
@@ -965,5 +972,66 @@ export class WhatsAppAgent {
         }
 
         return null;
+    }
+
+    private static async handleStatusCheck(ctx: AgentContext, phone: string) {
+        const admin = getSupabaseAdmin();
+        const phoneWithout55 = phone.startsWith('55') ? phone.slice(2) : phone;
+        const phoneWith55 = phone.startsWith('55') ? phone : `55${phone}`;
+
+        // 1. Buscar Agendamentos Futuros
+        const { data: appointments } = await admin
+            .from('appointments')
+            .select('start_time, status, barbers(name, nickname)')
+            .eq('tenant_id', ctx.tenantId)
+            .or(`client_phone.eq.${phone},client_phone.eq.${phoneWithout55},client_phone.eq.${phoneWith55}`)
+            .gte('start_time', new Date().toISOString())
+            .neq('status', 'cancelled')
+            .order('start_time', { ascending: true });
+
+        // 2. Buscar Posição na Fila
+        const { data: queueItems } = await admin
+            .from('client_queue')
+            .select('id, barber_id, status, created_at, barbers(name, nickname)')
+            .eq('tenant_id', ctx.tenantId)
+            .or(`client_phone.eq.${phone},client_phone.eq.${phoneWithout55},client_phone.eq.${phoneWith55}`)
+            .eq('status', 'waiting');
+
+        let message = `📝 *Seus Status:*\n\n`;
+
+        if (appointments && appointments.length > 0) {
+            message += `🗓️ *Agendamentos:*\n`;
+            appointments.forEach(a => {
+                const date = format(subHours(parseISO(a.start_time), 3), "dd/MM 'às' HH:mm", { locale: ptBR });
+                const barber = (a.barbers as any)?.nickname || (a.barbers as any)?.name || 'Profissional';
+                message += `• ${date} com ${barber}\n`;
+            });
+            message += `\n`;
+        }
+
+        if (queueItems && queueItems.length > 0) {
+            message += `⏳ *Na Fila:*\n`;
+            for (const item of queueItems) {
+                const barber = (item.barbers as any)?.nickname || (item.barbers as any)?.name || 'Profissional';
+
+                // Calcular posição
+                const { count } = await admin
+                    .from('client_queue')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('tenant_id', ctx.tenantId)
+                    .eq('barber_id', item.barber_id)
+                    .eq('status', 'waiting')
+                    .lt('created_at', (item as any).created_at || new Date().toISOString());
+
+                const position = (count || 0) + 1;
+                message += `• Com ${barber}: *${position}º lugar*\n`;
+            }
+        }
+
+        if ((!appointments || appointments.length === 0) && (!queueItems || queueItems.length === 0)) {
+            message = "Você não possui agendamentos futuros ou posições na fila no momento. 💈";
+        }
+
+        return WhatsAppClient.sendText(ctx.creds, phone, message);
     }
 }
