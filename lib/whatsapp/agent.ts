@@ -260,29 +260,21 @@ export class WhatsAppAgent {
 
                 let barbers = await this.listBarbers(ctx.tenantId, service.id);
 
-                // Fallback: buscar todos se não tiver vinculo específico
                 if (!barbers || barbers.length === 0) {
                     const allBarbers = await this.listBarbers(ctx.tenantId);
                     if (allBarbers && allBarbers.length > 0) barbers = allBarbers;
                 }
 
-                if (!barbers || barbers.length === 0) {
-                    context.barberId = null;
-                    context.barberName = 'Qualquer barbeiro';
-                    // Pular direto para Data se não tiver barbeiros (assume anyone)
-                    return this.presentDateSelection(ctx, phone, context);
-                }
-
                 return WhatsAppClient.sendList(
                     ctx.creds,
                     phone,
-                    `Certo, serviço *${service.name}*. Tem algum barbeiro de preferência?`,
+                    `Certo, serviço *${service.name}*. Tem algum profissional de preferência?`,
                     "Escolher Profissional",
                     [{
                         title: "Profissionais",
                         rows: [
                             { id: 'ANY_BARBER_BOOKING', title: 'Qualquer um', description: 'Ver horários de todos' },
-                            ...barbers.map(b => ({ id: b.id, title: b.nickname || b.name }))
+                            ...(barbers || []).map(b => ({ id: b.id, title: b.nickname || b.name }))
                         ]
                     }]
                 );
@@ -303,18 +295,15 @@ export class WhatsAppAgent {
             );
         }
 
-        // 4.2 Selecionar Barbeiro
+        // 4.2 Selecionar Profissional
         if (state === 'booking_select_barber') {
             if (buttonId === 'ANY_BARBER_BOOKING' || (text && text.toUpperCase().includes('QUALQUER'))) {
-                context.barberId = null; // Null means "check any available" logic in slots, or we might need to pick one if logic requires.
-                // For simplified logic, existing system seems to need a barber_id for appointments. 
-                // We will handle 'null' barberId in slot fetching to aggregates slots from all barbers.
-                context.barberName = 'Qualquer barbeiro';
+                context.barberId = null;
+                context.barberName = 'Qualquer profissional';
             } else {
                 const barber = await this.searchBarber(ctx.tenantId, buttonId || text);
                 if (!barber) {
-                    // Retry msg
-                    return WhatsAppClient.sendText(ctx.creds, phone, "Barbeiro não encontrado. Por favor, selecione na lista.");
+                    return WhatsAppClient.sendText(ctx.creds, phone, "Profissional não encontrado. Por favor, selecione na lista.");
                 }
                 context.barberId = barber.id;
                 context.barberName = barber.name;
@@ -597,7 +586,7 @@ export class WhatsAppAgent {
                 finalBarberId = freeBarber?.id;
             }
 
-            if (!finalBarberId) throw new Error("Sem barbeiros disponíveis para finalizar.");
+            if (!finalBarberId) throw new Error("Sem profissionais disponíveis para finalizar.");
 
             // Calcular Fim
             const start = parseISO(startTimeISO);
@@ -687,7 +676,7 @@ export class WhatsAppAgent {
                         // Se for o primeiro acesso, cai no bloco abaixo de listar.
                         // Se tentou selecionar e falhou:
                         if (selectedId && selectedId !== 'QUEUE_START') {
-                            return WhatsAppClient.sendText(ctx.creds, phone, "Não consegui identificar o barbeiro selecionado. Por favor, tente novamente.");
+                            return WhatsAppClient.sendText(ctx.creds, phone, "Não consegui identificar o profissional selecionado. Por favor, tente novamente.");
                         }
                     } else {
                         // INSERIR NA FILA
@@ -730,7 +719,7 @@ export class WhatsAppAgent {
             const barbersStats = await this.getBarbersWithQueueStats(ctx.tenantId);
 
             if (!barbersStats || barbersStats.length === 0) {
-                return WhatsAppClient.sendText(ctx.creds, phone, "Desculpe, não há barbeiros disponíveis online no momento para entrar na fila.");
+                return WhatsAppClient.sendText(ctx.creds, phone, "Desculpe, não há profissionais disponíveis online no momento para entrar na fila.");
             }
 
             return WhatsAppClient.sendList(
