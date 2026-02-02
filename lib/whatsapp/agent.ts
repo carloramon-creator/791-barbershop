@@ -981,12 +981,15 @@ export class WhatsAppAgent {
         const phoneWith55 = phone.startsWith('55') ? phone : `55${phone}`;
 
         // 1. Buscar Agendamentos Futuros
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+
         const { data: appointments } = await admin
             .from('appointments')
             .select('start_time, status, barbers(name, nickname)')
             .eq('tenant_id', ctx.tenantId)
             .or(`client_phone.eq.${phone},client_phone.eq.${phoneWithout55},client_phone.eq.${phoneWith55}`)
-            .gte('start_time', new Date().toISOString())
+            .gte('start_time', todayStart.toISOString())
             .neq('status', 'cancelled')
             .order('start_time', { ascending: true });
 
@@ -1012,7 +1015,9 @@ export class WhatsAppAgent {
                 const dateFixed = format(brTime, "dd/MM 'às' HH:mm", { locale: ptBR });
 
                 const barber = (a.barbers as any)?.nickname || (a.barbers as any)?.name || 'Profissional';
-                message += `• ${dateFixed} com ${barber}\n`;
+                const statusIcon = a.status === 'completed' || a.status === 'finished' ? '✅' : '⏳';
+                const statusLabel = a.status === 'completed' || a.status === 'finished' ? ' (Concluído)' : '';
+                message += `• ${statusIcon} ${dateFixed} com ${barber}${statusLabel}\n`;
             });
             message += `\n`;
         }
