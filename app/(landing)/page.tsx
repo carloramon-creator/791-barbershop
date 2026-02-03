@@ -17,6 +17,9 @@ export default function LandingPage() {
     const [activeFeature, setActiveFeature] = useState(0);
     const [activeFaq, setActiveFaq] = useState<number | null>(null);
     const [chatMenuOpen, setChatMenuOpen] = useState(false);
+    const [contactFormOpen, setContactFormOpen] = useState(false);
+    const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+    const [formStatus, setFormStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
     const [stats, setStats] = useState({
         barbershops: 0,
         appointments: 0,
@@ -133,37 +136,64 @@ export default function LandingPage() {
         { before: 'Sem controle de caixa', after: 'Gestão financeira completa', icon: DollarSign }
     ];
 
+    const handleContactSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setFormStatus('sending');
+
+        try {
+            const response = await fetch('/api/contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            if (response.ok) {
+                setFormStatus('success');
+                setFormData({ name: '', email: '', message: '' });
+                setTimeout(() => {
+                    setContactFormOpen(false);
+                    setFormStatus('idle');
+                }, 2000);
+            } else {
+                setFormStatus('error');
+            }
+        } catch (error) {
+            setFormStatus('error');
+        }
+    };
+
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
+        <div className="min-h-screen bg-slate-50 text-slate-900 overflow-hidden">
             {/* Animated Background */}
-            <div className="fixed inset-0 opacity-20">
-                <div className="absolute top-0 -left-4 w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
-                <div className="absolute top-0 -right-4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
-                <div className="absolute -bottom-8 left-20 w-96 h-96 bg-cyan-300 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000" />
+            <div className="fixed inset-0 opacity-40">
+                <div className="absolute top-0 -left-4 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
+                <div className="absolute top-0 -right-4 w-96 h-96 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
+                <div className="absolute -bottom-8 left-20 w-96 h-96 bg-cyan-100 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000" />
             </div>
 
             {/* Header */}
-            <header className="relative z-10 border-b border-white/10 bg-slate-900/50 backdrop-blur-xl sticky top-0">
+            <header className="relative z-10 border-b border-slate-200 bg-white/70 backdrop-blur-xl sticky top-0">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <Image src="/logo-791.jpg" alt="791 Barber" width={40} height={40} className="rounded-lg" />
-                        <span className="text-2xl font-black text-white">
+                        <span className="text-2xl font-black text-slate-900">
                             791 Barber
                         </span>
                     </div>
-                    <nav className="hidden md:flex gap-8 text-sm font-medium">
-                        <a href="#features" className="hover:text-blue-400 transition">Recursos</a>
-                        <a href="#pricing" className="hover:text-blue-400 transition">Preços</a>
-                        <a href="#faq" className="hover:text-blue-400 transition">FAQ</a>
+                    <nav className="hidden md:flex gap-8 text-sm font-medium text-slate-600">
+                        <a href="#features" className="hover:text-blue-600 transition">Recursos</a>
+                        <a href="#pricing" className="hover:text-blue-600 transition">Preços</a>
+                        <a href="#faq" className="hover:text-blue-600 transition">FAQ</a>
                     </nav>
                     <div className="flex gap-3">
                         <Link href="/login">
-                            <Button variant="ghost" className="text-white hover:bg-white/10">
+                            <Button variant="ghost" className="text-slate-700 hover:bg-slate-100">
                                 Entrar
                             </Button>
                         </Link>
                         <Link href="/signup">
-                            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold">
+                            <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold">
                                 Teste Grátis
                             </Button>
                         </Link>
@@ -175,69 +205,69 @@ export default function LandingPage() {
             <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
                 <div className="grid lg:grid-cols-2 gap-12 items-center">
                     <div className="space-y-8 animate-in slide-in-from-left duration-1000">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-sm font-medium">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-200 text-blue-600 text-sm font-medium">
                             <Sparkles className="w-4 h-4" />
                             <span>Mais de {stats.barbershops}+ barbearias confiam</span>
                         </div>
 
-                        <h1 className="text-5xl lg:text-7xl font-black leading-tight">
-                            Aumente o <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Faturamento</span> da Sua Barbearia em até <span className="text-green-400">40%</span>
+                        <h1 className="text-5xl lg:text-7xl font-black leading-tight text-slate-900">
+                            Aumente o <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">Faturamento</span> da Sua Barbearia em até <span className="text-emerald-600">40%</span>
                         </h1>
 
-                        <p className="text-xl text-slate-300 leading-relaxed">
+                        <p className="text-xl text-slate-600 leading-relaxed">
                             Automação completa para agendamentos, vendas, WhatsApp e gestão financeira.
-                            <strong className="text-white"> Sem complicação, sem mensalidade abusiva.</strong>
+                            <strong className="text-slate-900"> Sem complicação, sem mensalidade abusiva.</strong>
                         </p>
 
                         <div className="flex flex-col sm:flex-row gap-4">
                             <Link href="/signup" className="flex-1">
-                                <Button size="lg" className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold text-lg py-7 rounded-xl shadow-2xl shadow-blue-500/50">
+                                <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-7 rounded-xl shadow-xl shadow-blue-200">
                                     Comece Grátis por 10 Dias
                                     <ArrowRight className="ml-2 w-5 h-5" />
                                 </Button>
                             </Link>
                         </div>
 
-                        <p className="text-sm text-slate-400 flex items-center gap-2">
-                            <Shield className="w-4 h-4 text-green-400" />
+                        <p className="text-sm text-slate-500 flex items-center gap-2">
+                            <Shield className="w-4 h-4 text-emerald-500" />
                             Sem cartão de crédito. Cancele quando quiser.
                         </p>
 
                         {/* Stats */}
-                        <div className="grid grid-cols-3 gap-6 pt-8 border-t border-white/10">
+                        <div className="grid grid-cols-3 gap-6 pt-8 border-t border-slate-200">
                             <div>
-                                <div className="text-3xl font-black text-blue-400">{stats.appointments.toLocaleString('pt-BR')}</div>
-                                <div className="text-sm text-slate-400">Agendamentos</div>
+                                <div className="text-3xl font-black text-blue-600">{stats.appointments.toLocaleString('pt-BR')}</div>
+                                <div className="text-sm text-slate-500">Agendamentos</div>
                             </div>
                             <div>
-                                <div className="text-3xl font-black text-purple-400">R$ {(stats.revenue / 1000).toFixed(0)}k</div>
-                                <div className="text-sm text-slate-400">Faturado</div>
+                                <div className="text-3xl font-black text-purple-600">R$ {(stats.revenue / 1000).toFixed(0)}k</div>
+                                <div className="text-sm text-slate-500">Faturado</div>
                             </div>
                             <div>
-                                <div className="text-3xl font-black text-pink-400">98%</div>
-                                <div className="text-sm text-slate-400">Satisfação</div>
+                                <div className="text-3xl font-black text-emerald-600">98%</div>
+                                <div className="text-sm text-slate-500">Satisfação</div>
                             </div>
                         </div>
                     </div>
 
                     {/* Hero Visual */}
                     <div className="relative animate-in slide-in-from-right duration-1000">
-                        <div className="relative bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
-                            <div className="absolute -top-4 -right-4 bg-green-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg animate-bounce">
+                        <div className="relative bg-white border border-slate-200 rounded-3xl p-8 shadow-2xl">
+                            <div className="absolute -top-4 -right-4 bg-emerald-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg animate-bounce">
                                 +40% Faturamento
                             </div>
                             <div className="space-y-4">
-                                <div className="flex items-center justify-between p-4 bg-white/10 rounded-xl">
-                                    <span className="text-sm">Agendamentos Hoje</span>
-                                    <span className="text-2xl font-bold text-green-400">+23</span>
+                                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                                    <span className="text-sm text-slate-600 font-medium">Agendamentos Hoje</span>
+                                    <span className="text-2xl font-bold text-emerald-600">+23</span>
                                 </div>
-                                <div className="flex items-center justify-between p-4 bg-white/10 rounded-xl">
-                                    <span className="text-sm">Receita do Mês</span>
-                                    <span className="text-2xl font-bold text-blue-400">R$ 12.4k</span>
+                                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                                    <span className="text-sm text-slate-600 font-medium">Receita do Mês</span>
+                                    <span className="text-2xl font-bold text-blue-600">R$ 12.4k</span>
                                 </div>
-                                <div className="flex items-center justify-between p-4 bg-white/10 rounded-xl">
-                                    <span className="text-sm">Taxa de Ocupação</span>
-                                    <span className="text-2xl font-bold text-purple-400">87%</span>
+                                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                                    <span className="text-sm text-slate-600 font-medium">Taxa de Ocupação</span>
+                                    <span className="text-2xl font-bold text-purple-600">87%</span>
                                 </div>
                             </div>
                         </div>
@@ -246,27 +276,27 @@ export default function LandingPage() {
             </section>
 
             {/* Features Section */}
-            <section id="features" className="relative z-10 py-20 bg-slate-900/50">
+            <section id="features" className="relative z-10 py-20 bg-white/50 border-y border-slate-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <h2 className="text-4xl lg:text-5xl font-black mb-4">
-                            Tudo que Você Precisa em <span className="text-blue-400">Um Só Lugar</span>
+                        <h2 className="text-4xl lg:text-5xl font-black mb-4 text-slate-900">
+                            Tudo que Você Precisa em <span className="text-blue-600">Um Só Lugar</span>
                         </h2>
-                        <p className="text-xl text-slate-400">Ferramentas profissionais para transformar sua barbearia</p>
+                        <p className="text-xl text-slate-600 font-medium">Ferramentas profissionais para transformar sua barbearia</p>
                     </div>
 
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {features.map((feature, idx) => (
                             <div
                                 key={idx}
-                                className="group p-8 bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl border border-white/10 rounded-2xl hover:border-blue-500/50 transition-all duration-300 hover:scale-105 cursor-pointer"
+                                className="group p-8 bg-white border border-slate-200 rounded-2xl hover:border-blue-500 hover:shadow-2xl hover:shadow-blue-100 transition-all duration-300 hover:scale-105 cursor-pointer"
                                 onMouseEnter={() => setActiveFeature(idx)}
                             >
-                                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                    <feature.icon className="w-7 h-7 text-white" />
+                                <div className="w-14 h-14 bg-blue-50 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                    <feature.icon className="w-7 h-7 text-blue-600" />
                                 </div>
-                                <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-                                <p className="text-slate-400">{feature.desc}</p>
+                                <h3 className="text-xl font-bold mb-3 text-slate-900">{feature.title}</h3>
+                                <p className="text-slate-600 leading-relaxed">{feature.desc}</p>
                             </div>
                         ))}
                     </div>
@@ -277,45 +307,45 @@ export default function LandingPage() {
             <section id="pricing" className="relative z-10 py-20">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <h2 className="text-4xl lg:text-5xl font-black mb-4">
-                            Planos que <span className="text-purple-400">Cabem no Seu Bolso</span>
+                        <h2 className="text-4xl lg:text-5xl font-black mb-4 text-slate-900">
+                            Planos que <span className="text-blue-600">Cabem no Seu Bolso</span>
                         </h2>
-                        <p className="text-xl text-slate-400">Escolha o melhor para o seu negócio</p>
+                        <p className="text-xl text-slate-600 font-medium">Escolha o melhor para o seu negócio</p>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8">
                         {plans.map((plan, idx) => (
                             <div
                                 key={idx}
-                                className={`relative p-8 rounded-2xl border-2 transition-all duration-300 hover:scale-105 ${plan.popular
-                                    ? 'bg-gradient-to-br from-blue-600/20 to-purple-600/20 border-blue-500 shadow-2xl shadow-blue-500/50'
-                                    : 'bg-slate-800/50 border-white/10'
+                                className={`relative p-8 rounded-2xl border transition-all duration-300 hover:scale-105 ${plan.popular
+                                    ? 'bg-white border-blue-500 shadow-2xl shadow-blue-100 ring-4 ring-blue-50'
+                                    : 'bg-white border-slate-200 shadow-sm'
                                     }`}
                             >
                                 {plan.popular && (
-                                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-1 rounded-full text-sm font-bold">
+                                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">
                                         Mais Popular
                                     </div>
                                 )}
-                                <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                                <h3 className="text-2xl font-bold mb-2 text-slate-900">{plan.name}</h3>
                                 <div className="mb-6">
-                                    <span className="text-5xl font-black">{plan.price}</span>
-                                    <span className="text-slate-400">{plan.period}</span>
+                                    <span className="text-5xl font-black text-slate-900">{plan.price}</span>
+                                    <span className="text-slate-500 font-medium">{plan.period}</span>
                                     <div className="text-sm text-slate-500 mt-1">Cobrado anualmente: {plan.annual}</div>
                                 </div>
                                 <ul className="space-y-4 mb-8">
                                     {plan.features.map((feature, i) => (
                                         <li key={i} className="flex items-start gap-3">
-                                            <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                                            <span className="text-slate-300">{feature}</span>
+                                            <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                            <span className="text-slate-600 font-medium">{feature}</span>
                                         </li>
                                     ))}
                                 </ul>
                                 <Link href="/signup">
                                     <Button
                                         className={`w-full py-6 text-lg font-bold rounded-xl ${plan.popular
-                                            ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
-                                            : 'bg-slate-700 hover:bg-slate-600'
+                                            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200'
+                                            : 'bg-slate-100 hover:bg-slate-200 text-slate-900'
                                             }`}
                                     >
                                         Começar Agora
@@ -328,29 +358,26 @@ export default function LandingPage() {
             </section>
 
             {/* Video Section */}
-            <section className="relative z-10 py-20 bg-slate-900/50">
+            <section className="relative z-10 py-20 bg-white/50 border-y border-slate-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <h2 className="text-4xl lg:text-5xl font-black mb-4">
-                            Veja o <span className="text-blue-400">791 Barber</span> em Ação
+                        <h2 className="text-4xl lg:text-5xl font-black mb-4 text-slate-900">
+                            Veja o <span className="text-blue-600">791 Barber</span> em Ação
                         </h2>
-                        <p className="text-xl text-slate-400">2 minutos que vão transformar seu negócio</p>
+                        <p className="text-xl text-slate-600 font-medium">2 minutos que vão transformar seu negócio</p>
                     </div>
 
                     <div className="max-w-4xl mx-auto">
-                        <div className="relative aspect-video bg-gradient-to-br from-blue-600/20 to-purple-600/20 backdrop-blur-xl border-2 border-blue-500/30 rounded-3xl overflow-hidden group cursor-pointer hover:border-blue-500/60 transition-all">
+                        <div className="relative aspect-video bg-slate-100 border-2 border-slate-200 rounded-3xl overflow-hidden group cursor-pointer hover:border-blue-500/50 transition-all shadow-xl">
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <div className="w-24 h-24 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                    <div className="w-0 h-0 border-t-[15px] border-t-transparent border-l-[25px] border-l-white border-b-[15px] border-b-transparent ml-2" />
+                                <div className="w-24 h-24 bg-white/80 backdrop-blur-xl rounded-full flex items-center justify-center mb-6 shadow-xl group-hover:scale-110 transition-transform">
+                                    <div className="w-0 h-0 border-t-[15px] border-t-transparent border-l-[25px] border-l-blue-600 border-b-[15px] border-b-transparent ml-2" />
                                 </div>
-                                <p className="text-lg font-bold">Assista ao Vídeo Demonstrativo</p>
-                                <p className="text-sm text-slate-400 mt-2">Veja como é fácil gerenciar sua barbearia</p>
-                            </div>
-                            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-pulse" />
+                                <p className="text-lg font-bold text-slate-900">Assista ao Vídeo Demonstrativo</p>
+                                <p className="text-sm text-slate-500 mt-2 font-medium">Veja como é fácil gerenciar sua barbearia</p>
                             </div>
                         </div>
-                        <p className="text-center text-sm text-slate-400 mt-4">💡 Adicione seu vídeo do YouTube, Vimeo ou Loom aqui</p>
+                        <p className="text-center text-sm text-slate-500 mt-4 font-medium">💡 Adicione seu vídeo do YouTube, Vimeo ou Loom aqui</p>
                     </div>
                 </div>
             </section>
@@ -359,26 +386,26 @@ export default function LandingPage() {
             <section className="relative z-10 py-20">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <h2 className="text-4xl lg:text-5xl font-black mb-4">
-                            <span className="text-red-400">Antes</span> vs <span className="text-green-400">Depois</span>
+                        <h2 className="text-4xl lg:text-5xl font-black mb-4 text-slate-900">
+                            <span className="text-rose-500">Antes</span> vs <span className="text-emerald-600">Depois</span>
                         </h2>
-                        <p className="text-xl text-slate-400">A transformação que seus concorrentes não querem que você veja</p>
+                        <p className="text-xl text-slate-600 font-medium">A transformação que seus concorrentes não querem que você veja</p>
                     </div>
 
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {beforeAfter.map((item, idx) => (
                             <div key={idx} className="relative group">
-                                <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:border-green-500/50 transition-all duration-300">
-                                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-500 rounded-xl flex items-center justify-center mb-4">
-                                        <item.icon className="w-6 h-6 text-white" />
+                                <div className="bg-white border border-slate-200 rounded-2xl p-6 hover:border-emerald-500 hover:shadow-2xl hover:shadow-emerald-50/50 transition-all duration-300">
+                                    <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mb-4">
+                                        <item.icon className="w-6 h-6 text-emerald-600" />
                                     </div>
-                                    <div className="mb-4 pb-4 border-b border-white/10">
-                                        <div className="text-xs font-bold text-red-400 mb-2">❌ ANTES</div>
-                                        <p className="text-sm text-slate-400">{item.before}</p>
+                                    <div className="mb-4 pb-4 border-b border-slate-100">
+                                        <div className="text-xs font-bold text-rose-500 mb-2 tracking-wider">❌ ANTES</div>
+                                        <p className="text-sm text-slate-500 font-medium">{item.before}</p>
                                     </div>
                                     <div>
-                                        <div className="text-xs font-bold text-green-400 mb-2">✅ DEPOIS</div>
-                                        <p className="text-sm font-bold text-white">{item.after}</p>
+                                        <div className="text-xs font-bold text-emerald-600 mb-2 tracking-wider">✅ DEPOIS</div>
+                                        <p className="text-sm font-bold text-slate-900">{item.after}</p>
                                     </div>
                                 </div>
                             </div>
@@ -388,31 +415,32 @@ export default function LandingPage() {
             </section>
 
             {/* Testimonials Section */}
-            <section className="relative z-10 py-20 bg-slate-900/50">
+            {/* Testimonials Section */}
+            <section className="relative z-10 py-20 bg-white/50 border-y border-slate-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <h2 className="text-4xl lg:text-5xl font-black mb-4">
-                            O Que Nossos <span className="text-yellow-400">Clientes</span> Dizem
+                        <h2 className="text-4xl lg:text-5xl font-black mb-4 text-slate-900">
+                            O Que Nossos <span className="text-yellow-600">Clientes</span> Dizem
                         </h2>
-                        <p className="text-xl text-slate-400">Resultados reais de quem já transformou o negócio</p>
+                        <p className="text-xl text-slate-600 font-medium">Resultados reais de quem já transformou o negócio</p>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8">
                         {testimonials.map((testimonial, idx) => (
-                            <div key={idx} className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:border-yellow-500/50 transition-all duration-300 hover:scale-105">
+                            <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-8 hover:border-yellow-500 hover:shadow-2xl hover:shadow-yellow-50 transition-all duration-300 hover:scale-105">
                                 <div className="flex gap-1 mb-4">
                                     {[...Array(testimonial.rating)].map((_, i) => (
                                         <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
                                     ))}
                                 </div>
-                                <p className="text-slate-300 mb-6 italic">"{testimonial.text}"</p>
-                                <div className="flex items-center gap-4 pt-4 border-t border-white/10">
-                                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center font-bold text-lg">
+                                <p className="text-slate-600 mb-6 italic font-medium leading-relaxed">"{testimonial.text}"</p>
+                                <div className="flex items-center gap-4 pt-4 border-t border-slate-100">
+                                    <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center font-bold text-lg text-blue-600">
                                         {testimonial.avatar}
                                     </div>
                                     <div>
-                                        <div className="font-bold">{testimonial.name}</div>
-                                        <div className="text-sm text-slate-400">{testimonial.role}</div>
+                                        <div className="font-bold text-slate-900">{testimonial.name}</div>
+                                        <div className="text-sm text-slate-500 font-medium">{testimonial.role}</div>
                                     </div>
                                 </div>
                             </div>
@@ -425,12 +453,12 @@ export default function LandingPage() {
             <div className="fixed bottom-6 right-6 z-50">
                 {/* Contact Menu */}
                 {chatMenuOpen && (
-                    <div className="absolute bottom-20 right-0 bg-slate-900 border border-white/20 rounded-2xl p-4 shadow-2xl backdrop-blur-xl mb-2 min-w-[250px] animate-in slide-in-from-bottom-4">
+                    <div className="absolute bottom-20 right-0 bg-white border border-slate-200 rounded-2xl p-4 shadow-2xl mb-2 min-w-[250px] animate-in slide-in-from-bottom-4">
                         <div className="flex justify-between items-center mb-4">
-                            <h4 className="font-bold text-white">Como podemos ajudar?</h4>
+                            <h4 className="font-bold text-slate-900">Como podemos ajudar?</h4>
                             <button
                                 onClick={() => setChatMenuOpen(false)}
-                                className="text-slate-400 hover:text-white transition"
+                                className="text-slate-400 hover:text-slate-900 transition"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -440,24 +468,27 @@ export default function LandingPage() {
                                 href="https://wa.me/5548991803379?text=Olá! Gostaria de saber mais sobre o 791 Barber"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-3 p-3 bg-green-600 hover:bg-green-700 rounded-xl transition group"
+                                className="flex items-center gap-3 p-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition group shadow-lg shadow-emerald-100"
                             >
                                 <MessageCircle className="w-5 h-5" />
                                 <div>
                                     <div className="font-bold text-sm">WhatsApp</div>
-                                    <div className="text-xs opacity-80">Resposta rápida</div>
+                                    <div className="text-xs opacity-90">Resposta rápida</div>
                                 </div>
                             </a>
-                            <a
-                                href="mailto:contato@791solucoes.com.br?subject=Quero conhecer o 791 Barber&body=Olá, gostaria de saber mais sobre o sistema."
-                                className="flex items-center gap-3 p-3 bg-blue-600 hover:bg-blue-700 rounded-xl transition group"
+                            <button
+                                onClick={() => {
+                                    setContactFormOpen(true);
+                                    setChatMenuOpen(false);
+                                }}
+                                className="w-full flex items-center gap-3 p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition group text-left shadow-lg shadow-blue-100"
                             >
                                 <Mail className="w-5 h-5" />
                                 <div>
-                                    <div className="font-bold text-sm">Email</div>
-                                    <div className="text-xs opacity-80">contato@791solucoes.com.br</div>
+                                    <div className="font-bold text-sm">Enviar Email</div>
+                                    <div className="text-xs opacity-90">Fale com nossa equipe</div>
                                 </div>
-                            </a>
+                            </button>
                         </div>
                     </div>
                 )}
@@ -465,18 +496,18 @@ export default function LandingPage() {
                 {/* Main Button */}
                 <button
                     onClick={() => setChatMenuOpen(!chatMenuOpen)}
-                    className="group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-full p-4 shadow-2xl shadow-blue-500/50 hover:scale-110 transition-all duration-300"
+                    className="group bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-2xl shadow-blue-200 hover:scale-110 transition-all duration-300"
                 >
-                    <MessageCircle className="w-6 h-6" />
+                    {chatMenuOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
                 </button>
             </div>
 
             {/* FAQ Section */}
-            <section id="faq" className="relative z-10 py-20 bg-slate-900/50">
+            <section id="faq" className="relative z-10 py-20 bg-slate-50/50">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <h2 className="text-4xl lg:text-5xl font-black mb-4">
-                            Perguntas <span className="text-green-400">Frequentes</span>
+                        <h2 className="text-4xl lg:text-5xl font-black mb-4 text-slate-900">
+                            Perguntas <span className="text-blue-600">Frequentes</span>
                         </h2>
                     </div>
 
@@ -484,17 +515,17 @@ export default function LandingPage() {
                         {faqs.map((faq, idx) => (
                             <div
                                 key={idx}
-                                className="bg-slate-800/50 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden"
+                                className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:border-blue-500/50 transition-colors"
                             >
                                 <button
                                     onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
-                                    className="w-full p-6 text-left flex justify-between items-center hover:bg-white/5 transition"
+                                    className="w-full p-6 text-left flex justify-between items-center hover:bg-slate-50 transition"
                                 >
-                                    <span className="font-bold text-lg">{faq.q}</span>
-                                    <ChevronDown className={`w-5 h-5 transition-transform ${activeFaq === idx ? 'rotate-180' : ''}`} />
+                                    <span className="font-bold text-lg text-slate-900">{faq.q}</span>
+                                    <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${activeFaq === idx ? 'rotate-180 text-blue-600' : ''}`} />
                                 </button>
                                 {activeFaq === idx && (
-                                    <div className="px-6 pb-6 text-slate-400">
+                                    <div className="px-6 pb-6 text-slate-600 font-medium border-t border-slate-50 pt-4 leading-relaxed">
                                         {faq.a}
                                     </div>
                                 )}
@@ -504,23 +535,102 @@ export default function LandingPage() {
                 </div>
             </section>
 
+            {/* Contact Form Modal */}
+            {contactFormOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white border border-slate-200 rounded-3xl p-8 w-full max-w-lg shadow-2xl relative animate-in zoom-in-95 duration-300">
+                        <button
+                            onClick={() => setContactFormOpen(false)}
+                            className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+
+                        <div className="mb-8">
+                            <h2 className="text-3xl font-black mb-2 text-slate-900">Fale <span className="text-blue-600">Conosco</span></h2>
+                            <p className="text-slate-600 font-medium">Preencha os campos abaixo e entraremos em contato.</p>
+                        </div>
+
+                        {formStatus === 'success' ? (
+                            <div className="py-12 text-center space-y-4 animate-in zoom-in-95">
+                                <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+                                    <CheckCircle className="w-10 h-10 text-emerald-600" />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-900">Mensagem Enviada!</h3>
+                                <p className="text-slate-600 font-medium">Agradecemos o contato. Responderemos em breve.</p>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleContactSubmit} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-slate-700">Nome Completo</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        placeholder="Seu nome"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition text-slate-900"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-slate-700">Email</label>
+                                    <input
+                                        required
+                                        type="email"
+                                        placeholder="seu@email.com"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition text-slate-900"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-slate-700">Mensagem</label>
+                                    <textarea
+                                        required
+                                        rows={4}
+                                        placeholder="Como podemos ajudar?"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition resize-none text-slate-900"
+                                        value={formData.message}
+                                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                                    />
+                                </div>
+
+                                {formStatus === 'error' && (
+                                    <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-600 text-sm font-medium">
+                                        Ocorreu um erro ao enviar. Por favor, tente novamente.
+                                    </div>
+                                )}
+
+                                <Button
+                                    type="submit"
+                                    disabled={formStatus === 'sending'}
+                                    className="w-full py-7 bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg rounded-xl shadow-xl shadow-blue-100 disabled:opacity-50"
+                                >
+                                    {formStatus === 'sending' ? 'Enviando...' : 'Enviar Mensagem'}
+                                </Button>
+                            </form>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* Final CTA */}
-            <section className="relative z-10 py-20">
+            <section className="relative z-10 py-20 bg-white/50 border-y border-slate-200">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <div className="bg-gradient-to-br from-blue-600/20 to-purple-600/20 backdrop-blur-xl border border-blue-500/30 rounded-3xl p-12">
-                        <h2 className="text-4xl lg:text-5xl font-black mb-6">
-                            Pronto para <span className="text-blue-400">Decolar</span>?
+                    <div className="bg-slate-50 border border-slate-200 rounded-3xl p-12 shadow-sm">
+                        <h2 className="text-4xl lg:text-5xl font-black mb-6 text-slate-900">
+                            Pronto para <span className="text-blue-600">Decolar</span>?
                         </h2>
-                        <p className="text-xl text-slate-300 mb-8">
+                        <p className="text-xl text-slate-600 font-medium mb-8">
                             Junte-se a centenas de barbearias que já aumentaram seu faturamento com o 791 Barber
                         </p>
                         <Link href="/signup">
-                            <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold text-xl py-8 px-12 rounded-xl shadow-2xl shadow-blue-500/50">
+                            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xl py-8 px-12 rounded-xl shadow-2xl shadow-blue-200">
                                 Começar Teste Grátis Agora
                                 <Zap className="ml-2 w-6 h-6" />
                             </Button>
                         </Link>
-                        <p className="mt-6 text-sm text-slate-400">
+                        <p className="mt-6 text-sm text-slate-500 font-medium">
                             10 dias grátis • Sem cartão • Cancele quando quiser
                         </p>
                     </div>
@@ -528,43 +638,43 @@ export default function LandingPage() {
             </section>
 
             {/* Footer */}
-            <footer className="relative z-10 border-t border-white/10 bg-slate-900/50 backdrop-blur-xl py-12">
+            <footer className="relative z-10 border-t border-slate-200 bg-slate-50 py-12">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid md:grid-cols-4 gap-8 mb-8">
                         <div>
                             <div className="flex items-center gap-2 mb-4">
                                 <Image src="/logo-791.jpg" alt="791" width={32} height={32} className="rounded" />
-                                <span className="font-bold text-lg">791 Barber</span>
+                                <span className="font-bold text-lg text-slate-900">791 Barber</span>
                             </div>
-                            <p className="text-sm text-slate-400">
-                                Transformando barbearias em negócios de sucesso
+                            <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                                Transformando barbearias em negócios de sucesso com tecnologia de ponta.
                             </p>
                         </div>
                         <div>
-                            <h4 className="font-bold mb-4">Produto</h4>
-                            <ul className="space-y-2 text-sm text-slate-400">
-                                <li><a href="#features" className="hover:text-white transition">Recursos</a></li>
-                                <li><a href="#pricing" className="hover:text-white transition">Preços</a></li>
-                                <li><a href="/signup" className="hover:text-white transition">Teste Grátis</a></li>
+                            <h4 className="font-bold mb-4 text-slate-900">Produto</h4>
+                            <ul className="space-y-2 text-sm text-slate-600 font-medium">
+                                <li><a href="#features" className="hover:text-blue-600 transition">Recursos</a></li>
+                                <li><a href="#pricing" className="hover:text-blue-600 transition">Preços</a></li>
+                                <li><a href="/signup" className="hover:text-blue-600 transition">Teste Grátis</a></li>
                             </ul>
                         </div>
                         <div>
-                            <h4 className="font-bold mb-4">Empresa</h4>
-                            <ul className="space-y-2 text-sm text-slate-400">
-                                <li><a href="#" className="hover:text-white transition">Sobre</a></li>
-                                <li><a href="#" className="hover:text-white transition">Blog</a></li>
-                                <li><a href="#" className="hover:text-white transition">Contato</a></li>
+                            <h4 className="font-bold mb-4 text-slate-900">Empresa</h4>
+                            <ul className="space-y-2 text-sm text-slate-600 font-medium">
+                                <li><a href="#" className="hover:text-blue-600 transition">Sobre</a></li>
+                                <li><a href="#" className="hover:text-blue-600 transition">Blog</a></li>
+                                <li><a href="#" className="hover:text-blue-600 transition">Contato</a></li>
                             </ul>
                         </div>
                         <div>
-                            <h4 className="font-bold mb-4">Legal</h4>
-                            <ul className="space-y-2 text-sm text-slate-400">
-                                <li><a href="#" className="hover:text-white transition">Termos de Uso</a></li>
-                                <li><a href="#" className="hover:text-white transition">Privacidade</a></li>
+                            <h4 className="font-bold mb-4 text-slate-900">Legal</h4>
+                            <ul className="space-y-2 text-sm text-slate-600 font-medium">
+                                <li><a href="#" className="hover:text-blue-600 transition">Termos de Uso</a></li>
+                                <li><a href="#" className="hover:text-blue-600 transition">Privacidade</a></li>
                             </ul>
                         </div>
                     </div>
-                    <div className="border-t border-white/10 pt-8 text-center text-sm text-slate-400">
+                    <div className="border-t border-slate-200 pt-8 text-center text-sm text-slate-500 font-medium">
                         <p>© 2026 791 Solutions. Todos os direitos reservados.</p>
                     </div>
                 </div>
