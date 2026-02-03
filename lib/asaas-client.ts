@@ -71,9 +71,14 @@ export class AsaasClient {
     private baseURL: string;
 
     constructor(config: AsaasConfig) {
-        this.baseURL = config.environment === 'production'
+        // Prioritize config.environment, fallback to process.env, default to sandbox
+        const env = config.environment || process.env.NEXT_PUBLIC_ASAAS_ENV || 'sandbox';
+
+        this.baseURL = env === 'production'
             ? 'https://api.asaas.com/v3'
             : 'https://sandbox.asaas.com/api/v3';
+
+        console.log(`[ASAAS CLIENT] Initialized in ${env} mode`);
 
         this.client = axios.create({
             baseURL: this.baseURL,
