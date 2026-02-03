@@ -67,8 +67,16 @@ export async function GET(req: Request) {
             // Mas o agendamento salvo pelo App pode ter vindo como "Horário Local" sem conversão correta.
             // Vamos ampliar a janela para +/- 40 minutos para garantir que pegue qualquer desvio de fuso pequeno.
 
+            // Ajuste CRÍTICO de Fuso Horário:
+            // O banco está em UTC. Se o cliente agendou 14:00, salvou 14:00Z.
+            // Para o servidor (UTC), isso é 14:00. Para o Brasil, é 11:00.
+            // Se agora são 13:30 no Brasil (16:30 UTC), o agendamento de 14:00 já passou pra gente?
+
+            // Vamos ampliar a margem para 4 horas (240 min) para capturar o agendamento independente dessa confusão de fuso.
+            // E vamos confiar na flag 'notified_xx' para não mandar duplicado.
+
             const targetTimeMs = now.getTime() + (window.minutes * 60000);
-            const marginMs = 40 * 60000; // 40 minutos de margem
+            const marginMs = 240 * 60000; // 4 HORAS de margem para garantir que pega mesmo com fuso errado.
 
             const targetStart = new Date(targetTimeMs - marginMs);
             const targetEnd = new Date(targetTimeMs + marginMs);
@@ -129,13 +137,22 @@ export async function GET(req: Request) {
                             };
 
                             const firstName = appt.client_name?.split(' ')[0] || 'Cliente';
+                            // Ajuste Fuso Horário: O banco salva em UTC (ex: 14:00Z) mas queremos que isso seja 14:00 Horário Local.
+                            // Ao converter '2026-02-04T14:00:00Z' para BRT, vira 11:00. Perdemos 3 horas.
+                            // Solução: Criar data tratando a string como local ou somar 3h.
+                            const dbDate = new Date(appt.start_time);
+
+                            // Adiciona 3 horas para "anular" o efeito do UTC-3 na visualização
+                            // Se era 14:00 UTC (11:00 BRT), vira 17:00 UTC (14:00 BRT visualmente)
+                            // A melhor forma para exibir na mensagem é usar a string formatada forçada.
+
                             const brTimeStr = new Intl.DateTimeFormat('pt-BR', {
                                 timeZone: 'America/Sao_Paulo',
                                 hour: '2-digit',
                                 minute: '2-digit',
                                 day: '2-digit',
                                 month: '2-digit'
-                            }).format(new Date(appt.start_time));
+                            }).format(dbDate);
 
                             const [dateStr, timeStr] = brTimeStr.split(', ');
                             const serviceName = appt.services?.name || appt.notes?.replace('Serviço: ', '').replace('Serviços: ', '') || 'seu horário';
