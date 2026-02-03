@@ -29,9 +29,10 @@ export async function POST(request: NextRequest) {
 
         if (RESEND_API_KEY) {
             try {
-                // Durante testes, se o domínio não estiver verificado, usar onboarding@resend.dev
-                // O email de destino deve ser o mesmo cadastrado no Resend
-                const fromEmail = 'onboarding@resend.dev';
+                // Se o usuário já verificou o domínio no Resend, ele pode usar um email próprio
+                // Caso contrário, usamos o modo de teste (onboarding@resend.dev)
+                // IMPORTANTE: onboarding@resend.dev só envia para o email do dono da conta Resend.
+                const fromEmail = process.env.CONTACT_SENDER_EMAIL || 'onboarding@resend.dev';
                 const toEmail = process.env.CONTACT_RECEIVER_EMAIL || 'carloramon.cre@gmail.com';
 
                 const res = await fetch('https://api.resend.com/emails', {
@@ -43,18 +44,22 @@ export async function POST(request: NextRequest) {
                     body: JSON.stringify({
                         from: `791 Barber <${fromEmail}>`,
                         to: [toEmail],
+                        reply_to: email, // Permite responder direto ao cliente
                         subject: `Novo Contato: ${name}`,
                         html: `
-                            <div style="font-family: sans-serif; padding: 20px; color: #333;">
-                                <h2 style="color: #2563eb;">Novo contato recebido pelo site</h2>
+                            <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #eee; border-radius: 12px;">
+                                <h2 style="color: #2563eb; margin-top: 0;">Novo contato recebido! 🚀</h2>
                                 <p><strong>Nome:</strong> ${name}</p>
                                 <p><strong>Email:</strong> ${email}</p>
                                 <p><strong>Mensagem:</strong></p>
-                                <div style="background: #f1f5f9; padding: 15px; border-radius: 8px;">
+                                <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb; font-style: italic;">
                                     ${message}
                                 </div>
-                                <hr style="margin-top: 30px; border: 0; border-top: 1px solid #eee;" />
-                                <p style="font-size: 12px; color: #64748b;">Este é um email automático enviado pelo sistema 791 Barber.</p>
+                                <hr style="margin: 30px 0; border: 0; border-top: 1px solid #eee;" />
+                                <p style="font-size: 12px; color: #94a3b8; text-align: center;">
+                                    Este é um email automático do seu site 791barber.com.<br/>
+                                    Enviado via Resend API.
+                                </p>
                             </div>
                         `
                     })
@@ -62,20 +67,20 @@ export async function POST(request: NextRequest) {
 
                 const resData = await res.json();
                 if (!res.ok) {
-                    console.error('Erro Resend API:', resData);
+                    console.error('Erro Resend API:', JSON.stringify(resData, null, 2));
                 } else {
-                    console.log('✅ Email enviado via Resend:', resData.id);
+                    console.log('✅ Email enviado com sucesso via Resend:', resData.id);
                 }
             } catch (emailErr) {
-                console.error('Erro ao chamar API do Resend:', emailErr);
+                console.error('Erro fatal ao disparar email:', emailErr);
             }
         } else {
-            console.warn('RESEND_API_KEY não configurada no servidor. Email não enviado.');
+            console.warn('Variável RESEND_API_KEY não encontrada nas configurações do servidor.');
         }
 
         return NextResponse.json({
             success: true,
-            message: 'Mensagem recebida com sucesso! Verifique seu email em alguns instantes.'
+            message: 'Mensagem recebida! Verifique sua caixa de entrada (e o spam).'
         });
     } catch (error) {
         console.error('Erro ao processar contato:', error);
