@@ -35,7 +35,9 @@ export async function GET(req: Request) {
                     total_sales: 0,
                     total_revenue: 0
                 },
-                has_whatsapp: tenant.whatsapp_configs && tenant.whatsapp_configs.length > 0
+                has_whatsapp: Array.isArray(tenant.whatsapp_configs)
+                    ? tenant.whatsapp_configs.length > 0
+                    : !!tenant.whatsapp_configs
             };
         }));
 
