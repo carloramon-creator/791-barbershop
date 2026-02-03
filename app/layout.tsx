@@ -31,15 +31,19 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport = {
+  themeColor: "#f8fafc",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className="dark">
+    <html lang="pt-BR">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-950 text-slate-50`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeProvider>
           <AuthProvider>
@@ -52,4 +56,4 @@ export default function RootLayout({
     </html>
   );
 }
- 
+
