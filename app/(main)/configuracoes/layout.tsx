@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Building2, Users, Shield, CreditCard, FileText } from 'lucide-react';
+import { Building2, Users, Shield, CreditCard, FileText, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-provider';
 import { getBusinessTheme } from '@/lib/business-theme';
@@ -23,6 +23,7 @@ export default function ConfiguracoesLayout({
         { name: 'Permissões', href: '/configuracoes/permissoes', icon: Shield },
         { name: 'Plano', href: '/configuracoes/plano', icon: CreditCard },
         { name: 'Faturas', href: '/configuracoes/faturas', icon: FileText },
+        { name: 'WhatsApp', href: '/configuracoes/whatsapp', icon: MessageCircle },
     ];
 
     const isCurrentTab = (href: string) => pathname === href;

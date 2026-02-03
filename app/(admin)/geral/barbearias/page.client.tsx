@@ -25,7 +25,8 @@ import {
     ArrowUp,
     ArrowDown,
     Clock,
-    UserCheck
+    UserCheck,
+    Smartphone
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -45,6 +46,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+    const [whatsappFilter, setWhatsappFilter] = useState<'all' | 'with' | 'without'>('all');
 
     // Edit State
     const [editingTenant, setEditingTenant] = useState<any>(null);
@@ -105,11 +107,19 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
         return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
 
-    const filteredTenants = sortedTenants.filter(t =>
-        t.name?.toLowerCase().includes(search.toLowerCase()) ||
-        t.owner?.[0]?.name?.toLowerCase().includes(search.toLowerCase()) ||
-        t.city?.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredTenants = sortedTenants.filter(t => {
+        const matchesSearch = t.name?.toLowerCase().includes(search.toLowerCase()) ||
+            t.owner?.[0]?.name?.toLowerCase().includes(search.toLowerCase()) ||
+            t.city?.toLowerCase().includes(search.toLowerCase());
+
+        const matchesWhatsapp = whatsappFilter === 'all'
+            ? true
+            : whatsappFilter === 'with'
+                ? t.has_whatsapp
+                : !t.has_whatsapp;
+
+        return matchesSearch && matchesWhatsapp;
+    });
 
     const totals = tenants.reduce((acc, t) => ({
         attendances: acc.attendances + (t.stats?.total_attendances || 0),
@@ -162,6 +172,17 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                 </div>
 
                 <div className="flex gap-2">
+                    <Select value={whatsappFilter} onValueChange={(v: any) => setWhatsappFilter(v)}>
+                        <SelectTrigger className="w-[140px] h-11 bg-slate-900 border-slate-800 text-[10px] uppercase font-bold text-slate-400 rounded-xl">
+                            <SelectValue placeholder="Filtro WhatsApp" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-950 border-slate-800">
+                            <SelectItem value="all">Todos</SelectItem>
+                            <SelectItem value="with">Com WhatsApp</SelectItem>
+                            <SelectItem value="without">Sem WhatsApp</SelectItem>
+                        </SelectContent>
+                    </Select>
+
                     <Button
                         onClick={() => setSortOrder('desc')}
                         variant={sortOrder === 'desc' ? 'default' : 'outline'}
@@ -225,6 +246,19 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                 <h3 className="text-sm font-black text-white group-hover:text-blue-400 transition-colors truncate tracking-tight uppercase">
                                                     {tenant.name}
                                                 </h3>
+                                                {/* WhatsApp Indicator */}
+                                                <div
+                                                    className={cn(
+                                                        "flex items-center justify-center w-5 h-5 rounded-md border",
+                                                        tenant.has_whatsapp
+                                                            ? "bg-green-500/10 border-green-500/30 text-green-500"
+                                                            : "bg-slate-800/50 border-slate-700/50 text-slate-600 opacity-50"
+                                                    )}
+                                                    title={tenant.has_whatsapp ? "WhatsApp Integrado" : "Sem WhatsApp"}
+                                                >
+                                                    <Smartphone size={10} strokeWidth={3} />
+                                                </div>
+
                                                 {onlineCount > 0 && (
                                                     <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
                                                         <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" />

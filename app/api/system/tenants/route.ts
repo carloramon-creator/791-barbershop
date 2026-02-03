@@ -15,7 +15,8 @@ export async function GET(req: Request) {
             .select(`
                 *,
                 users(*),
-                barbers(status)
+                barbers(status),
+                whatsapp_configs(phone_number_id)
             `);
 
         if (tenantsError) throw tenantsError;
@@ -33,7 +34,8 @@ export async function GET(req: Request) {
                     total_users: 0,
                     total_sales: 0,
                     total_revenue: 0
-                }
+                },
+                has_whatsapp: tenant.whatsapp_configs && tenant.whatsapp_configs.length > 0
             };
         }));
 
