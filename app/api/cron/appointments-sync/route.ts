@@ -63,10 +63,17 @@ export async function GET(req: Request) {
         ];
 
         for (const window of windows) {
-            const targetStart = new Date(now.getTime() + (window.minutes - 20) * 60000);
-            const targetEnd = new Date(now.getTime() + (window.minutes + 20) * 60000);
+            // Ajuste crucial de fuso: O banco está em UTC, o servidor Node (Vercel/Railway) geralmente também.
+            // Mas o agendamento salvo pelo App pode ter vindo como "Horário Local" sem conversão correta.
+            // Vamos ampliar a janela para +/- 40 minutos para garantir que pegue qualquer desvio de fuso pequeno.
 
-            console.log(`[CRON_SYNC] Checking window ${window.type}: [${targetStart.toISOString()} - ${targetEnd.toISOString()}]`);
+            const targetTimeMs = now.getTime() + (window.minutes * 60000);
+            const marginMs = 40 * 60000; // 40 minutos de margem
+
+            const targetStart = new Date(targetTimeMs - marginMs);
+            const targetEnd = new Date(targetTimeMs + marginMs);
+
+            console.log(`[CRON_SYNC] Checking window ${window.type} (${window.minutes}m): [${targetStart.toISOString()} - ${targetEnd.toISOString()}]`);
 
             const { data: appts, error } = await (supabase as any)
                 .from('appointments')
