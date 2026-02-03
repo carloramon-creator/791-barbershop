@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import {
     Calendar, DollarSign, BarChart3, MessageCircle,
     Gift, Users, CheckCircle, ArrowRight, Sparkles,
-    TrendingUp, Clock, Shield, Zap, Star, ChevronDown
+    TrendingUp, Clock, Shield, Zap, Star, ChevronDown, Mail, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabaseClient } from '@/lib/supabase-client';
@@ -16,6 +16,7 @@ export default function LandingPage() {
     const router = useRouter();
     const [activeFeature, setActiveFeature] = useState(0);
     const [activeFaq, setActiveFaq] = useState<number | null>(null);
+    const [chatMenuOpen, setChatMenuOpen] = useState(false);
     const [stats, setStats] = useState({
         barbershops: 0,
         appointments: 0,
@@ -69,19 +70,25 @@ export default function LandingPage() {
     const plans = [
         {
             name: 'Basic',
-            price: 'R$ 49',
+            price: 'R$ 39',
+            period: '/mês',
+            annual: 'R$ 468/ano',
             features: ['Até 2 barbeiros', 'Agendamento online', 'Relatórios básicos', 'Suporte por email'],
             popular: false
         },
         {
             name: 'Complete',
-            price: 'R$ 99',
+            price: 'R$ 79',
+            period: '/mês',
+            annual: 'R$ 948/ano',
             features: ['Até 5 barbeiros', 'WhatsApp automático', 'Gestão financeira', 'Cupons ilimitados', 'Suporte prioritário'],
             popular: true
         },
         {
             name: 'Premium',
-            price: 'R$ 149',
+            price: 'R$ 119',
+            period: '/mês',
+            annual: 'R$ 1.428/ano',
             features: ['Barbeiros ilimitados', 'Tudo do Complete', 'Vendas diretas', 'Multi-unidades', 'Suporte 24/7'],
             popular: false
         }
@@ -127,12 +134,12 @@ export default function LandingPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 text-white overflow-hidden">
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
             {/* Animated Background */}
-            <div className="fixed inset-0 opacity-30">
-                <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-blob" />
-                <div className="absolute top-0 -right-4 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000" />
-                <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000" />
+            <div className="fixed inset-0 opacity-20">
+                <div className="absolute top-0 -left-4 w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
+                <div className="absolute top-0 -right-4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
+                <div className="absolute -bottom-8 left-20 w-96 h-96 bg-cyan-300 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000" />
             </div>
 
             {/* Header */}
@@ -140,7 +147,7 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <Image src="/logo-791.jpg" alt="791 Barber" width={40} height={40} className="rounded-lg" />
-                        <span className="text-2xl font-black bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                        <span className="text-2xl font-black text-white">
                             791 Barber
                         </span>
                     </div>
@@ -293,7 +300,8 @@ export default function LandingPage() {
                                 <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                                 <div className="mb-6">
                                     <span className="text-5xl font-black">{plan.price}</span>
-                                    <span className="text-slate-400">/mês</span>
+                                    <span className="text-slate-400">{plan.period}</span>
+                                    <div className="text-sm text-slate-500 mt-1">Cobrado anualmente: {plan.annual}</div>
                                 </div>
                                 <ul className="space-y-4 mb-8">
                                     {plan.features.map((feature, i) => (
@@ -415,11 +423,51 @@ export default function LandingPage() {
 
             {/* Chatbot Widget */}
             <div className="fixed bottom-6 right-6 z-50">
-                <button className="group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-full p-4 shadow-2xl shadow-blue-500/50 hover:scale-110 transition-all duration-300">
+                {/* Contact Menu */}
+                {chatMenuOpen && (
+                    <div className="absolute bottom-20 right-0 bg-slate-900 border border-white/20 rounded-2xl p-4 shadow-2xl backdrop-blur-xl mb-2 min-w-[250px] animate-in slide-in-from-bottom-4">
+                        <div className="flex justify-between items-center mb-4">
+                            <h4 className="font-bold text-white">Como podemos ajudar?</h4>
+                            <button
+                                onClick={() => setChatMenuOpen(false)}
+                                className="text-slate-400 hover:text-white transition"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <div className="space-y-2">
+                            <a
+                                href="https://wa.me/5548991803379?text=Olá! Gostaria de saber mais sobre o 791 Barber"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-3 p-3 bg-green-600 hover:bg-green-700 rounded-xl transition group"
+                            >
+                                <MessageCircle className="w-5 h-5" />
+                                <div>
+                                    <div className="font-bold text-sm">WhatsApp</div>
+                                    <div className="text-xs opacity-80">Resposta rápida</div>
+                                </div>
+                            </a>
+                            <a
+                                href="mailto:contato@791solucoes.com.br?subject=Quero conhecer o 791 Barber&body=Olá, gostaria de saber mais sobre o sistema."
+                                className="flex items-center gap-3 p-3 bg-blue-600 hover:bg-blue-700 rounded-xl transition group"
+                            >
+                                <Mail className="w-5 h-5" />
+                                <div>
+                                    <div className="font-bold text-sm">Email</div>
+                                    <div className="text-xs opacity-80">contato@791solucoes.com.br</div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                )}
+
+                {/* Main Button */}
+                <button
+                    onClick={() => setChatMenuOpen(!chatMenuOpen)}
+                    className="group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-full p-4 shadow-2xl shadow-blue-500/50 hover:scale-110 transition-all duration-300"
+                >
                     <MessageCircle className="w-6 h-6" />
-                    <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                        Precisa de ajuda? Fale conosco!
-                    </span>
                 </button>
             </div>
 
