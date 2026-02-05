@@ -62,6 +62,7 @@ export async function GET(req: Request) {
                 const voucherCode = `BDAY-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
                 // 2. Criar o Voucher (Válido por 30 dias, 10% de desconto por padrão ou valor do tenant)
+                // TODO: No futuro buscar configuração de 'birthday_reward' do tenant
                 const expiresAt = new Date();
                 expiresAt.setDate(expiresAt.getDate() + 30);
 
@@ -77,36 +78,29 @@ export async function GET(req: Request) {
                         expires_at: expiresAt.toISOString()
                     });
 
-                if (voucherError) {
-                    console.error(`[BDAY_VOUCHER_ERROR] Client ${client.id}:`, voucherError);
-                    throw voucherError;
-                }
+                if (voucherError) throw voucherError;
                 results.vouchers_created++;
 
                 // 3. Enviar Push Notification
                 if (client.fcm_token && firebaseAdmin.apps.length > 0) {
-                    try {
-                        await firebaseAdmin.messaging().send({
-                            token: client.fcm_token,
-                            notification: {
-                                title: `Parabéns, ${client.name}! 🎂`,
-                                body: `Hoje o presente é por nossa conta! Use o cupom ${voucherCode} e ganhe 10% de desconto em qualquer serviço.`,
-                            },
-                            android: { priority: 'high' },
-                            apns: { payload: { aps: { sound: 'default' } } },
-                            webpush: {
-                                fcmOptions: {
-                                    link: `https://app.791barber.com/cliente/agendamento`
-                                }
+                    await firebaseAdmin.messaging().send({
+                        token: client.fcm_token,
+                        notification: {
+                            title: `Parabéns, ${client.name}! 🎂`,
+                            body: `Hoje o presente é por nossa conta! Use o cupom ${voucherCode} e ganhe 10% de desconto em qualquer serviço.`,
+                        },
+                        android: { priority: 'high' },
+                        apns: { payload: { aps: { sound: 'default' } } },
+                        webpush: {
+                            fcmOptions: {
+                                link: `https://app.791barber.com/cliente/agendamento`
                             }
-                        });
-                        results.pushes_sent++;
-                    } catch (pushErr: any) {
-                        console.error(`[BDAY_PUSH_ERROR] Client ${client.id}:`, pushErr.message);
-                    }
+                        }
+                    });
+                    results.pushes_sent++;
                 }
 
-                // 4. Enviar WhatsApp (Oficial Meta API)
+                // 4. Enviar WhatsApp (Novo)
                 const { data: config } = await supabase
                     .from('whatsapp_configs')
                     .select('phone_number_id, access_token')
@@ -122,22 +116,15 @@ export async function GET(req: Request) {
                     const cleanPhone = client.phone.replace(/\D/g, '');
                     if (cleanPhone.length >= 10) {
                         const welcomeName = client.name.split(' ')[0];
-                        // Tentamos enviar um template de parabéns se existir, caso contrário enviamos botões
-                        // O cliente mencionou "parabens_fidelidade" no código antigo
-
-                        try {
-                            console.log(`[BDAY_WHATSAPP] Enviando para ${cleanPhone} (Tenant: ${client.tenant_id})`);
-                            await WhatsAppClient.sendButtons(
-                                creds,
-                                cleanPhone,
-                                `Parabéns, ${welcomeName}! 🎂✨\n\nHoje o presente é por nossa conta! Você ganhou um cupom de *10% de desconto* para usar em qualquer serviço nos próximos 30 dias.\n\nCupom: *${voucherCode}*`,
-                                [
-                                    { id: 'BIRTHDAY_AGENDAR', title: 'Agendar Agora ✂️' }
-                                ]
-                            );
-                        } catch (wapErr: any) {
-                            console.error(`[BDAY_WAP_ERROR] Client ${client.id}:`, wapErr.message);
-                        }
+                        const label = "R$ 10,00"; // Ajustado para valor fixo conforme solicitado
+                        await WhatsAppClient.sendButtons(
+                            creds,
+                            cleanPhone,
+                            `Parabéns, ${welcomeName}! 🎂✨\n\nHoje o presente é por nossa conta! Você ganhou um cupom de *${label} de desconto* para usar em qualquer serviço nos próximos 30 dias.\n\nCupom: *${voucherCode}*`,
+                            [
+                                { id: 'BIRTHDAY_AGENDAR', title: 'Agendar Agora ✂️' }
+                            ]
+                        );
                     }
                 }
 

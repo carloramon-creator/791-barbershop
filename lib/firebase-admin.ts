@@ -15,21 +15,7 @@ if (!admin.apps.length) {
                 privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
             };
         } else {
-            // Tenta carregar do arquivo local se estiver disponível
-            try {
-                const fs = require('fs');
-                const path = require('path');
-                const serviceAccountPath = path.join(process.cwd(), 'firebase-service-account.json');
-
-                if (fs.existsSync(serviceAccountPath)) {
-                    serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-                    console.log('Firebase initialized from firebase-service-account.json');
-                } else {
-                    console.warn('Firebase credentials not found in environment variables or firebase-service-account.json');
-                }
-            } catch (fsError) {
-                console.warn('Error reading firebase-service-account.json', fsError);
-            }
+            console.warn('Firebase credentials not found in environment variables.');
         }
 
         if (serviceAccount) {
