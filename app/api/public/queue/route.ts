@@ -134,7 +134,9 @@ export async function GET(req: Request) {
                 barber_nickname: (barber as any).users?.nickname || barber.nickname,
                 user_id: barber.user_id,
                 photo_url: (barber as any).users?.photo_url || barber.photo_url,
-                status: barber.status === 'online' ? 'available' : barber.status,
+                status: (barber.status === 'online' || barber.status === 'available')
+                    ? (attendingItem ? 'busy' : 'available')
+                    : barber.status,
                 is_active: barber.is_active,
                 avg_time_minutes: avgTime,
                 queue: formattedQueue,

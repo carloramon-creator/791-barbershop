@@ -42,9 +42,12 @@ export async function GET() {
             const attendingItem = barberQueue.find(q => q.status === 'attending');
             const waitingItems = barberQueue.filter(q => q.status === 'waiting');
 
-            // --- SELF HEALING STATUS CHECK (DISABLED DUE TO PERFORMANCE) ---
+            // --- SELF HEALING STATUS CHECK ---
             let currentStatus = barber.status;
-            // ---------------------------------------------------------------
+            if (currentStatus === 'available' && attendingItem) {
+                currentStatus = 'busy';
+            }
+            // ----------------------------------
 
             // Usa a média do cadastro (futuramente pode ser calculado via histórico real)
             const avgTime = barber.avg_time_minutes || 30;

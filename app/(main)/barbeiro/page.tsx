@@ -325,7 +325,7 @@ export default function BarberPage() {
                                         {/* Status indicator on avatar */}
                                         <div className={cn(
                                             "absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-slate-900",
-                                            barber.status === 'available' ? "bg-emerald-500" : "bg-slate-500"
+                                            barber.status === 'available' ? "bg-emerald-500" : barber.status === 'busy' ? "bg-yellow-500" : "bg-slate-500"
                                         )} />
                                     </div>
                                     <span className="text-[9px] font-black uppercase truncate w-full text-center">
@@ -343,15 +343,17 @@ export default function BarberPage() {
                                 <span className="text-[8px] font-black text-slate-500 uppercase leading-none">Status</span>
                                 <span className={cn(
                                     "text-[10px] font-black uppercase",
-                                    currentBarber.status === 'available' ? "text-emerald-500" : "text-slate-400"
+                                    currentBarber.status === 'available' ? "text-emerald-500" :
+                                        currentBarber.status === 'busy' ? "text-yellow-500" : "text-slate-400"
                                 )}>
-                                    {currentBarber.status === 'available' ? 'Online' : 'Offline'}
+                                    {currentBarber.status === 'available' ? 'Online' :
+                                        currentBarber.status === 'busy' ? 'Atendendo' : 'Offline'}
                                 </span>
                             </div>
                             <Button
                                 size="sm"
                                 variant={currentBarber.status === 'available' ? 'default' : 'outline'}
-                                onClick={() => handleUpdateStatus(currentBarber.barber_id, currentBarber.status === 'available' ? 'offline' : 'available')}
+                                onClick={() => handleUpdateStatus(currentBarber.barber_id, currentBarber.status === 'offline' ? 'available' : 'offline')}
                                 className={cn(
                                     "h-10 px-4 rounded-lg font-black uppercase text-[10px] tracking-widest transition-all",
                                     currentBarber.status === 'available'
@@ -359,7 +361,7 @@ export default function BarberPage() {
                                         : "border-slate-700 text-slate-500 hover:bg-slate-800"
                                 )}
                             >
-                                {currentBarber.status === 'available' ? 'Ficar Offline' : 'Ficar Online'}
+                                {currentBarber.status === 'offline' ? 'Ficar Online' : 'Ficar Offline'}
                             </Button>
                         </div>
                     )}
