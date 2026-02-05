@@ -43,7 +43,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             return NextResponse.json({ error: 'Telefone do cliente não encontrado' }, { status: 400 });
         }
 
-        const time = format(new Date(appt.start_time), 'HH:mm');
+        const time = new Intl.DateTimeFormat('pt-BR', {
+            timeZone: 'America/Sao_Paulo',
+            hour: '2-digit',
+            minute: '2-digit'
+        }).format(new Date(appt.start_time));
+
         const message = `Olá ${clientName}! 👋\nEstamos te aguardando para o seu agendamento das ${time}. Até já! 💈`;
 
         // 4. Check global debounce to avoid spam/duplication across replicas
