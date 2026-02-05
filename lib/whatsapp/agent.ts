@@ -405,11 +405,21 @@ export class WhatsAppAgent {
             const clientId = await this.getOrCreateClient(ctx.tenantId, phone);
             console.log('[WHATSAPP_BOOKING] Client ID:', clientId);
 
+            // Buscar o nome do cliente do banco
+            const { data: client } = await getSupabaseAdmin()
+                .from('clients')
+                .select('name')
+                .eq('id', clientId)
+                .single();
+
+            const clientName = client?.name || 'Cliente WhatsApp';
+            console.log('[WHATSAPP_BOOKING] Client name:', clientName);
+
             const appointmentData = {
                 tenant_id: ctx.tenantId,
                 client_id: clientId,
                 client_phone: phone,
-                client_name: context.name,
+                client_name: clientName,
                 barber_id: context.barberId,
                 service_id: context.serviceId,
                 start_time: start.toISOString(),

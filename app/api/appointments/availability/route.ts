@@ -45,7 +45,11 @@ export async function GET(req: Request) {
         if (barberError) throw barberError;
 
         // 3. Obter slots usando o utilitário compartilhado
-        const isTodayRequested = dateStr === format(new Date(), 'yyyy-MM-dd');
+        // Verificar se é hoje considerando o fuso horário do Brasil (UTC-3)
+        const nowUTC = new Date();
+        const nowBRT = new Date(nowUTC.getTime() - 3 * 60 * 60 * 1000);
+        const todayBRT = format(nowBRT, 'yyyy-MM-dd');
+        const isTodayRequested = dateStr === todayBRT;
 
         const slots = getAvailableSlots(
             baseDate,
