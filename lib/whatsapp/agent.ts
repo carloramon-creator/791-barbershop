@@ -15,9 +15,9 @@ export interface AgentContext {
  * Responsável por processar a lógica de conversação, intenções e fluxos.
  */
 export class WhatsAppAgent {
-    static async handleMessage(ctx: AgentContext, payload: { from: string, text: string, buttonId?: string, messageType: string }) {
-        const { from, text, buttonId } = payload;
+    static async handleMessage(ctx: AgentContext, phone: string, text: string = '', buttonId?: string) {
         try {
+            const from = phone;
             const session = await WhatsAppSession.get(ctx.tenantId, from);
             const input = (text || '').toUpperCase();
 
@@ -88,13 +88,18 @@ export class WhatsAppAgent {
         const variants = this.getPhoneVariants(phone);
         const orQuery = variants.map(v => `phone.eq.${v}`).join(',');
 
-        const { data: client } = await getSupabaseAdmin()
+        const { data: clients } = await getSupabaseAdmin()
             .from('clients')
             .select('id, name, birth_date')
             .eq('tenant_id', ctx.tenantId)
-            .or(orQuery)
-            .limit(1)
-            .maybeSingle();
+            .or(orQuery);
+
+        // Prioriza quem tem nome (não placeholder) e data de nascimento
+        const client = (clients || []).sort((a, b) => {
+            const aScore = (a.birth_date ? 2 : 0) + (a.name && a.name !== 'Cliente WhatsApp' ? 1 : 0);
+            const bScore = (b.birth_date ? 2 : 0) + (b.name && b.name !== 'Cliente WhatsApp' ? 1 : 0);
+            return bScore - aScore;
+        })[0];
 
         if (!client || !client.name || client.name === 'Cliente WhatsApp') {
             await WhatsAppSession.update(ctx.tenantId, phone, 'registration_name', {
