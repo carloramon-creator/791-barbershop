@@ -15,9 +15,13 @@ export interface AgentContext {
  * Responsável por processar a lógica de conversação, intenções e fluxos.
  */
 export class WhatsAppAgent {
-    static async handleMessage(ctx: AgentContext, payload: { from: string, text: string, buttonId?: string }) {
-        const { from, text, buttonId } = payload;
+    static async handleMessage(ctx: AgentContext, phone: string, text: string = '', buttonId?: string) {
         try {
+            const from = phone;
+            if (typeof from !== 'string') {
+                console.error('[WHATSAPP_AGENT_ERROR] Phone is not a string:', from);
+                return;
+            }
             const session = await WhatsAppSession.get(ctx.tenantId, from);
             const input = (text || '').toUpperCase();
 
@@ -50,6 +54,10 @@ export class WhatsAppAgent {
      * Cobre casos: com/sem 55, com/sem 9º dígito (Brasil).
      */
     private static getPhoneVariants(phone: string): string[] {
+        if (!phone || typeof phone !== 'string') {
+            console.error('[WHATSAPP_AGENT_ERROR] getPhoneVariants received non-string:', phone);
+            return [];
+        }
         const clean = phone.replace(/\D/g, '');
         const variants = new Set<string>();
 

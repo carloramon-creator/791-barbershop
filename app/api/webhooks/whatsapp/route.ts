@@ -96,7 +96,7 @@ export async function POST(req: Request) {
                                 accessToken: config.access_token,
                                 phoneNumberId: phoneNumberId
                             }
-                        }, normalizedPayload);
+                        }, normalizedPayload.from, normalizedPayload.text, normalizedPayload.buttonId);
 
                         console.log(`[WHATSAPP_WEBHOOK] Fim do processamento para ${phone}`);
                     } catch (err: any) {
