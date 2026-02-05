@@ -92,14 +92,19 @@ export function getAvailableSlots(
 
     const slots: TimeSlot[] = [];
     let current = workStart;
-    const now = subHours(new Date(), 3); // Now in Brazil time for filtering past slots
+
+    // Para comparar corretamente, precisamos do "agora" no mesmo fuso que baseDate
+    // baseDate é uma data local (sem timezone), então criamos "now" da mesma forma
+    const nowUTC = new Date();
+    const nowLocal = new Date(baseDate);
+    nowLocal.setHours(nowUTC.getHours() - 3, nowUTC.getMinutes(), 0, 0); // Converte UTC para BRT (-3h)
 
     while (current < workEnd) {
         const slotEnd = addMinutes(current, duration);
         let status: 'available' | 'occupied' | 'lunch' | 'offline' = 'available';
 
         // Filtro de horários passados (se for hoje)
-        if (isToday && current < now) {
+        if (isToday && current < nowLocal) {
             current = addMinutes(current, 30);
             continue;
         }
