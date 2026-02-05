@@ -190,7 +190,7 @@ export class WhatsAppAgent {
         }
         if (buttonId === 'BACK_TO_START') {
             await WhatsAppSession.clear(ctx.tenantId, phone);
-            return this.handleInteraction(ctx, phone, 'MENU');
+            return this.handleMessage(ctx, phone, 'MENU');
         }
 
         if (state === 'booking_select_service') {
