@@ -24,17 +24,31 @@ export async function GET(req: Request) {
             rawSlots: []
         };
 
-        const { data: tenant } = await getSupabaseAdmin().from('tenants').select('opening_hours').eq('id', tenantId).single();
+        const { data: tenant } = await getSupabaseAdmin().from('tenants').select('opening_hours, id').eq('id', tenantId).single();
 
         if (!tenant) return NextResponse.json({ error: 'Tenant not found' });
 
         const baseDate = new Date(); // Hoje
-        // Forçar baseDate para 00:00 local
         baseDate.setHours(0, 0, 0, 0);
+
+        // Buscar agendamentos reais
+        const startWindow = new Date(baseDate); startWindow.setDate(startWindow.getDate() - 1);
+        const endWindow = new Date(baseDate); endWindow.setDate(endWindow.getDate() + 1);
+
+        const { data: appointments } = await getSupabaseAdmin()
+            .from('appointments')
+            .select('start_time, end_time')
+            .eq('tenant_id', tenant.id)
+            .eq('barber_id', barberId)
+            .neq('status', 'cancelled')
+            .gte('start_time', startWindow.toISOString())
+            .lte('start_time', endWindow.toISOString());
+
+        debugInfo.realAppointments = appointments;
 
         const slots = getAvailableSlots(
             baseDate,
-            [], // Sem agendamentos para testar apenas a geração de slots
+            appointments || [],
             tenant.opening_hours || {},
             30,
             'available',
