@@ -26,6 +26,8 @@ export async function GET(req: Request) {
 
         const { data: tenant } = await getSupabaseAdmin().from('tenants').select('opening_hours').eq('id', tenantId).single();
 
+        if (!tenant) return NextResponse.json({ error: 'Tenant not found' });
+
         const baseDate = new Date(); // Hoje
         // Forçar baseDate para 00:00 local
         baseDate.setHours(0, 0, 0, 0);
@@ -33,7 +35,7 @@ export async function GET(req: Request) {
         const slots = getAvailableSlots(
             baseDate,
             [], // Sem agendamentos para testar apenas a geração de slots
-            tenant.opening_hours,
+            tenant.opening_hours || {},
             30,
             'available',
             true // isToday = true
