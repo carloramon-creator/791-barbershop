@@ -72,6 +72,7 @@ export default function AppointmentsPage() {
 
     const [appointments, setAppointments] = useState<any[]>([]);
     const [loadingAppts, setLoadingAppts] = useState(true);
+    const [notifyingId, setNotifyingId] = useState<string | null>(null);
     const [barbershopName, setBarbershopName] = useState('');
     const [showFinished, setShowFinished] = useState(false);
 
@@ -297,12 +298,23 @@ export default function AppointmentsPage() {
         }
     };
 
-    const handleNotify = (appt: any) => {
-        const phone = appt.client_phone?.replace(/\D/g, '');
-        if (!phone) return alert('Telefone não disponível');
-        const company = barbershopName ? `A ${barbershopName}` : 'Nossa barbearia';
-        const message = encodeURIComponent(`Olá ${appt.client_name}, ${company} passando para lembrar do seu agendamento hoje às ${format(new Date(appt.start_time), 'HH:mm')}. Até logo!`);
-        window.open(`https://wa.me/55${phone}?text=${message}`, '_blank');
+    const handleNotify = async (appt: any) => {
+        setNotifyingId(appt.id);
+        try {
+            await Api.notifyAppointment(appt.id);
+            alert('Notificação enviada com sucesso pelo WhatsApp automático!');
+        } catch (error: any) {
+            console.error(error);
+            if (confirm('Erro ao enviar pelo WhatsApp automático. Deseja tentar enviar manualmente pelo WhatsApp Web?')) {
+                const phone = appt.client_phone?.replace(/\D/g, '');
+                if (!phone) return alert('Telefone não disponível');
+                const company = barbershopName ? `A ${barbershopName}` : 'Nossa barbearia';
+                const message = encodeURIComponent(`Olá ${appt.client_name}! 👋\nEstamos te aguardando para o seu agendamento das ${format(new Date(appt.start_time), 'HH:mm')}. Até já! 💈`);
+                window.open(`https://wa.me/55${phone}?text=${message}`, '_blank');
+            }
+        } finally {
+            setNotifyingId(null);
+        }
     };
 
     const handleStartProcedure = async (appt: any) => {
@@ -1000,10 +1012,11 @@ export default function AppointmentsPage() {
                                                 <Button
                                                     variant="secondary"
                                                     size="sm"
+                                                    disabled={notifyingId === appt.id}
                                                     onClick={() => handleNotify(appt)}
                                                     className="bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20 gap-2 h-10 px-4"
                                                 >
-                                                    <MessageSquare size={16} />
+                                                    {notifyingId === appt.id ? <Loader2 size={16} className="animate-spin" /> : <MessageSquare size={16} />}
                                                     <span className="hidden xl:inline">Notificar</span>
                                                 </Button>
                                             )}

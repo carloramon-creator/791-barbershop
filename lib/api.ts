@@ -130,6 +130,8 @@ export const Api = {
     updateBarberServices: (barberId: string, serviceIds: string[]) =>
         apiFetch(`/api/barbers/${barberId}/services`, { method: 'PUT', body: JSON.stringify({ serviceIds }) }),
 
+    notifyAppointment: (id: string) => apiFetch(`/api/appointments/${id}/notify`, { method: 'POST' }),
+
     startAppointment: (id: string) => apiFetch(`/api/appointments/${id}/start`, { method: 'POST' }),
 
     // Finance
