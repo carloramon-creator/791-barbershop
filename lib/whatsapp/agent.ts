@@ -273,9 +273,27 @@ export class WhatsAppAgent {
                     const { count } = await getSupabaseAdmin().from('client_queue').select('*', { count: 'exact', head: true }).eq('tenant_id', ctx.tenantId).eq('barber_id', targetBarberId).eq('status', 'waiting');
                     const pos = (count || 0) + 1;
 
-                    await getSupabaseAdmin().from('client_queue').insert({
-                        tenant_id: ctx.tenantId, barber_id: targetBarberId, client_id: clientId, client_phone: phone, status: 'waiting', position: pos
+                    const { data: clientData } = await getSupabaseAdmin()
+                        .from('clients')
+                        .select('name')
+                        .eq('id', clientId)
+                        .single();
+                    const clientName = clientData?.name || 'Cliente WhatsApp';
+
+                    const { error: insertError } = await getSupabaseAdmin().from('client_queue').insert({
+                        tenant_id: ctx.tenantId,
+                        barber_id: targetBarberId,
+                        client_id: clientId,
+                        client_name: clientName,
+                        client_phone: phone,
+                        status: 'waiting',
+                        position: pos
                     });
+
+                    if (insertError) {
+                        console.error('[WHATSAPP_QUEUE_ERROR] Insert failed:', insertError);
+                        throw new Error(`Erro ao entrar na fila: ${insertError.message}`);
+                    }
 
                     await WhatsAppClient.sendText(ctx.creds, phone, `✅ *Na fila!* Sua posição: ${pos}º.`);
                     return WhatsAppSession.clear(ctx.tenantId, phone);
