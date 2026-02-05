@@ -72,7 +72,7 @@ export async function GET(req: Request) {
                         tenant_id: client.tenant_id,
                         client_id: client.id,
                         code: voucherCode,
-                        discount_type: 'percentage',
+                        discount_type: 'fixed',
                         discount_value: 10,
                         is_birthday: true,
                         expires_at: expiresAt.toISOString()

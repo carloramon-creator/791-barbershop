@@ -76,7 +76,9 @@ export async function GET(req: Request) {
             // E vamos confiar na flag 'notified_xx' para não mandar duplicado.
 
             const targetTimeMs = now.getTime() + (window.minutes * 60000);
-            const marginMs = 240 * 60000; // 4 HORAS de margem para garantir que pega mesmo com fuso errado.
+            // Margem ajustada: Se o cron roda a cada 10-15 min, uma margem de 20 min é suficiente.
+            // O banco está em UTC, o servidor está em UTC. Não precisamos de margems gigantes se os dados estiverem consistentes.
+            const marginMs = 20 * 60000;
 
             const targetStart = new Date(targetTimeMs - marginMs);
             const targetEnd = new Date(targetTimeMs + marginMs);
