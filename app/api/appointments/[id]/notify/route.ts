@@ -4,10 +4,10 @@ import { getCurrentUserAndTenant } from '@/lib/server-utils';
 import { WhatsAppClient } from '@/lib/whatsapp/client';
 import { format } from 'date-fns';
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { tenant } = await getCurrentUserAndTenant();
-        const { id } = params;
+        const { id } = await params;
 
         // 1. Buscar o agendamento
         const { data: appt, error: apptError } = await getSupabaseAdmin()
