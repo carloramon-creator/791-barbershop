@@ -247,7 +247,7 @@ export class WhatsAppAgent {
                     const clientId = await this.getOrCreateClient(ctx.tenantId, phone);
                     let targetBarberId = null;
 
-                    if (selectedId === 'ANY_BARBER_QUEUE' || selectedId === 'QUEUE_START') {
+                    if (selectedId === 'ANY_BARBER_QUEUE') {
                         const stats = await this.getBarbersWithQueueStats(ctx.tenantId);
                         if (stats.length > 0) targetBarberId = stats.sort((a, b) => a.queueSize - b.queueSize)[0].id;
                     } else {
