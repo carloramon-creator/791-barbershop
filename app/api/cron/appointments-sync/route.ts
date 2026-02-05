@@ -63,20 +63,12 @@ export async function GET(req: Request) {
         ];
 
         for (const window of windows) {
-            // Ajuste crucial de fuso: O banco está em UTC, o servidor Node (Vercel/Railway) geralmente também.
-            // Mas o agendamento salvo pelo App pode ter vindo como "Horário Local" sem conversão correta.
-            // Vamos ampliar a janela para +/- 40 minutos para garantir que pegue qualquer desvio de fuso pequeno.
-
-            // Ajuste CRÍTICO de Fuso Horário:
-            // O banco está em UTC. Se o cliente agendou 14:00, salvou 14:00Z.
-            // Para o servidor (UTC), isso é 14:00. Para o Brasil, é 11:00.
-            // Se agora são 13:30 no Brasil (16:30 UTC), o agendamento de 14:00 já passou pra gente?
-
-            // Vamos ampliar a margem para 4 horas (240 min) para capturar o agendamento independente dessa confusão de fuso.
-            // E vamos confiar na flag 'notified_xx' para não mandar duplicado.
+            // Ajuste de Janela: 
+            // Queremos encontrar agendamentos que acontecem em aproximadamente 'window.minutes' a partir de agora.
+            // Usamos uma margem de +/- 15 minutos para garantir que pegamos o agendamento mesmo que o cron não rode no minuto exato.
 
             const targetTimeMs = now.getTime() + (window.minutes * 60000);
-            const marginMs = 240 * 60000; // 4 HORAS de margem para garantir que pega mesmo com fuso errado.
+            const marginMs = 15 * 60000; // 15 minutos de margem
 
             const targetStart = new Date(targetTimeMs - marginMs);
             const targetEnd = new Date(targetTimeMs + marginMs);
