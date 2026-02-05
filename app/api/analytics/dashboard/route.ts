@@ -84,12 +84,13 @@ export async function GET(req: Request) {
         if (servedError) throw servedError;
 
         let avgWaitTime = 0;
-        if (servedClients && servedClients.length > 0) {
-            const totalWait = servedClients.reduce((acc, c) => {
+        const clients = servedClients || [];
+        if (clients.length > 0) {
+            const totalWait = clients.reduce((acc, c) => {
                 const wait = (new Date(c.started_at!).getTime() - new Date(c.created_at).getTime()) / 60000;
                 return acc + wait;
             }, 0);
-            avgWaitTime = Math.round(totalWait / servedClients.length);
+            avgWaitTime = Math.round(totalWait / clients.length);
         }
 
         return NextResponse.json({

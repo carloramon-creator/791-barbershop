@@ -99,13 +99,13 @@ export async function PUT(req: Request) {
         const { tenant } = await getCurrentUserAndTenant();
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
-        const payload = await req.json();
+        const { id: _, tenant_id: __, created_at: ___, ...updates } = await req.json();
 
         if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
         const { data, error } = await getSupabaseAdmin()
             .from('clients')
-            .update(payload)
+            .update(updates)
             .eq('id', id)
             .eq('tenant_id', tenant.id)
             .select()

@@ -9,11 +9,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const { id } = await params;
     try {
         const { tenant } = await getCurrentUserAndTenant();
-        const payload = await req.json();
+        const { id: _, tenant_id: __, created_at: ___, ...updates } = await req.json();
 
         const { data, error } = await getSupabaseAdmin()
             .from('appointments')
-            .update(payload)
+            .update(updates)
             .eq('id', id)
             .eq('tenant_id', tenant.id)
             .select()

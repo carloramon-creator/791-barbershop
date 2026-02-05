@@ -8,7 +8,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         if (role !== 'owner') return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
 
         const { id } = await params;
-        const updates = await req.json();
+        const { id: _, tenant_id: __, created_at: ___, ...updates } = await req.json();
 
         const { data, error } = await getSupabaseAdmin()
             .from('services')

@@ -103,11 +103,16 @@ export async function GET(req: Request) {
                     itemWait = Math.round(Math.max(2, avgTime - elapsed));
                 }
 
+                const rawName = (q as any).clients?.name || q.client_name || 'Cliente';
+                const nameParts = rawName.trim().split(' ');
+                const maskedName = nameParts.length > 1
+                    ? `${nameParts[0]} ${nameParts[nameParts.length - 1][0]}.`
+                    : nameParts[0];
+
                 return {
                     id: q.id,
-                    client_name: (q as any).clients?.name || q.client_name,
+                    client_name: maskedName,
                     client_photo: (q as any).clients?.photo_url,
-                    client_phone: q.client_phone,
                     status: q.status,
                     position: q.position,
                     estimated_time_minutes: itemWait,
