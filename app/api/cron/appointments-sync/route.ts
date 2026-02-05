@@ -82,8 +82,9 @@ export async function GET(req: Request) {
             // E vamos confiar na flag 'notified_xx' para não mandar duplicado.
 
             const targetTimeMs = now.getTime() + (window.minutes * 60000);
-            // Margem reduzida para 10 minutos para evitar overlaps entre janelas (ex: 1h e 30m)
-            const marginMs = 10 * 60000;
+            // Margem ampliada para 30 minutos (janela de 1 hora) para garantir que
+            // frequências menores de Cron não percam agendamentos.
+            const marginMs = 30 * 60000;
 
             const targetStart = new Date(targetTimeMs - marginMs);
             const targetEnd = new Date(targetTimeMs + marginMs);
