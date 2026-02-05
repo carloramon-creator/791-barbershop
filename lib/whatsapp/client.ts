@@ -23,7 +23,7 @@ export interface WhatsAppMessagePayload {
 
 export class WhatsAppClient {
     private static getBaseUrl(phoneNumberId: string) {
-        return `https://graph.facebook.com/v22.0/${phoneNumberId}/messages`;
+        return `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
     }
 
     /**
@@ -33,19 +33,9 @@ export class WhatsAppClient {
      * Normaliza números brasileiros para garantir o nono dígito no envio
      */
     private static normalizeNumber(phone: string): string {
-        let clean = phone.replace(/\D/g, '');
-
-        // Se for Brasil (55) e tiver 12 dígitos (ex: 55 48 9130 5547)
-        // Adicionamos o 9 para ficar no formato do Sandbox (55 48 9 9130 5547)
-        if (clean.startsWith('55') && clean.length === 12) {
-            const ddd = clean.substring(2, 4);
-            const rest = clean.substring(4);
-            const normalized = `55${ddd}9${rest}`;
-            console.log(`[WHATSAPP_FIX] Normalizando número: ${clean} -> ${normalized}`);
-            return normalized;
-        }
-
-        return clean;
+        // Apenas remove caracteres não numéricos. 
+        // A Meta lida melhor com o número puro (12 ou 13 dígitos) do que com lógicas de inserção manual de nono dígito.
+        return phone.replace(/\D/g, '');
     }
 
     static async sendMessage(creds: WhatsAppCredentials, payload: WhatsAppMessagePayload) {
