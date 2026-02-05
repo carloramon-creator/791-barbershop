@@ -181,11 +181,16 @@ export class WhatsAppAgent {
         if (buttonId === 'BACK_TO_BARBER') {
             const barbers = await this.listBarbers(ctx.tenantId, context.serviceId);
             const rows = [
+                { id: 'BACK_TO_SERVICE', title: '↩️ Voltar', description: 'Escolher outro serviço' },
                 { id: 'ANY_BARBER_BOOKING', title: 'Qualquer um', description: 'Mais rápido' },
-                ...(barbers || []).slice(0, 9).map(b => ({ id: b.id, title: b.nickname || b.name }))
+                ...(barbers || []).slice(0, 8).map(b => ({ id: b.id, title: b.nickname || b.name }))
             ];
             await WhatsAppSession.update(ctx.tenantId, phone, 'booking_select_barber', context);
             return WhatsAppClient.sendList(ctx.creds, phone, `Serviço: *${context.serviceName}*. Algum profissional de preferência?`, "Ver Profissionais", [{ title: "Profissionais", rows }]);
+        }
+        if (buttonId === 'BACK_TO_START') {
+            await WhatsAppSession.clear(ctx.tenantId, phone);
+            return this.handleInteraction(ctx, phone, 'MENU');
         }
 
         if (state === 'booking_select_service') {
@@ -196,8 +201,9 @@ export class WhatsAppAgent {
                 await WhatsAppSession.update(ctx.tenantId, phone, 'booking_select_barber', context);
                 let barbers = await this.listBarbers(ctx.tenantId, service.id);
                 const rows = [
+                    { id: 'BACK_TO_START', title: '↩️ Voltar', description: 'Voltar ao início' },
                     { id: 'ANY_BARBER_BOOKING', title: 'Qualquer um', description: 'Mais rápido' },
-                    ...(barbers || []).slice(0, 9).map(b => ({ id: b.id, title: b.nickname || b.name }))
+                    ...(barbers || []).slice(0, 8).map(b => ({ id: b.id, title: b.nickname || b.name }))
                 ];
                 return WhatsAppClient.sendList(ctx.creds, phone, `Serviço: *${service.name}*. Algum profissional de preferência?`, "Ver Profissionais", [{ title: "Profissionais", rows }]);
             }
@@ -219,8 +225,14 @@ export class WhatsAppAgent {
 
         if (state === 'booking_select_date') {
             if (buttonId === 'BACK_TO_BARBER') {
+                return this.handleBookingFlow(ctx, phone, { state: 'booking_select_service', context }, context.serviceName);
+            }
+            if (buttonId === 'BACK_TO_SERVICE') {
                 await WhatsAppSession.update(ctx.tenantId, phone, 'booking_select_service', context);
                 return this.handleBookingFlow(ctx, phone, { state: 'booking_select_service', context }, context.serviceName);
+            }
+            if (buttonId === 'BACK_TO_DATE') {
+                return this.presentDateSelection(ctx, phone, context);
             }
             if (!/^\d{4}-\d{2}-\d{2}$/.test(buttonId || '')) return WhatsAppClient.sendText(ctx.creds, phone, "Data inválida.");
             context.selectedDate = buttonId;
@@ -379,7 +391,10 @@ export class WhatsAppAgent {
             if (!isSunday(curr)) dates.push(curr);
             curr = addDays(curr, 1);
         }
-        const rows = dates.map(d => ({ id: format(d, 'yyyy-MM-dd'), title: format(d, "eeee (dd/MM)", { locale: ptBR }) }));
+        const rows = [
+            { id: 'BACK_TO_SERVICE', title: '↩️ Voltar', description: 'Escolher outro serviço' },
+            ...dates.map(d => ({ id: format(d, 'yyyy-MM-dd'), title: format(d, "eeee (dd/MM)", { locale: ptBR }) }))
+        ];
         return WhatsAppClient.sendList(ctx.creds, phone, "Escolha o dia:", "Ver Datas", [{ title: "Datas", rows }]);
     }
 
@@ -438,7 +453,9 @@ export class WhatsAppAgent {
 
         // Se houver muitos slots e nenhum filtro aplicado, pede para escolher o período
         if (allSlots.length > 10 && !filterPeriod) {
-            const rows = [];
+            const rows = [
+                { id: 'BACK_TO_DATE', title: '↩️ Voltar', description: 'Escolher outra data' }
+            ];
             if (allSlots.some(s => parseInt(s.time.split(':')[0]) < 12))
                 rows.push({ id: 'PERIOD_MORNING', title: '☀️ Manhã', description: 'Até 12:00' });
             if (allSlots.some(s => parseInt(s.time.split(':')[0]) >= 12 && parseInt(s.time.split(':')[0]) < 15))
@@ -453,7 +470,9 @@ export class WhatsAppAgent {
 
         const rows: any[] = filteredSlots.slice(0, 10).map(s => ({ id: s.time, title: s.time }));
         if (filterPeriod) {
-            rows.push({ id: 'PERIOD_ALL', title: '↩️ Outros Períodos', description: 'Voltar para seleção de períodos' });
+            rows.push({ id: 'PERIOD_ALL', title: '↩️ Voltar', description: 'Voltar para seleção de períodos' });
+        } else {
+            rows.push({ id: 'BACK_TO_DATE', title: '↩️ Voltar', description: 'Escolher outra data' });
         }
 
         return WhatsAppClient.sendList(ctx.creds, phone, `Escolha o horário${periodLabel}:`, "Ver Horários", [{ title: "Horários", rows }]);

@@ -35,13 +35,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         }
 
         // 2. Finalizar o atendimento
-        const { error: finishError } = await client
+        // Só tenta finalizar se estiver 'attending' (evita duplicação de encerramento)
+        const { error: finishError, data: finishedItem } = await client
             .from('client_queue')
             .update({
                 status: 'finished',
                 finished_at: new Date().toISOString()
             })
-            .eq('id', queueId);
+            .eq('id', queueId)
+            .eq('status', 'attending')
+            .select()
+            .maybeSingle();
 
         if (finishError) throw finishError;
 
@@ -57,32 +61,61 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         // 4. Retornar se o plano permite venda (intermediate, complete, premium ou trial)
         const canCreateSale = ['intermediate', 'complete', 'premium', 'trial'].includes(tenant.plan);
 
-        // 5. Enviar Mensagem de Agradecimento no WhatsApp (Fire and Forget)
+        // 5. Enviar Mensagem de Agradecimento no WhatsApp (Idempotente)
         try {
-            // Buscar telefone e nome do cliente
-            const { data: clientData } = await client
+            // Tenta marcar como notificado de finalização
+            const { data: wapLock } = await client
                 .from('client_queue')
-                .select('client_phone, client_name')
+                .update({ notified_finish_wap: true })
                 .eq('id', queueId)
-                .single();
+                .eq('notified_finish_wap', false)
+                .select('id')
+                .maybeSingle();
 
-            if (clientData?.client_phone) {
-                const { data: wapConfig } = await client
-                    .from('whatsapp_configs')
-                    .select('access_token, phone_number_id')
-                    .eq('tenant_id', tenant.id)
-                    .maybeSingle();
+            if (wapLock) {
+                // Buscar telefone, nome e client_id
+                const { data: queueData } = await client
+                    .from('client_queue')
+                    .select('client_phone, client_name, client_id')
+                    .eq('id', queueId)
+                    .single();
 
-                if (wapConfig) {
-                    const { WhatsAppClient } = await import('@/lib/whatsapp/client');
-                    const firstName = clientData.client_name ? clientData.client_name.split(' ')[0] : 'Cliente';
+                if (queueData?.client_phone) {
+                    // Check global debounce
+                    const { data: clientData } = await client
+                        .from('clients')
+                        .select('last_notified_at')
+                        .eq('id', queueData.client_id)
+                        .maybeSingle();
 
-                    await WhatsAppClient.sendText(
-                        { accessToken: wapConfig.access_token, phoneNumberId: wapConfig.phone_number_id },
-                        clientData.client_phone,
-                        `Olá, *${firstName}*! Seu atendimento foi finalizado. ✅\n\nAgradecemos a preferência e esperamos te ver em breve! 💈`
-                    );
-                    console.log('[WHATSAPP] Agradecimento enviado para', clientData.client_phone);
+                    const lastWap = clientData?.last_notified_at;
+                    const isWapRecent = lastWap && (Date.now() - new Date(lastWap).getTime() < 10000);
+
+                    if (!isWapRecent) {
+                        const { data: wapConfig } = await client
+                            .from('whatsapp_configs')
+                            .select('access_token, phone_number_id')
+                            .eq('tenant_id', tenant.id)
+                            .maybeSingle();
+
+                        if (wapConfig) {
+                            const { WhatsAppClient } = await import('@/lib/whatsapp/client');
+                            const firstName = queueData.client_name ? queueData.client_name.split(' ')[0] : 'Cliente';
+
+                            await WhatsAppClient.sendText(
+                                { accessToken: wapConfig.access_token, phoneNumberId: wapConfig.phone_number_id },
+                                queueData.client_phone,
+                                `Olá, *${firstName}*! Seu atendimento foi finalizado. ✅\n\nAgradecemos a preferência e esperamos te ver em breve! 💈`
+                            );
+                            console.log('[WHATSAPP] Agradecimento enviado para', queueData.client_phone);
+
+                            // Update global debounce
+                            if (queueData.client_id) {
+                                await client.from('clients').update({ last_notified_at: new Date().toISOString() }).eq('id', queueData.client_id);
+                            }
+                            await client.from('client_queue').update({ last_notified_at: new Date().toISOString() }).eq('id', queueId);
+                        }
+                    }
                 }
             }
         } catch (msgError) {

@@ -35,7 +35,9 @@ export async function GET(req: Request) {
         const windows = [
             {
                 type: '24h',
-                col: 'notified_24h',
+                pushCol: 'notified_24h_push',
+                wapCol: 'notified_24h_wap',
+                fallbackCol: 'notified_24h',
                 minutes: 24 * 60,
                 title: 'Lembrete: Amanhã',
                 getPushBody: (apt: any) => `Seu agendamento está confirmado para amanhã às ${formatTime(apt.start_time)}. Te esperamos!`,
@@ -44,7 +46,9 @@ export async function GET(req: Request) {
             },
             {
                 type: '1h',
-                col: 'notified_1h',
+                pushCol: 'notified_1h_push',
+                wapCol: 'notified_1h_wap',
+                fallbackCol: 'notified_1h',
                 minutes: 60,
                 title: 'Falta pouco!',
                 getPushBody: (apt: any) => `Lembrete: Você tem um agendamento às ${formatTime(apt.start_time)}.`,
@@ -53,10 +57,12 @@ export async function GET(req: Request) {
             },
             {
                 type: '30m',
-                col: 'notified_30m',
+                pushCol: 'notified_30m_push',
+                wapCol: 'notified_30m_wap',
+                fallbackCol: 'notified_30m',
                 minutes: 30,
-                title: '30 minutos para seu horário',
-                getPushBody: (apt: any) => `Estamos te aguardando. Até logo!`,
+                title: 'Faltam 30 minutos',
+                getPushBody: (apt: any) => `Sua vez está chegando! Te esperamos em breve.`,
                 getWapMessage: (name: string, date: string, time: string, service: string) =>
                     `Olá, *${name}*! 👋 Faltam apenas *30 minutos* para o seu horário das *${time}* (${service}). Até logo!`
             }
@@ -76,9 +82,8 @@ export async function GET(req: Request) {
             // E vamos confiar na flag 'notified_xx' para não mandar duplicado.
 
             const targetTimeMs = now.getTime() + (window.minutes * 60000);
-            // Margem ajustada: Se o cron roda a cada 10-15 min, uma margem de 20 min é suficiente.
-            // O banco está em UTC, o servidor está em UTC. Não precisamos de margems gigantes se os dados estiverem consistentes.
-            const marginMs = 20 * 60000;
+            // Margem reduzida para 10 minutos para evitar overlaps entre janelas (ex: 1h e 30m)
+            const marginMs = 10 * 60000;
 
             const targetStart = new Date(targetTimeMs - marginMs);
             const targetEnd = new Date(targetTimeMs + marginMs);
@@ -87,9 +92,9 @@ export async function GET(req: Request) {
 
             const { data: appts, error } = await (supabase as any)
                 .from('appointments')
-                .select('*, clients(fcm_token), tenants(name, id), services(name)')
+                .select('*, clients!inner(fcm_token, last_notified_at), tenants(name, id), services(name)')
                 .eq('status', 'scheduled')
-                .eq(window.col, false)
+                .or(`${window.pushCol}.eq.false,${window.wapCol}.eq.false,${window.fallbackCol}.eq.false`)
                 .gte('start_time', targetStart.toISOString())
                 .lte('start_time', targetEnd.toISOString());
 
@@ -102,85 +107,93 @@ export async function GET(req: Request) {
 
             for (const appt of appts) {
                 try {
-                    let sentPush = false;
-                    let sentWap = false;
+                    const key = window.type as '24h' | '1h' | '30m';
 
                     // 1. Tentar Enviar PUSH
                     const pushToken = appt.clients?.fcm_token;
-                    if (pushToken && firebaseAdmin.apps.length > 0) {
-                        try {
-                            await firebaseAdmin.messaging().send({
-                                token: pushToken,
-                                notification: {
-                                    title: window.title + (appt.tenants?.name ? ` na ${appt.tenants.name}` : ''),
-                                    body: window.getPushBody(appt),
-                                },
-                                android: { priority: 'high' },
-                                apns: { payload: { aps: { sound: 'default' } } }
-                            });
-                            sentPush = true;
-                        } catch (e: any) {
-                            console.error(`[PUSH_ERROR] Appt ${appt.id}:`, e.message);
+                    const { data: pushLock } = await supabase
+                        .from('appointments')
+                        .update({ [window.pushCol]: true, [window.fallbackCol]: true })
+                        .eq('id', appt.id)
+                        .eq(window.pushCol, false)
+                        .select('id')
+                        .maybeSingle();
+
+                    if (pushLock) {
+                        const lastNotified = appt.clients?.last_notified_at;
+                        const isRecent = lastNotified && (Date.now() - new Date(lastNotified).getTime() < 30000); // 30s debounce
+
+                        if (pushToken && firebaseAdmin.apps.length > 0 && !isRecent) {
+                            try {
+                                await firebaseAdmin.messaging().send({
+                                    token: pushToken,
+                                    notification: {
+                                        title: window.title + (appt.tenants?.name ? ` na ${appt.tenants.name}` : ''),
+                                        body: window.getPushBody(appt),
+                                    },
+                                    android: { priority: 'high' },
+                                    apns: { payload: { aps: { sound: 'default' } } }
+                                });
+                                results[key].push++;
+
+                                // Atualizar timestamp global de notificação para este cliente
+                                await supabase.from('clients').update({ last_notified_at: new Date().toISOString() }).eq('id', appt.client_id);
+                                await supabase.from('appointments').update({ last_notified_at: new Date().toISOString() }).eq('id', appt.id);
+                            } catch (e: any) {
+                                console.error(`[PUSH_ERROR] Appt ${appt.id}:`, e.message);
+                            }
+                        } else if (isRecent) {
+                            console.log(`[DEBOUNCE] Push ignorado para cliente ${appt.client_id} (notificado recentemente)`);
                         }
                     }
 
                     // 2. Tentar Enviar WHATSAPP
-                    try {
-                        const { data: wapConfig } = await supabase
-                            .from('whatsapp_configs')
-                            .select('access_token, phone_number_id')
-                            .eq('tenant_id', appt.tenant_id)
-                            .maybeSingle();
-
-                        if (wapConfig?.access_token) {
-                            const creds = {
-                                accessToken: wapConfig.access_token,
-                                phoneNumberId: wapConfig.phone_number_id
-                            };
-
-                            const firstName = appt.client_name?.split(' ')[0] || 'Cliente';
-                            // Ajuste Fuso Horário: O banco salva em UTC (ex: 14:00Z) mas queremos que isso seja 14:00 Horário Local.
-                            // Ao converter '2026-02-04T14:00:00Z' para BRT, vira 11:00. Perdemos 3 horas.
-                            // Solução: Criar data tratando a string como local ou somar 3h.
-                            const dbDate = new Date(appt.start_time);
-
-                            // Adiciona 3 horas para "anular" o efeito do UTC-3 na visualização
-                            // Se era 14:00 UTC (11:00 BRT), vira 17:00 UTC (14:00 BRT visualmente)
-                            // A melhor forma para exibir na mensagem é usar a string formatada forçada.
-
-                            const brTimeStr = new Intl.DateTimeFormat('pt-BR', {
-                                timeZone: 'America/Sao_Paulo',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                day: '2-digit',
-                                month: '2-digit'
-                            }).format(dbDate);
-
-                            const [dateStr, timeStr] = brTimeStr.split(', ');
-                            const serviceName = appt.services?.name || appt.notes?.replace('Serviço: ', '').replace('Serviços: ', '') || 'seu horário';
-
-                            await WhatsAppClient.sendText(
-                                creds,
-                                appt.client_phone,
-                                window.getWapMessage(firstName, dateStr, timeStr, serviceName)
-                            );
-                            sentWap = true;
-                        }
-                    } catch (e: any) {
-                        console.error(`[WAP_ERROR] Appt ${appt.id}:`, e.message);
-                    }
-
-                    // 3. Atualizar flag se enviou pelo menos um (ou se tentou ambos e falhou mas queremos evitar repetição)
-                    // Marcamos como true para não tentar de novo na próxima rodada do cron
-                    await supabase
+                    const { data: wapLock } = await supabase
                         .from('appointments')
-                        .update({ [window.col]: true })
-                        .eq('id', appt.id);
+                        .update({ [window.wapCol]: true, [window.fallbackCol]: true })
+                        .eq('id', appt.id)
+                        .eq(window.wapCol, false)
+                        .select('id')
+                        .maybeSingle();
 
-                    const key = window.type as '24h' | '1h' | '30m';
-                    if (sentPush) results[key].push++;
-                    if (sentWap) results[key].whatsapp++;
+                    if (wapLock) {
+                        try {
+                            const { data: wapConfig } = await supabase
+                                .from('whatsapp_configs')
+                                .select('access_token, phone_number_id')
+                                .eq('tenant_id', appt.tenant_id)
+                                .maybeSingle();
 
+                            if (wapConfig?.access_token && appt.client_phone) {
+                                const creds = {
+                                    accessToken: wapConfig.access_token,
+                                    phoneNumberId: wapConfig.phone_number_id
+                                };
+
+                                const firstName = appt.client_name?.split(' ')[0] || 'Cliente';
+                                const dbDate = new Date(appt.start_time);
+                                const brTimeStr = new Intl.DateTimeFormat('pt-BR', {
+                                    timeZone: 'America/Sao_Paulo',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    day: '2-digit',
+                                    month: '2-digit'
+                                }).format(dbDate);
+
+                                const [dateStr, timeStr] = brTimeStr.split(', ');
+                                const serviceName = appt.services?.name || appt.notes?.replace('Serviço: ', '').replace('Serviços: ', '') || 'seu horário';
+
+                                await WhatsAppClient.sendText(
+                                    creds,
+                                    appt.client_phone,
+                                    window.getWapMessage(firstName, dateStr, timeStr, serviceName)
+                                );
+                                results[key].whatsapp++;
+                            }
+                        } catch (e: any) {
+                            console.error(`[WAP_ERROR] Appt ${appt.id}:`, e.message);
+                        }
+                    }
                 } catch (err: any) {
                     results.errors.push(`Appt ${appt.id}: ${err.message}`);
                 }
@@ -194,7 +207,7 @@ export async function GET(req: Request) {
             console.error('[CRON_INACTIVITY_ERROR]', e);
         }
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, results });
     } catch (error: any) {
         console.error('[CRON_FATAL_ERROR]', error);
         return NextResponse.json({ error: error.message }, { status: 500 });

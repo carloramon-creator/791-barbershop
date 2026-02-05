@@ -46,11 +46,45 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         const time = format(new Date(appt.start_time), 'HH:mm');
         const message = `Olá ${clientName}! 👋\nEstamos te aguardando para o seu agendamento das ${time}. Até já! 💈`;
 
-        // 4. Enviar via Meta API
-        await WhatsAppClient.sendText({
-            accessToken: config.access_token,
-            phoneNumberId: config.phone_number_id
-        }, phone, message);
+        // 4. Marcar como notificado (Idempotente)
+        // Isso evita que cliques duplos ou retentativas de infraestrutura enviem a mesma mensagem
+        const { data: lock, error: lockError } = await getSupabaseAdmin()
+            .from('appointments')
+            .update({ notified_manual_wap: true })
+            .eq('id', id)
+            .eq('notified_manual_wap', false)
+            .select('id')
+            .maybeSingle();
+
+        if (lockError) throw lockError;
+
+        if (!lock) {
+            console.log('[NOTIFY] Ignorando notificação duplicada para agendamento:', id);
+            return NextResponse.json({ success: true, message: 'Notificação já enviada' });
+        }
+
+        // 5. Enviar via Meta API (com check global de debounce para evitar duplicidade em perfis replicados)
+        const { data: clientData } = await getSupabaseAdmin()
+            .from('clients')
+            .select('last_notified_at')
+            .eq('id', appt.client_id)
+            .maybeSingle();
+
+        const lastNotif = clientData?.last_notified_at;
+        const isRecent = lastNotif && (Date.now() - new Date(lastNotif).getTime() < 5000); // 5s debounce
+
+        if (!isRecent) {
+            await WhatsAppClient.sendText({
+                accessToken: config.access_token,
+                phoneNumberId: config.phone_number_id
+            }, phone, message);
+
+            // Atualizar timestamps
+            await getSupabaseAdmin().from('clients').update({ last_notified_at: new Date().toISOString() }).eq('id', appt.client_id);
+            await getSupabaseAdmin().from('appointments').update({ last_notified_at: new Date().toISOString() }).eq('id', id);
+        } else {
+            console.log('[NOTIFY] Ignorando por debounce global (notificado recentemente):', appt.client_id);
+        }
 
         return NextResponse.json({ success: true });
     } catch (error: any) {
