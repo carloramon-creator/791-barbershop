@@ -15,9 +15,9 @@ export interface AgentContext {
  * Responsável por processar a lógica de conversação, intenções e fluxos.
  */
 export class WhatsAppAgent {
-    static async handleMessage(ctx: AgentContext, phone: string, text: string = '', buttonId?: string) {
+    static async handleMessage(ctx: AgentContext, payload: { from: string, text: string, buttonId?: string }) {
+        const { from, text, buttonId } = payload;
         try {
-            const from = phone;
             const session = await WhatsAppSession.get(ctx.tenantId, from);
             const input = (text || '').toUpperCase();
 
@@ -464,6 +464,12 @@ export class WhatsAppAgent {
             const clientName = client?.name || 'Cliente WhatsApp';
             console.log('[WHATSAPP_BOOKING] Client name:', clientName);
 
+            if (!s) {
+                const { data: fetchedS } = await getSupabaseAdmin().from('services').select('name, duration_minutes').eq('id', context.serviceId).single();
+                context.serviceName = fetchedS?.name || context.serviceName;
+            }
+            const serviceName = s?.name || context.serviceName || 'Serviço';
+
             const appointmentData = {
                 tenant_id: ctx.tenantId,
                 client_id: clientId,
@@ -473,7 +479,8 @@ export class WhatsAppAgent {
                 service_id: context.serviceId,
                 start_time: start.toISOString(),
                 end_time: addMinutes(start, s?.duration_minutes || 30).toISOString(),
-                status: 'scheduled'
+                status: 'scheduled',
+                notes: `Serviço: ${serviceName}`
             };
             console.log('[WHATSAPP_BOOKING] Appointment data:', appointmentData);
 
