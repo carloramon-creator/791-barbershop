@@ -252,7 +252,8 @@ export class WhatsAppAgent {
             if (buttonId || (text && text.toUpperCase() !== 'FILA')) {
                 const selectedId = buttonId || text;
                 try {
-                    const clientId = await this.getOrCreateClient(ctx.tenantId, phone);
+                    const client = await this.getOrCreateClient(ctx.tenantId, phone);
+                    const clientName = client.name || 'Cliente WhatsApp';
                     let targetBarberId = null;
 
                     if (selectedId === 'ANY_BARBER_QUEUE') {
@@ -273,19 +274,12 @@ export class WhatsAppAgent {
                     const { count } = await getSupabaseAdmin().from('client_queue').select('*', { count: 'exact', head: true }).eq('tenant_id', ctx.tenantId).eq('barber_id', targetBarberId).eq('status', 'waiting');
                     const pos = (count || 0) + 1;
 
-                    const { data: clientData } = await getSupabaseAdmin()
-                        .from('clients')
-                        .select('name')
-                        .eq('id', clientId)
-                        .single();
-                    const clientName = clientData?.name || 'Cliente WhatsApp';
-
                     const { error: insertError } = await getSupabaseAdmin().from('client_queue').insert({
                         tenant_id: ctx.tenantId,
                         barber_id: targetBarberId,
-                        client_id: clientId,
+                        client_id: client.id,
                         client_name: clientName,
-                        client_phone: phone,
+                        client_phone: client.phone,
                         status: 'waiting',
                         position: pos
                     });
@@ -338,18 +332,18 @@ export class WhatsAppAgent {
         const variants = this.getPhoneVariants(phone);
         const orQuery = variants.map(v => `phone.eq.${v}`).join(',');
 
-        const { data: existing } = await admin.from('clients').select('id, name, birth_date').eq('tenant_id', tenantId).or(orQuery).limit(1).maybeSingle();
+        const { data: existing } = await admin.from('clients').select('id, name, phone, birth_date').eq('tenant_id', tenantId).or(orQuery).limit(1).maybeSingle();
 
         if (existing) {
             if (name || birthDate) await admin.from('clients').update({ name: name || existing.name, birth_date: birthDate || existing.birth_date }).eq('id', existing.id);
-            return existing.id;
+            return { id: existing.id, phone: existing.phone, name: name || existing.name };
         }
 
         const clean = phone.replace(/\D/g, '');
         const normalized = (clean.length === 10 || clean.length === 11) ? `55${clean}` : clean;
 
         const { data: created } = await admin.from('clients').insert({ tenant_id: tenantId, phone: normalized, name: name || 'Cliente WhatsApp', birth_date: birthDate || null }).select().single();
-        return created.id;
+        return { id: created.id, phone: created.phone, name: created.name };
     }
 
     private static async searchService(tenantId: string, query: string) {
@@ -477,18 +471,8 @@ export class WhatsAppAgent {
                 throw new Error(`Service error: ${serviceError.message}`);
             }
 
-            const clientId = await this.getOrCreateClient(ctx.tenantId, phone);
-            console.log('[WHATSAPP_BOOKING] Client ID:', clientId);
-
-            // Buscar o nome do cliente do banco
-            const { data: client } = await getSupabaseAdmin()
-                .from('clients')
-                .select('name')
-                .eq('id', clientId)
-                .single();
-
-            const clientName = client?.name || 'Cliente WhatsApp';
-            console.log('[WHATSAPP_BOOKING] Client name:', clientName);
+            const client = await this.getOrCreateClient(ctx.tenantId, phone);
+            const clientName = client.name || 'Cliente WhatsApp';
 
             if (!s) {
                 const { data: fetchedS } = await getSupabaseAdmin().from('services').select('name, duration_minutes').eq('id', context.serviceId).single();
@@ -498,8 +482,8 @@ export class WhatsAppAgent {
 
             const appointmentData = {
                 tenant_id: ctx.tenantId,
-                client_id: clientId,
-                client_phone: phone,
+                client_id: client.id,
+                client_phone: client.phone,
                 client_name: clientName,
                 barber_id: context.barberId,
                 service_id: context.serviceId,
