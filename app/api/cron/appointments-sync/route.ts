@@ -170,7 +170,7 @@ export async function GET(req: Request) {
                                     phoneNumberId: wapConfig.phone_number_id
                                 };
 
-                                const firstName = appt.clients?.name?.split(' ')[0] || 'Cliente';
+                                const firstName = appt.client_name?.split(' ')[0] || 'Cliente';
                                 const dbDate = new Date(appt.start_time);
                                 const dateStr = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' }).format(dbDate);
                                 const timeStr = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }).format(dbDate);
