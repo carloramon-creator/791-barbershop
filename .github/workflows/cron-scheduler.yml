@@ -1,0 +1,20 @@
+name: Cloud Cron Scheduler
+
+on:
+  schedule:
+    - cron: '*/15 * * * *' # A cada 15 minutos
+  workflow_dispatch: # Permite rodar manualmente pelo GitHub
+
+jobs:
+  ping_crons:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Appointment Reminders
+        run: |
+          curl -X GET "https://791barber.com/api/cron/appointments-sync?secret=${{ secrets.CRON_SECRET }}"
+          
+      - name: Ping Birthday Vouchers (Daily at 09:00 BRT)
+        # 09:00 BRT é 12:00 UTC
+        if: github.event.schedule == '0 12 * * *' || github.event_name == 'workflow_dispatch'
+        run: |
+          curl -X GET "https://791barber.com/api/cron/birthday-vouchers?secret=${{ secrets.CRON_SECRET }}"
