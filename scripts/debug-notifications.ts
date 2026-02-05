@@ -1,6 +1,8 @@
+import { createClient } from '@supabase/supabase-js';
+import * as dotenv from 'dotenv';
+import path from 'path';
 
-require('dotenv').config({ path: '.env.local' }); // Tenta carregar do .env.local se existir
-const { createClient } = require('@supabase/supabase-js');
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 // Configuração simplificada para rodar direto com node/tsx
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -84,7 +86,7 @@ async function debugNotifications() {
                 status = '✅ DENTRO DA JANELA - DEVERIA NOTIFICAR AGORA';
             }
 
-            console.log(`   [Janela ${win.type} (${targetMin}m)]: Flag Banco: ${apt[win.col]} | Range aceito: ${minRange} a ${maxRange}m | Status: ${status}`);
+            console.log(`   [Janela ${win.type} (${targetMin}m)]: Flag Banco: ${(apt as any)[win.col]} | Range aceito: ${minRange} a ${maxRange}m | Status: ${status}`);
         }
     }
     console.log('\n-----------------------------------------------------------');

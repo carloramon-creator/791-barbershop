@@ -1,12 +1,11 @@
+import { createClient } from '@supabase/supabase-js';
+import * as dotenv from 'dotenv';
+import path from 'path';
+import axios from 'axios';
 
-require('dotenv').config({ path: '.env.local' });
-const { createClient } = require('@supabase/supabase-js');
-// WhatsAppClient removido pois teste é direto com axios
-// Melhor usar o próprio tsx para rodar o arquivo original se possível, mas vou simplificar fazendo a chamada direta axios aqui para testar o token
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
-const axios = require('axios');
-
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
 async function debugWhats() {
     const phone = '554891305547';
