@@ -97,7 +97,7 @@ export function getAvailableSlots(
     // baseDate é uma data local (sem timezone), então criamos "now" da mesma forma
     const nowUTC = new Date();
     const nowLocal = new Date(baseDate);
-    nowLocal.setHours(nowUTC.getHours() - 3, nowUTC.getMinutes(), 0, 0); // Converte UTC para BRT (-3h)
+    nowLocal.setHours(nowUTC.getUTCHours() - 3, nowUTC.getUTCMinutes(), 0, 0); // Converte UTC para BRT (-3h)
 
     while (current < workEnd) {
         const slotEnd = addMinutes(current, duration);
