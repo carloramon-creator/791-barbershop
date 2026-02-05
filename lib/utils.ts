@@ -1,6 +1,23 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
+/**
+ * Normaliza o telefone para o formato E.164 (apenas números).
+ * Heurística:
+ * - Se tiver 10 ou 11 dígitos, assume Brasil e adiciona 55.
+ * - Caso contrário, mantém o que foi digitado (internacional).
+ */
+export function normalizePhone(value: string | undefined | null) {
+  if (!value) return '';
+  const clean = value.replace(/\D/g, '');
+
+  if (clean.length === 10 || clean.length === 11) {
+    return `55${clean}`;
+  }
+
+  return clean;
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -8,12 +25,28 @@ export function cn(...inputs: ClassValue[]) {
 export function formatPhone(value: string) {
   if (!value) return "";
   const numbers = value.replace(/\D/g, "");
-  if (numbers.length <= 11) {
+
+  // Se começar com 55 e tiver o tamanho de um número BR (12 ou 13 dígitos com o 55)
+  if (numbers.startsWith("55") && (numbers.length === 12 || numbers.length === 13)) {
+    const local = numbers.slice(2);
+    return local
+      .replace(/^(\d{2})(\d)/g, "($1) $2")
+      .replace(/(\d)(\d{4})$/, "$1-$2");
+  }
+
+  // Se for internacional (mais de 11 dígitos e não caiu na regra do 55 BR)
+  if (numbers.length > 11) {
+    return `+${numbers.slice(0, 2)} ${numbers.slice(2)}`;
+  }
+
+  // Formato local BR (sem o 55)
+  if (numbers.length <= 11 && numbers.length >= 10) {
     return numbers
       .replace(/^(\d{2})(\d)/g, "($1) $2")
       .replace(/(\d)(\d{4})$/, "$1-$2");
   }
-  return numbers;
+
+  return value;
 }
 
 export function formatCPF(value: string) {

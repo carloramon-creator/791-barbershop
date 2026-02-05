@@ -48,14 +48,18 @@ export class WhatsAppAgent {
     private static async handleIdleState(ctx: AgentContext, phone: string, text: string = '', buttonId?: string) {
         const input = text.toUpperCase();
 
-        const phoneWithout55 = phone.startsWith('55') ? phone.slice(2) : phone;
-        const phoneWith55 = phone.startsWith('55') ? phone : `55${phone}`;
+        // Normaliza e prepara variantes de busca para garantir compatibilidade com dados antigos
+        const clean = phone.replace(/\D/g, '');
+        const normalized = (clean.length === 10 || clean.length === 11) ? `55${clean}` : clean;
+
+        const phoneWithout55 = normalized.startsWith('55') ? normalized.slice(2) : normalized;
+        const phoneWith55 = normalized.startsWith('55') ? normalized : `55${normalized}`;
 
         const { data: client } = await getSupabaseAdmin()
             .from('clients')
             .select('id, name, birth_date')
             .eq('tenant_id', ctx.tenantId)
-            .or(`phone.eq.${phone},phone.eq.${phoneWithout55},phone.eq.${phoneWith55}`)
+            .or(`phone.eq.${normalized},phone.eq.${phoneWithout55},phone.eq.${phoneWith55}`)
             .limit(1)
             .maybeSingle();
 
@@ -266,14 +270,22 @@ export class WhatsAppAgent {
 
     private static async getOrCreateClient(tenantId: string, phone: string, name?: string, birthDate?: string) {
         const admin = getSupabaseAdmin();
-        const pLess = phone.startsWith('55') ? phone.slice(2) : phone;
-        const pPlus = phone.startsWith('55') ? phone : `55${phone}`;
-        const { data: existing } = await admin.from('clients').select('id, name, birth_date').eq('tenant_id', tenantId).or(`phone.eq.${phone},phone.eq.${pLess},phone.eq.${pPlus}`).limit(1).maybeSingle();
+
+        // Normaliza para E.164 (55...) se for 10-11 dígitos
+        const clean = phone.replace(/\D/g, '');
+        const normalized = (clean.length === 10 || clean.length === 11) ? `55${clean}` : clean;
+
+        const pLess = normalized.startsWith('55') ? normalized.slice(2) : normalized;
+        const pPlus = normalized.startsWith('55') ? normalized : `55${normalized}`;
+
+        const { data: existing } = await admin.from('clients').select('id, name, birth_date').eq('tenant_id', tenantId).or(`phone.eq.${normalized},phone.eq.${pLess},phone.eq.${pPlus}`).limit(1).maybeSingle();
+
         if (existing) {
             if (name || birthDate) await admin.from('clients').update({ name: name || existing.name, birth_date: birthDate || existing.birth_date }).eq('id', existing.id);
             return existing.id;
         }
-        const { data: created } = await admin.from('clients').insert({ tenant_id: tenantId, phone, name: name || 'Cliente WhatsApp', birth_date: birthDate || null }).select().single();
+
+        const { data: created } = await admin.from('clients').insert({ tenant_id: tenantId, phone: normalized, name: name || 'Cliente WhatsApp', birth_date: birthDate || null }).select().single();
         return created.id;
     }
 

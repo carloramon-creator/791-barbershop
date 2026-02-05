@@ -31,7 +31,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { cn, formatPhone, formatCPF, formatCurrency } from '@/lib/utils';
+import { cn, formatPhone, formatCPF, formatCurrency, normalizePhone } from '@/lib/utils';
 import {
     Dialog,
     DialogContent,
@@ -138,10 +138,17 @@ export default function ClientsPage() {
         e.preventDefault();
         try {
             setSaving(true);
+
+            // Normaliza o telefone antes de salvar (E.164)
+            const submissionData = {
+                ...formData,
+                phone: normalizePhone(formData.phone)
+            };
+
             if (editingClient) {
-                await Api.updateClient(editingClient.id, formData);
+                await Api.updateClient(editingClient.id, submissionData);
             } else {
-                await Api.createClient(formData);
+                await Api.createClient(submissionData);
             }
             setShowRegisterDialog(false);
             setEditingClient(null);
@@ -397,7 +404,7 @@ export default function ClientsPage() {
                                                     <div className="flex flex-col gap-1">
                                                         <div className="text-slate-300 flex items-center gap-2 text-sm font-medium">
                                                             <Phone size={14} className="text-blue-500" />
-                                                            {client.phone}
+                                                            {formatPhone(client.phone)}
                                                         </div>
                                                     </div>
                                                 </td>
