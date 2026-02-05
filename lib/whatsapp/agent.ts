@@ -392,15 +392,44 @@ export class WhatsAppAgent {
 
     private static async finalizeBooking(ctx: AgentContext, phone: string, context: any) {
         try {
+            console.log('[WHATSAPP_BOOKING] Starting booking process:', { phone, context });
             const start = new Date(context.startTimeISO + '-03:00');
-            const { data: s } = await getSupabaseAdmin().from('services').select('name, duration_minutes').eq('id', context.serviceId).single();
-            await getSupabaseAdmin().from('appointments').insert({
-                tenant_id: ctx.tenantId, client_id: await this.getOrCreateClient(ctx.tenantId, phone), client_phone: phone, client_name: context.name, barber_id: context.barberId, service_id: context.serviceId, start_time: start.toISOString(), end_time: addMinutes(start, s?.duration_minutes || 30).toISOString(), status: 'scheduled'
-            });
+            console.log('[WHATSAPP_BOOKING] Parsed start time:', start.toISOString());
+
+            const { data: s, error: serviceError } = await getSupabaseAdmin().from('services').select('name, duration_minutes').eq('id', context.serviceId).single();
+            if (serviceError) {
+                console.error('[WHATSAPP_BOOKING] Service fetch error:', serviceError);
+                throw new Error(`Service error: ${serviceError.message}`);
+            }
+
+            const clientId = await this.getOrCreateClient(ctx.tenantId, phone);
+            console.log('[WHATSAPP_BOOKING] Client ID:', clientId);
+
+            const appointmentData = {
+                tenant_id: ctx.tenantId,
+                client_id: clientId,
+                client_phone: phone,
+                client_name: context.name,
+                barber_id: context.barberId,
+                service_id: context.serviceId,
+                start_time: start.toISOString(),
+                end_time: addMinutes(start, s?.duration_minutes || 30).toISOString(),
+                status: 'scheduled'
+            };
+            console.log('[WHATSAPP_BOOKING] Appointment data:', appointmentData);
+
+            const { data: apt, error: aptError } = await getSupabaseAdmin().from('appointments').insert(appointmentData).select().single();
+            if (aptError) {
+                console.error('[WHATSAPP_BOOKING] Insert error:', aptError);
+                throw new Error(`Insert error: ${aptError.message}`);
+            }
+
+            console.log('[WHATSAPP_BOOKING] Success! Appointment created:', apt?.id);
             await WhatsAppClient.sendText(ctx.creds, phone, "✅ *Agendado!*");
             return WhatsAppSession.clear(ctx.tenantId, phone);
         } catch (e: any) {
-            return WhatsAppClient.sendText(ctx.creds, phone, "Erro ao agendar.");
+            console.error('[WHATSAPP_BOOKING_ERROR] Full error:', e.message, e.stack);
+            return WhatsAppClient.sendText(ctx.creds, phone, `Erro ao agendar: ${e.message}`);
         }
     }
 
