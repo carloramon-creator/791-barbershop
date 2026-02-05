@@ -45,21 +45,54 @@ export class WhatsAppAgent {
         }
     }
 
+    /**
+     * Gera variantes de um telefone para busca robusta no banco de dados.
+     * Cobre casos: com/sem 55, com/sem 9º dígito (Brasil).
+     */
+    private static getPhoneVariants(phone: string): string[] {
+        const clean = phone.replace(/\D/g, '');
+        const variants = new Set<string>();
+
+        variants.add(clean);
+
+        // Se for BR (ou suspeito de ser)
+        if (clean.length >= 10) {
+            const has55 = clean.startsWith('55');
+            const local = has55 ? clean.slice(2) : clean;
+
+            // Variantes com e sem 55
+            variants.add(local);
+            variants.add('55' + local);
+
+            // Variantes do 9º dígito (se o DDD for BR 2 dígitos)
+            // Se tem 11 dígitos (com o 9), gera a versão com 10
+            if (local.length === 11 && local[2] === '9') {
+                const without9 = local.slice(0, 2) + local.slice(3);
+                variants.add(without9);
+                variants.add('55' + without9);
+            }
+            // Se tem 10 dígitos (sem o 9), gera a versão com 9 (heurística)
+            else if (local.length === 10) {
+                const with9 = local.slice(0, 2) + '9' + local.slice(2);
+                variants.add(with9);
+                variants.add('55' + with9);
+            }
+        }
+
+        return Array.from(variants);
+    }
+
     private static async handleIdleState(ctx: AgentContext, phone: string, text: string = '', buttonId?: string) {
         const input = text.toUpperCase();
 
-        // Normaliza e prepara variantes de busca para garantir compatibilidade com dados antigos
-        const clean = phone.replace(/\D/g, '');
-        const normalized = (clean.length === 10 || clean.length === 11) ? `55${clean}` : clean;
-
-        const phoneWithout55 = normalized.startsWith('55') ? normalized.slice(2) : normalized;
-        const phoneWith55 = normalized.startsWith('55') ? normalized : `55${normalized}`;
+        const variants = this.getPhoneVariants(phone);
+        const orQuery = variants.map(v => `phone.eq.${v}`).join(',');
 
         const { data: client } = await getSupabaseAdmin()
             .from('clients')
             .select('id, name, birth_date')
             .eq('tenant_id', ctx.tenantId)
-            .or(`phone.eq.${normalized},phone.eq.${phoneWithout55},phone.eq.${phoneWith55}`)
+            .or(orQuery)
             .limit(1)
             .maybeSingle();
 
@@ -271,19 +304,18 @@ export class WhatsAppAgent {
     private static async getOrCreateClient(tenantId: string, phone: string, name?: string, birthDate?: string) {
         const admin = getSupabaseAdmin();
 
-        // Normaliza para E.164 (55...) se for 10-11 dígitos
-        const clean = phone.replace(/\D/g, '');
-        const normalized = (clean.length === 10 || clean.length === 11) ? `55${clean}` : clean;
+        const variants = this.getPhoneVariants(phone);
+        const orQuery = variants.map(v => `phone.eq.${v}`).join(',');
 
-        const pLess = normalized.startsWith('55') ? normalized.slice(2) : normalized;
-        const pPlus = normalized.startsWith('55') ? normalized : `55${normalized}`;
-
-        const { data: existing } = await admin.from('clients').select('id, name, birth_date').eq('tenant_id', tenantId).or(`phone.eq.${normalized},phone.eq.${pLess},phone.eq.${pPlus}`).limit(1).maybeSingle();
+        const { data: existing } = await admin.from('clients').select('id, name, birth_date').eq('tenant_id', tenantId).or(orQuery).limit(1).maybeSingle();
 
         if (existing) {
             if (name || birthDate) await admin.from('clients').update({ name: name || existing.name, birth_date: birthDate || existing.birth_date }).eq('id', existing.id);
             return existing.id;
         }
+
+        const clean = phone.replace(/\D/g, '');
+        const normalized = (clean.length === 10 || clean.length === 11) ? `55${clean}` : clean;
 
         const { data: created } = await admin.from('clients').insert({ tenant_id: tenantId, phone: normalized, name: name || 'Cliente WhatsApp', birth_date: birthDate || null }).select().single();
         return created.id;
