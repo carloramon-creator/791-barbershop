@@ -301,11 +301,16 @@ export default function AppointmentsPage() {
     const handleNotify = async (appt: any) => {
         setNotifyingId(appt.id);
         try {
-            await Api.notifyAppointment(appt.id);
-            alert('Notificação enviada com sucesso pelo WhatsApp automático!');
+            const res = await Api.notifyAppointment(appt.id);
+            if (res.message) {
+                alert(res.message);
+            } else {
+                alert('Notificação enviada com sucesso pelo WhatsApp automático!');
+            }
         } catch (error: any) {
             console.error(error);
-            if (confirm('Erro ao enviar pelo WhatsApp automático. Deseja tentar enviar manualmente pelo WhatsApp Web?')) {
+            const errorMsg = error.message || 'Erro desconhecido';
+            if (confirm(`Erro ao enviar pelo WhatsApp automático: ${errorMsg}. Deseja tentar enviar manualmente pelo WhatsApp Web?`)) {
                 const phone = appt.client_phone?.replace(/\D/g, '');
                 if (!phone) return alert('Telefone não disponível');
                 const company = barbershopName ? `A ${barbershopName}` : 'Nossa barbearia';
