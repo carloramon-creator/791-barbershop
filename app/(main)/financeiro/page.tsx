@@ -209,6 +209,25 @@ export default function FinanceiroPage() {
         }
     };
 
+    const handleDeleteTransaction = async (recordId: string, isPaid: boolean) => {
+        if (isPaid) {
+            if (!confirm('⚠️ ATENÇÃO: Esta despesa está PAGA!\n\nExcluir uma despesa paga irá alterar os valores totais do dashboard.\n\nDeseja realmente excluir?')) {
+                return;
+            }
+        } else {
+            if (!confirm('Deseja excluir esta despesa?')) return;
+        }
+
+        try {
+            await Api.deleteFinanceRecord(recordId);
+            await fetchData();
+            console.log('✅ Despesa excluída');
+        } catch (err: unknown) {
+            const error = err as Error;
+            alert('Erro ao excluir despesa: ' + error.message);
+        }
+    };
+
     const handleCreateCategory = async () => {
         try {
             if (!newCategoryName) return;
@@ -251,10 +270,10 @@ export default function FinanceiroPage() {
             .filter(r => (r.type === 'revenue' || (r.type as any) === 'income') && (r.is_paid || r.date <= todayStr))
             .reduce((acc, r) => acc + Number(r.value), 0);
 
-    // Total Expenses: ALL paid expenses OR unpaid until today
+    // Total Expenses: ONLY PAID expenses (regardless of due date), using paid_amount if available
     const totalExpenses = financeRecords
-        .filter(r => r.type === 'expense' && (r.is_paid || r.date <= todayStr))
-        .reduce((acc, r) => acc + Number(r.value), 0);
+        .filter(r => r.type === 'expense' && r.is_paid)
+        .reduce((acc, r) => acc + Number(r.paid_amount || r.value), 0);
 
     const netBalance = totalRevenue - totalExpenses;
 
@@ -680,6 +699,15 @@ export default function FinanceiroPage() {
                                                 >
                                                     <CheckCircle2 size={16} className="mr-1" />
                                                     {r.is_paid ? 'Pago' : 'Pagar'}
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 px-3 text-red-400 hover:text-red-300 hover:bg-red-900/20 transition-all"
+                                                    onClick={() => handleDeleteTransaction(r.id, r.is_paid)}
+                                                    title="Excluir despesa"
+                                                >
+                                                    🗑️
                                                 </Button>
                                             </div>
                                         )}

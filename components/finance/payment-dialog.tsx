@@ -25,8 +25,36 @@ export function PaymentDialog({
     onConfirm
 }: PaymentDialogProps) {
     const [paidDate, setPaidDate] = useState(new Date().toISOString().split('T')[0]);
-    const [paidAmount, setPaidAmount] = useState(originalValue.toString());
+    const [paidAmount, setPaidAmount] = useState(originalValue.toFixed(2));
+    const [displayValue, setDisplayValue] = useState(
+        originalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    );
     const [loading, setLoading] = useState(false);
+
+    const handleAmountChange = (value: string) => {
+        // Remove tudo exceto dígitos
+        const numbers = value.replace(/\D/g, '');
+
+        if (numbers === '') {
+            setDisplayValue('');
+            setPaidAmount('0');
+            return;
+        }
+
+        // Converte para número (centavos)
+        const numericValue = parseInt(numbers) / 100;
+
+        // Atualiza o valor real
+        setPaidAmount(numericValue.toString());
+
+        // Formata para exibição
+        setDisplayValue(
+            numericValue.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            })
+        );
+    };
 
     const handleConfirm = async () => {
         if (!paidDate || !paidAmount) {
@@ -46,7 +74,8 @@ export function PaymentDialog({
             onOpenChange(false);
             // Reset form
             setPaidDate(new Date().toISOString().split('T')[0]);
-            setPaidAmount(originalValue.toString());
+            setPaidAmount(originalValue.toFixed(2));
+            setDisplayValue(originalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
         } catch (err) {
             console.error('Error confirming payment:', err);
         } finally {
@@ -90,11 +119,10 @@ export function PaymentDialog({
                             <DollarSign size={14} /> Valor Pago (R$)
                         </Label>
                         <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            value={paidAmount}
-                            onChange={e => setPaidAmount(e.target.value)}
+                            type="text"
+                            placeholder="0,00"
+                            value={displayValue}
+                            onChange={e => handleAmountChange(e.target.value)}
                             className="bg-slate-800 border-slate-700 h-11 text-green-400 font-bold text-lg"
                         />
                         <p className="text-xs text-slate-500">

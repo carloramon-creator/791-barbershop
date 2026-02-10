@@ -127,14 +127,22 @@ export default function DespesasPagasPage() {
                             />
                         </div>
                     </div>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setDateFilter({ start: '', end: new Date().toISOString().split('T')[0] })}
-                        className="mt-4 border-slate-700 text-slate-400"
-                    >
-                        Limpar Filtros
-                    </Button>
+                    <div className="flex gap-2 mt-4">
+                        <Button
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700"
+                        >
+                            Filtrar
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setDateFilter({ start: '', end: new Date().toISOString().split('T')[0] })}
+                            className="border-slate-700 text-slate-400"
+                        >
+                            Limpar Filtros
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
 

@@ -146,6 +146,7 @@ export const Api = {
     getFinanceRecords: () => apiFetch('/api/finance'),
     createFinanceRecord: (payload: Record<string, unknown>) => apiFetch('/api/finance', { method: 'POST', body: JSON.stringify(payload) }),
     updateFinanceRecord: (id: string, payload: Record<string, unknown>) => apiFetch(`/api/finance/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+    deleteFinanceRecord: (id: string) => apiFetch(`/api/finance/${id}`, { method: 'DELETE' }),
     getFinanceCategories: () => apiFetch('/api/finance/categories'),
     createFinanceCategory: (payload: Record<string, unknown>) => apiFetch('/api/finance/categories', { method: 'POST', body: JSON.stringify(payload) }),
 
