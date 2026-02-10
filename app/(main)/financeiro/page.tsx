@@ -32,6 +32,8 @@ import { Plus, ArrowUpCircle, ArrowDownCircle, PieChart, RefreshCw, Tag, Loader2
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation'; // Added for refresh if needed
+import { PaymentDialog } from '@/components/finance/payment-dialog';
+import { TransactionDetailsDialog } from '@/components/finance/transaction-details-dialog';
 
 export default function FinanceiroPage() {
     const { tenant } = useAuth();
@@ -101,6 +103,14 @@ export default function FinanceiroPage() {
     const [view, setView] = useState<'main' | 'topay'>('main');
     const { role } = useAuth();
 
+    // Payment dialog state
+    const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+    const [selectedRecordForPayment, setSelectedRecordForPayment] = useState<FinanceRecord | null>(null);
+
+    // Transaction details dialog state
+    const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+    const [selectedRecordForDetails, setSelectedRecordForDetails] = useState<FinanceRecord | null>(null);
+
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -160,15 +170,38 @@ export default function FinanceiroPage() {
         }
     };
 
-    const handleTogglePaid = async (recordId: string, currentStatus: boolean) => {
+    const handleConfirmPayment = async (recordId: string, paidDate: string, paidAmount: number) => {
         try {
-            await Api.updateFinanceRecord(recordId, { is_paid: !currentStatus });
-            // Optimistic update
-            setFinanceRecords(prev => prev.map(r => r.id === recordId ? { ...r, is_paid: !currentStatus } : r));
+            // Update backend with payment details
+            await Api.updateFinanceRecord(recordId, {
+                is_paid: true,
+                paid_date: paidDate,
+                paid_amount: paidAmount
+            });
 
-            // Success feedback
-            const message = !currentStatus ? '✅ Despesa marcada como paga!' : '⚠️ Despesa desmarcada';
-            alert(message);
+            // Force a full data refresh to ensure all calculations update
+            await fetchData();
+
+            console.log('✅ Despesa marcada como paga!');
+        } catch (err: unknown) {
+            const error = err as Error;
+            alert('Erro ao atualizar status: ' + error.message);
+            fetchData();
+        }
+    };
+
+    const handleUnmarkPaid = async (recordId: string) => {
+        if (!confirm('Deseja desmarcar esta despesa como paga?')) return;
+
+        try {
+            await Api.updateFinanceRecord(recordId, {
+                is_paid: false,
+                paid_date: null,
+                paid_amount: null
+            });
+
+            await fetchData();
+            console.log('⚠️ Despesa desmarcada');
         } catch (err: unknown) {
             const error = err as Error;
             alert('Erro ao atualizar status: ' + error.message);
@@ -495,18 +528,23 @@ export default function FinanceiroPage() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="bg-slate-900 border-slate-800 border-l-4 border-red-500 shadow-xl overflow-hidden group">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-xs uppercase text-slate-500 font-bold tracking-widest flex items-center justify-between">
-                            Despesas (Até Hoje) <ArrowDownCircle size={14} className="text-red-500" />
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-black text-red-500 group-hover:scale-105 transition-transform origin-left">
-                            {totalExpenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </div>
-                    </CardContent>
-                </Card>
+                <Link href="/financeiro/despesas-pagas" className="block">
+                    <Card className="bg-slate-900 border-slate-800 border-l-4 border-red-500 shadow-xl overflow-hidden group hover:border-red-400 hover:shadow-red-500/10 transition-all cursor-pointer">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-xs uppercase text-slate-500 font-bold tracking-widest flex items-center justify-between">
+                                Despesas (Até Hoje) <ArrowDownCircle size={14} className="text-red-500" />
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-3xl font-black text-red-500 group-hover:scale-105 transition-transform origin-left">
+                                {totalExpenses.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </div>
+                            <p className="text-xs text-slate-600 mt-2 group-hover:text-slate-500 transition-colors">
+                                Clique para ver detalhes →
+                            </p>
+                        </CardContent>
+                    </Card>
+                </Link>
                 <Card className="bg-slate-900 border-slate-800 border-l-4 border-blue-500 shadow-xl overflow-hidden group">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-xs uppercase text-slate-500 font-bold tracking-widest flex items-center justify-between">
@@ -551,7 +589,17 @@ export default function FinanceiroPage() {
                             ) : filteredRecords.length === 0 ? (
                                 <TableRow><TableCell colSpan={7} className="text-center py-20 text-slate-700">Nenhum lançamento encontrado neste filtro.</TableCell></TableRow>
                             ) : filteredRecords.map((r: FinanceItem) => (
-                                <TableRow key={r.id} className="border-slate-800 hover:bg-slate-800/30 transition-colors group">
+                                <TableRow
+                                    key={r.id}
+                                    className="border-slate-800 hover:bg-slate-800/30 transition-colors group cursor-pointer"
+                                    onClick={() => {
+                                        const fullRecord = financeRecords.find(fr => fr.id === r.id);
+                                        if (fullRecord) {
+                                            setSelectedRecordForDetails(fullRecord);
+                                            setDetailsDialogOpen(true);
+                                        }
+                                    }}
+                                >
                                     <TableCell className="text-slate-500 font-mono text-[11px] py-4">
                                         {r.date.split('-').reverse().join('/')}
                                     </TableCell>
@@ -591,7 +639,7 @@ export default function FinanceiroPage() {
                                     </TableCell>
                                     <TableCell>
                                         {r.type === 'expense' && (
-                                            <div className="flex items-center gap-2 justify-end">
+                                            <div className="flex items-center gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
                                                 {r.description.startsWith('Fechamento') && !r.is_paid && (
                                                     <Button
                                                         variant="ghost"
@@ -617,12 +665,18 @@ export default function FinanceiroPage() {
                                                             : "text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/20"
                                                     )}
                                                     onClick={() => {
-                                                        const action = r.is_paid ? 'desmarcar como pago' : 'marcar como pago';
-                                                        if (confirm(`Deseja ${action} esta despesa?`)) {
-                                                            handleTogglePaid(r.id, r.is_paid);
+                                                        if (r.is_paid) {
+                                                            handleUnmarkPaid(r.id);
+                                                        } else {
+                                                            // Find the full record to pass to dialog
+                                                            const fullRecord = financeRecords.find(fr => fr.id === r.id);
+                                                            if (fullRecord) {
+                                                                setSelectedRecordForPayment(fullRecord);
+                                                                setPaymentDialogOpen(true);
+                                                            }
                                                         }
                                                     }}
-                                                    title={r.is_paid ? "Marcar como não pago" : "Marcar como pago"}
+                                                    title={r.is_paid ? "Desmarcar como pago" : "Registrar pagamento"}
                                                 >
                                                     <CheckCircle2 size={16} className="mr-1" />
                                                     {r.is_paid ? 'Pago' : 'Pagar'}
@@ -636,6 +690,25 @@ export default function FinanceiroPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            {/* Payment Dialog */}
+            {selectedRecordForPayment && (
+                <PaymentDialog
+                    open={paymentDialogOpen}
+                    onOpenChange={setPaymentDialogOpen}
+                    recordId={selectedRecordForPayment.id}
+                    description={selectedRecordForPayment.description}
+                    originalValue={selectedRecordForPayment.value}
+                    onConfirm={handleConfirmPayment}
+                />
+            )}
+
+            {/* Transaction Details Dialog */}
+            <TransactionDetailsDialog
+                open={detailsDialogOpen}
+                onOpenChange={setDetailsDialogOpen}
+                record={selectedRecordForDetails}
+            />
         </div>
     );
 }

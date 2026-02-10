@@ -116,13 +116,24 @@ export async function GET(req: Request) {
                     const cleanPhone = client.phone.replace(/\D/g, '');
                     if (cleanPhone.length >= 10) {
                         const welcomeName = client.name.split(' ')[0];
-                        const label = "R$ 10,00"; // Ajustado para valor fixo conforme solicitado
-                        await WhatsAppClient.sendButtons(
+
+                        console.log(`[BIRTHDAY_CRON] Enviando template 'parabens_fidelidade' para ${welcomeName} (${cleanPhone})`);
+
+                        // Usar Template (obrigatório para iniciar conversas após 24h)
+                        // Template: parabens_fidelidade
+                        // Parâmetros: {{1}} = Nome
+                        // Nota: O código do voucher não vai no template padrão 'parabens_fidelidade'.
+                        // O cliente receberá o parabéns e o voucher já estará criado no sistema.
+                        await WhatsAppClient.sendTemplate(
                             creds,
                             cleanPhone,
-                            `Parabéns, ${welcomeName}! 🎂✨\n\nHoje o presente é por nossa conta! Você ganhou um cupom de *${label} de desconto* para usar em qualquer serviço nos próximos 30 dias.\n\nCupom: *${voucherCode}*`,
+                            'parabens_fidelidade',
+                            'pt_BR',
                             [
-                                { id: 'BIRTHDAY_AGENDAR', title: 'Agendar Agora ✂️' }
+                                {
+                                    type: 'body',
+                                    parameters: [{ type: 'text', text: welcomeName }]
+                                }
                             ]
                         );
                     }

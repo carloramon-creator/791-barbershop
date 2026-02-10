@@ -109,7 +109,8 @@ export default function AppointmentsPage() {
     useEffect(() => {
         fetchAppointments();
         loadBarbershopInfo();
-    }, [viewDate, viewMode, listDateRange]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [viewDate, viewMode]); // Removing listDateRange to prevent auto-fetch on date change
 
     const loadBarbershopInfo = async () => {
         try {
@@ -833,7 +834,12 @@ export default function AppointmentsPage() {
                                 <Input
                                     type="date"
                                     value={format(listDateRange.from, 'yyyy-MM-dd')}
-                                    onChange={(e) => setListDateRange({ ...listDateRange, from: new Date(e.target.value) })}
+                                    onChange={(e) => {
+                                        if (!e.target.value) return;
+                                        const [y, m, d] = e.target.value.split('-').map(Number);
+                                        const date = new Date(y, m - 1, d);
+                                        setListDateRange({ ...listDateRange, from: date });
+                                    }}
                                     className="bg-slate-950 border-slate-800 w-40 text-sm"
                                 />
                             </div>
@@ -842,7 +848,12 @@ export default function AppointmentsPage() {
                                 <Input
                                     type="date"
                                     value={format(listDateRange.to, 'yyyy-MM-dd')}
-                                    onChange={(e) => setListDateRange({ ...listDateRange, to: new Date(e.target.value) })}
+                                    onChange={(e) => {
+                                        if (!e.target.value) return;
+                                        const [y, m, d] = e.target.value.split('-').map(Number);
+                                        const date = new Date(y, m - 1, d);
+                                        setListDateRange({ ...listDateRange, to: date });
+                                    }}
                                     className="bg-slate-950 border-slate-800 w-40 text-sm"
                                 />
                             </div>

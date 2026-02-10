@@ -7,33 +7,53 @@ const supabase = createClient(
 );
 
 async function checkBirthdays() {
-    const today = new Date();
-    const month = today.getMonth() + 1;
-    const day = today.getDate();
+    const targetId = '6661f50b-c49f-41e0-bd41-a9790860e242'; // Carlos Ramon
+    console.log(`Verificando configurações para o cliente: ${targetId}`);
 
-    console.log(`Buscando aniversariantes para: ${day}/${month}`);
-
-    const { data: clients, error } = await supabase
+    // 1. Fetch Client
+    const { data: client, error: clientError } = await supabase
         .from('clients')
-        .select('id, name, birth_date, fcm_token')
-        .filter('birth_date', 'not.is', null);
+        .select('id, name, phone, tenant_id, birth_date, fcm_token')
+        .eq('id', targetId)
+        .single();
 
-    if (error) {
-        console.error('Erro ao buscar clientes:', error);
+    if (clientError) {
+        console.error('Erro ao buscar cliente:', clientError);
         return;
     }
 
-    const bdayToday = clients.filter(c => {
-        const d = new Date(c.birth_date);
-        return d.getMonth() + 1 === month && d.getDate() === day;
+    console.log('Cliente encontrado:', {
+        name: client.name,
+        phone: client.phone,
+        tenantId: client.tenant_id,
+        birthDate: client.birth_date
     });
 
-    if (bdayToday.length === 0) {
-        console.log('Nenhum aniversariante encontrado para hoje.');
+    if (!client.tenant_id) {
+        console.log('Cliente sem tenant_id!');
+        return;
+    }
+
+    // 2. Fetch WhatsApp Config
+    const { data: config, error: configError } = await supabase
+        .from('whatsapp_configs')
+        .select('id, phone_number_id, access_token, created_at')
+        .eq('tenant_id', client.tenant_id)
+        .maybeSingle();
+
+    if (configError) {
+        console.error('Erro ao buscar config WhatsApp:', configError);
+        return;
+    }
+
+    if (!config) {
+        console.log('Nenhuma configuração de WhatsApp encontrada para este tenant.');
     } else {
-        console.log(`Encontrado(s) ${bdayToday.length} aniversariante(s):`);
-        bdayToday.forEach(c => {
-            console.log(`- ${c.name} (ID: ${c.id}) - Token: ${c.fcm_token ? 'Presente' : 'Ausente'}`);
+        console.log('Configuração WhatsApp encontrada:', {
+            id: config.id,
+            phoneNumberId: config.phone_number_id ? 'Definido' : 'Ausente',
+            accessToken: config.access_token ? 'Definido' : 'Ausente',
+            createdAt: config.created_at
         });
     }
 }

@@ -202,6 +202,8 @@ export interface FinanceRecord {
     recurrence_period?: 'day' | 'week' | 'month' | 'year' | null;
     recurrence_count?: number;
     is_paid: boolean;
+    paid_date?: string | null;
+    paid_amount?: number | null;
     metadata?: any;
     barber_id?: string;
     barbers?: {
