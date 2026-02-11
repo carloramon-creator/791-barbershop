@@ -40,19 +40,27 @@ export class PdfService {
             const currentY = doc.y;
             doc.rect(50, currentY, 500, 60).stroke();
             doc.fontSize(8).text('TOMADOR DE SERVIÇOS', 60, currentY + 10);
-            doc.fontSize(10).text(`Nome/Razão Social: ${data.tomador.razaoSocial}`, 60, currentY + 22);
-            doc.text(`CNPJ/CPF: ${data.tomador.cnpj || data.tomador.cpf}`, 60, currentY + 34);
+
+            const tomadorNome = data.tomador?.razaoSocial || data.tomador?.nome || data.tomadorNominal || 'Não Informado';
+            const tomadorDoc = data.tomador?.cnpj || data.tomador?.cpf || data.tomadorDocumento || 'Não Informado';
+
+            doc.fontSize(10).text(`Nome/Razão Social: ${tomadorNome}`, 60, currentY + 22);
+            doc.text(`CNPJ/CPF: ${tomadorDoc}`, 60, currentY + 34);
             doc.moveDown(5);
 
             // Serviços
             const serviceY = doc.y;
             doc.rect(50, serviceY, 500, 100).stroke();
             doc.fontSize(8).text('DISCRIMINAÇÃO DOS SERVIÇOS', 60, serviceY + 10);
-            doc.fontSize(10).text(data.servico.discriminacao, 60, serviceY + 25, { width: 480 });
+
+            const discriminacao = data.servico?.discriminacao || data.discriminacao || 'Serviços Prestados';
+            const valor = data.servico?.valorServicos || data.valorTotal || 0;
+
+            doc.fontSize(10).text(discriminacao, 60, serviceY + 25, { width: 480 });
             doc.moveDown(8);
 
             // Valores
-            doc.fontSize(12).text(`VALOR TOTAL: R$ ${Number(data.servico.valorServicos).toFixed(2).replace('.', ',')}`, { align: 'right' });
+            doc.fontSize(12).text(`VALOR TOTAL: R$ ${Number(valor).toFixed(2).replace('.', ',')}`, { align: 'right' });
 
             doc.end();
         });
