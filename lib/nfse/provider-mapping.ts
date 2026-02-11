@@ -6,6 +6,7 @@
 export const MUNICIPAL_CODE_TO_PROVIDER: Record<string, 'national' | 'ipm'> = {
     // São José/SC - IPM Fiscal (Atende.Net)
     '8303': 'ipm',
+    '83275': 'ipm', // Código TOM/SEF informado pelo usuário
     '4216602': 'ipm', // Código IBGE para garantir compatibilidade
 
     // Adicionar outros municípios conforme necessário
@@ -19,7 +20,8 @@ export const MUNICIPAL_CODE_TO_PROVIDER: Record<string, 'national' | 'ipm'> = {
  * Formato: https://{cidade}.atende.net:7443/...
  */
 export const MUNICIPAL_CODE_TO_CITY_SLUG: Record<string, string> = {
-    '8303': 'ws-saojose', // São José/SC (TOM)
+    '8303': 'ws-saojose', // São José/SC (TOM antigo?)
+    '83275': 'ws-saojose', // São José/SC (TOM/SEF)
     '4216602': 'ws-saojose', // São José/SC (IBGE)
 
     // Adicionar outras cidades IPM conforme necessário
