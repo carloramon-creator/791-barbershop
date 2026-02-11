@@ -9,9 +9,10 @@ interface IpmCredentials {
 }
 
 export class IpmProvider implements NfseProvider {
-    // A URL será construída dinamicamente: https://{cidade}.atende.net:7443/...
-    // Ex: https://ws-saojose.atende.net:7443/...
-    private baseUrl: string = 'https://{cidade}.atende.net:7443/?pg=rest&service=WNERestServiceNFSe';
+    // A URL será construída dinamicamente: https://{cidade}.atende.net/...
+    // Ex: https://ws-saojose.atende.net/...
+    // Porta 7443 removida pois causava timeout; usando porta padrão 443.
+    private baseUrl: string = 'https://{cidade}.atende.net/?pg=rest&service=WNERestServiceNFSe';
 
     /**
      * Provedor IPM Fiscal (Atende.Net) - São José/SC
