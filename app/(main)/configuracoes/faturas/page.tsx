@@ -9,14 +9,26 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabaseClient } from "@/lib/supabase-client";
+import { Api } from "@/lib/api";
 
 export default function InvoicesPage() {
     const [invoices, setInvoices] = useState<any[]>([]);
     const [loadingInvoices, setLoadingInvoices] = useState(true);
+    const [tenant, setTenant] = useState<any>(null);
 
     useEffect(() => {
         fetchInvoices();
+        fetchTenant();
     }, []);
+
+    async function fetchTenant() {
+        try {
+            const data = await Api.getBarbershop();
+            setTenant(data);
+        } catch (err) {
+            console.error("Erro ao buscar dados da barbearia:", err);
+        }
+    }
 
     async function fetchInvoices() {
         try {
@@ -334,12 +346,26 @@ export default function InvoicesPage() {
                                                                                 },
                                                                                 body: JSON.stringify({
                                                                                     dpsData: {
-                                                                                        numero:
-                                                                                            inv.metadata.nfe_id ||
-                                                                                            inv.id.slice(-8),
-                                                                                        dataEmissao:
-                                                                                            inv.metadata.nfe_emission_date,
-                                                                                        serie: "1",
+                                                                                        id: inv.metadata.nfe_id,
+                                                                                        numero: inv.metadata.nfe_id,
+                                                                                        dataEmissao: inv.metadata.nfe_emission_date,
+                                                                                        prestador: {
+                                                                                            name: tenant?.name,
+                                                                                            razaoSocial: tenant?.razao_social,
+                                                                                            cnpj: tenant?.cnpj,
+                                                                                            logoUrl: tenant?.logo_url,
+                                                                                            endereco: `${tenant?.street || ''}, ${tenant?.number || ''} ${tenant?.city || ''}/${tenant?.state || ''}`
+                                                                                        },
+                                                                                        tomador: {
+                                                                                            nome: inv.metadata.tomador_nome || inv.customer_name,
+                                                                                            razaoSocial: inv.metadata.tomador_nome || inv.customer_name,
+                                                                                            cnpj: inv.metadata.tomador_documento || inv.customer_document,
+                                                                                            endereco: inv.metadata.tomador_endereco || 'Não informado'
+                                                                                        },
+                                                                                        servico: {
+                                                                                            discriminacao: inv.description || 'Prestação de serviços',
+                                                                                            valorServicos: inv.amount
+                                                                                        }
                                                                                     },
                                                                                 }),
                                                                             },

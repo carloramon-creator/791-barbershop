@@ -37,6 +37,7 @@ export async function PUT(req: Request) {
             state: body.state || body.estado || body.uf,
             logo_url: body.logo_url,
             slug: body.slug,
+            razao_social: body.razao_social || body.razaoSocial,
             // Dados Bancários e PIX
             pix_key: body.pix_key || body.chave_pix,
             pix_key_type: body.pix_key_type || body.tipo_chave_pix,

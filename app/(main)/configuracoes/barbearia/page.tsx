@@ -36,6 +36,7 @@ export default function BarbershopSettingsPage() {
 
     // Form state
     const [name, setName] = useState('');
+    const [razaoSocial, setRazaoSocial] = useState('');
     const [email, setEmail] = useState('');
     const [cnpj, setCnpj] = useState('');
     const [hasCnpj, setHasCnpj] = useState(true);
@@ -97,6 +98,7 @@ export default function BarbershopSettingsPage() {
             const data = await Api.getBarbershop();
             if (data) {
                 setName(data.name || '');
+                setRazaoSocial(data.razao_social || '');
                 setEmail(data.email || '');
                 setCnpj(data.cnpj || '');
                 setHasCnpj(data.cnpj ? data.cnpj.replace(/\D/g, '').length > 11 : true);
@@ -237,6 +239,7 @@ export default function BarbershopSettingsPage() {
         try {
             const payload = {
                 name,
+                razao_social: razaoSocial,
                 email,
                 cnpj,
                 phone,
@@ -425,6 +428,20 @@ export default function BarbershopSettingsPage() {
                                     disabled={!isEditing}
                                     className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-11"
                                 />
+
+                                {hasCnpj && (
+                                    <div className="space-y-2 pt-2 animate-in fade-in duration-300">
+                                        <Label htmlFor="razaoSocial" className="text-slate-400 text-[10px] uppercase font-bold">Razão Social (Nome Jurídico)</Label>
+                                        <Input
+                                            id="razaoSocial"
+                                            value={razaoSocial}
+                                            onChange={(e) => setRazaoSocial(e.target.value)}
+                                            placeholder="Ex: Minha Empresa LTDA"
+                                            disabled={!isEditing}
+                                            className="bg-slate-950 border-slate-800 text-slate-100 disabled:bg-slate-900 disabled:text-slate-400 h-10 text-sm"
+                                        />
+                                    </div>
+                                )}
                                 <p className={cn(
                                     "text-[10px] font-medium",
                                     cnpj.replace(/\D/g, '').length > 0 && !(hasCnpj ? isValidCNPJ(cnpj) : isValidCPF(cnpj))
