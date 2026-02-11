@@ -62,6 +62,7 @@ class InvoiceProvider {
             const pfxBase64 = config.pfxBase64;
             const passphrase = config.passphrase;
             const municipalCode = config.municipal_code;
+            const isTestMode = config.nfse_test_mode === true;
 
             if (!skipAutoCheck && !config.auto_emit) {
                 console.log('[INVOICE-PROVIDER] Emissão automática desativada nas configurações.');
@@ -82,7 +83,8 @@ class InvoiceProvider {
                 ipmCredentials = {
                     username: config.ipm_username,
                     password: config.ipm_password,
-                    cidade: citySlug
+                    cidade: citySlug,
+                    isTest: isTestMode
                 };
 
                 if (!ipmCredentials.username || !ipmCredentials.password) {
@@ -114,6 +116,15 @@ class InvoiceProvider {
             // 2. Chamar o serviço de NFS-e diretamente (mesmo processo)
             console.log(`[INVOICE-PROVIDER] Emitindo via NfseService (${providerType})...`);
             const result = await nfseService.emitNfse(dpsData, pfxBase64, passphrase, providerType, ipmCredentials);
+
+            if (!result.success) {
+                console.error(`[INVOICE-PROVIDER] Falha na emissão: ${result.message}`);
+                return {
+                    success: false,
+                    status: 'rejected',
+                    message: result.message || 'Falha na emissão da NFS-e'
+                };
+            }
 
             return {
                 success: true,

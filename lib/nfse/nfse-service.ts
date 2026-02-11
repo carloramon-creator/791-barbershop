@@ -8,6 +8,7 @@ export interface IpmCredentials {
     username: string;
     password: string;
     cidade: string; // Ex: 'saojose' para São José/SC
+    isTest?: boolean;
 }
 
 export interface TenantFiscalConfig {

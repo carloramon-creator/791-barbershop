@@ -6,6 +6,7 @@ interface IpmCredentials {
     username: string;
     password: string;
     cidade: string; // Ex: 'saojose' para São José/SC
+    isTest?: boolean;
 }
 
 export class IpmProvider implements NfseProvider {
@@ -31,7 +32,8 @@ export class IpmProvider implements NfseProvider {
 
         try {
             // 1. Gerar XML no padrão IPM
-            const xmlContent = ipmXmlService.generateIpmXml(data);
+            // Se isTest for true, gera com tag <nfse_teste>1</nfse_teste>
+            const xmlContent = ipmXmlService.generateIpmXml(data, '8303', credentials.isTest);
             console.log(`[IpmProvider] XML gerado:\n${xmlContent}`);
 
             // 2. Preparar endpoint com cidade
@@ -43,8 +45,10 @@ export class IpmProvider implements NfseProvider {
             formData.append('xml', xmlBlob, 'nfse.xml');
 
             // 4. Preparar autenticação Basic
+            // Remover caracteres não numéricos do usuário (CPF/CNPJ) para garantir compatibilidade
+            const cleanUsername = credentials.username.replace(/\D/g, '');
             const authHeader = 'Basic ' + Buffer.from(
-                `${credentials.username}:${credentials.password}`
+                `${cleanUsername}:${credentials.password}`
             ).toString('base64');
 
             // 5. Enviar requisição

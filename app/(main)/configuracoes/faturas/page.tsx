@@ -358,6 +358,7 @@ export default function InvoicesPage() {
                                                                     }
                                                                 } catch (e) {
                                                                     console.error(e);
+                                                                    alert("Não foi possível abrir a nota fiscal. Verifique se a emissão foi bem-sucedida.");
                                                                     // Fallback to try opening whatever URL we have
                                                                     window.open(
                                                                         inv.metadata.nfe_pdf_url,

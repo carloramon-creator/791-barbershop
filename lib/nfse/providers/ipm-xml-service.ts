@@ -22,11 +22,14 @@ export class IpmXmlService {
     /**
      * Gera o XML no padrão IPM Fiscal (Atende.Net)
      */
-    public generateIpmXml(data: DPSData, tomCodigo: string = '8303'): string {
+    public generateIpmXml(data: DPSData, tomCodigo: string = '8303', isTest: boolean = false): string {
         const isPessoaJuridica = !!data.tomador.cnpj;
 
         const nfseObject = {
             nfse: {
+                // Tag de teste conforme documentação (para não gerar nota válida)
+                ...(isTest ? { nfse_teste: '1' } : {}),
+
                 // Identificador único para evitar duplicidade
                 identificador: data.numero,
                 nf: {
