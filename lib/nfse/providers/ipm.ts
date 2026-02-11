@@ -11,9 +11,8 @@ interface IpmCredentials {
 
 export class IpmProvider implements NfseProvider {
     // A URL será construída dinamicamente: https://{cidade}.atende.net/...
-    // Ex: https://ws-saojose.atende.net/...
-    // Porta 7443 removida pois causava timeout; usando porta padrão 443.
-    private baseUrl: string = 'https://{cidade}.atende.net/?pg=rest&service=WNERestServiceNFSe';
+    // Conforme documentação: atende.php?pg=rest&service=WNERestServiceNFSecidade=padrao (ou 8303)
+    private baseUrl: string = 'https://nfse-{cidade}.atende.net/atende.php?pg=rest&service=WNERestServiceNFSecidade=padrao';
 
     /**
      * Provedor IPM Fiscal (Atende.Net) - São José/SC
@@ -45,10 +44,12 @@ export class IpmProvider implements NfseProvider {
             formData.append('xml', xmlBlob, 'nfse.xml');
 
             // 4. Preparar autenticação Basic
-            // Remover caracteres não numéricos do usuário (CPF/CNPJ) para garantir compatibilidade
-            const cleanUsername = credentials.username.replace(/\D/g, '');
+            // A documentação IPM mostra o uso do CNPJ FORMATADO (com pontos/barras)
+            // Exemplo: 11.111.111/1111-11
+            const formattedUsername = this.formatCnpj(credentials.username);
+
             const authHeader = 'Basic ' + Buffer.from(
-                `${cleanUsername}:${credentials.password}`
+                `${formattedUsername}:${credentials.password}`
             ).toString('base64');
 
             // 5. Enviar requisição
@@ -105,6 +106,17 @@ export class IpmProvider implements NfseProvider {
         // TODO: Implementar consulta via código de autenticidade ou número
 
         throw new Error('Consulta de status IPM em desenvolvimento.');
+    }
+
+    /**
+     * Formata o CNPJ se necessário para o padrão esperado pela IPM (com pontos e barras)
+     */
+    private formatCnpj(cnpj: string): string {
+        const raw = cnpj.replace(/\D/g, '');
+        if (raw.length === 14) {
+            return raw.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
+        }
+        return cnpj; // Se não for CNPJ, envia como está
     }
 
     /**

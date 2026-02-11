@@ -1,5 +1,6 @@
 import PDFDocument from 'pdfkit';
 import { PassThrough } from 'stream';
+import path from 'path';
 
 export class PdfService {
     /**
@@ -7,7 +8,11 @@ export class PdfService {
      */
     public async generateDanfseBuffer(data: any): Promise<Buffer> {
         return new Promise((resolve, reject) => {
-            const doc = new PDFDocument({ margin: 50 });
+            const fontPath = path.join(process.cwd(), 'public', 'noto-sans.ttf');
+            const doc = new PDFDocument({
+                margin: 50,
+                font: fontPath
+            });
             const chunks: Buffer[] = [];
             const stream = new PassThrough();
 
