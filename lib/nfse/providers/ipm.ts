@@ -9,19 +9,21 @@ interface IpmCredentials {
 }
 
 export class IpmProvider implements NfseProvider {
+    // A URL será construída dinamicamente: https://{cidade}.atende.net:7443/...
+    // Ex: https://ws-saojose.atende.net:7443/...
     private baseUrl: string = 'https://{cidade}.atende.net:7443/?pg=rest&service=WNERestServiceNFSe';
-    
+
     /**
      * Provedor IPM Fiscal (Atende.Net) - São José/SC
      */
     public async emit(
-        data: DPSData, 
-        pfxBase64: string, 
+        data: DPSData,
+        pfxBase64: string,
         passphrase: string,
         credentials?: IpmCredentials
     ): Promise<EmitResult> {
         console.log(`[IpmProvider] Iniciando emissão para nota ${data.numero} - São José/SC`);
-        
+
         if (!credentials) {
             throw new Error('[IpmProvider] Credenciais da IPM (username/password/cidade) não fornecidas.');
         }
@@ -71,32 +73,32 @@ export class IpmProvider implements NfseProvider {
     }
 
     public async cancel(
-        numero: string, 
-        pfxBase64: string, 
+        numero: string,
+        pfxBase64: string,
         passphrase: string,
         credentials?: IpmCredentials
     ): Promise<EmitResult> {
         console.log(`[IpmProvider] Cancelamento de nota ${numero}`);
-        
+
         if (!credentials) {
             throw new Error('[IpmProvider] Credenciais da IPM não fornecidas para cancelamento.');
         }
 
         // TODO: Implementar lógica de cancelamento conforme documentação
         // Geralmente envolve enviar XML com <solicitacao_cancelamento>
-        
+
         throw new Error('Cancelamento IPM em desenvolvimento.');
     }
 
     public async checkStatus(numero: string, credentials?: IpmCredentials): Promise<EmitResult> {
         console.log(`[IpmProvider] Consulta de status para nota ${numero}`);
-        
+
         if (!credentials) {
             throw new Error('[IpmProvider] Credenciais da IPM não fornecidas para consulta.');
         }
 
         // TODO: Implementar consulta via código de autenticidade ou número
-        
+
         throw new Error('Consulta de status IPM em desenvolvimento.');
     }
 
