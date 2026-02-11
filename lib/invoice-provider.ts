@@ -61,6 +61,7 @@ class InvoiceProvider {
             const config = settings?.value || {};
             const pfxBase64 = config.pfxBase64;
             const passphrase = config.passphrase;
+            const municipalCode = config.municipal_code;
 
             if (!skipAutoCheck && !config.auto_emit) {
                 console.log('[INVOICE-PROVIDER] Emissão automática desativada nas configurações.');
@@ -69,6 +70,24 @@ class InvoiceProvider {
 
             if (!pfxBase64 || !passphrase) {
                 throw new Error('Certificado digital ou senha não configurados no painel SuperAdmin.');
+            }
+
+            // Determinar provedor
+            const { getProviderType, getCitySlug } = require('./nfse/provider-mapping');
+            const providerType = getProviderType(municipalCode);
+
+            let ipmCredentials;
+            if (providerType === 'ipm') {
+                const citySlug = getCitySlug(municipalCode);
+                ipmCredentials = {
+                    username: config.ipm_username,
+                    password: config.ipm_password,
+                    cidade: citySlug
+                };
+
+                if (!ipmCredentials.username || !ipmCredentials.password) {
+                    throw new Error('Credenciais IPM (usuário/senha) não configuradas no painel.');
+                }
             }
 
             // 1. Preparar dados para DPS
@@ -93,15 +112,15 @@ class InvoiceProvider {
             };
 
             // 2. Chamar o serviço de NFS-e diretamente (mesmo processo)
-            console.log(`[INVOICE-PROVIDER] Emitindo via NfseService...`);
-            const result = await nfseService.emitNfse(dpsData, pfxBase64, passphrase);
+            console.log(`[INVOICE-PROVIDER] Emitindo via NfseService (${providerType})...`);
+            const result = await nfseService.emitNfse(dpsData, pfxBase64, passphrase, providerType, ipmCredentials);
 
             return {
                 success: true,
                 invoiceId: (result as any).invoiceId || dpsData.numero,
                 status: 'authorized',
                 pdfUrl: `/api/nfse/pdf`,
-                message: 'Nota Fiscal autorizada com sucesso via Provedor 791 (Nacional).'
+                message: `Nota Fiscal autorizada com sucesso via Provedor ${providerType === 'ipm' ? 'IPM' : 'Nacional'}.`
             };
         } catch (error: any) {
             console.error('[INVOICE-PROVIDER ERROR]', error);

@@ -5,7 +5,7 @@ import { addCorsHeaders } from '@/lib/server-utils';
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { dpsData, pfxBase64, passphrase } = body;
+        const { dpsData, pfxBase64, passphrase, providerType, credentials } = body;
 
         // Nota: A API Key aqui é interna, mas como estamos no mesmo processo,
         // poderíamos até chamar o serviço diretamente. Mantemos a rota para flexibilidade.
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
             return addCorsHeaders(req, NextResponse.json({ error: 'Dados insuficientes' }, { status: 400 }));
         }
 
-        const result = await nfseService.emitNfse(dpsData, pfxBase64, passphrase);
+        const result = await nfseService.emitNfse(dpsData, pfxBase64, passphrase, providerType, credentials);
 
         return addCorsHeaders(req, NextResponse.json({ success: true, result }));
     } catch (error: any) {

@@ -65,9 +65,16 @@ export class NfseService {
     ): Promise<EmitResult> {
         const { municipal_code, pfxBase64, passphrase, ipm_username, ipm_password } = tenantConfig;
 
+        console.log(`[NfseService] DEBUG - Tenant Config:`, {
+            municipal_code,
+            hasPfx: !!pfxBase64,
+            hasPassphrase: !!passphrase,
+            ipm_username
+        });
+
         // Determinar provedor automaticamente
         const providerType = getProviderType(municipal_code);
-        console.log(`[NfseService] Provedor selecionado automaticamente: ${providerType} (código municipal: ${municipal_code})`);
+        console.log(`[NfseService] Provedor selecionado automaticamente: ${providerType} (código municipal: '${municipal_code}')`);
 
         // Se for IPM, preparar credenciais
         let credentials: IpmCredentials | undefined;
