@@ -350,6 +350,7 @@ export default function InvoicesPage() {
                                                                             window.open(url);
                                                                         }
                                                                     } else {
+                                                                        // External URL (IPM or other)
                                                                         window.open(
                                                                             inv.metadata.nfe_pdf_url,
                                                                             "_blank",
@@ -357,6 +358,7 @@ export default function InvoicesPage() {
                                                                     }
                                                                 } catch (e) {
                                                                     console.error(e);
+                                                                    // Fallback to try opening whatever URL we have
                                                                     window.open(
                                                                         inv.metadata.nfe_pdf_url,
                                                                         "_blank",

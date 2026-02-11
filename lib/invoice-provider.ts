@@ -119,7 +119,7 @@ class InvoiceProvider {
                 success: true,
                 invoiceId: (result as any).invoiceId || dpsData.numero,
                 status: 'authorized',
-                pdfUrl: `/api/nfse/pdf`,
+                pdfUrl: (result as any).accessLink || (result as any).pdfUrl || `/api/nfse/pdf`,
                 message: `Nota Fiscal autorizada com sucesso via Provedor ${providerType === 'ipm' ? 'IPM' : 'Nacional'}.`
             };
         } catch (error: any) {
