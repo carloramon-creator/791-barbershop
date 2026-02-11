@@ -348,6 +348,10 @@ export default function InvoicesPage() {
                                                                             const blob = await res.blob();
                                                                             const url = window.URL.createObjectURL(blob);
                                                                             window.open(url);
+                                                                        } else {
+                                                                            const errorText = await res.text();
+                                                                            console.error("Erro ao gerar PDF:", errorText);
+                                                                            alert(`Erro ao gerar PDF da nota fiscal: ${res.status} - ${errorText.substring(0, 100)}`);
                                                                         }
                                                                     } else {
                                                                         // External URL (IPM or other)
