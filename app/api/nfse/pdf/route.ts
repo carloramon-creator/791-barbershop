@@ -74,7 +74,7 @@ export async function GET(req: Request) {
                     name: '791 SOLUÇÕES TECNOLÓGICAS LTDA',
                     razaoSocial: '791 SOLUÇÕES TECNOLÓGICAS LTDA',
                     cnpj: '61.887.941/0001-83',
-                    endereco: 'RUA JOAO PIO DUARTE SILVA, 1221 - FLORIANOPOLIS/SC'
+                    endereco: 'RUA ADHEMAR DA SILVA, 1118 - SÃO JOSÉ/SC'
                 },
                 tomador: {
                     nome: tenant.name,
@@ -113,6 +113,24 @@ export async function GET(req: Request) {
                 }
             };
         }
+
+        // 4. Buscar configurações globais (CNAE/TaxCode)
+        const { data: globalSettings } = await getSupabaseAdmin()
+            .from('system_settings')
+            .select('value')
+            .eq('key', 'nfse_config')
+            .single();
+
+        const globalConfig = globalSettings?.value || {};
+
+        // Injetar dados de DPS e códigos globais
+        dpsData.cnae = globalConfig.cnae || '6202300';
+        dpsData.taxCode = globalConfig.tax_code || '01.01.01';
+        dpsData.dpsInfo = {
+            numero: finance.metadata?.dps_number || '1',
+            serie: finance.metadata?.dps_serie || '70000',
+            dataEmissao: finance.metadata?.nfe_emission_date || finance.date || new Date().toISOString()
+        };
 
         console.log(`[API-NFSE-PDF-GET] Generating PDF Buffer...`);
         const pdfBuffer = await pdfService.generateDanfseBuffer(dpsData);

@@ -31,6 +31,8 @@ export async function GET(req: Request) {
             certificateUploaded: false,
             lastUpdated: null,
             municipal_code: '',
+            cnae: '',
+            tax_code: '',
             ipm_username: '',
             ipm_password: ''
         };
@@ -60,7 +62,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { environment, pfxBase64, passphrase, auto_emit, municipal_code, ipm_username, ipm_password } = body;
+        const { environment, pfxBase64, passphrase, auto_emit, municipal_code, cnae, tax_code, ipm_username, ipm_password } = body;
 
         console.log(`[NFSE-POST] Recebendo config de ${user.email}:`, {
             environment,
@@ -83,6 +85,8 @@ export async function POST(req: Request) {
             environment: environment || existing?.value?.environment || 'homologacao',
             auto_emit: auto_emit !== undefined ? auto_emit : existing?.value?.auto_emit || false,
             municipal_code: municipal_code || existing?.value?.municipal_code || '',
+            cnae: cnae || existing?.value?.cnae || '',
+            tax_code: tax_code || existing?.value?.tax_code || '',
             ipm_username: ipm_username || existing?.value?.ipm_username || '',
             ipm_password: ipm_password || existing?.value?.ipm_password || '',
             lastUpdated: new Date().toISOString()

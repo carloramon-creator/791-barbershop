@@ -18,6 +18,8 @@ export default function NfseConfigPage() {
         certificateUploaded: false,
         lastUpdated: null,
         municipal_code: '',
+        cnae: '',
+        tax_code: '',
         ipm_username: '',
         ipm_password: ''
     });
@@ -41,6 +43,8 @@ export default function NfseConfigPage() {
                     certificateUploaded: !!data.certificateUploaded,
                     lastUpdated: data.lastUpdated,
                     municipal_code: data.municipal_code || '',
+                    cnae: data.cnae || '',
+                    tax_code: data.tax_code || '',
                     ipm_username: data.ipm_username || '',
                     ipm_password: data.ipm_password || ''
                 });
@@ -75,6 +79,8 @@ export default function NfseConfigPage() {
                     pfxBase64: files.pfxBase64,
                     passphrase: files.passphrase,
                     municipal_code: config.municipal_code,
+                    cnae: config.cnae,
+                    tax_code: config.tax_code,
                     ipm_username: config.ipm_username,
                     ipm_password: config.ipm_password
                 })
@@ -116,11 +122,11 @@ export default function NfseConfigPage() {
                 <Card className="bg-slate-900 border-slate-800 md:col-span-2">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <MapPin className="w-5 h-5 text-purple-500" /> Município
+                            <MapPin className="w-5 h-5 text-purple-500" /> Município e Identificação
                         </CardTitle>
-                        <CardDescription>Código municipal TOM/IBGE determina qual provedor de NFS-e será usado.</CardDescription>
+                        <CardDescription>Configure o local e as chaves de identificação fiscal da plataforma.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-6">
                         <div className="space-y-2">
                             <Label>Código Municipal (TOM/IBGE)</Label>
                             <Input
@@ -136,6 +142,31 @@ export default function NfseConfigPage() {
                                     <AlertCircle className="w-3 h-3" /> São José/SC - Provedor IPM Fiscal será usado automaticamente
                                 </p>
                             )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-800/50">
+                            <div className="space-y-2">
+                                <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">CNAE Padrão (Plataforma)</Label>
+                                <Input
+                                    type="text"
+                                    placeholder="Ex: 6202300"
+                                    value={config.cnae}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, cnae: e.target.value }))}
+                                    disabled={saving}
+                                    className="bg-slate-800 border-slate-700 font-mono h-10"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Cód. Tributação Nacional</Label>
+                                <Input
+                                    type="text"
+                                    placeholder="Ex: 01.01.01"
+                                    value={config.tax_code}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, tax_code: e.target.value }))}
+                                    disabled={saving}
+                                    className="bg-slate-800 border-slate-700 font-mono h-10"
+                                />
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
