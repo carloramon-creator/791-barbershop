@@ -395,10 +395,10 @@ export default function LoginPage() {
                                                 <Input
                                                     id="password"
                                                     type="password"
-                                                    placeholder="••••••••"
+                                                    placeholder="Sua senha"
                                                     value={password}
                                                     onChange={(e) => setPassword(e.target.value)}
-                                                    className="bg-slate-950 border-slate-800 pl-10 h-12 rounded-xl focus:ring-blue-500/20"
+                                                    className="bg-slate-950 border-slate-800 pl-10 h-12 rounded-xl focus:ring-blue-500/20 text-slate-100"
                                                     required
                                                 />
                                             </div>

@@ -312,14 +312,19 @@ export default function InvoicesPage() {
                                                         variant="ghost"
                                                         className="h-8 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-black uppercase"
                                                         onClick={async () => {
+                                                            console.log(`[VER-NF] Clicado em fatura: ${inv.id}`, inv.metadata);
                                                             if (inv.metadata?.nfe_pdf_url) {
                                                                 if (inv.metadata.nfe_pdf_url.includes("/nfse/pdf")) {
-                                                                    // Gerar via nossa API interna usando GET (mais robusto)
-                                                                    // Passamos o ID do registro financeiro para o backend buscar tudo
-                                                                    const url = `${inv.metadata.nfe_pdf_url}${inv.metadata.nfe_pdf_url.includes('?') ? '&' : '?'}id=${inv.id}`;
+                                                                    // Usar origin absoluto para evitar redirecionamentos indesejados
+                                                                    const baseUrl = inv.metadata.nfe_pdf_url.startsWith('http')
+                                                                        ? inv.metadata.nfe_pdf_url
+                                                                        : `${window.location.origin}${inv.metadata.nfe_pdf_url}`;
+
+                                                                    const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}id=${inv.id}`;
+                                                                    console.log(`[VER-NF] Abrindo URL interna absoluta: ${url}`);
                                                                     window.open(url, "_blank");
                                                                 } else {
-                                                                    // URL Externa (IPM ou outro provedor direto)
+                                                                    console.log(`[VER-NF] Abrindo URL externa: ${inv.metadata.nfe_pdf_url}`);
                                                                     window.open(inv.metadata.nfe_pdf_url, "_blank");
                                                                 }
                                                             } else {

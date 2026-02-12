@@ -7,12 +7,15 @@ export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
+        console.log(`[API-NFSE-PDF-GET] Recebido pedido para ID: ${id}`);
 
         if (!id) {
+            console.error('[API-NFSE-PDF-GET] ID não informado');
             return NextResponse.json({ error: 'ID não informado' }, { status: 400 });
         }
 
-        const { tenant } = await getCurrentUserAndTenant();
+        const { tenant, user } = await getCurrentUserAndTenant();
+        console.log(`[API-NFSE-PDF-GET] Usuário: ${user?.email}, Tenant: ${tenant?.name}`);
 
         // 1. Buscar a fatura
         const { data: finance, error: financeError } = await getSupabaseAdmin()
