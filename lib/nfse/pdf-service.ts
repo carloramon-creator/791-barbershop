@@ -20,6 +20,7 @@ export class PdfService {
                         Author: '791 Barber System'
                     }
                 });
+
                 const chunks: Buffer[] = [];
                 const stream = new PassThrough();
 
@@ -29,15 +30,14 @@ export class PdfService {
 
                 doc.pipe(stream);
 
-                // Aplica a fonte embutida. Como ela está no bundle JS,
-                // não depende de o Railway achar o arquivo no disco.
+                // Registra e define a fonte para evitar QUALQUER toque em Helvetica
                 try {
-                    doc.font(fontBuffer);
+                    doc.registerFont('NotoSans', fontBuffer as any);
+                    doc.font('NotoSans');
                 } catch (e) {
-                    console.error('[PDF-SERVICE] Error setting embedded font:', e);
-                    // Fallback desesperado para Helvetica se o buffer falhar
-                    // (mas o buffer vindo de JS não deve falhar por ENOENT)
-                    doc.font('Helvetica');
+                    console.error('[PDF-SERVICE] Error registering embedded font:', e);
+                    // Se falhar o registro, o PDFKit tentará Helvetica por padrão no doc.text, 
+                    // o que causará o ENOENT em produção. Por isso o register é crítico.
                 }
 
                 // Carregamento de Logo com Timeout e Robustez

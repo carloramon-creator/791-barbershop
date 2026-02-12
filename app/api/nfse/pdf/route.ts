@@ -126,8 +126,8 @@ export async function GET(req: Request) {
             },
         });
     } catch (error: any) {
-        console.error('[API-NFSE-PDF-GET] FATAL ERROR:', error.message);
-        return NextResponse.json({ error: `Falha ao gerar PDF: ${error.message}` }, { status: 500 });
+        console.error('[API-NFSE-PDF-GET] FATAL ERROR (v=4):', error.message);
+        return NextResponse.json({ error: `Falha ao gerar PDF (v=4): ${error.message}` }, { status: 500 });
     }
 }
 
