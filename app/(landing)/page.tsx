@@ -318,7 +318,7 @@ export default function LandingPage() {
                         <div className="relative aspect-video bg-slate-100 border-2 border-slate-200 rounded-3xl overflow-hidden shadow-xl">
                             <iframe
                                 className="absolute inset-0 w-full h-full"
-                                src="https://www.youtube.com/embed/BxQyOoAXPXE"
+                                src="https://www.youtube.com/embed/HNiY-baV378"
                                 title="791 Barber em Ação"
                                 frameBorder="0"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
