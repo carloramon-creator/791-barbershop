@@ -296,7 +296,7 @@ export default function LoginPage() {
                                                     placeholder="Digite sua nova senha"
                                                     value={newPassword}
                                                     onChange={(e) => setNewPassword(e.target.value)}
-                                                    className="bg-slate-950 border-slate-800 pl-10 h-12 rounded-xl focus:ring-blue-500/20"
+                                                    className="bg-slate-950 border-slate-800 pl-10 h-12 rounded-xl focus:ring-blue-500/20 text-white"
                                                     required
                                                 />
                                             </div>
@@ -311,7 +311,7 @@ export default function LoginPage() {
                                                     placeholder="Repita a senha"
                                                     value={confirmPassword}
                                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                                    className="bg-slate-950 border-slate-800 pl-10 h-12 rounded-xl focus:ring-blue-500/20"
+                                                    className="bg-slate-950 border-slate-800 pl-10 h-12 rounded-xl focus:ring-blue-500/20 text-white"
                                                     required
                                                 />
                                             </div>
@@ -331,7 +331,7 @@ export default function LoginPage() {
                                                     placeholder="seu@email.com"
                                                     value={email}
                                                     onChange={(e) => setEmail(e.target.value)}
-                                                    className="bg-slate-950 border-slate-800 pl-10 h-12 rounded-xl focus:ring-blue-500/20"
+                                                    className="bg-slate-950 border-slate-800 pl-10 h-12 rounded-xl focus:ring-blue-500/20 text-white"
                                                     required
                                                 />
                                             </div>
@@ -351,7 +351,7 @@ export default function LoginPage() {
                                                     placeholder="seu@email.com"
                                                     value={email}
                                                     onChange={(e) => setEmail(e.target.value)}
-                                                    className="bg-slate-950 border-slate-800 pl-10 h-12 rounded-xl focus:ring-blue-500/20"
+                                                    className="bg-slate-950 border-slate-800 pl-10 h-12 rounded-xl focus:ring-blue-500/20 text-white"
                                                     required
                                                 />
                                             </div>
@@ -371,10 +371,10 @@ export default function LoginPage() {
                                                 <Input
                                                     id="email"
                                                     type="email"
-                                                    placeholder="seu@email.com"
+                                                    placeholder="Digite seu email"
                                                     value={email}
                                                     onChange={(e) => setEmail(e.target.value)}
-                                                    className="bg-slate-950 border-slate-800 pl-10 h-12 rounded-xl focus:ring-blue-500/20"
+                                                    className="bg-slate-950 border-slate-800 pl-10 h-12 rounded-xl focus:ring-blue-500/20 text-white"
                                                     required
                                                 />
                                             </div>
@@ -398,7 +398,7 @@ export default function LoginPage() {
                                                     placeholder="Sua senha"
                                                     value={password}
                                                     onChange={(e) => setPassword(e.target.value)}
-                                                    className="bg-slate-950 border-slate-800 pl-10 h-12 rounded-xl focus:ring-blue-500/20 text-slate-100"
+                                                    className="bg-slate-950 border-slate-800 pl-10 h-12 rounded-xl focus:ring-blue-500/20 text-white"
                                                     required
                                                 />
                                             </div>
