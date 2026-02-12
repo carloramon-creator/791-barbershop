@@ -130,7 +130,7 @@ export default function LandingPage() {
     ];
 
     const beforeAfter = [
-        { before: 'Agenda de papel bagunçada', after: 'Agendamento online 24/7', icon: Calendar },
+        { before: 'Filas e esperas caóticas', after: 'Fila Digital Inteligente (WhatsApp)', icon: Users },
         { before: 'Planilhas confusas', after: 'Relatórios automáticos', icon: BarChart3 },
         { before: 'Clientes esqueciam horários', after: 'Lembretes por WhatsApp', icon: MessageCircle },
         { before: 'Sem controle de caixa', after: 'Gestão financeira completa', icon: DollarSign }
@@ -303,59 +303,6 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* Pricing Section */}
-            <section id="pricing" className="relative z-10 py-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-16">
-                        <h2 className="text-4xl lg:text-5xl font-black mb-4 text-slate-900">
-                            Planos que <span className="text-blue-600">Cabem no Seu Bolso</span>
-                        </h2>
-                        <p className="text-xl text-slate-600 font-medium">Escolha o melhor para o seu negócio</p>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {plans.map((plan, idx) => (
-                            <div
-                                key={idx}
-                                className={`relative p-8 rounded-2xl border transition-all duration-300 hover:scale-105 ${plan.popular
-                                    ? 'bg-white border-blue-500 shadow-2xl shadow-blue-100 ring-4 ring-blue-50'
-                                    : 'bg-white border-slate-200 shadow-sm'
-                                    }`}
-                            >
-                                {plan.popular && (
-                                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">
-                                        Mais Popular
-                                    </div>
-                                )}
-                                <h3 className="text-2xl font-bold mb-2 text-slate-900">{plan.name}</h3>
-                                <div className="mb-6">
-                                    <span className="text-5xl font-black text-slate-900">{plan.price}</span>
-                                    <span className="text-slate-500 font-medium">{plan.period}</span>
-                                    <div className="text-sm text-slate-500 mt-1">Cobrado anualmente: {plan.annual}</div>
-                                </div>
-                                <ul className="space-y-4 mb-8">
-                                    {plan.features.map((feature, i) => (
-                                        <li key={i} className="flex items-start gap-3">
-                                            <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                                            <span className="text-slate-600 font-medium">{feature}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                                <Link href="/signup">
-                                    <Button
-                                        className={`w-full py-6 text-lg font-bold rounded-xl ${plan.popular
-                                            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200'
-                                            : 'bg-slate-100 hover:bg-slate-200 text-slate-900'
-                                            }`}
-                                    >
-                                        Começar Agora
-                                    </Button>
-                                </Link>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
 
             {/* Video Section */}
             <section className="relative z-10 py-20 bg-white/50 border-y border-slate-200">
@@ -368,15 +315,16 @@ export default function LandingPage() {
                     </div>
 
                     <div className="max-w-4xl mx-auto">
-                        <div className="relative aspect-video bg-slate-100 border-2 border-slate-200 rounded-3xl overflow-hidden group shadow-xl">
-                            <iframe
-                                className="absolute inset-0 w-full h-full"
-                                src="https://www.youtube.com/embed/BxQyOoAXPXEv"
-                                title="791 Barber Demonstration"
-                                frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                            ></iframe>
+                        <div className="relative aspect-video bg-slate-100 border-2 border-slate-200 rounded-3xl overflow-hidden shadow-xl">
+                            <video
+                                controls
+                                playsInline
+                                preload="metadata"
+                                className="absolute inset-0 w-full h-full object-cover"
+                            >
+                                <source src="/video-demo.mov" type="video/quicktime" />
+                                Seu navegador não suporta vídeos nativos.
+                            </video>
                         </div>
                     </div>
                 </div>
@@ -613,6 +561,57 @@ export default function LandingPage() {
                     </div>
                 </div>
             )}
+            {/* Pricing Section - Compact */}
+            <section id="pricing" className="relative z-10 py-20">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-12">
+                        <h2 className="text-3xl lg:text-4xl font-black mb-4 text-slate-900">
+                            Planos que <span className="text-blue-600">Cabem no Seu Bolso</span>
+                        </h2>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-6">
+                        {plans.map((plan, idx) => (
+                            <div
+                                key={idx}
+                                className={`relative p-6 rounded-2xl border transition-all duration-300 hover:scale-105 ${plan.popular
+                                    ? 'bg-white border-blue-500 shadow-xl shadow-blue-100 ring-4 ring-blue-50'
+                                    : 'bg-white border-slate-200 shadow-sm'
+                                    }`}
+                            >
+                                {plan.popular && (
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-3 py-0.5 rounded-full text-xs font-bold shadow-lg">
+                                        Mais Popular
+                                    </div>
+                                )}
+                                <h3 className="text-xl font-bold mb-2 text-slate-900">{plan.name}</h3>
+                                <div className="mb-4">
+                                    <span className="text-4xl font-black text-slate-900">{plan.price}</span>
+                                    <span className="text-slate-500 text-sm font-medium">{plan.period}</span>
+                                </div>
+                                <ul className="space-y-3 mb-6">
+                                    {plan.features.map((feature, i) => (
+                                        <li key={i} className="flex items-start gap-2">
+                                            <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                            <span className="text-sm text-slate-600 font-medium">{feature}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                                <Link href="/signup">
+                                    <Button
+                                        className={`w-full py-5 text-sm font-bold rounded-xl ${plan.popular
+                                            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200'
+                                            : 'bg-slate-100 hover:bg-slate-200 text-slate-900'
+                                            }`}
+                                    >
+                                        Começar Agora
+                                    </Button>
+                                </Link>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
 
             {/* Final CTA */}
             <section className="relative z-10 py-20 bg-white/50 border-y border-slate-200">
