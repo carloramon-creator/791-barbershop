@@ -100,7 +100,13 @@ export class PdfService {
                 drawLabelValue(startX + 230, y + 5, 100, 'Competência', data.dataEmissao?.slice(0, 10) || '09/02/2026', 8);
                 drawLabelValue(startX + 340, y + 5, 100, 'Código de Verificação', data.codigoVerificacao || 'A1B2-C3D4', 9);
 
-                drawLabelValue(startX + 5, y + 30, 450, 'Chave de Acesso da NFS-e', data.chaveAcesso || '420540722623220400018700000000000000926021489032325', 9);
+                drawLabelValue(startX + 5, y + 30, 310, 'Chave de Acesso da NFS-e', data.chaveAcesso || '420540722623220400018700000000000000926021489032325', 8.5);
+
+                // Indicadores Reforma Tributária (NT 122/2025)
+                const reforma = data.reformaTributaria || {};
+                drawLabelValue(startX + 320, y + 30, 40, 'Finalidade', reforma.finNFSe || '0');
+                drawLabelValue(startX + 370, y + 30, 60, 'Cons. Final', reforma.indFinal === '1' ? 'SIM' : 'NÃO');
+                drawLabelValue(startX + 440, y + 30, 60, 'Ind. Operação', reforma.cIndOp || '010101');
 
                 y += 55;
 
@@ -153,19 +159,35 @@ export class PdfService {
 
                 y += 65;
 
-                // --- VALORES E IMPOSTOS ---
-                drawTableBox(y, 45, 'Valores do Serviço e Impostos');
+                // --- VALORES E IMPOSTOS (LADO A LADO) ---
                 const valor = Number(data.valorTotal || data.value || 0);
+
+                // Caixa 1: Tributação Municipal Tradicional
+                drawTableBox(y, 45, 'Tributação Municipal (Transição ISS)');
                 drawLabelValue(startX + 5, y + 15, 100, 'Valor do Serviço', `R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 10);
                 drawLabelValue(startX + 110, y + 15, 80, 'BC ISSQN', `R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
-                drawLabelValue(startX + 200, y + 15, 80, 'Alíquota', '2,01 %');
-                drawLabelValue(startX + 290, y + 15, 80, 'ISSQN Apurado', `R$ ${(valor * 0.0201).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
-                drawLabelValue(startX + 380, y + 15, 80, 'ISSQN Retido', 'Não');
+                drawLabelValue(startX + 180, y + 15, 60, 'Alíquota', '2,01 %');
+                drawLabelValue(startX + 245, y + 15, 80, 'ISSQN Apurado', `R$ ${(valor * 0.0201).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+                drawLabelValue(startX + 335, y + 15, 80, 'ISSQN Retido', 'Não');
 
                 y += 50;
 
-                // --- TRIBUTOS FEDERAIS ---
-                drawTableBox(y, 35, 'Tributos Federais');
+                // Caixa 2: Reforma Tributária (IBS e CBS)
+                drawTableBox(y, 45, 'Reforma Tributária (IBS / CBS) - NT 122/2025');
+                const iEst = reforma.ibsEstadual || { aliquota: 0.1, valor: valor * 0.001 };
+                const iMun = reforma.ibsMunicipal || { aliquota: 0, valor: 0 };
+                const cFed = reforma.cbsFederal || { aliquota: 0.9, valor: valor * 0.009 };
+
+                drawLabelValue(startX + 5, y + 15, 85, 'IBS Estadual', `${iEst.aliquota}% | R$ ${iEst.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+                drawLabelValue(startX + 100, y + 15, 85, 'IBS Municipal', `${iMun.aliquota}% | R$ ${iMun.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+                drawLabelValue(startX + 195, y + 15, 85, 'CBS Federal', `${cFed.aliquota}% | R$ ${cFed.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+                drawLabelValue(startX + 290, y + 15, 120, 'BC Consolidada', `R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+                drawLabelValue(startX + 420, y + 15, 100, 'Total IBS/CBS', `R$ ${(iEst.valor + iMun.valor + cFed.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+
+                y += 50;
+
+                // --- TRIBUTOS FEDERAIS RETIDOS (ANTIGOS) ---
+                drawTableBox(y, 35, 'Retenções Federais (PIS/COFINS/INSS/CSLL/IRRF)');
                 drawLabelValue(startX + 5, y + 13, 80, 'PIS', 'R$ 0,00');
                 drawLabelValue(startX + 90, y + 13, 80, 'COFINS', 'R$ 0,00');
                 drawLabelValue(startX + 180, y + 13, 80, 'INSS', 'R$ 0,00');

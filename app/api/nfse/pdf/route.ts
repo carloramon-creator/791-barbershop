@@ -132,7 +132,26 @@ export async function GET(req: Request) {
             dataEmissao: finance.metadata?.nfe_emission_date || finance.date || new Date().toISOString()
         };
 
-        console.log(`[API-NFSE-PDF-GET] Generating PDF Buffer...`);
+        // Dados da Reforma Tributária (IBS/CBS) - NT 122/2025
+        dpsData.reformaTributaria = {
+            finNFSe: finance.metadata?.finNFSe || '0', // 0=Normal, 1=Substituição...
+            indFinal: finance.metadata?.indFinal || '1', // 1=Sim (Geralmente serviços são consumo final)
+            cIndOp: finance.metadata?.cIndOp || '010101', // Operação padrão
+            ibsEstadual: {
+                aliquota: 0.1,
+                valor: (finance.value || 0) * 0.001
+            },
+            ibsMunicipal: {
+                aliquota: 0,
+                valor: 0
+            },
+            cbsFederal: {
+                aliquota: 0.9,
+                valor: (finance.value || 0) * 0.009
+            }
+        };
+
+        console.log(`[API-NFSE-PDF-GET] Generating PDF Buffer (Tax Reform enabled)...`);
         const pdfBuffer = await pdfService.generateDanfseBuffer(dpsData);
 
         return new NextResponse(pdfBuffer as any, {
