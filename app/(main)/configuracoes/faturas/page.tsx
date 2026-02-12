@@ -9,26 +9,14 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabaseClient } from "@/lib/supabase-client";
-import { Api } from "@/lib/api";
 
 export default function InvoicesPage() {
     const [invoices, setInvoices] = useState<any[]>([]);
     const [loadingInvoices, setLoadingInvoices] = useState(true);
-    const [tenant, setTenant] = useState<any>(null);
 
     useEffect(() => {
         fetchInvoices();
-        fetchTenant();
     }, []);
-
-    async function fetchTenant() {
-        try {
-            const data = await Api.getBarbershop();
-            setTenant(data);
-        } catch (err) {
-            console.error("Erro ao buscar dados da barbearia:", err);
-        }
-    }
 
     async function fetchInvoices() {
         try {
@@ -325,81 +313,17 @@ export default function InvoicesPage() {
                                                         className="h-8 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-black uppercase"
                                                         onClick={async () => {
                                                             if (inv.metadata?.nfe_pdf_url) {
-                                                                try {
-                                                                    if (
-                                                                        inv.metadata.nfe_pdf_url.includes(
-                                                                            "/nfse/pdf",
-                                                                        )
-                                                                    ) {
-                                                                        const {
-                                                                            data: { session },
-                                                                        } =
-                                                                            await supabaseClient.auth.getSession();
-                                                                        const res = await fetch(
-                                                                            inv.metadata.nfe_pdf_url,
-                                                                            {
-                                                                                method: "POST",
-                                                                                headers: {
-                                                                                    "Content-Type":
-                                                                                        "application/json",
-                                                                                    Authorization: `Bearer ${session?.access_token}`,
-                                                                                },
-                                                                                body: JSON.stringify({
-                                                                                    dpsData: {
-                                                                                        id: inv.metadata.nfe_id,
-                                                                                        numero: inv.metadata.nfe_id,
-                                                                                        dataEmissao: inv.metadata.nfe_emission_date,
-                                                                                        prestador: {
-                                                                                            name: tenant?.name,
-                                                                                            razaoSocial: tenant?.razao_social,
-                                                                                            cnpj: tenant?.cnpj,
-                                                                                            logoUrl: tenant?.logo_url,
-                                                                                            endereco: `${tenant?.street || ''}, ${tenant?.number || ''} ${tenant?.city || ''}/${tenant?.state || ''}`
-                                                                                        },
-                                                                                        tomador: {
-                                                                                            nome: inv.metadata.tomador_nome || inv.customer_name,
-                                                                                            razaoSocial: inv.metadata.tomador_nome || inv.customer_name,
-                                                                                            cnpj: inv.metadata.tomador_documento || inv.customer_document,
-                                                                                            endereco: inv.metadata.tomador_endereco || 'Não informado'
-                                                                                        },
-                                                                                        servico: {
-                                                                                            discriminacao: inv.description || 'Prestação de serviços',
-                                                                                            valorServicos: inv.amount
-                                                                                        }
-                                                                                    },
-                                                                                }),
-                                                                            },
-                                                                        );
-                                                                        if (res.ok) {
-                                                                            const blob = await res.blob();
-                                                                            const url = window.URL.createObjectURL(blob);
-                                                                            window.open(url);
-                                                                        } else {
-                                                                            const errorText = await res.text();
-                                                                            console.error("Erro ao gerar PDF:", errorText);
-                                                                            alert(`Erro ao gerar PDF da nota fiscal: ${res.status} - ${errorText.substring(0, 100)}`);
-                                                                        }
-                                                                    } else {
-                                                                        // External URL (IPM or other)
-                                                                        window.open(
-                                                                            inv.metadata.nfe_pdf_url,
-                                                                            "_blank",
-                                                                        );
-                                                                    }
-                                                                } catch (e) {
-                                                                    console.error(e);
-                                                                    alert("Não foi possível abrir a nota fiscal. Verifique se a emissão foi bem-sucedida.");
-                                                                    // Fallback to try opening whatever URL we have
-                                                                    window.open(
-                                                                        inv.metadata.nfe_pdf_url,
-                                                                        "_blank",
-                                                                    );
+                                                                if (inv.metadata.nfe_pdf_url.includes("/nfse/pdf")) {
+                                                                    // Gerar via nossa API interna usando GET (mais robusto)
+                                                                    // Passamos o ID do registro financeiro para o backend buscar tudo
+                                                                    const url = `${inv.metadata.nfe_pdf_url}${inv.metadata.nfe_pdf_url.includes('?') ? '&' : '?'}id=${inv.id}`;
+                                                                    window.open(url, "_blank");
+                                                                } else {
+                                                                    // URL Externa (IPM ou outro provedor direto)
+                                                                    window.open(inv.metadata.nfe_pdf_url, "_blank");
                                                                 }
                                                             } else {
-                                                                alert(
-                                                                    "Nota fiscal emitida! ID: " +
-                                                                    inv.metadata.nfe_id,
-                                                                );
+                                                                alert("Nota fiscal emitida! ID: " + inv.metadata.nfe_id);
                                                             }
                                                         }}
                                                     >

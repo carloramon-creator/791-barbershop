@@ -1,5 +1,69 @@
 import { NextResponse } from 'next/server';
 import pdfService from '@/lib/nfse/pdf-service';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { getCurrentUserAndTenant } from '@/lib/server-utils';
+
+export async function GET(req: Request) {
+    try {
+        const { searchParams } = new URL(req.url);
+        const id = searchParams.get('id');
+
+        if (!id) {
+            return NextResponse.json({ error: 'ID não informado' }, { status: 400 });
+        }
+
+        const { tenant } = await getCurrentUserAndTenant();
+
+        // 1. Buscar a fatura
+        const { data: finance, error: financeError } = await getSupabaseAdmin()
+            .from('finance')
+            .select('*')
+            .eq('id', id)
+            .eq('tenant_id', tenant.id)
+            .single();
+
+        if (financeError || !finance) {
+            return NextResponse.json({ error: 'Fatura não encontrada' }, { status: 404 });
+        }
+
+        // 2. Montar dpsData para o PDF
+        const dpsData = {
+            id: finance.metadata?.nfe_id || finance.id.slice(-8),
+            numero: finance.metadata?.nfe_id || finance.id.slice(-8),
+            dataEmissao: finance.metadata?.nfe_emission_date || finance.date,
+            prestador: {
+                name: tenant.name,
+                razaoSocial: tenant.razao_social,
+                cnpj: tenant.cnpj,
+                logoUrl: tenant.logo_url,
+                endereco: `${tenant.street || ''}, ${tenant.number || ''} ${tenant.city || ''}/${tenant.state || ''}`
+            },
+            tomador: {
+                nome: finance.metadata?.tomador_nome || finance.customer_name || 'Não informado',
+                razaoSocial: finance.metadata?.tomador_nome || finance.customer_name || 'Não informado',
+                cnpj: finance.metadata?.tomador_documento || finance.customer_document || 'Não informado',
+                endereco: finance.metadata?.tomador_endereco || 'Não informado'
+            },
+            servico: {
+                discriminacao: finance.description || 'Prestação de serviços',
+                valorServicos: finance.amount || finance.value || 0
+            }
+        };
+
+        const pdfBuffer = await pdfService.generateDanfseBuffer(dpsData);
+
+        return new NextResponse(pdfBuffer as any, {
+            status: 200,
+            headers: {
+                'Content-Type': 'application/pdf',
+                'Content-Disposition': 'inline; filename="danfse.pdf"',
+            },
+        });
+    } catch (error: any) {
+        console.error('[API-NFSE-PDF-GET] Erro:', error.message);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
 
 export async function POST(req: Request) {
     try {
@@ -19,7 +83,7 @@ export async function POST(req: Request) {
             },
         });
     } catch (error: any) {
-        console.error('[API-NFSE-PDF] Erro:', error.message);
+        console.error('[API-NFSE-PDF-POST] Erro:', error.message);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
