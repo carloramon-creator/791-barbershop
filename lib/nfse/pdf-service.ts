@@ -19,14 +19,14 @@ export class PdfService {
     }
 
     /**
-     * Gera um PDF (DANFSE) simplificado e retorna como Buffer.
+     * Gera um PDF (DANFSE) oficial simplificado e retorna como Buffer.
      */
     public async generateDanfseBuffer(data: any): Promise<Buffer> {
         return new Promise(async (resolve, reject) => {
             try {
                 const fontBuffer = Buffer.from(notoSansBase64, 'base64');
                 const doc = new PDFDocument({
-                    margin: 40,
+                    margin: 30,
                     size: 'A4',
                     font: fontBuffer as any,
                     info: {
@@ -42,95 +42,119 @@ export class PdfService {
                 stream.on('error', (err) => reject(err));
                 doc.pipe(stream);
 
-                // --- HEADER DESIGN ---
-                // Logo (opcional)
-                const logoUrl = data.logoUrl || data.prestador?.logoUrl;
-                if (logoUrl && logoUrl.startsWith('http')) {
-                    try {
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 3000);
-                        const response = await fetch(logoUrl, { signal: controller.signal });
-                        clearTimeout(timeoutId);
-                        if (response.ok) {
-                            const arrayBuffer = await response.arrayBuffer();
-                            const logoBuffer = Buffer.from(arrayBuffer);
-                            if (logoBuffer.length > 0) {
-                                doc.image(logoBuffer, 40, 40, { width: 50 });
-                            }
-                        }
-                    } catch (e) {
-                        console.error('[PDF-SERVICE] Logo error skipped');
+                // Configurações Globais
+                const pageWidth = 535; // Largura útil (595 - 60)
+                const startX = 30;
+                let y = 30;
+
+                // --- HELPER PARA DESENHAR BOXES COM GRADES ---
+                const drawTableBox = (yStart: number, height: number, title: string) => {
+                    doc.rect(startX, yStart, pageWidth, height).strokeColor('#000000').lineWidth(0.5).stroke();
+                    if (title) {
+                        doc.fillColor('#000000').fontSize(7).text(title.toUpperCase(), startX + 5, yStart + 3, { bold: true } as any);
+                        doc.moveTo(startX, yStart + 12).lineTo(startX + pageWidth, yStart + 12).stroke();
                     }
-                }
-
-                // Título e Identificação à Direita (Separados para não sobrepor)
-                doc.fillColor('#000000').fontSize(16).text('DANFSE', 0, 40, { align: 'center' });
-                doc.fontSize(10).text('Doc. Auxiliar da NFS-e', 0, 58, { align: 'center' });
-
-                doc.fontSize(8);
-                doc.text(`Nº Nota: ${data.numero || data.nfe_id || 'PROVISÓRIO'}`, 400, 40, { width: 155, align: 'right' });
-                const dataEmissao = data.dataEmissao ? new Date(data.dataEmissao).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR');
-                doc.text(`Emissão: ${dataEmissao}`, 400, 52, { width: 155, align: 'right' });
-
-                const drawSectionHeader = (y: number, label: string) => {
-                    doc.rect(40, y, 515, 15).fill('#f5f5f5');
-                    doc.fillColor('#333333').fontSize(7).text(label.toUpperCase(), 45, y + 4);
-                    doc.fillColor('#000000');
                 };
 
-                const drawBox = (y: number, height: number, label: string) => {
-                    doc.rect(40, y, 515, height).strokeColor('#e5e7eb').lineWidth(0.5).stroke();
-                    drawSectionHeader(y, label);
+                const drawLabelValue = (x: number, y: number, width: number, label: string, value: string, fontSizeVal = 8) => {
+                    doc.fillColor('#444444').fontSize(6).text(label.toUpperCase(), x, y, { width, align: 'left' });
+                    doc.fillColor('#000000').fontSize(fontSizeVal).text(value || '-', x, y + 8, { width: width - 2, align: 'left' });
                 };
 
-                // --- SEÇÃO 1: PRESTADOR ---
-                let currentY = 90;
-                drawBox(currentY, 65, 'Identificação do Prestador de Serviços');
+                // --- HEADER SUPERIOR ---
+                doc.rect(startX, y, pageWidth, 40).stroke();
+                // Logo NFS-e (Simulado)
+                doc.fontSize(14).text('NFS-e', startX + 10, y + 10, { width: 100 });
+                doc.fontSize(6).text('Nota Fiscal de Serviço eletrônica', startX + 10, y + 25);
+
+                // Centro: Identificação
+                doc.fontSize(10).text('DANFSe v1.0', startX, y + 10, { align: 'center', width: pageWidth });
+                doc.fontSize(9).text('Documento Auxiliar da NFS-e', startX, y + 22, { align: 'center', width: pageWidth });
+
+                // Direita: Prefeitura (Simulado)
+                doc.fontSize(8).text('PREFEITURA MUNICIPAL DE', startX + 380, y + 10, { width: 150 });
+                doc.fontSize(8).text(data.municipioPrefeitura || 'FLORIANÓPOLIS', startX + 380, y + 20, { width: 150 });
+
+                y += 45;
+
+                // --- CHAVE DE ACESSO ---
+                doc.rect(startX, y, pageWidth, 55).stroke();
+                drawLabelValue(startX + 5, y + 5, 400, 'Chave de Acesso da NFS-e', data.chaveAcesso || '420540722623220400018700000000000000926021489032325', 9);
+
+                doc.moveTo(startX + 420, y).lineTo(startX + 420, y + 55).stroke(); // Divisor QR Code
+                doc.rect(startX + 440, y + 5, 45, 45).stroke(); // Placeholder QR Code
+                doc.fontSize(5).text('Autenticidade via QR Code', startX + 425, y + 50, { width: 80, align: 'center' });
+
+                drawLabelValue(startX + 5, y + 30, 80, 'Número da NFS-e', data.numero || data.nfe_id || '1', 10);
+                drawLabelValue(startX + 100, y + 30, 100, 'Competência da NFS-e', data.dataEmissao?.slice(0, 10) || '09/02/2026');
+                drawLabelValue(startX + 220, y + 30, 150, 'Data e Hora da emissão da NFS-e', data.dataEmissao || '09/02/2026 14:01:16');
+
+                y += 60;
+
+                // --- SEÇÃO 1: EMITENTE ---
+                drawTableBox(y, 70, 'Emitente da NFS-e / Prestador do Serviço');
                 const prestador = data.prestador || {};
-                doc.fontSize(10).text(prestador.razaoSocial || prestador.name || '791 SOLUÇÕES TECNOLÓGICAS LTDA', 50, currentY + 22);
-                doc.fontSize(9);
-                doc.text(`CNPJ: ${prestador.cnpj || '61.887.941/0001-83'}`, 50, currentY + 36);
-                doc.text(`Endereço: ${prestador.endereco || 'Rua João Pio Duarte Silva, 1221 - Florianópolis/SC'}`, 50, currentY + 48, { width: 490 });
+                drawLabelValue(startX + 5, y + 15, 200, 'Nome / Nome Empresarial', prestador.razaoSocial || prestador.name || '791 SOLUÇÕES TECNOLÓGICAS LTDA');
+                drawLabelValue(startX + 250, y + 15, 120, 'CNPJ / CPF / NIF', prestador.cnpj || '61.887.941/0001-83');
+                drawLabelValue(startX + 380, y + 15, 80, 'Inscrição Municipal', '-');
+                drawLabelValue(startX + 470, y + 15, 60, 'Telefone', '(48) 9999-9999');
+
+                drawLabelValue(startX + 5, y + 38, 300, 'Endereço', prestador.endereco || 'RUA JOAO PIO DUARTE SILVA, 1221');
+                drawLabelValue(startX + 310, y + 38, 100, 'Município', 'Florianópolis - SC');
+                drawLabelValue(startX + 420, y + 38, 50, 'CEP', '88000-000');
+
+                y += 75;
 
                 // --- SEÇÃO 2: TOMADOR ---
-                currentY += 75;
-                drawBox(currentY, 65, 'Identificação do Tomador de Serviços');
+                drawTableBox(y, 60, 'Tomador do Serviço');
                 const tomador = data.tomador || {};
-                doc.fontSize(10).text(tomador.razaoSocial || tomador.nome || 'CONSUMIDOR NÃO IDENTIFICADO', 50, currentY + 22);
-                doc.fontSize(9);
-                doc.text(`CPF/CNPJ: ${tomador.cnpj || tomador.cpf || 'Não informado'}`, 50, currentY + 36);
-                doc.text(`Endereço: ${tomador.endereco || 'Não informado'}`, 50, currentY + 48, { width: 490 });
+                drawLabelValue(startX + 5, y + 15, 200, 'Nome / Nome Empresarial', tomador.razaoSocial || tomador.nome || 'Consumidor Final');
+                drawLabelValue(startX + 250, y + 15, 120, 'CNPJ / CPF / NIF', tomador.cnpj || tomador.cpf || 'Não informado');
+                drawLabelValue(startX + 380, y + 15, 80, 'Inscrição Municipal', '-');
 
-                // --- SEÇÃO 3: SERVIÇOS ---
-                currentY += 75;
-                drawBox(currentY, 200, 'Discriminação dos Serviços');
+                drawLabelValue(startX + 5, y + 35, 300, 'Endereço', tomador.endereco || 'Não informado');
+                drawLabelValue(startX + 310, y + 35, 100, 'Município', '-');
+                drawLabelValue(startX + 420, y + 35, 50, 'CEP', '-');
+
+                y += 65;
+
+                // --- SEÇÃO 3: SERVIÇO PRESTADO ---
+                drawTableBox(y, 180, 'Serviço Prestado');
                 const servico = data.servico || {};
-                const discriminacaoOriginal = servico.discriminacao || data.discriminacao || 'Prestação de serviços diversos.';
-                const discriminacao = this.deduplicateText(discriminacaoOriginal);
+                const discriminacao = this.deduplicateText(servico.discriminacao || data.discriminacao || 'Serviços de tecnologia.');
 
-                doc.fontSize(10).text(discriminacao, 50, currentY + 30, {
-                    width: 490,
-                    align: 'left',
-                    lineGap: 4
-                });
+                drawLabelValue(startX + 5, y + 15, 200, 'Código de Tributação Nacional', '08.02.01 - Instrução, treinamento...');
+                drawLabelValue(startX + 220, y + 15, 100, 'Código Tributação Municipal', '-');
+                drawLabelValue(startX + 330, y + 15, 100, 'Local da Prestação', 'Florianópolis - SC');
 
-                // --- VALORES ---
-                const bottomY = currentY + 200;
-                doc.rect(40, bottomY, 515, 45).strokeColor('#e5e7eb').stroke();
+                doc.fontSize(7).fillColor('#444444').text('DESCRIÇÃO DO SERVIÇO', startX + 5, y + 40);
+                doc.fontSize(9).fillColor('#000000').text(discriminacao, startX + 5, y + 50, { width: 520, lineGap: 3 });
 
-                const valor = servico.valorServicos || data.valorTotal || data.valor || 0;
-                doc.fontSize(12).text('VALOR TOTAL DA NOTA', 50, bottomY + 15);
-                doc.fontSize(16).text(`R$ ${Number(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 40, bottomY + 12, {
-                    align: 'right',
-                    width: 500
-                });
+                y += 185;
 
-                // Rodapé
-                doc.fontSize(7).fillColor('#9b9b9b');
-                doc.text('Este documento é uma representação simplificada da NFS-e (DANFSE) gerada automaticamente pelo sistema 791 Barber.', 40, bottomY + 55, {
-                    align: 'center',
-                    width: 515
-                });
+                // --- SEÇÃO 4: TRIBUTAÇÃO MUNICIPAL ---
+                drawTableBox(y, 50, 'Tributação Municipal');
+                drawLabelValue(startX + 5, y + 15, 100, 'Valor do Serviço', `R$ ${Number(data.valorTotal || data.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+                drawLabelValue(startX + 110, y + 15, 80, 'BC ISSQN', '-');
+                drawLabelValue(startX + 200, y + 15, 80, 'Alíquota Aplicada', '-');
+                drawLabelValue(startX + 290, y + 15, 80, 'ISSQN Retido', 'Não Retido');
+                drawLabelValue(startX + 380, y + 15, 80, 'ISSQN Apurado', '-');
+
+                y += 55;
+
+                // --- SEÇÃO 5: VALOR TOTAL ---
+                drawTableBox(y, 40, 'Valor Total da NFS-e');
+                doc.fontSize(10).text('VALOR LÍQUIDO DA NFS-e', startX + 350, y + 15, { width: 150, align: 'left' });
+                doc.fontSize(14).text(`R$ ${Number(data.valorTotal || data.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, startX + 300, y + 12, { width: 230, align: 'right' });
+
+                y += 45;
+
+                // Rodapé Final
+                doc.rect(startX, y, pageWidth, 50).stroke();
+                doc.fontSize(7).text('INFORMAÇÕES COMPLEMENTARES', startX + 5, y + 5);
+                doc.fontSize(8).text(data.infoComplementar || 'NBS: 122051100. Gerado via plataforma 791 Barber.', startX + 5, y + 15, { width: 520 });
+
+                doc.fontSize(6).fillColor('#999999').text('Este documento é uma representação simplificada da NFS-e (DANFSE). Reservado ao uso administrativo.', startX, y + 60, { width: pageWidth, align: 'center' });
 
                 doc.end();
             } catch (err) {
