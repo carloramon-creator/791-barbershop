@@ -368,16 +368,16 @@ export default function LandingPage() {
                     </div>
 
                     <div className="max-w-4xl mx-auto">
-                        <div className="relative aspect-video bg-slate-100 border-2 border-slate-200 rounded-3xl overflow-hidden group cursor-pointer hover:border-blue-500/50 transition-all shadow-xl">
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <div className="w-24 h-24 bg-white/80 backdrop-blur-xl rounded-full flex items-center justify-center mb-6 shadow-xl group-hover:scale-110 transition-transform">
-                                    <div className="w-0 h-0 border-t-[15px] border-t-transparent border-l-[25px] border-l-blue-600 border-b-[15px] border-b-transparent ml-2" />
-                                </div>
-                                <p className="text-lg font-bold text-slate-900">Assista ao Vídeo Demonstrativo</p>
-                                <p className="text-sm text-slate-500 mt-2 font-medium">Veja como é fácil gerenciar sua barbearia</p>
-                            </div>
+                        <div className="relative aspect-video bg-slate-100 border-2 border-slate-200 rounded-3xl overflow-hidden group shadow-xl">
+                            <iframe
+                                className="absolute inset-0 w-full h-full"
+                                src="https://www.youtube.com/embed/BxQyOoAXPXEv"
+                                title="791 Barber Demonstration"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                            ></iframe>
                         </div>
-                        <p className="text-center text-sm text-slate-500 mt-4 font-medium">💡 Adicione seu vídeo do YouTube, Vimeo ou Loom aqui</p>
                     </div>
                 </div>
             </section>
