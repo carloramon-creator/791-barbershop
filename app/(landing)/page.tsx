@@ -316,15 +316,14 @@ export default function LandingPage() {
 
                     <div className="max-w-4xl mx-auto">
                         <div className="relative aspect-video bg-slate-100 border-2 border-slate-200 rounded-3xl overflow-hidden shadow-xl">
-                            <video
-                                controls
-                                playsInline
-                                preload="metadata"
-                                className="absolute inset-0 w-full h-full object-cover"
-                            >
-                                <source src="/video-demo.mov" type="video/quicktime" />
-                                Seu navegador não suporta vídeos nativos.
-                            </video>
+                            <iframe
+                                className="absolute inset-0 w-full h-full"
+                                src="https://www.youtube.com/embed/BxQyOoAXPXE"
+                                title="791 Barber em Ação"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                            ></iframe>
                         </div>
                     </div>
                 </div>
