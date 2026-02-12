@@ -12,9 +12,13 @@ export class PdfService {
                 // Decodifica a fonte embutida (Base64 -> Buffer)
                 const fontBuffer = Buffer.from(notoSansBase64, 'base64');
 
+                // IMPORTANTE: Passamos a fonte diretamente no construtor.
+                // Isso evita que o PDFKit tente carregar "Helvetica" (que depende de arquivos no disco)
+                // como fonte padrão durante a inicialização.
                 const doc = new PDFDocument({
                     margin: 30,
                     size: 'A4',
+                    font: fontBuffer as any,
                     info: {
                         Title: 'DANFSE - Documento Auxiliar da NFS-e',
                         Author: '791 Barber System'
@@ -30,15 +34,9 @@ export class PdfService {
 
                 doc.pipe(stream);
 
-                // Registra e define a fonte para evitar QUALQUER toque em Helvetica
-                try {
-                    doc.registerFont('NotoSans', fontBuffer as any);
-                    doc.font('NotoSans');
-                } catch (e) {
-                    console.error('[PDF-SERVICE] Error registering embedded font:', e);
-                    // Se falhar o registro, o PDFKit tentará Helvetica por padrão no doc.text, 
-                    // o que causará o ENOENT em produção. Por isso o register é crítico.
-                }
+                // NUNCA chamar doc.font() com nomes de fontes padrão (Helvetica, Times, etc)
+                // Usamos sempre a nossa fonte já carregada.
+                // doc.font(fontBuffer); // Nem precisa mais pois já foi no construtor
 
                 // Carregamento de Logo com Timeout e Robustez
                 const logoUrl = data.logoUrl || data.prestador?.logoUrl;
