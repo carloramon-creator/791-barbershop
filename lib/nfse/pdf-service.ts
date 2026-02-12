@@ -3,6 +3,7 @@ import { PassThrough } from 'stream';
 import { notoSansBase64 } from './noto-sans-base64';
 import path from 'path';
 import fs from 'fs';
+// @ts-ignore
 import QRCode from 'qrcode';
 
 export class PdfService {
