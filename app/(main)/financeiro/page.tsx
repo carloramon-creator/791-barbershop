@@ -521,14 +521,18 @@ export default function FinanceiroPage() {
                 <Button
                     variant={view === 'main' ? 'default' : 'outline'}
                     onClick={() => setView('main')}
-                    className={cn(view === 'main' ? "bg-blue-600" : "border-slate-800")}
+                    className={cn(
+                        view === 'main' ? "bg-blue-600" : "border-slate-800 text-slate-400 hover:text-slate-200"
+                    )}
                 >
                     Fluxo Principal (Pagos)
                 </Button>
                 <Button
                     variant={view === 'topay' ? 'default' : 'outline'}
                     onClick={() => setView('topay')}
-                    className={cn(view === 'topay' ? "bg-amber-600" : "border-slate-800")}
+                    className={cn(
+                        view === 'topay' ? "bg-amber-600 text-white" : "border-slate-800 text-slate-400 hover:text-slate-200"
+                    )}
                 >
                     À Pagar (Pendentes)
                 </Button>

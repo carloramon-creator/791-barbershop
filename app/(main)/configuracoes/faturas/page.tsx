@@ -308,31 +308,35 @@ export default function InvoicesPage() {
 
                                                 {inv.metadata?.nfe_id && (
                                                     <Button
+                                                        asChild
                                                         size="sm"
                                                         variant="ghost"
                                                         className="h-8 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 text-[10px] font-black uppercase"
-                                                        onClick={async () => {
-                                                            console.log(`[VER-NF] Clicado em fatura: ${inv.id}`, inv.metadata);
-                                                            if (inv.metadata?.nfe_pdf_url) {
-                                                                if (inv.metadata.nfe_pdf_url.includes("/nfse/pdf")) {
-                                                                    // Usar origin absoluto para evitar redirecionamentos indesejados
-                                                                    const baseUrl = inv.metadata.nfe_pdf_url.startsWith('http')
-                                                                        ? inv.metadata.nfe_pdf_url
-                                                                        : `${window.location.origin}${inv.metadata.nfe_pdf_url}`;
-
-                                                                    const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}id=${inv.id}`;
-                                                                    console.log(`[VER-NF] Abrindo URL interna absoluta: ${url}`);
-                                                                    window.open(url, "_blank");
-                                                                } else {
-                                                                    console.log(`[VER-NF] Abrindo URL externa: ${inv.metadata.nfe_pdf_url}`);
-                                                                    window.open(inv.metadata.nfe_pdf_url, "_blank");
-                                                                }
-                                                            } else {
-                                                                alert("Nota fiscal emitida! ID: " + inv.metadata.nfe_id);
-                                                            }
-                                                        }}
                                                     >
-                                                        <FileCheck className="w-3 h-3 mr-1" /> Ver NF
+                                                        <a
+                                                            href={(() => {
+                                                                if (!inv.metadata?.nfe_pdf_url) return "#";
+                                                                const baseUrl = inv.metadata.nfe_pdf_url.startsWith('http')
+                                                                    ? inv.metadata.nfe_pdf_url
+                                                                    : (typeof window !== 'undefined' ? `${window.location.origin}${inv.metadata.nfe_pdf_url}` : inv.metadata.nfe_pdf_url);
+
+                                                                return baseUrl.includes("/nfse/pdf")
+                                                                    ? `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}id=${inv.id}`
+                                                                    : baseUrl;
+                                                            })()}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            onClick={(e) => {
+                                                                if (e.currentTarget.getAttribute('href') === "#") {
+                                                                    e.preventDefault();
+                                                                    alert("Nota fiscal emitida! ID: " + inv.metadata.nfe_id);
+                                                                } else {
+                                                                    console.log(`[VER-NF] Abrindo link nativo: ${e.currentTarget.href}`);
+                                                                }
+                                                            }}
+                                                        >
+                                                            <FileCheck className="w-3 h-3 mr-1" /> Ver NF
+                                                        </a>
                                                     </Button>
                                                 )}
                                             </div>
