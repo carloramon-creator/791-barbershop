@@ -5,13 +5,11 @@ import { getCurrentUserAndTenant } from '@/lib/server-utils';
 import { headers } from 'next/headers'; // Added this import
 
 export async function GET(req: Request) {
-    console.log(`[API-NFSE-PDF-GET] (v=2) INIT: ${req.url}`);
+    console.log(`[API-NFSE-PDF-GET] (v=3) INIT: ${req.url}`);
     try {
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
         const source = searchParams.get('source');
-
-        console.log(`[API-NFSE-PDF-GET] Params: id=${id}, source=${source}`);
 
         if (!id) {
             console.error('[API-NFSE-PDF-GET] Error: ID missing');
@@ -19,57 +17,104 @@ export async function GET(req: Request) {
         }
 
         const headersList = await headers();
-        console.log(`[API-NFSE-PDF-GET] Host Header: ${headersList.get('host')}`);
+        const host = headersList.get('host') || '';
+        console.log(`[API-NFSE-PDF-GET] Host: ${host}`);
 
         const { tenant, user } = await getCurrentUserAndTenant();
-        console.log(`[API-NFSE-PDF-GET] Auth: user=${user?.email}, tenant=${tenant?.name} (${tenant?.id})`);
+        console.log(`[API-NFSE-PDF-GET] Auth Success: user=${user?.email}, tenant=${tenant?.name} (${tenant?.id})`);
 
         // 1. Buscar a fatura
         const { data: finance, error: financeError } = await getSupabaseAdmin()
             .from('finance')
             .select('*')
             .eq('id', id)
-            .eq('tenant_id', tenant.id)
             .single();
 
         if (financeError || !finance) {
-            console.error(`[API-NFSE-PDF-GET] Error: Invoice not found or unauthorized. ID: ${id}, Tenant: ${tenant.id}`);
+            console.error(`[API-NFSE-PDF-GET] Error: Invoice not found. ID: ${id}`);
             return NextResponse.json({ error: 'Fatura não encontrada' }, { status: 404 });
         }
 
-        console.log(`[API-NFSE-PDF-GET] Finance found: ${finance.description}`);
+        // Segurança básica: tenant do usuário deve ser o mesmo da fatura,
+        // EXCETO se for System Admin (atendimento ao suporte)
+        const isOwner = finance.tenant_id === tenant.id;
+        const isAuthorized = isOwner || (user?.email === 'ramon@791solucoes.com.br');
+
+        if (!isAuthorized) {
+            console.error(`[API-NFSE-PDF-GET] Unauthorized: User ${user?.email} tried to access invoice ${id} of tenant ${finance.tenant_id}`);
+            return NextResponse.json({ error: 'Acesso negado para esta fatura' }, { status: 403 });
+        }
 
         // 2. Se for link externo (ex: IPM), redireciona
         const pdfUrl = finance.metadata?.nfe_pdf_url || finance.metadata?.pdfUrl || finance.metadata?.pdf_url;
         if (pdfUrl && pdfUrl.startsWith('http') && !pdfUrl.includes('/api/nfse/pdf')) {
-            console.log(`[API-NFSE-PDF-GET] External URL detected, redirecting to: ${pdfUrl}`);
+            console.log(`[API-NFSE-PDF-GET] External URL detected, redirecting: ${pdfUrl}`);
             return NextResponse.redirect(pdfUrl);
         }
 
-        // 3. Montar dpsData para o PDF
-        const dpsData = {
-            id: finance.metadata?.nfe_id || finance.id.slice(-8),
-            numero: finance.metadata?.nfe_id || finance.id.slice(-8),
-            dataEmissao: finance.metadata?.nfe_emission_date || finance.date,
-            prestador: {
-                name: tenant.name,
-                razaoSocial: tenant.razao_social,
-                cnpj: tenant.cnpj,
-                logoUrl: tenant.logo_url,
-                endereco: `${tenant.street || ''}, ${tenant.number || ''} ${tenant.city || ''}/${tenant.state || ''}`
-            },
-            tomador: {
-                nome: finance.metadata?.tomador_nome || finance.customer_name || 'Não informado',
-                razaoSocial: finance.metadata?.tomador_nome || finance.customer_name || 'Não informado',
-                cnpj: finance.metadata?.tomador_documento || finance.customer_document || 'Não informado',
-                endereco: finance.metadata?.tomador_endereco || 'Não informado'
-            },
-            servico: {
-                discriminacao: finance.description || 'Prestação de serviços',
-                valorServicos: finance.amount || finance.value || 0
-            }
-        };
+        // 3. Determinar se é um pagamento SaaS para inverter Prestador/Tomador
+        const isSaaS = finance.metadata?.is_saas_payment === true ||
+            finance.description?.toUpperCase().includes('SAAS') ||
+            finance.description?.toUpperCase().includes('MENSALIDADE') ||
+            finance.description?.toUpperCase().includes('791 BARBER');
 
+        console.log(`[API-NFSE-PDF-GET] Detection: isSaaS=${isSaaS}`);
+
+        let dpsData: any;
+
+        if (isSaaS) {
+            // PRESTADOR: 791 SOLUÇÕES (SaaS)
+            // TOMADOR: Barbearia (Tenant)
+            dpsData = {
+                id: finance.metadata?.nfe_id || finance.id.slice(-8),
+                numero: finance.metadata?.nfe_id || finance.id.slice(-8),
+                dataEmissao: finance.metadata?.nfe_emission_date || finance.date,
+                logoUrl: 'https://791barbershop.com/logo-791.jpg', // Logo padrão 791
+                prestador: {
+                    name: '791 SOLUÇÕES TECNOLÓGICAS LTDA',
+                    razaoSocial: '791 SOLUÇÕES TECNOLÓGICAS LTDA',
+                    cnpj: '61.887.941/0001-83',
+                    endereco: 'RUA JOAO PIO DUARTE SILVA, 1221 - FLORIANOPOLIS/SC'
+                },
+                tomador: {
+                    nome: tenant.name,
+                    razaoSocial: tenant.razao_social || tenant.name,
+                    cnpj: tenant.cnpj || tenant.cpf || 'Não informado',
+                    endereco: tenant.address || 'Não informado'
+                },
+                servico: {
+                    discriminacao: finance.description || 'Assinatura SaaS 791 Barber',
+                    valorServicos: finance.value || 0
+                }
+            };
+        } else {
+            // PRESTADOR: Barbearia (Tenant)
+            // TOMADOR: Cliente Final (Finance)
+            dpsData = {
+                id: finance.metadata?.nfe_id || finance.id.slice(-8),
+                numero: finance.metadata?.nfe_id || finance.id.slice(-8),
+                dataEmissao: finance.metadata?.nfe_emission_date || finance.date,
+                logoUrl: tenant.logo_url,
+                prestador: {
+                    name: tenant.name,
+                    razaoSocial: tenant.razao_social || tenant.name,
+                    cnpj: tenant.cnpj,
+                    endereco: tenant.address || 'Não informado'
+                },
+                tomador: {
+                    nome: finance.customer_name || finance.metadata?.tomador_nome || 'Consumidor Final',
+                    razaoSocial: finance.customer_name || finance.metadata?.tomador_nome || 'Consumidor Final',
+                    cnpj: finance.customer_document || finance.metadata?.tomador_documento || 'Não informado',
+                    endereco: finance.metadata?.tomador_endereco || 'Não informado'
+                },
+                servico: {
+                    discriminacao: finance.description || 'Serviços Prestados',
+                    valorServicos: finance.value || 0
+                }
+            };
+        }
+
+        console.log(`[API-NFSE-PDF-GET] Generating PDF Buffer...`);
         const pdfBuffer = await pdfService.generateDanfseBuffer(dpsData);
 
         return new NextResponse(pdfBuffer as any, {
@@ -77,11 +122,12 @@ export async function GET(req: Request) {
             headers: {
                 'Content-Type': 'application/pdf',
                 'Content-Disposition': 'inline; filename="danfse.pdf"',
+                'Cache-Control': 'no-store, max-age=0'
             },
         });
     } catch (error: any) {
-        console.error('[API-NFSE-PDF-GET] Erro:', error.message);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('[API-NFSE-PDF-GET] FATAL ERROR:', error.message);
+        return NextResponse.json({ error: `Falha ao gerar PDF: ${error.message}` }, { status: 500 });
     }
 }
 
