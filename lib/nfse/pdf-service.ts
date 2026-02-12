@@ -3,6 +3,7 @@ import { PassThrough } from 'stream';
 import { notoSansBase64 } from './noto-sans-base64';
 import path from 'path';
 import fs from 'fs';
+import QRCode from 'qrcode';
 
 export class PdfService {
     /**
@@ -18,6 +19,16 @@ export class PdfService {
             }
         }
         return result.join(' ');
+    }
+
+    /**
+     * Converte valor string (ex: "98,91") ou número para float.
+     */
+    private parseValue(v: any): number {
+        if (v === null || v === undefined) return 0;
+        if (typeof v === 'number') return v;
+        const s = String(v).replace('R$', '').replace(/\s/g, '').replace('.', '').replace(',', '.');
+        return parseFloat(s) || 0;
     }
 
     /**
@@ -80,8 +91,17 @@ export class PdfService {
                 }
 
                 // Centro: Informações da Nota
-                doc.fillColor('#000000').fontSize(12).text('DANFSE', startX, y + 10, { align: 'center', width: pageWidth, bold: true } as any);
-                doc.fontSize(7).text('Documento Auxiliar da Nota Fiscal de Serviço eletrônica', startX, y + 25, { align: 'center', width: pageWidth });
+                doc.fillColor('#000000').fontSize(12).text('DANFSE', startX, y + 10, { align: 'center', width: 330, bold: true } as any);
+                doc.fontSize(7).text('Documento Auxiliar da Nota Fiscal de Serviço eletrônica', startX, y + 25, { align: 'center', width: 330 });
+
+                // QR Code (Esquerda do DPS block)
+                const qrUrl = data.qrCodeUrl || 'https://sj.atende.net';
+                try {
+                    const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 1, width: 45 });
+                    doc.image(qrDataUrl, startX + 325, y + 5, { width: 45 });
+                } catch (e) {
+                    doc.rect(startX + 325, y + 5, 45, 45).stroke();
+                }
 
                 // DPS Block (Direita)
                 const dps = data.dpsInfo || {};
@@ -160,7 +180,7 @@ export class PdfService {
                 y += 65;
 
                 // --- VALORES E IMPOSTOS (LADO A LADO) ---
-                const valor = Number(data.valorTotal || data.value || 0);
+                const valor = this.parseValue(data.valorTotal || data.value || data.servico?.valorServicos || 0);
 
                 // Caixa 1: Tributação Municipal Tradicional
                 drawTableBox(y, 45, 'Tributação Municipal (Transição ISS)');

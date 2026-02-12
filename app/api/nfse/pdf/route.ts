@@ -85,7 +85,9 @@ export async function GET(req: Request) {
                 servico: {
                     discriminacao: finance.description || 'Assinatura SaaS 791 Barber',
                     valorServicos: finance.value || 0
-                }
+                },
+                valorTotal: finance.value || 0,
+                qrCodeUrl: finance.metadata?.nfe_pdf_url || finance.metadata?.pdfUrl || 'https://sj.atende.net/autoatendimento'
             };
         } else {
             // PRESTADOR: Barbearia (Tenant)
@@ -110,7 +112,9 @@ export async function GET(req: Request) {
                 servico: {
                     discriminacao: finance.description || 'Serviços Prestados',
                     valorServicos: finance.value || 0
-                }
+                },
+                valorTotal: finance.value || 0,
+                qrCodeUrl: finance.metadata?.nfe_pdf_url || finance.metadata?.pdfUrl || 'https://sj.atende.net/autoatendimento'
             };
         }
 
