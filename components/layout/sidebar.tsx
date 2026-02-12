@@ -205,7 +205,7 @@ export function Sidebar() {
 
             {/* Sidebar */}
             <div className={cn(
-                "fixed inset-y-0 left-0 z-40 w-72 border-r flex flex-col h-screen transition-all duration-300 md:relative md:translate-x-0 overflow-hidden shadow-2xl",
+                "fixed inset-y-0 left-0 z-40 w-72 border-r flex flex-col h-[100dvh] transition-all duration-300 md:relative md:translate-x-0 overflow-y-auto md:overflow-hidden shadow-2xl",
                 "bg-slate-900 border-slate-800",
                 !isOpen && "-translate-x-full md:translate-x-0"
             )}>
@@ -317,7 +317,7 @@ export function Sidebar() {
                 </nav>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-slate-800 space-y-2">
+                <div className="p-4 border-t border-slate-800 space-y-2 pb-10 md:pb-4">
                     <button
                         onClick={() => setShowSupport(true)}
                         className="flex items-center gap-2 text-[10px] font-bold text-slate-500 hover:text-slate-300 transition-colors uppercase tracking-wider group w-full px-2"
