@@ -26,7 +26,7 @@ export default function InvoicesPage() {
             } = await supabaseClient.auth.getSession();
             if (!session) return;
 
-            const res = await fetch("/api/barbershop/invoices", {
+            const res = await fetch(`/api/barbershop/invoices?t=${Date.now()}`, {
                 headers: {
                     Authorization: `Bearer ${session.access_token}`,
                 },
@@ -315,24 +315,31 @@ export default function InvoicesPage() {
                                                     >
                                                         <a
                                                             href={(() => {
-                                                                if (!inv.metadata?.nfe_pdf_url) return "#";
-                                                                const baseUrl = inv.metadata.nfe_pdf_url.startsWith('http')
-                                                                    ? inv.metadata.nfe_pdf_url
-                                                                    : (typeof window !== 'undefined' ? `${window.location.origin}${inv.metadata.nfe_pdf_url}` : inv.metadata.nfe_pdf_url);
+                                                                // Ordem de preferência para o link do PDF
+                                                                const metadata = inv.metadata || {};
+                                                                const pdfLink = metadata.nfe_pdf_url || metadata.pdfUrl || metadata.pdf_url;
 
-                                                                return baseUrl.includes("/nfse/pdf")
-                                                                    ? `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}id=${inv.id}`
-                                                                    : baseUrl;
+                                                                if (!pdfLink) {
+                                                                    // Fallback: Se tem nfe_id mas não tem link, tenta o endpoint padrão
+                                                                    return `/api/nfse/pdf?id=${inv.id}`;
+                                                                }
+
+                                                                if (pdfLink.startsWith('http')) {
+                                                                    return pdfLink;
+                                                                }
+
+                                                                // Se for um path relativo (ex: /api/nfse/pdf), garante parâmetros
+                                                                const cleanPath = pdfLink.startsWith('/') ? pdfLink : `/${pdfLink}`;
+                                                                if (cleanPath.includes('/nfse/pdf')) {
+                                                                    return `${cleanPath}${cleanPath.includes('?') ? '&' : '?'}id=${inv.id}&source=manual_v3`;
+                                                                }
+
+                                                                return cleanPath;
                                                             })()}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             onClick={(e) => {
-                                                                if (e.currentTarget.getAttribute('href') === "#") {
-                                                                    e.preventDefault();
-                                                                    alert("Nota fiscal emitida! ID: " + inv.metadata.nfe_id);
-                                                                } else {
-                                                                    console.log(`[VER-NF] Abrindo link nativo: ${e.currentTarget.href}`);
-                                                                }
+                                                                console.log(`[VER-NF] Clicando: ${e.currentTarget.href}`);
                                                             }}
                                                         >
                                                             <FileCheck className="w-3 h-3 mr-1" /> Ver NF
