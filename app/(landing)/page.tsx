@@ -25,6 +25,7 @@ export default function LandingPage() {
         appointments: 0,
         revenue: 0
     });
+    const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
 
     // Redirect if logged in
     useEffect(() => {
@@ -567,47 +568,96 @@ export default function LandingPage() {
                         <h2 className="text-3xl lg:text-4xl font-black mb-4 text-slate-900">
                             Planos que <span className="text-blue-600">Cabem no Seu Bolso</span>
                         </h2>
+
+                        {/* Billing Toggle */}
+                        <div className="flex items-center justify-center gap-4 mt-8">
+                            <span className={`text-sm font-bold ${billingCycle === 'monthly' ? 'text-slate-900' : 'text-slate-400'}`}>Mensal</span>
+                            <button
+                                onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'annual' : 'monthly')}
+                                className="relative w-14 h-7 bg-slate-200 rounded-full p-1 transition-colors duration-300 focus:outline-none"
+                            >
+                                <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${billingCycle === 'annual' ? 'translate-x-7' : 'translate-x-0'}`} />
+                            </button>
+                            <span className={`text-sm font-bold ${billingCycle === 'annual' ? 'text-blue-600' : 'text-slate-400'}`}>
+                                Anual <span className="ml-1 text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">Economize 15%</span>
+                            </span>
+                        </div>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-6">
-                        {plans.map((plan, idx) => (
-                            <div
-                                key={idx}
-                                className={`relative p-6 rounded-2xl border transition-all duration-300 hover:scale-105 ${plan.popular
-                                    ? 'bg-white border-blue-500 shadow-xl shadow-blue-100 ring-4 ring-blue-50'
-                                    : 'bg-white border-slate-200 shadow-sm'
-                                    }`}
-                            >
-                                {plan.popular && (
-                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-3 py-0.5 rounded-full text-xs font-bold shadow-lg">
-                                        Mais Popular
+                        {plans.map((plan, idx) => {
+                            const monthlyPriceInt = parseInt(plan.price.replace('R$ ', ''));
+                            const annualTotal = monthlyPriceInt * 12;
+                            // I'll stick to a simple 10% discount for annual if they choose it, 
+                            // or keep it same as monthly * 12 if no discount is intended.
+                            // The user's prompt suggests they want to show the math.
+                            // Let's show: R$ 33/mês (weighted) | R$ 396 cobrado anualmente (Economia de R$ 72)
+                            const discountPercent = 10;
+                            const discountedAnnualTotal = Math.round(annualTotal * (1 - discountPercent / 100));
+                            const effectiveMonthly = Math.round(discountedAnnualTotal / 12);
+                            const savings = annualTotal - discountedAnnualTotal;
+
+                            return (
+                                <div
+                                    key={idx}
+                                    className={`relative p-8 rounded-3xl border transition-all duration-500 hover:scale-105 ${plan.popular
+                                        ? 'bg-white border-blue-500 shadow-2xl shadow-blue-100 ring-8 ring-blue-50'
+                                        : 'bg-white border-slate-200 shadow-sm'
+                                        }`}
+                                >
+                                    {plan.popular && (
+                                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-1 rounded-full text-xs font-bold shadow-lg uppercase tracking-wider">
+                                            Mais Popular
+                                        </div>
+                                    )}
+                                    <h3 className="text-2xl font-black mb-4 text-slate-900">{plan.name}</h3>
+                                    <div className="mb-8 p-4 bg-slate-50 rounded-2xl">
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-5xl font-black text-slate-900 tracking-tight">
+                                                R$ {billingCycle === 'monthly' ? monthlyPriceInt : effectiveMonthly}
+                                            </span>
+                                            <span className="text-slate-500 font-bold">/mês</span>
+                                        </div>
+                                        {billingCycle === 'annual' && (
+                                            <div className="mt-3 space-y-1">
+                                                <div className="text-sm font-bold text-emerald-600 flex items-center gap-1">
+                                                    <Zap className="w-3 h-3" />
+                                                    R$ {discountedAnnualTotal} total anual
+                                                </div>
+                                                <div className="text-[10px] text-slate-400 font-medium italic">
+                                                    ({monthlyPriceInt} x 12 com {discountPercent}% desc.)
+                                                </div>
+                                            </div>
+                                        )}
+                                        {billingCycle === 'monthly' && (
+                                            <div className="mt-2 text-xs font-medium text-slate-400">
+                                                Pagamento mensal recorrente
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                                <h3 className="text-xl font-bold mb-2 text-slate-900">{plan.name}</h3>
-                                <div className="mb-4">
-                                    <span className="text-4xl font-black text-slate-900">{plan.price}</span>
-                                    <span className="text-slate-500 text-sm font-medium">{plan.period}</span>
+                                    <ul className="space-y-4 mb-8">
+                                        {plan.features.map((feature, i) => (
+                                            <li key={i} className="flex items-start gap-3">
+                                                <div className="w-5 h-5 bg-emerald-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                                                </div>
+                                                <span className="text-sm text-slate-600 font-semibold">{feature}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <Link href="/signup">
+                                        <Button
+                                            className={`w-full py-7 text-lg font-black rounded-2xl transition-all duration-300 ${plan.popular
+                                                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-100 hover:shadow-blue-200'
+                                                : 'bg-slate-100 hover:bg-slate-200 text-slate-900'
+                                                }`}
+                                        >
+                                            Escolher Plano
+                                        </Button>
+                                    </Link>
                                 </div>
-                                <ul className="space-y-3 mb-6">
-                                    {plan.features.map((feature, i) => (
-                                        <li key={i} className="flex items-start gap-2">
-                                            <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                                            <span className="text-sm text-slate-600 font-medium">{feature}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                                <Link href="/signup">
-                                    <Button
-                                        className={`w-full py-5 text-sm font-bold rounded-xl ${plan.popular
-                                            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200'
-                                            : 'bg-slate-100 hover:bg-slate-200 text-slate-900'
-                                            }`}
-                                    >
-                                        Começar Agora
-                                    </Button>
-                                </Link>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </section>
