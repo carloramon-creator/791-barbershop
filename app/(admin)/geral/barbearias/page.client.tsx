@@ -254,93 +254,92 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
 
                     return (
                         <Card key={tenant.id} className="bg-slate-900/40 border-slate-800/50 hover:border-blue-500/40 transition-all group shadow-xl relative overflow-hidden">
-                            <CardContent className="p-4">
-                                <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-                                    {/* Branding + Info */}
-                                    <div className="flex items-center gap-4 min-w-[240px]">
-                                        <div className="relative">
-                                            <div className="w-12 h-12 rounded-xl bg-slate-950 p-1 flex items-center justify-center border border-white/5 shadow-inner shrink-0 group-hover:scale-105 transition-transform">
-                                                {tenant.logo_url ? <img src={tenant.logo_url} className="w-full h-full object-cover rounded-lg" /> : <Store className="text-slate-800" size={18} />}
-                                            </div>
-                                            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shadow-lg">
-                                                {tenant.business_type === 'beauty_salon' ? <Sparkles size={8} className="text-pink-500" /> : <Scissors size={8} className="text-amber-500" />}
-                                            </div>
-                                        </div>
-                                        <div className="min-w-0">
-                                            <div className="flex items-center gap-2 mb-0.5">
-                                                <h3 className="text-sm font-black text-white group-hover:text-blue-400 transition-colors truncate tracking-tight uppercase">
-                                                    {tenant.name}
-                                                </h3>
-                                                {/* WhatsApp Indicator */}
-                                                <div
-                                                    className={cn(
-                                                        "flex items-center justify-center w-5 h-5 rounded-md border",
-                                                        tenant.has_whatsapp
-                                                            ? "bg-green-500/10 border-green-500/30 text-green-500"
-                                                            : "bg-slate-800/50 border-slate-700/50 text-slate-600 opacity-50"
-                                                    )}
-                                                    title={tenant.has_whatsapp ? "WhatsApp Integrado" : "Sem WhatsApp"}
-                                                >
-                                                    <Smartphone size={10} strokeWidth={3} />
-                                                </div>
+                                                return (
+                                                    <Card key={tenant.id} className="bg-slate-900/40 border-slate-800/50 hover:border-blue-500/40 transition-all group shadow-xl relative overflow-hidden">
+                                                        <CardContent className="p-4">
+                                                            <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                                                                {/* Branding + Info */}
+                                                                <div className="flex items-center gap-4 min-w-[240px]">
+                                                                    <div className="relative">
+                                                                        <div className="w-12 h-12 rounded-xl bg-slate-950 p-1 flex items-center justify-center border border-white/5 shadow-inner shrink-0 group-hover:scale-105 transition-transform">
+                                                                            {tenant.logo_url ? <img src={tenant.logo_url} className="w-full h-full object-cover rounded-lg" /> : <Store className="text-slate-800" size={18} />}
+                                                                        </div>
+                                                                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shadow-lg">
+                                                                            {tenant.business_type === 'beauty_salon' ? <Sparkles size={8} className="text-pink-500" /> : <Scissors size={8} className="text-amber-500" />}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="min-w-0">
+                                                                        <div className="flex items-center gap-2 mb-0.5">
+                                                                            <h3 className="text-sm font-black text-white group-hover:text-blue-400 transition-colors truncate tracking-tight uppercase">
+                                                                                {tenant.name}
+                                                                            </h3>
+                                                                            {/* WhatsApp Indicator */}
+                                                                            <div
+                                                                                className={cn(
+                                                                                    "flex items-center justify-center w-5 h-5 rounded-md border",
+                                                                                    tenant.has_whatsapp
+                                                                                        ? "bg-green-500/10 border-green-500/30 text-green-500"
+                                                                                        : "bg-slate-800/50 border-slate-700/50 text-slate-600 opacity-50"
+                                                                                )}
+                                                                                title={tenant.has_whatsapp ? "WhatsApp Integrado" : "Sem WhatsApp"}
+                                                                            >
+                                                                                <Smartphone size={10} strokeWidth={3} />
+                                                                            </div>
 
-                                                {onlineCount > 0 && (
-                                                    <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
-                                                        <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" />
-                                                        <span className="text-[7px] font-black text-emerald-500 uppercase">{onlineCount} Online</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest truncate">{tenant.city}</p>
-                                                <div className="w-1 h-1 bg-slate-800 rounded-full" />
-                                                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1">
-                                                    <Clock size={8} /> {formatDate(tenant.created_at)}
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center gap-2 mt-2">
-                                                <span className={cn(
-                                                    "text-[7px] font-black px-1.5 py-0.5 rounded shadow-sm border uppercase tracking-widest",
-                                                    tenant.plan === 'premium' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : "bg-blue-600/10 text-blue-500 border-blue-600/20"
-                                                )}>
-                                                    {tenant.plan || 'Basic'}
-                                                </span>
-                                                <span className={cn(
-                                                    "text-[7px] font-black uppercase tracking-tight",
-                                                    (tenant.subscription_status === 'active' || tenant.subscription_status === 'trial') ? "text-emerald-500" : "text-red-500"
-                                                )}>
-                                                    {tenant.subscription_status || 'Ativa'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Owner Information */}
-                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 lg:border-l lg:border-white/5 lg:pl-6">
-                                        <div className="space-y-1">
-                                            <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest leading-none">Responsável</p>
-                                            <div className="flex items-center gap-2 text-[11px] font-bold text-slate-300">
-                                                <User size={12} className="text-blue-500 opacity-70" />
-                                                <span className="truncate">{tenant.owner?.[0]?.name || '---'}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-[9px] text-slate-500 font-medium lowercase opacity-80">
-                                                <Mail size={10} />
-                                                <span className="truncate">{tenant.owner?.[0]?.email || '---'}</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Stats Summary */}
-                                        <div className="flex items-center justify-between gap-4 md:justify-around">
-                                            <div className="text-center">
-                                                <p className="text-sm font-black text-white leading-none mb-1">{tenant.stats?.total_attendances || 0}</p>
-                                                <p className="text-[7px] font-black text-slate-600 uppercase tracking-tighter">Atendimentos</p>
-                                            </div>
-                                            <div className="text-center">
-                                                <p className="text-sm font-black text-white leading-none mb-1">{totalUsers}</p>
-                                                <p className="text-[7px] font-black text-slate-600 uppercase tracking-tighter">Colaboradores</p>
-                                            </div>
-                                            <div className="text-center">
-                                                <p className="text-xs font-black text-emerald-500 mb-1">{formatCurrency(tenant.stats?.total_revenue || 0)}</p>
+                                                                            {onlineCount > 0 && (
+                                                                                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
+                                                                                    <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" />
+                                                                                    <span className="text-[7px] font-black text-emerald-500 uppercase">{onlineCount} Online</span>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest truncate">{tenant.city}</p>
+                                                                            <div className="w-1 h-1 bg-slate-800 rounded-full" />
+                                                                            <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1">
+                                                                                <Clock size={8} /> {formatDate(tenant.created_at)}
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2 mt-2">
+                                                                            <span className={cn(
+                                                                                "text-[7px] font-black px-1.5 py-0.5 rounded shadow-sm border uppercase tracking-widest",
+                                                                                tenant.plan === 'premium' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : "bg-blue-600/10 text-blue-500 border-blue-600/20"
+                                                                            )}>
+                                                                                {tenant.plan || 'Basic'}
+                                                                            </span>
+                                                                            <span className={cn(
+                                                                                "text-[7px] font-black uppercase tracking-tight",
+                                                                                (tenant.subscription_status === 'active' || tenant.subscription_status === 'trial') ? "text-emerald-500" : "text-red-500"
+                                                                            )}>
+                                                                                {tenant.subscription_status || 'Ativa'}
+                                                                            </span>
+                                                                        </div>
+                                                                        {/* Campos do Glass */}
+                                                                        {isGlass && (
+                                                                            <div className="mt-2 p-2 rounded bg-blue-950/40 border border-blue-900/30">
+                                                                                <p className="text-[8px] font-bold text-blue-400 uppercase tracking-widest mb-1">Campos Glass</p>
+                                                                                <div className="grid grid-cols-2 gap-2 text-[10px] text-blue-100">
+                                                                                    <div>
+                                                                                        <span className="font-bold">Módulos Ativos:</span>
+                                                                                        <pre className="whitespace-pre-wrap break-all text-blue-200 bg-blue-900/30 rounded p-1 mt-1">{JSON.stringify(tenant.modulos_ativos, null, 2) || '--'}</pre>
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <span className="font-bold">Limite Usuários:</span> {tenant.limite_usuarios ?? '--'}
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <span className="font-bold">Status Assinatura:</span> {tenant.status_assinatura ?? '--'}
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <span className="font-bold">Mensagens WhatsApp:</span> {tenant.mensagens_whatsapp ?? '--'}
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <span className="font-bold">Limite Msg WhatsApp:</span> {tenant.limite_mensagens_whatsapp ?? '--'}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
                                                 <p className="text-[7px] font-black text-slate-600 uppercase tracking-tighter">Receita</p>
                                             </div>
                                         </div>
