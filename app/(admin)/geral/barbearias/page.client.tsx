@@ -136,30 +136,6 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
 
     return (
         <div className="space-y-6 pb-20 animate-in fade-in duration-700">
-                                            {/* Campos do Glass */}
-                                            {isGlass && (
-                                                <div className="mt-2 p-2 rounded bg-blue-950/40 border border-blue-900/30">
-                                                    <p className="text-[8px] font-bold text-blue-400 uppercase tracking-widest mb-1">Campos Glass</p>
-                                                    <div className="grid grid-cols-2 gap-2 text-[10px] text-blue-100">
-                                                        <div>
-                                                            <span className="font-bold">Módulos Ativos:</span>
-                                                            <pre className="whitespace-pre-wrap break-all text-blue-200 bg-blue-900/30 rounded p-1 mt-1">{JSON.stringify(tenant.modulos_ativos, null, 2) || '--'}</pre>
-                                                        </div>
-                                                        <div>
-                                                            <span className="font-bold">Limite Usuários:</span> {tenant.limite_usuarios ?? '--'}
-                                                        </div>
-                                                        <div>
-                                                            <span className="font-bold">Status Assinatura:</span> {tenant.status_assinatura ?? '--'}
-                                                        </div>
-                                                        <div>
-                                                            <span className="font-bold">Mensagens WhatsApp:</span> {tenant.mensagens_whatsapp ?? '--'}
-                                                        </div>
-                                                        <div>
-                                                            <span className="font-bold">Limite Msg WhatsApp:</span> {tenant.limite_mensagens_whatsapp ?? '--'}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
             {/* Header and Summary */}
             <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6">
                 <div>
@@ -241,7 +217,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                         <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Carregando...</p>
                     </div>
                 ) : filteredTenants.map((tenant) => {
-                                        const isGlass = tenant.business_type === 'glass';
+                    const isGlass = tenant.business_type === 'glass';
                     // CÁLCULO REAL DE ONLINE (Baseado em atividade nos últimos 5 minutos)
                     const now = new Date().getTime();
                     const FIVE_MINS = 5 * 60 * 1000;
@@ -254,10 +230,8 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
 
                     return (
                         <Card key={tenant.id} className="bg-slate-900/40 border-slate-800/50 hover:border-blue-500/40 transition-all group shadow-xl relative overflow-hidden">
-                                                return (
-                                                    <Card key={tenant.id} className="bg-slate-900/40 border-slate-800/50 hover:border-blue-500/40 transition-all group shadow-xl relative overflow-hidden">
-                                                        <CardContent className="p-4">
-                                                            <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                            <CardContent className="p-4">
+                                <div className="flex flex-col lg:flex-row lg:items-center gap-6">
                                                                 {/* Branding + Info */}
                                                                 <div className="flex items-center gap-4 min-w-[240px]">
                                                                     <div className="relative">
@@ -316,6 +290,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                         </div>
                                                                         {/* Campos do Glass */}
                                                                         {isGlass && (
+
                                                                             <div className="mt-2 p-2 rounded bg-blue-950/40 border border-blue-900/30">
                                                                                 <p className="text-[8px] font-bold text-blue-400 uppercase tracking-widest mb-1">Campos Glass</p>
                                                                                 <div className="grid grid-cols-2 gap-2 text-[10px] text-blue-100">
@@ -338,16 +313,11 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                                 </div>
                                                                             </div>
                                                                         )}
-                                                                    </div>
-                                                                </div>
-                                                <p className="text-[7px] font-black text-slate-600 uppercase tracking-tighter">Receita</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Management Actions */}
-                                    <div className="flex flex-row lg:flex-col items-center justify-center gap-1.5 border-t lg:border-t-0 lg:border-l border-white/5 pt-3 lg:pt-0 lg:pl-4">
-                                        <div className="flex gap-1.5">
+                                </div>
+                                {/* fechamento correto da div min-w-0 antes do bloco Management Actions */}
+                            </div>
+                            <div className="flex flex-row lg:flex-col items-center justify-center gap-1.5 border-t lg:border-t-0 lg:border-l border-white/5 pt-3 lg:pt-0 lg:pl-4">
+                                <div className="flex gap-1.5">
                                             <Button
                                                 variant="outline"
                                                 size="icon"
