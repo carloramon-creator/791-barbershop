@@ -24,7 +24,7 @@ export async function GET(req: Request) {
         // Buscar tenants do banco glass
         const { data: tenantsGlass, error: tenantsGlassError } = await getSupabaseGlassAdmin()
             .from('vidracarias')
-            .select(`*, users(*)`);
+            .select(`*`);
         if (tenantsGlassError) throw tenantsGlassError;
 
         // Processar tenants do banco principal
