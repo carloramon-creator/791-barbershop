@@ -217,9 +217,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                         <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Carregando...</p>
                     </div>
                 ) : filteredTenants.map((tenant) => {
-                    // const isGlass = tenant.business_type === 'glass';
-                    // Forçar visualização do bloco Glass para todos os tenants (debug)
-                    const isGlass = true;
+                    const isGlass = tenant.business_type === 'glass';
                     // CÁLCULO REAL DE ONLINE (Baseado em atividade nos últimos 5 minutos)
                     const now = new Date().getTime();
                     const FIVE_MINS = 5 * 60 * 1000;
