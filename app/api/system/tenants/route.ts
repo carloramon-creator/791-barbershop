@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { getSupabaseGlassAdmin } from '@/lib/supabase-server';
 import { getCurrentUserAndTenant, addCorsHeaders } from '@/lib/server-utils';
 
 export async function GET(req: Request) {
@@ -9,8 +10,8 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
         }
 
-        // Buscar todos os tenants e seus usuários
-        const { data: tenants, error: tenantsError } = await getSupabaseAdmin()
+        // Buscar tenants do banco principal (barber)
+        const { data: tenantsBarber, error: tenantsError } = await getSupabaseAdmin()
             .from('tenants')
             .select(`
                 *,
@@ -18,17 +19,21 @@ export async function GET(req: Request) {
                 barbers(status),
                 whatsapp_configs(phone_number_id)
             `);
-
         if (tenantsError) throw tenantsError;
 
-        // Processar para identificar o dono (owner) e adicionar estatísticas
-        const tenantsWithStats = await Promise.all(tenants.map(async (tenant: any) => {
+        // Buscar tenants do banco glass
+        const { data: tenantsGlass, error: tenantsGlassError } = await getSupabaseGlassAdmin()
+            .from('tenants')
+            .select(`*, users(*)`);
+        if (tenantsGlassError) throw tenantsGlassError;
+
+        // Processar tenants do banco principal
+        const tenantsWithStatsBarber = await Promise.all((tenantsBarber || []).map(async (tenant: any) => {
             const owner = tenant.users?.find((u: any) => u.role === 'owner') || tenant.users?.[0];
             const { data: stats } = await getSupabaseAdmin().rpc('get_tenant_stats', { tenant_uuid: tenant.id });
-
             return {
                 ...tenant,
-                owner: owner ? [owner] : [], // Manter formato de array para compatibilidade com o frontend
+                owner: owner ? [owner] : [],
                 stats: stats || {
                     total_attendances: 0,
                     total_users: 0,
@@ -41,7 +46,26 @@ export async function GET(req: Request) {
             };
         }));
 
-        const response = NextResponse.json(tenantsWithStats);
+        // Processar tenants do banco glass
+        const tenantsWithStatsGlass = (tenantsGlass || []).map((tenant: any) => {
+            const owner = tenant.users?.find((u: any) => u.role === 'owner') || tenant.users?.[0];
+            return {
+                ...tenant,
+                business_type: 'glass', // Garante que o frontend reconheça como vidraçaria
+                owner: owner ? [owner] : [],
+                stats: {
+                    total_attendances: 0,
+                    total_users: (tenant.users || []).length,
+                    total_sales: 0,
+                    total_revenue: 0
+                },
+                has_whatsapp: false // Ajuste conforme necessário se houver integração WhatsApp
+            };
+        });
+
+        // Unir os dois arrays
+        const allTenants = [...tenantsWithStatsBarber, ...tenantsWithStatsGlass];
+        const response = NextResponse.json(allTenants);
         return addCorsHeaders(req, response);
     } catch (error: any) {
         console.error('[SYSTEM TENANTS GET] Error:', error.message);

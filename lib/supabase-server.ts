@@ -1,3 +1,16 @@
+// Instância administrativa para o Supabase 791glass
+export const getSupabaseGlassAdmin = () => {
+  return createClient(
+    (process.env.SUPABASE_GLASS_URL || '').trim(),
+    (process.env.SUPABASE_GLASS_SERVICE_ROLE_KEY || '').trim(),
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  );
+};
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies, headers } from 'next/headers';
