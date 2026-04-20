@@ -64,7 +64,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
         setError(null);
         try {
             const data = await Api.getSystemTenants();
-            setTenants(data || []);
+                ) : filteredTenants.map((tenant) => {
         } catch (e: any) {
             console.error('[CLIENT ERROR]', e);
             setError(e.message || 'Falha ao carregar barbearias.');
@@ -75,6 +75,8 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
 
     useEffect(() => {
         loadTenants();
+                    // Verifica se é empresa do Glass
+                    const isGlass = tenant.business_type === 'glass';
     }, []);
 
     const handleEditClick = (tenant: any) => {
@@ -136,6 +138,30 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
 
     return (
         <div className="space-y-6 pb-20 animate-in fade-in duration-700">
+                                            {/* Campos do Glass */}
+                                            {isGlass && (
+                                                <div className="mt-2 p-2 rounded bg-blue-950/40 border border-blue-900/30">
+                                                    <p className="text-[8px] font-bold text-blue-400 uppercase tracking-widest mb-1">Campos Glass</p>
+                                                    <div className="grid grid-cols-2 gap-2 text-[10px] text-blue-100">
+                                                        <div>
+                                                            <span className="font-bold">Módulos Ativos:</span>
+                                                            <pre className="whitespace-pre-wrap break-all text-blue-200 bg-blue-900/30 rounded p-1 mt-1">{JSON.stringify(tenant.modulos_ativos, null, 2) || '--'}</pre>
+                                                        </div>
+                                                        <div>
+                                                            <span className="font-bold">Limite Usuários:</span> {tenant.limite_usuarios ?? '--'}
+                                                        </div>
+                                                        <div>
+                                                            <span className="font-bold">Status Assinatura:</span> {tenant.status_assinatura ?? '--'}
+                                                        </div>
+                                                        <div>
+                                                            <span className="font-bold">Mensagens WhatsApp:</span> {tenant.mensagens_whatsapp ?? '--'}
+                                                        </div>
+                                                        <div>
+                                                            <span className="font-bold">Limite Msg WhatsApp:</span> {tenant.limite_mensagens_whatsapp ?? '--'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
             {/* Header and Summary */}
             <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6">
                 <div>
