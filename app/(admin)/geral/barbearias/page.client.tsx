@@ -64,7 +64,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
         setError(null);
         try {
             const data = await Api.getSystemTenants();
-                ) : filteredTenants.map((tenant) => {
+            setTenants(data || []);
         } catch (e: any) {
             console.error('[CLIENT ERROR]', e);
             setError(e.message || 'Falha ao carregar barbearias.');
@@ -75,8 +75,6 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
 
     useEffect(() => {
         loadTenants();
-                    // Verifica se é empresa do Glass
-                    const isGlass = tenant.business_type === 'glass';
     }, []);
 
     const handleEditClick = (tenant: any) => {
