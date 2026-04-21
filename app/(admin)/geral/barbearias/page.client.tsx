@@ -1,3 +1,52 @@
+    // Módulos do sistema
+    const ALL_MODULES = [
+        { id: "dashboard", label: "Visão Geral" },
+        { id: "pessoas", label: "Pessoas" },
+        { id: "orcamentos", label: "Orçamentos" },
+        { id: "materiais", label: "Materiais" },
+        { id: "whatsapp", label: "WhatsApp" },
+        { id: "crm", label: "CRM" },
+        { id: "ordens_servico", label: "Ordens de Serviço" },
+        { id: "producao", label: "Produção" },
+        { id: "config_producao", label: "Configurações da Produção" },
+        { id: "financeiro", label: "Financeiro" },
+        { id: "financeiro.visao_geral", label: "Financeiro > Visão Geral" },
+        { id: "financeiro.contas_correntes", label: "Financeiro > Contas Correntes" },
+        { id: "financeiro.plano_contas", label: "Financeiro > Plano de Contas" },
+        { id: "financeiro.lancamentos", label: "Financeiro > Lançamentos" },
+        { id: "financeiro.comissoes_pagar", label: "Financeiro > Comissões a Pagar" },
+        { id: "financeiro.contas_receber", label: "Financeiro > Contas a Receber" },
+        { id: "financeiro.contas_pagar", label: "Financeiro > Contas a Pagar" },
+        { id: "financeiro.fluxo_caixa", label: "Financeiro > Fluxo de Caixa" },
+        { id: "financeiro.fluxo_contas", label: "Financeiro > Fluxo de Contas" },
+        { id: "financeiro.conciliacao_bancaria", label: "Financeiro > Conciliação Bancária" },
+        { id: "financeiro.cobrancas_boletos", label: "Financeiro > Cobranças e Boletos" },
+        { id: "financeiro.links_pagamento", label: "Financeiro > Links de Pagamento" },
+        { id: "financeiro.integracoes_bancarias", label: "Financeiro > Integrações Bancárias" },
+        { id: "financeiro.dre", label: "Financeiro > DRE" },
+        { id: "financeiro.balancete", label: "Financeiro > Balancete" },
+        { id: "financeiro.ia_financeira", label: "Financeiro > IA Financeira" },
+        { id: "configuracoes", label: "Configurações" },
+        { id: "configuracoes.dados_empresa", label: "Configurações > Dados da Empresa" },
+        { id: "configuracoes.geral", label: "Configurações > Geral" },
+        { id: "configuracoes.etapas_producao", label: "Configurações > Etapas de Produção" },
+        { id: "configuracoes.fiscais", label: "Configurações > Fiscais" },
+        { id: "configuracoes.formas_pagamento", label: "Configurações > Formas de Pagamento" },
+        { id: "configuracoes.modelos_projetos", label: "Configurações > Modelos de Projetos" },
+        { id: "configuracoes.permissoes", label: "Configurações > Permissões" },
+        { id: "configuracoes.logs", label: "Configurações > Logs" },
+    ];
+
+    // Módulos do plano básico
+    const BASIC_MODULES = [
+        "pessoas",
+        "orcamentos",
+        "materiais",
+        "configuracoes.dados_empresa",
+        "configuracoes.modelos_projetos",
+        "configuracoes.permissoes",
+        "configuracoes.logs"
+    ];
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -397,29 +446,20 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                         </div>
                                                 {/* Modal de Configuração Vidraçaria */}
                                                 <Dialog open={!!glassConfigTenant} onOpenChange={(open) => !open && setGlassConfigTenant(null)}>
-                                                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-md">
+                                                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-xl">
                                                         <DialogHeader>
                                                             <DialogTitle className="text-base font-black uppercase">Configurações da Vidraçaria</DialogTitle>
                                                         </DialogHeader>
-                                                        <div className="py-4 space-y-4">
+                                                        <div className="py-4 space-y-6">
                                                             <div>
                                                                 <p className="text-xs text-slate-400 mb-2">Configurações de <span className="font-bold text-blue-400">{glassConfigTenant?.name}</span></p>
-                                                                <div className="grid grid-cols-1 gap-3">
+                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                                                     <div>
                                                                         <label className="block text-[13px] font-bold text-blue-200 mb-1">Limite de Usuários</label>
                                                                         <input
                                                                             type="number"
                                                                             className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-[15px] text-blue-100 font-bold outline-none cursor-not-allowed opacity-80"
                                                                             value={glassConfigTenant?.limite_usuarios ?? ''}
-                                                                            disabled
-                                                                        />
-                                                                    </div>
-                                                                    <div>
-                                                                        <label className="block text-[13px] font-bold text-blue-200 mb-1">Módulos Ativos</label>
-                                                                        <input
-                                                                            type="text"
-                                                                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-[15px] text-blue-100 font-bold outline-none cursor-not-allowed opacity-80"
-                                                                            value={Array.isArray(glassConfigTenant?.modulos_ativos) ? glassConfigTenant.modulos_ativos.join(', ') : '--'}
                                                                             disabled
                                                                         />
                                                                     </div>
@@ -432,6 +472,31 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                             disabled
                                                                         />
                                                                     </div>
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="text-xs font-black text-blue-300 uppercase mb-2 mt-4">Módulos do Sistema</h4>
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                                    {ALL_MODULES.map(mod => {
+                                                                        const isBasic = BASIC_MODULES.includes(mod.id);
+                                                                        const isActive = Array.isArray(glassConfigTenant?.modulos_ativos) ? glassConfigTenant.modulos_ativos.includes(mod.id) : false;
+                                                                        return (
+                                                                            <label key={mod.id} className={cn(
+                                                                                "flex items-center gap-2 px-3 py-2 rounded-lg border",
+                                                                                isBasic ? "border-blue-700 bg-blue-900/30" : "border-slate-700 bg-slate-800/60",
+                                                                                isActive ? "opacity-100" : "opacity-60"
+                                                                            )}>
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={isActive}
+                                                                                    disabled
+                                                                                    className="accent-blue-500 w-4 h-4"
+                                                                                />
+                                                                                <span className={cn("text-[13px] font-bold uppercase", isBasic ? "text-blue-300" : "text-slate-300")}>{mod.label}</span>
+                                                                                {isBasic && <span className="ml-2 px-2 py-0.5 rounded bg-blue-700 text-white text-[10px] font-black uppercase">Incluso</span>}
+                                                                            </label>
+                                                                        );
+                                                                    })}
                                                                 </div>
                                                             </div>
                                                         </div>
