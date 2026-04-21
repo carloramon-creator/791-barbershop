@@ -430,31 +430,90 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                             </div>
                                                             <div>
                                                                 <h4 className="text-xs font-black text-blue-300 uppercase mb-2 mt-4">Módulos do Sistema</h4>
-                                                                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 w-full">
-                                                                    {ALL_MODULES.map(mod => {
-                                                                        const isBasic = BASIC_MODULES.includes(mod.id);
-                                                                        const isActive = Array.isArray(glassConfigTenant?.modulos_ativos) ? glassConfigTenant.modulos_ativos.includes(mod.id) : false;
-                                                                        return (
-                                                                            <label key={mod.id} className={cn(
-                                                                                "flex items-center gap-2 px-3 py-2 rounded-lg border w-full",
-                                                                                isBasic ? "border-blue-700 bg-blue-900/30" : "border-slate-700 bg-slate-800/60",
-                                                                                isActive ? "opacity-100" : "opacity-60"
-                                                                            )}>
-                                                                                <input
-                                                                                    type="checkbox"
-                                                                                    checked={isActive}
-                                                                                    disabled
-                                                                                    className="accent-blue-500 w-4 h-4"
-                                                                                />
-                                                                                <span className="text-[13px] font-bold uppercase text-white">{mod.label}</span>
-                                                                                {isBasic && (
-                                                                                    <button type="button" className="ml-2 px-2 py-0.5 rounded bg-blue-700 text-white text-[10px] font-black uppercase hover:bg-blue-800 focus:outline-none">
-                                                                                        Incluso
-                                                                                    </button>
-                                                                                )}
-                                                                            </label>
-                                                                        );
-                                                                    })}
+                                                                <div className="flex flex-col gap-1 w-full">
+                                                                    {(() => {
+                                                                        // Agrupa módulos principais e submenus
+                                                                        const mainMenus = ALL_MODULES.filter(mod => !mod.label.includes('>'));
+                                                                        const subMenus: { [key: string]: { id: string, label: string }[] } = {};
+                                                                        ALL_MODULES.forEach(mod => {
+                                                                            const parts = mod.label.split(' > ');
+                                                                            if (parts.length > 1) {
+                                                                                const main = parts[0];
+                                                                                if (!subMenus[main]) subMenus[main] = [];
+                                                                                subMenus[main].push(mod);
+                                                                            }
+                                                                        });
+                                                                        return mainMenus.map(mainMod => {
+                                                                            const isBasic = BASIC_MODULES.includes(mainMod.id);
+                                                                            const isActive = Array.isArray(glassConfigTenant?.modulos_ativos) ? glassConfigTenant.modulos_ativos.includes(mainMod.id) : false;
+                                                                            const hasSub = subMenus[mainMod.label]?.length > 0;
+                                                                            return (
+                                                                                <div key={mainMod.id} className="w-full">
+                                                                                    <div className={cn(
+                                                                                        "flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer w-full",
+                                                                                        isBasic ? "border-blue-700 bg-blue-900/30" : "border-slate-700 bg-slate-800/60",
+                                                                                        isActive ? "opacity-100" : "opacity-60"
+                                                                                    )}>
+                                                                                        {hasSub && (
+                                                                                            <button
+                                                                                                type="button"
+                                                                                                className="mr-1 p-1 rounded hover:bg-slate-700"
+                                                                                                onClick={e => {
+                                                                                                    e.preventDefault();
+                                                                                                    setExpandedMenus(prev => ({
+                                                                                                        ...prev,
+                                                                                                        [mainMod.label]: !prev[mainMod.label]
+                                                                                                    }));
+                                                                                                }}
+                                                                                            >
+                                                                                                {expandedMenus[mainMod.label] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                                                                                            </button>
+                                                                                        )}
+                                                                                        <input
+                                                                                            type="checkbox"
+                                                                                            checked={isActive}
+                                                                                            disabled
+                                                                                            className="accent-blue-500 w-4 h-4"
+                                                                                        />
+                                                                                        <span className="text-[13px] font-bold uppercase text-white">{mainMod.label}</span>
+                                                                                        {isBasic && (
+                                                                                            <button type="button" className="ml-2 px-2 py-0.5 rounded bg-blue-700 text-white text-[10px] font-black uppercase hover:bg-blue-800 focus:outline-none">
+                                                                                                Incluso
+                                                                                            </button>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    {hasSub && expandedMenus[mainMod.label] && (
+                                                                                        <div className="ml-7 flex flex-col gap-1 mt-1">
+                                                                                            {subMenus[mainMod.label].map(subMod => {
+                                                                                                const isBasicSub = BASIC_MODULES.includes(subMod.id);
+                                                                                                const isActiveSub = Array.isArray(glassConfigTenant?.modulos_ativos) ? glassConfigTenant.modulos_ativos.includes(subMod.id) : false;
+                                                                                                return (
+                                                                                                    <label key={subMod.id} className={cn(
+                                                                                                        "flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer w-full",
+                                                                                                        isBasicSub ? "border-blue-700 bg-blue-900/30" : "border-slate-700 bg-slate-800/60",
+                                                                                                        isActiveSub ? "opacity-100" : "opacity-60"
+                                                                                                    )}>
+                                                                                                        <input
+                                                                                                            type="checkbox"
+                                                                                                            checked={isActiveSub}
+                                                                                                            disabled
+                                                                                                            className="accent-blue-500 w-4 h-4"
+                                                                                                        />
+                                                                                                        <span className="text-[13px] font-bold uppercase text-white">{subMod.label.split(' > ')[1]}</span>
+                                                                                                        {isBasicSub && (
+                                                                                                            <button type="button" className="ml-2 px-2 py-0.5 rounded bg-blue-700 text-white text-[10px] font-black uppercase hover:bg-blue-800 focus:outline-none">
+                                                                                                                Incluso
+                                                                                                            </button>
+                                                                                                        )}
+                                                                                                    </label>
+                                                                                                );
+                                                                                            })}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            );
+                                                                        });
+                                                                    })()}
                                                                 </div>
                                                             </div>
                                                         </div>
