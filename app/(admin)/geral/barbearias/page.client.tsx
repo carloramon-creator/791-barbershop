@@ -404,7 +404,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                         </div>
                                                 {/* Modal de Configuração Vidraçaria */}
                                                 <Dialog open={!!glassConfigTenant} onOpenChange={(open) => !open && setGlassConfigTenant(null)}>
-                                                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-5xl w-[900px] max-h-[95vh] overflow-y-auto">
+                                                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-none w-[90vw] max-h-[95vh] overflow-y-auto">
                                                         <DialogHeader>
                                                             <DialogTitle className="text-base font-black uppercase">Configurações da Vidraçaria</DialogTitle>
                                                         </DialogHeader>
@@ -436,7 +436,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                 <h4 className="text-xs font-black text-blue-300 uppercase mb-2 mt-4">Módulos do Sistema</h4>
                                                                 <div className="flex flex-col gap-1 w-full">
                                                                     {(() => {
-                                                                        // Usar apenas módulos do 791glass, agrupando submenus
+                                                                        // Agrupamento correto: menus principais e submenus
                                                                         const mainMenus = GLASS_MODULES.filter(mod => !mod.label.includes('>'));
                                                                         const subMenus: { [key: string]: { id: string, label: string }[] } = {};
                                                                         GLASS_MODULES.forEach(mod => {
@@ -456,18 +456,85 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                                 return { ...prev, modulos_ativos: modAtivos };
                                                                             });
                                                                         }
-                                                                        return mainMenus.map(mainMod => {
-                                                                            const isBasic = GLASS_BASIC_MODULES.includes(mainMod.id);
-                                                                            const isActive = Array.isArray(glassConfigTenant?.modulos_ativos) ? glassConfigTenant.modulos_ativos.includes(mainMod.id) : false;
-                                                                            const hasSub = subMenus[mainMod.label]?.length > 0;
-                                                                            return (
-                                                                                <div key={mainMod.id} className="w-full">
-                                                                                    <div className={cn(
-                                                                                        "flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer w-full",
-                                                                                        isBasic ? "border-blue-700 bg-blue-900/30" : "border-slate-700 bg-slate-800/60",
-                                                                                        isActive ? "opacity-100" : "opacity-60"
-                                                                                    )}>
-                                                                                        {hasSub && (
+                                                                        return [
+                                                                            ...mainMenus.map(mainMod => {
+                                                                                const isBasic = GLASS_BASIC_MODULES.includes(mainMod.id);
+                                                                                const isActive = Array.isArray(glassConfigTenant?.modulos_ativos) ? glassConfigTenant.modulos_ativos.includes(mainMod.id) : false;
+                                                                                const hasSub = subMenus[mainMod.label]?.length > 0;
+                                                                                return (
+                                                                                    <div key={mainMod.id} className="w-full">
+                                                                                        <div className={cn(
+                                                                                            "flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer w-full",
+                                                                                            isBasic ? "border-blue-700 bg-blue-900/30" : "border-slate-700 bg-slate-800/60",
+                                                                                            isActive ? "opacity-100" : "opacity-60"
+                                                                                        )}>
+                                                                                            {hasSub && (
+                                                                                                <button
+                                                                                                    type="button"
+                                                                                                    className="mr-1 p-1 rounded hover:bg-slate-700"
+                                                                                                    onClick={e => {
+                                                                                                        e.preventDefault();
+                                                                                                        setExpandedMenus(prev => ({
+                                                                                                            ...prev,
+                                                                                                            [mainMod.label]: !prev[mainMod.label]
+                                                                                                        }));
+                                                                                                    }}
+                                                                                                >
+                                                                                                    {expandedMenus[mainMod.label] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                                                                                                </button>
+                                                                                            )}
+                                                                                            <input
+                                                                                                type="checkbox"
+                                                                                                checked={isActive}
+                                                                                                onChange={() => toggleModule(mainMod.id)}
+                                                                                                className="accent-blue-500 w-4 h-4"
+                                                                                            />
+                                                                                            <span className="text-[13px] font-bold uppercase text-white">{mainMod.label}</span>
+                                                                                            {isBasic && (
+                                                                                                <button type="button" className="ml-2 px-2 py-0.5 rounded bg-blue-700 text-white text-[10px] font-black uppercase hover:bg-blue-800 focus:outline-none">
+                                                                                                    Incluso
+                                                                                                </button>
+                                                                                            )}
+                                                                                        </div>
+                                                                                        {hasSub && expandedMenus[mainMod.label] && (
+                                                                                            <div className="ml-7 grid grid-cols-1 md:grid-cols-2 gap-1 mt-1">
+                                                                                                {subMenus[mainMod.label].map(subMod => {
+                                                                                                    const isBasicSub = GLASS_BASIC_MODULES.includes(subMod.id);
+                                                                                                    const isActiveSub = Array.isArray(glassConfigTenant?.modulos_ativos) ? glassConfigTenant.modulos_ativos.includes(subMod.id) : false;
+                                                                                                    return (
+                                                                                                        <label key={subMod.id} className={cn(
+                                                                                                            "flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer w-full",
+                                                                                                            isBasicSub ? "border-blue-700 bg-blue-900/30" : "border-slate-700 bg-slate-800/60",
+                                                                                                            isActiveSub ? "opacity-100" : "opacity-60"
+                                                                                                        )}>
+                                                                                                            <input
+                                                                                                                type="checkbox"
+                                                                                                                checked={isActiveSub}
+                                                                                                                onChange={() => toggleModule(subMod.id)}
+                                                                                                                className="accent-blue-500 w-4 h-4"
+                                                                                                            />
+                                                                                                            <span className="text-[13px] font-bold uppercase text-white">{subMod.label.split(' > ')[1]}</span>
+                                                                                                            {isBasicSub && (
+                                                                                                                <button type="button" className="ml-2 px-2 py-0.5 rounded bg-blue-700 text-white text-[10px] font-black uppercase hover:bg-blue-800 focus:outline-none">
+                                                                                                                    Incluso
+                                                                                                                </button>
+                                                                                                            )}
+                                                                                                        </label>
+                                                                                                    );
+                                                                                                })}
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                );
+                                                                            }),
+                                                                            // Adiciona menus principais Financeiro e Configurações se existirem submenus
+                                                                            ...['Financeiro', 'Configurações'].map(main => {
+                                                                                if (!subMenus[main]) return null;
+                                                                                return (
+                                                                                    <div key={main} className="w-full">
+                                                                                        <div className={cn(
+                                                                                            "flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer w-full bg-slate-800/80 border-blue-800"
+                                                                                        )}>
                                                                                             <button
                                                                                                 type="button"
                                                                                                 className="mr-1 p-1 rounded hover:bg-slate-700"
@@ -475,57 +542,46 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                                                     e.preventDefault();
                                                                                                     setExpandedMenus(prev => ({
                                                                                                         ...prev,
-                                                                                                        [mainMod.label]: !prev[mainMod.label]
+                                                                                                        [main]: !prev[main]
                                                                                                     }));
                                                                                                 }}
                                                                                             >
-                                                                                                {expandedMenus[mainMod.label] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                                                                                                {expandedMenus[main] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                                                                                             </button>
-                                                                                        )}
-                                                                                        <input
-                                                                                            type="checkbox"
-                                                                                            checked={isActive}
-                                                                                            onChange={() => toggleModule(mainMod.id)}
-                                                                                            className="accent-blue-500 w-4 h-4"
-                                                                                        />
-                                                                                        <span className="text-[13px] font-bold uppercase text-white">{mainMod.label}</span>
-                                                                                        {isBasic && (
-                                                                                            <button type="button" className="ml-2 px-2 py-0.5 rounded bg-blue-700 text-white text-[10px] font-black uppercase hover:bg-blue-800 focus:outline-none">
-                                                                                                Incluso
-                                                                                            </button>
+                                                                                            <span className="text-[13px] font-bold uppercase text-blue-300">{main}</span>
+                                                                                        </div>
+                                                                                        {expandedMenus[main] && (
+                                                                                            <div className="ml-7 grid grid-cols-1 md:grid-cols-2 gap-1 mt-1">
+                                                                                                {subMenus[main].map(subMod => {
+                                                                                                    const isBasicSub = GLASS_BASIC_MODULES.includes(subMod.id);
+                                                                                                    const isActiveSub = Array.isArray(glassConfigTenant?.modulos_ativos) ? glassConfigTenant.modulos_ativos.includes(subMod.id) : false;
+                                                                                                    return (
+                                                                                                        <label key={subMod.id} className={cn(
+                                                                                                            "flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer w-full",
+                                                                                                            isBasicSub ? "border-blue-700 bg-blue-900/30" : "border-slate-700 bg-slate-800/60",
+                                                                                                            isActiveSub ? "opacity-100" : "opacity-60"
+                                                                                                        )}>
+                                                                                                            <input
+                                                                                                                type="checkbox"
+                                                                                                                checked={isActiveSub}
+                                                                                                                onChange={() => toggleModule(subMod.id)}
+                                                                                                                className="accent-blue-500 w-4 h-4"
+                                                                                                            />
+                                                                                                            <span className="text-[13px] font-bold uppercase text-white">{subMod.label.split(' > ')[1]}</span>
+                                                                                                            {isBasicSub && (
+                                                                                                                <button type="button" className="ml-2 px-2 py-0.5 rounded bg-blue-700 text-white text-[10px] font-black uppercase hover:bg-blue-800 focus:outline-none">
+                                                                                                                    Incluso
+                                                                                                                </button>
+                                                                                                            )}
+                                                                                                        </label>
+                                                                                                    );
+                                                                                                })}
+                                                                                            </div>
                                                                                         )}
                                                                                     </div>
-                                                                                    {hasSub && expandedMenus[mainMod.label] && (
-                                                                                        <div className="ml-7 grid grid-cols-1 md:grid-cols-2 gap-1 mt-1">
-                                                                                            {subMenus[mainMod.label].map(subMod => {
-                                                                                                const isBasicSub = GLASS_BASIC_MODULES.includes(subMod.id);
-                                                                                                const isActiveSub = Array.isArray(glassConfigTenant?.modulos_ativos) ? glassConfigTenant.modulos_ativos.includes(subMod.id) : false;
-                                                                                                return (
-                                                                                                    <label key={subMod.id} className={cn(
-                                                                                                        "flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer w-full",
-                                                                                                        isBasicSub ? "border-blue-700 bg-blue-900/30" : "border-slate-700 bg-slate-800/60",
-                                                                                                        isActiveSub ? "opacity-100" : "opacity-60"
-                                                                                                    )}>
-                                                                                                        <input
-                                                                                                            type="checkbox"
-                                                                                                            checked={isActiveSub}
-                                                                                                            onChange={() => toggleModule(subMod.id)}
-                                                                                                            className="accent-blue-500 w-4 h-4"
-                                                                                                        />
-                                                                                                        <span className="text-[13px] font-bold uppercase text-white">{subMod.label.split(' > ')[1]}</span>
-                                                                                                        {isBasicSub && (
-                                                                                                            <button type="button" className="ml-2 px-2 py-0.5 rounded bg-blue-700 text-white text-[10px] font-black uppercase hover:bg-blue-800 focus:outline-none">
-                                                                                                                Incluso
-                                                                                                            </button>
-                                                                                                        )}
-                                                                                                    </label>
-                                                                                                );
-                                                                                            })}
-                                                                                        </div>
-                                                                                    )}
-                                                                                </div>
-                                                                            );
-                                                                        });
+                                                                                );
+                                                                            })
+                                                                        ];
                                                                     })()}
                                                                 </div>
                                                             </div>
