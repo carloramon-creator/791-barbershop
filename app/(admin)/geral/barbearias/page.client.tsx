@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -36,6 +35,7 @@ import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 
 interface ClientPageProps {
     initialTenants: any[];
@@ -531,3 +531,53 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
         </div>
     );
 }
+
+// Módulos do sistema
+const ALL_MODULES = [
+    { id: "dashboard", label: "Visão Geral" },
+    { id: "pessoas", label: "Pessoas" },
+    { id: "orcamentos", label: "Orçamentos" },
+    { id: "materiais", label: "Materiais" },
+    { id: "whatsapp", label: "WhatsApp" },
+    { id: "crm", label: "CRM" },
+    { id: "ordens_servico", label: "Ordens de Serviço" },
+    { id: "producao", label: "Produção" },
+    { id: "config_producao", label: "Configurações da Produção" },
+    { id: "financeiro", label: "Financeiro" },
+    { id: "financeiro.visao_geral", label: "Financeiro > Visão Geral" },
+    { id: "financeiro.contas_correntes", label: "Financeiro > Contas Correntes" },
+    { id: "financeiro.plano_contas", label: "Financeiro > Plano de Contas" },
+    { id: "financeiro.lancamentos", label: "Financeiro > Lançamentos" },
+    { id: "financeiro.comissoes_pagar", label: "Financeiro > Comissões a Pagar" },
+    { id: "financeiro.contas_receber", label: "Financeiro > Contas a Receber" },
+    { id: "financeiro.contas_pagar", label: "Financeiro > Contas a Pagar" },
+    { id: "financeiro.fluxo_caixa", label: "Financeiro > Fluxo de Caixa" },
+    { id: "financeiro.fluxo_contas", label: "Financeiro > Fluxo de Contas" },
+    { id: "financeiro.conciliacao_bancaria", label: "Financeiro > Conciliação Bancária" },
+    { id: "financeiro.cobrancas_boletos", label: "Financeiro > Cobranças e Boletos" },
+    { id: "financeiro.links_pagamento", label: "Financeiro > Links de Pagamento" },
+    { id: "financeiro.integracoes_bancarias", label: "Financeiro > Integrações Bancárias" },
+    { id: "financeiro.dre", label: "Financeiro > DRE" },
+    { id: "financeiro.balancete", label: "Financeiro > Balancete" },
+    { id: "financeiro.ia_financeira", label: "Financeiro > IA Financeira" },
+    { id: "configuracoes", label: "Configurações" },
+    { id: "configuracoes.dados_empresa", label: "Configurações > Dados da Empresa" },
+    { id: "configuracoes.geral", label: "Configurações > Geral" },
+    { id: "configuracoes.etapas_producao", label: "Configurações > Etapas de Produção" },
+    { id: "configuracoes.fiscais", label: "Configurações > Fiscais" },
+    { id: "configuracoes.formas_pagamento", label: "Configurações > Formas de Pagamento" },
+    { id: "configuracoes.modelos_projetos", label: "Configurações > Modelos de Projetos" },
+    { id: "configuracoes.permissoes", label: "Configurações > Permissões" },
+    { id: "configuracoes.logs", label: "Configurações > Logs" },
+];
+
+// Módulos do plano básico
+const BASIC_MODULES = [
+    "pessoas",
+    "orcamentos",
+    "materiais",
+    "configuracoes.dados_empresa",
+    "configuracoes.modelos_projetos",
+    "configuracoes.permissoes",
+    "configuracoes.logs"
+];
