@@ -48,23 +48,35 @@ export async function GET(req: Request) {
 
         // Processar tenants do banco glass
         const tenantsWithStatsGlass = (tenantsGlass || []).map((tenant: any) => {
-            const owner = tenant.users?.find((u: any) => u.role === 'owner') || tenant.users?.[0];
             return {
-                ...tenant,
-                business_type: 'glass', // Garante que o frontend reconheça como vidraçaria
-                owner: owner ? [owner] : [],
+                id: tenant.id,
+                name: tenant.nome || tenant.nome_fantasia || tenant.name || '',
+                city: tenant.cidade || tenant.city || '',
+                created_at: tenant.created_at,
+                plan: tenant.plan || 'basic',
+                subscription_status: tenant.subscription_status || 'active',
+                subscription_current_period_end: tenant.subscription_current_period_end || tenant.created_at,
+                business_type: 'glass',
+                owner: [],
                 stats: {
                     total_attendances: 0,
-                    total_users: (tenant.users || []).length,
+                    total_users: 0,
                     total_sales: 0,
                     total_revenue: 0
                 },
-                has_whatsapp: false // Ajuste conforme necessário se houver integração WhatsApp
+                has_whatsapp: false,
+                // Campos extras do Glass
+                modulos_ativos: tenant.modulos_ativos || null,
+                limite_usuarios: tenant.limite_usuarios || null,
+                status_assinatura: tenant.status_assinatura || null,
+                mensagens_whatsapp: tenant.mensagens_whatsapp || null,
+                limite_mensagens_whatsapp: tenant.limite_mensagens_whatsapp || null
             };
         });
 
         // Unir os dois arrays
         const allTenants = [...tenantsWithStatsBarber, ...tenantsWithStatsGlass];
+        console.log('[API SYSTEM TENANTS] Tenants retornados:', JSON.stringify(allTenants, null, 2));
         const response = NextResponse.json(allTenants);
         return addCorsHeaders(req, response);
     } catch (error: any) {
