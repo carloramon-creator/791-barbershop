@@ -89,7 +89,8 @@ interface ClientPageProps {
         }
     };
 
-// JSX removido daqui, deve estar apenas dentro do return do componente
+
+    useEffect(() => {
         loadTenants();
     }, []);
 
