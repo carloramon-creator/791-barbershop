@@ -49,7 +49,8 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
     const [search, setSearch] = useState('');
     const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
     const [whatsappFilter, setWhatsappFilter] = useState<'all' | 'with' | 'without'>('all');
-    const [businessTypeFilter, setBusinessTypeFilter] = useState<'all' | 'barbershop' | 'glass'>('all');
+    // Sempre mostrar ambos por padrão ao abrir a tela
+    const [businessTypeFilter, setBusinessTypeFilter] = useState<'all' | 'barbershop' | 'glass'>(() => 'all');
 
     // Edit State
     const [editingTenant, setEditingTenant] = useState<any>(null);
@@ -115,6 +116,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
         return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
 
+    // Sempre retorna todos os tipos de tenants (barbearias e vidraçarias), sem filtro de business type
     const filteredTenants = sortedTenants.filter(t => {
         const matchesSearch = t.name?.toLowerCase().includes(search.toLowerCase()) ||
             t.owner?.[0]?.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -126,13 +128,8 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                 ? t.has_whatsapp
                 : !t.has_whatsapp;
 
-        const matchesBusinessType = businessTypeFilter === 'all'
-            ? true
-            : businessTypeFilter === 'barbershop'
-                ? t.business_type !== 'glass'
-                : t.business_type === 'glass';
-
-        return matchesSearch && matchesWhatsapp && matchesBusinessType;
+        // matchesBusinessType sempre true
+        return matchesSearch && matchesWhatsapp;
     });
 
     const totals = tenants.reduce((acc, t) => ({
