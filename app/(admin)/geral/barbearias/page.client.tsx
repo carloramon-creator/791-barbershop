@@ -530,6 +530,24 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                             // Adiciona menus principais Financeiro e Configurações se existirem submenus
                                                                             ...['Financeiro', 'Configurações'].map(main => {
                                                                                 if (!subMenus[main]) return null;
+                                                                                // Todos os ids dos submenus
+                                                                                const subIds = subMenus[main].map(m => m.id);
+                                                                                // Está tudo marcado?
+                                                                                const allChecked = subIds.every(id => Array.isArray(glassConfigTenant?.modulos_ativos) && glassConfigTenant.modulos_ativos.includes(id));
+                                                                                // Algum marcado?
+                                                                                const someChecked = subIds.some(id => Array.isArray(glassConfigTenant?.modulos_ativos) && glassConfigTenant.modulos_ativos.includes(id));
+                                                                                // Marcar/desmarcar todos
+                                                                                function toggleAllSubmodules(checked: boolean) {
+                                                                                    setGlassConfigTenant((prev: any) => {
+                                                                                        let modAtivos = Array.isArray(prev.modulos_ativos) ? [...prev.modulos_ativos] : [];
+                                                                                        if (checked) {
+                                                                                            subIds.forEach(id => { if (!modAtivos.includes(id)) modAtivos.push(id); });
+                                                                                        } else {
+                                                                                            modAtivos = modAtivos.filter(id => !subIds.includes(id));
+                                                                                        }
+                                                                                        return { ...prev, modulos_ativos: modAtivos };
+                                                                                    });
+                                                                                }
                                                                                 return (
                                                                                     <div key={main} className="w-full">
                                                                                         <div className={cn(
@@ -548,6 +566,13 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                                             >
                                                                                                 {expandedMenus[main] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                                                                                             </button>
+                                                                                            <input
+                                                                                                type="checkbox"
+                                                                                                checked={allChecked}
+                                                                                                ref={el => { if (el) el.indeterminate = !allChecked && someChecked; }}
+                                                                                                onChange={e => toggleAllSubmodules(e.target.checked)}
+                                                                                                className="accent-blue-500 w-4 h-4"
+                                                                                            />
                                                                                             <span className="text-[13px] font-bold uppercase text-blue-300">{main}</span>
                                                                                         </div>
                                                                                         {expandedMenus[main] && (
