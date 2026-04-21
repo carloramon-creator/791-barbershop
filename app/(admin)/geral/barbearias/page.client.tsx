@@ -401,8 +401,39 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                         <DialogHeader>
                                                             <DialogTitle className="text-base font-black uppercase">Configurações da Vidraçaria</DialogTitle>
                                                         </DialogHeader>
-                                                        <div className="py-4">
-                                                            <p className="text-sm text-slate-300">Configurações específicas para <span className="font-bold text-blue-400">{glassConfigTenant?.name}</span> (em breve...)</p>
+                                                        <div className="py-4 space-y-4">
+                                                            <div>
+                                                                <p className="text-xs text-slate-400 mb-2">Configurações de <span className="font-bold text-blue-400">{glassConfigTenant?.name}</span></p>
+                                                                <div className="grid grid-cols-1 gap-3">
+                                                                    <div>
+                                                                        <label className="block text-[13px] font-bold text-blue-200 mb-1">Limite de Usuários</label>
+                                                                        <input
+                                                                            type="number"
+                                                                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-[15px] text-blue-100 font-bold outline-none cursor-not-allowed opacity-80"
+                                                                            value={glassConfigTenant?.limite_usuarios ?? ''}
+                                                                            disabled
+                                                                        />
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="block text-[13px] font-bold text-blue-200 mb-1">Módulos Ativos</label>
+                                                                        <input
+                                                                            type="text"
+                                                                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-[15px] text-blue-100 font-bold outline-none cursor-not-allowed opacity-80"
+                                                                            value={Array.isArray(glassConfigTenant?.modulos_ativos) ? glassConfigTenant.modulos_ativos.join(', ') : '--'}
+                                                                            disabled
+                                                                        />
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="block text-[13px] font-bold text-blue-200 mb-1">Limite de Mensagens WhatsApp</label>
+                                                                        <input
+                                                                            type="number"
+                                                                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-[15px] text-blue-100 font-bold outline-none cursor-not-allowed opacity-80"
+                                                                            value={glassConfigTenant?.limite_mensagens_whatsapp ?? ''}
+                                                                            disabled
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                         <DialogFooter>
                                                             <Button variant="ghost" onClick={() => setGlassConfigTenant(null)} className="text-[10px] uppercase font-bold">Fechar</Button>
