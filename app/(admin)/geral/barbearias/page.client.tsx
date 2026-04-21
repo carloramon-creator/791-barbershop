@@ -400,30 +400,30 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                         </div>
                                                 {/* Modal de Configuração Vidraçaria */}
                                                 <Dialog open={!!glassConfigTenant} onOpenChange={(open) => !open && setGlassConfigTenant(null)}>
-                                                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-xl">
+                                                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-3xl max-h-[90vh] overflow-y-auto">
                                                         <DialogHeader>
                                                             <DialogTitle className="text-base font-black uppercase">Configurações da Vidraçaria</DialogTitle>
                                                         </DialogHeader>
                                                         <div className="py-4 space-y-6">
                                                             <div>
                                                                 <p className="text-xs text-slate-400 mb-2">Configurações de <span className="font-bold text-blue-400">{glassConfigTenant?.name}</span></p>
-                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                                                    <div>
-                                                                        <label className="block text-[13px] font-bold text-blue-200 mb-1">Limite de Usuários</label>
+                                                                <div className="flex flex-col md:flex-row md:items-center gap-3 w-full">
+                                                                    <div className="flex-1 flex items-center gap-2">
+                                                                        <label className="block text-[13px] font-bold text-blue-200 mb-1 whitespace-nowrap">Limite de Usuários</label>
                                                                         <input
                                                                             type="number"
-                                                                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-[15px] text-blue-100 font-bold outline-none cursor-not-allowed opacity-80"
+                                                                            className="w-24 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-[15px] text-blue-100 font-bold outline-none"
                                                                             value={glassConfigTenant?.limite_usuarios ?? ''}
-                                                                            disabled
+                                                                            onChange={e => setGlassConfigTenant((prev: any) => ({ ...prev, limite_usuarios: e.target.value }))}
                                                                         />
                                                                     </div>
-                                                                    <div>
-                                                                        <label className="block text-[13px] font-bold text-blue-200 mb-1">Limite de Mensagens WhatsApp</label>
+                                                                    <div className="flex-1 flex items-center gap-2">
+                                                                        <label className="block text-[13px] font-bold text-blue-200 mb-1 whitespace-nowrap">Limite de Mensagens WhatsApp</label>
                                                                         <input
                                                                             type="number"
-                                                                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-[15px] text-blue-100 font-bold outline-none cursor-not-allowed opacity-80"
+                                                                            className="w-32 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-[15px] text-blue-100 font-bold outline-none"
                                                                             value={glassConfigTenant?.limite_mensagens_whatsapp ?? ''}
-                                                                            disabled
+                                                                            onChange={e => setGlassConfigTenant((prev: any) => ({ ...prev, limite_mensagens_whatsapp: e.target.value }))}
                                                                         />
                                                                     </div>
                                                                 </div>
@@ -443,6 +443,16 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                                 subMenus[main].push(mod);
                                                                             }
                                                                         });
+                                                                        // Função para alternar seleção
+                                                                        function toggleModule(id: string) {
+                                                                            setGlassConfigTenant((prev: any) => {
+                                                                                const modAtivos = Array.isArray(prev.modulos_ativos) ? [...prev.modulos_ativos] : [];
+                                                                                const idx = modAtivos.indexOf(id);
+                                                                                if (idx >= 0) modAtivos.splice(idx, 1);
+                                                                                else modAtivos.push(id);
+                                                                                return { ...prev, modulos_ativos: modAtivos };
+                                                                            });
+                                                                        }
                                                                         return mainMenus.map(mainMod => {
                                                                             const isBasic = BASIC_MODULES.includes(mainMod.id);
                                                                             const isActive = Array.isArray(glassConfigTenant?.modulos_ativos) ? glassConfigTenant.modulos_ativos.includes(mainMod.id) : false;
@@ -472,7 +482,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                                         <input
                                                                                             type="checkbox"
                                                                                             checked={isActive}
-                                                                                            disabled
+                                                                                            onChange={() => toggleModule(mainMod.id)}
                                                                                             className="accent-blue-500 w-4 h-4"
                                                                                         />
                                                                                         <span className="text-[13px] font-bold uppercase text-white">{mainMod.label}</span>
@@ -496,7 +506,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                                                         <input
                                                                                                             type="checkbox"
                                                                                                             checked={isActiveSub}
-                                                                                                            disabled
+                                                                                                            onChange={() => toggleModule(subMod.id)}
                                                                                                             className="accent-blue-500 w-4 h-4"
                                                                                                         />
                                                                                                         <span className="text-[13px] font-bold uppercase text-white">{subMod.label.split(' > ')[1]}</span>
@@ -517,8 +527,9 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <DialogFooter>
-                                                            <Button variant="ghost" onClick={() => setGlassConfigTenant(null)} className="text-[10px] uppercase font-bold">Fechar</Button>
+                                                        <DialogFooter className="flex flex-row gap-2 justify-end">
+                                                            <Button variant="outline" onClick={() => setGlassConfigTenant(null)} className="text-[10px] uppercase font-bold">Voltar</Button>
+                                                            <Button onClick={() => {/* Salvar lógica aqui */ setGlassConfigTenant(null);}} className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] uppercase font-bold">Salvar</Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
