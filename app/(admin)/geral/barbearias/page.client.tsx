@@ -47,7 +47,7 @@
         "configuracoes.permissoes",
         "configuracoes.logs"
     ];
-'use client';
+"use client";
 
 import { useEffect, useState } from 'react';
 import { Api } from '@/lib/api';
