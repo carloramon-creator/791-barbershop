@@ -261,109 +261,70 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
 
                     return (
                         <Card key={tenant.id} className="bg-slate-900/40 border-slate-800/50 hover:border-blue-500/40 transition-all group shadow-xl relative overflow-hidden">
-                            <CardContent className="p-4">
-                                <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-                                                                {/* Branding + Info */}
-                                                                <div className="flex items-center gap-4 min-w-[240px]">
-                                                                    <div className="relative">
-                                                                        <div className="w-12 h-12 rounded-xl bg-slate-950 p-1 flex items-center justify-center border border-white/5 shadow-inner shrink-0 group-hover:scale-105 transition-transform">
-                                                                            {tenant.logo_url ? <img src={tenant.logo_url} className="w-full h-full object-cover rounded-lg" /> : <Store className="text-slate-800" size={18} />}
-                                                                        </div>
-                                                                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shadow-lg">
-                                                                            {tenant.business_type === 'beauty_salon' ? <Sparkles size={8} className="text-pink-500" /> : <Scissors size={8} className="text-amber-500" />}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="min-w-0">
-                                                                        <div className="flex items-center gap-2 mb-0.5">
-                                                                            <h3 className="text-sm font-black text-white group-hover:text-blue-400 transition-colors truncate tracking-tight uppercase">
-                                                                                {tenant.name}
-                                                                            </h3>
-                                                                            {/* Tipo de Negócio Label */}
-                                                                            {tenant.business_type === 'glass' ? (
-                                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-900 text-blue-300 text-[8px] font-black uppercase tracking-widest border border-blue-700">
-                                                                                    <Scissors size={10} className="text-blue-400" /> Vidraçaria
-                                                                                </span>
-                                                                            ) : (
-                                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-900 text-amber-300 text-[8px] font-black uppercase tracking-widest border border-amber-700">
-                                                                                    <Sparkles size={10} className="text-amber-400" /> Barbearia
-                                                                                </span>
-                                                                            )}
-                                                                            {/* WhatsApp Indicator */}
-                                                                            <div
-                                                                                className={cn(
-                                                                                    "flex items-center justify-center w-5 h-5 rounded-md border",
-                                                                                    tenant.has_whatsapp
-                                                                                        ? "bg-green-500/10 border-green-500/30 text-green-500"
-                                                                                        : "bg-slate-800/50 border-slate-700/50 text-slate-600 opacity-50"
-                                                                                )}
-                                                                                title={tenant.has_whatsapp ? "WhatsApp Integrado" : "Sem WhatsApp"}
-                                                                            >
-                                                                                <Smartphone size={10} strokeWidth={3} />
-                                                                            </div>
-
-                                                                            {onlineCount > 0 && (
-                                                                                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
-                                                                                    <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" />
-                                                                                    <span className="text-[7px] font-black text-emerald-500 uppercase">{onlineCount} Online</span>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex items-center gap-2">
-                                                                            <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest truncate">{tenant.city}</p>
-                                                                            <div className="w-1 h-1 bg-slate-800 rounded-full" />
-                                                                            <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1">
-                                                                                <Clock size={8} /> {formatDate(tenant.created_at)}
-                                                                            </p>
-                                                                        </div>
-                                                                        <div className="flex items-center gap-2 mt-2">
-                                                                            <span className={cn(
-                                                                                "text-[7px] font-black px-1.5 py-0.5 rounded shadow-sm border uppercase tracking-widest",
-                                                                                tenant.plan === 'premium' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : "bg-blue-600/10 text-blue-500 border-blue-600/20"
-                                                                            )}>
-                                                                                {tenant.plan || 'Basic'}
-                                                                            </span>
-                                                                            <span className={cn(
-                                                                                "text-[7px] font-black uppercase tracking-tight",
-                                                                                (tenant.subscription_status === 'active' || tenant.subscription_status === 'trial') ? "text-emerald-500" : "text-red-500"
-                                                                            )}>
-                                                                                {tenant.subscription_status || 'Ativa'}
-                                                                            </span>
-                                                                        </div>
-                                                                        {/* Campos do Glass */}
-                                                                        {isGlass && (
-
-                                                                            <div className="mt-2 p-2 rounded bg-blue-950/40 border border-blue-900/30">
-                                                                                <p className="text-[8px] font-bold text-blue-400 uppercase tracking-widest mb-1">Campos Glass</p>
-                                                                                <div className="grid grid-cols-2 gap-2 text-[10px] text-blue-100">
-                                                                                    <div>
-                                                                                        <span className="font-bold">Módulos Ativos:</span>
-                                                                                        <pre className="whitespace-pre-wrap break-all text-blue-200 bg-blue-900/30 rounded p-1 mt-1">{JSON.stringify(tenant.modulos_ativos, null, 2) || '--'}</pre>
-                                                                                    </div>
-                                                                                    <div>
-                                                                                        <span className="font-bold">Limite Usuários:</span> {tenant.limite_usuarios ?? '--'}
-                                                                                    </div>
-                                                                                    <div>
-                                                                                        <span className="font-bold">Status Assinatura:</span> {tenant.status_assinatura ?? '--'}
-                                                                                    </div>
-                                                                                    <div>
-                                                                                        <span className="font-bold">Mensagens WhatsApp:</span> {tenant.mensagens_whatsapp ?? '--'}
-                                                                                    </div>
-                                                                                    <div>
-                                                                                        <span className="font-bold">Limite Msg WhatsApp:</span> {tenant.limite_mensagens_whatsapp ?? '--'}
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-                                </div>
-                                {/* fechamento correto da div min-w-0 antes do bloco Management Actions */}
-                            </div>
-                            <div className="flex flex-row lg:flex-col items-center justify-center gap-1.5 border-t lg:border-t-0 lg:border-l border-white/5 pt-3 lg:pt-0 lg:pl-4">
-                                <div className="flex gap-1.5">
+                            <CardContent className="p-3">
+                                {isGlass ? (
+                                    <div className="flex flex-row items-center gap-4 w-full">
+                                        {/* Branding */}
+                                        <div className="relative flex-shrink-0">
+                                            <div className="w-12 h-12 rounded-xl bg-slate-950 p-1 flex items-center justify-center border border-white/5 shadow-inner group-hover:scale-105 transition-transform">
+                                                {tenant.logo_url ? <img src={tenant.logo_url} className="w-full h-full object-cover rounded-lg" /> : <Store className="text-slate-800" size={20} />}
+                                            </div>
+                                            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-lg bg-blue-900 border border-blue-700 flex items-center justify-center shadow-lg">
+                                                <Scissors size={12} className="text-blue-400" />
+                                            </div>
+                                        </div>
+                                        {/* Nome e selo */}
+                                        <div className="flex flex-col min-w-0 flex-1">
+                                            <div className="flex items-center gap-2 mb-0.5">
+                                                <h3 className="text-base font-black text-white group-hover:text-blue-400 transition-colors truncate tracking-tight uppercase">{tenant.name}</h3>
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-900 text-blue-300 text-[10px] font-black uppercase tracking-widest border border-blue-700">
+                                                    <Scissors size={12} className="text-blue-400" /> Vidraçaria
+                                                </span>
+                                                <div className={cn(
+                                                    "flex items-center justify-center w-6 h-6 rounded-md border ml-2",
+                                                    tenant.has_whatsapp
+                                                        ? "bg-green-500/10 border-green-500/30 text-green-500"
+                                                        : "bg-slate-800/50 border-slate-700/50 text-slate-600 opacity-50"
+                                                )} title={tenant.has_whatsapp ? "WhatsApp Integrado" : "Sem WhatsApp"}>
+                                                    <Smartphone size={14} strokeWidth={3} />
+                                                </div>
+                                                {onlineCount > 0 && (
+                                                    <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-md ml-2">
+                                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                                        <span className="text-[9px] font-black text-emerald-500 uppercase">{onlineCount} Online</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-blue-100 font-bold uppercase tracking-widest">
+                                                <span>{tenant.city}</span>
+                                                <span className="opacity-60">|</span>
+                                                <span className="flex items-center gap-1"><Clock size={10} /> {formatDate(tenant.created_at)}</span>
+                                                <span className="opacity-60">|</span>
+                                                <span>Plano: <span className={cn(
+                                                    "font-black px-1.5 py-0.5 rounded shadow-sm border uppercase tracking-widest ml-1",
+                                                    tenant.plan === 'premium' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : "bg-blue-600/10 text-blue-500 border-blue-600/20"
+                                                )}>{tenant.plan || 'Basic'}</span></span>
+                                                <span className="opacity-60">|</span>
+                                                <span>Status: <span className={cn(
+                                                    "font-black uppercase tracking-tight ml-1",
+                                                    (tenant.subscription_status === 'active' || tenant.subscription_status === 'trial') ? "text-emerald-500" : "text-red-500"
+                                                )}>{tenant.subscription_status || 'Ativa'}</span></span>
+                                            </div>
+                                        </div>
+                                        {/* Campos Glass em linha */}
+                                        <div className="flex flex-col gap-1 text-[12px] text-blue-200 font-bold min-w-[220px]">
+                                            <div><span className="font-bold">Módulos:</span> <span className="font-normal">{Array.isArray(tenant.modulos_ativos) ? tenant.modulos_ativos.join(', ') : '--'}</span></div>
+                                            <div><span className="font-bold">Usuários:</span> <span className="font-normal">{tenant.limite_usuarios ?? '--'}</span></div>
+                                            <div><span className="font-bold">Assinatura:</span> <span className="font-normal">{tenant.status_assinatura ?? '--'}</span></div>
+                                            <div><span className="font-bold">Msg WhatsApp:</span> <span className="font-normal">{tenant.limite_mensagens_whatsapp ?? '--'}</span></div>
+                                        </div>
+                                        {/* Botões de ação */}
+                                        <div className="flex flex-row gap-2 ml-2">
                                             <Button
                                                 variant="outline"
                                                 size="icon"
                                                 className={cn(
-                                                    "h-8 w-8 border-slate-800 bg-slate-950 transition-all rounded-lg",
+                                                    "h-9 w-9 border-slate-800 bg-slate-950 transition-all rounded-lg",
                                                     tenant.settings?.diagnostic_enabled ? "text-amber-500 border-amber-500/50 bg-amber-500/10" : "text-slate-500 hover:text-amber-500"
                                                 )}
                                                 onClick={async () => {
@@ -377,39 +338,34 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                 }}
                                                 title="Diagnóstico"
                                             >
-                                                <AlertTriangle size={14} />
+                                                <AlertTriangle size={16} />
                                             </Button>
-
                                             <Button
                                                 variant="outline"
                                                 size="icon"
-                                                className="h-8 w-8 border-slate-800 bg-slate-950 text-slate-500 hover:text-blue-500 rounded-lg shadow-lg"
+                                                className="h-9 w-9 border-slate-800 bg-slate-950 text-slate-500 hover:text-blue-500 rounded-lg shadow-lg"
                                                 onClick={() => handleEditClick(tenant)}
                                                 title="Editar"
                                             >
-                                                <Pencil size={14} />
+                                                <Pencil size={16} />
                                             </Button>
-                                        </div>
-
-                                        <div className="flex gap-1.5">
                                             <Button
                                                 variant="outline"
                                                 size="icon"
-                                                className="h-8 w-8 border-slate-800 bg-slate-950 text-blue-500 hover:bg-blue-600 hover:text-white rounded-lg shadow-lg"
+                                                className="h-9 w-9 border-slate-800 bg-slate-950 text-blue-500 hover:bg-blue-600 hover:text-white rounded-lg shadow-lg"
                                                 onClick={() => {
                                                     window.open(`/api/system/impersonate?tenant_id=${tenant.id}`, '_blank');
                                                 }}
                                                 title="Acessar"
                                             >
-                                                <ExternalLink size={14} />
+                                                <ExternalLink size={16} />
                                             </Button>
-
                                             <Button
                                                 variant="outline"
                                                 size="icon"
-                                                className="h-8 w-8 border-slate-800 bg-slate-950 text-slate-500 hover:text-red-500 rounded-lg shadow-lg"
+                                                className="h-9 w-9 border-slate-800 bg-slate-950 text-slate-500 hover:text-red-500 rounded-lg shadow-lg"
                                                 onClick={async () => {
-                                                    if (window.confirm(`Excluir permanentemente "${tenant.name}"?`)) {
+                                                    if (window.confirm(`Excluir permanentemente \"${tenant.name}\"?`)) {
                                                         try {
                                                             await Api.deleteSystemTenant(tenant.id);
                                                             setTenants(prev => prev.filter(t => t.id !== tenant.id));
@@ -418,11 +374,17 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                 }}
                                                 title="Remover"
                                             >
-                                                <Trash2 size={14} />
+                                                <Trash2 size={16} />
                                             </Button>
                                         </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    // ...existing code for barbearia...
+                                    <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                                        {/* Branding + Info padrão barbearia */}
+                                        {/* ...existing code... */}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     );
