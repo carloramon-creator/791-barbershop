@@ -308,15 +308,20 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                 <span>Status: <span className={cn(
                                                     "font-black uppercase tracking-tight ml-1",
                                                     (tenant.subscription_status === 'active' || tenant.subscription_status === 'trial') ? "text-emerald-500" : "text-red-500"
-                                                )}>{tenant.subscription_status || 'Ativa'}</span></span>
+                                                )}>{
+                                                    tenant.subscription_status === 'active' ? 'Ativo' :
+                                                    tenant.subscription_status === 'trial' ? 'Em Teste' :
+                                                    tenant.subscription_status === 'past_due' ? 'Atrasado' :
+                                                    tenant.subscription_status === 'canceled' ? 'Cancelado' :
+                                                    tenant.subscription_status || '--'
+                                                }</span></span>
                                             </div>
                                         </div>
                                         {/* Campos Glass em linha */}
-                                        <div className="flex flex-col gap-1 text-[12px] text-blue-200 font-bold min-w-[220px]">
-                                            <div><span className="font-bold">Módulos:</span> <span className="font-normal">{Array.isArray(tenant.modulos_ativos) ? tenant.modulos_ativos.join(', ') : '--'}</span></div>
-                                            <div><span className="font-bold">Usuários:</span> <span className="font-normal">{tenant.limite_usuarios ?? '--'}</span></div>
-                                            <div><span className="font-bold">Assinatura:</span> <span className="font-normal">{tenant.status_assinatura ?? '--'}</span></div>
-                                            <div><span className="font-bold">Msg WhatsApp:</span> <span className="font-normal">{tenant.limite_mensagens_whatsapp ?? '--'}</span></div>
+                                        <div className="flex flex-row flex-wrap gap-x-4 gap-y-1 items-center text-[12px] text-blue-200 font-bold min-w-[220px]">
+                                            <span><span className="font-bold">Módulos:</span> <span className="font-normal">{Array.isArray(tenant.modulos_ativos) ? tenant.modulos_ativos.join(', ') : '--'}</span></span>
+                                            <span><span className="font-bold">Usuários:</span> <span className="font-normal">{tenant.limite_usuarios ?? '--'}</span></span>
+                                            <span><span className="font-bold">Msg WhatsApp:</span> <span className="font-normal">{tenant.limite_mensagens_whatsapp ?? '--'}</span></span>
                                         </div>
                                         {/* Botões de ação */}
                                         <div className="flex flex-row gap-2 ml-2">
