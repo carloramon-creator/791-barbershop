@@ -44,8 +44,7 @@ interface ClientPageProps {
     initialError: string | null;
 }
 
-
-
+export default function ClientPage({ initialTenants, initialError }: ClientPageProps) {
     const [tenants, setTenants] = useState<any[]>(initialTenants || []);
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
@@ -54,7 +53,6 @@ interface ClientPageProps {
     // Sempre mostrar ambos por padrão ao abrir a tela
     const [businessTypeFilter, setBusinessTypeFilter] = useState<'all' | 'barbershop' | 'glass'>(() => 'all');
     const [error, setError] = useState<string | null>(initialError);
-
 
     // Edit State
     const [editingTenant, setEditingTenant] = useState<any>(null);
@@ -88,7 +86,6 @@ interface ClientPageProps {
             setLoading(false);
         }
     };
-
 
     useEffect(() => {
         loadTenants();
