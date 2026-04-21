@@ -404,7 +404,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                         </div>
                                                 {/* Modal de Configuração Vidraçaria */}
                                                 <Dialog open={!!glassConfigTenant} onOpenChange={(open) => !open && setGlassConfigTenant(null)}>
-                                                    <DialogContent className="bg-slate-1900 border-slate-800 text-slate-100 max-w-none w-[90vw] max-h-[95vh] overflow-y-auto">
+                                                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-[1800px] w-[98vw] max-h-[95vh] overflow-y-auto">
                                                         <DialogHeader>
                                                             <DialogTitle className="text-base font-black uppercase">Configurações da Vidraçaria</DialogTitle>
                                                         </DialogHeader>
