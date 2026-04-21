@@ -89,7 +89,7 @@ interface ClientPageProps {
         }
     };
 
-                                                        <div className="py-8 px-8 space-y-6 w-full" style={{ minWidth: '100vw', maxWidth: '100vw' }}>
+// JSX removido daqui, deve estar apenas dentro do return do componente
         loadTenants();
     }, []);
 
