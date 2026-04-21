@@ -1,5 +1,4 @@
-    // Módulos do sistema
-    const ALL_MODULES = [
+// ...existing code...
         { id: "dashboard", label: "Visão Geral" },
         { id: "pessoas", label: "Pessoas" },
         { id: "orcamentos", label: "Orçamentos" },
@@ -37,8 +36,7 @@
         { id: "configuracoes.logs", label: "Configurações > Logs" },
     ];
 
-    // Módulos do plano básico
-    const BASIC_MODULES = [
+// ...existing code...
         "pessoas",
         "orcamentos",
         "materiais",
@@ -47,6 +45,7 @@
         "configuracoes.permissoes",
         "configuracoes.logs"
     ];
+
 "use client";
 
 import { useEffect, useState } from 'react';
