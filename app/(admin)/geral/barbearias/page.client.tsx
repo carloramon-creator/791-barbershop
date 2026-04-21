@@ -1,6 +1,6 @@
 "use client";
 
-import { ALL_MODULES, BASIC_MODULES } from '@/lib/modules';
+import { ALL_MODULES, BASIC_MODULES, GLASS_MODULES, GLASS_BASIC_MODULES } from '@/lib/modules';
 import { useEffect, useState } from 'react';
 import { Api } from '@/lib/api';
 import {
@@ -436,10 +436,10 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                 <h4 className="text-xs font-black text-blue-300 uppercase mb-2 mt-4">Módulos do Sistema</h4>
                                                                 <div className="flex flex-col gap-1 w-full">
                                                                     {(() => {
-                                                                        // Agrupa módulos principais e submenus
-                                                                        const mainMenus = ALL_MODULES.filter(mod => !mod.label.includes('>'));
+                                                                        // Usar apenas módulos do 791glass
+                                                                        const mainMenus = GLASS_MODULES.filter(mod => !mod.label.includes('>'));
                                                                         const subMenus: { [key: string]: { id: string, label: string }[] } = {};
-                                                                        ALL_MODULES.forEach(mod => {
+                                                                        GLASS_MODULES.forEach(mod => {
                                                                             const parts = mod.label.split(' > ');
                                                                             if (parts.length > 1) {
                                                                                 const main = parts[0];
@@ -447,7 +447,6 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                                 subMenus[main].push(mod);
                                                                             }
                                                                         });
-                                                                        // Função para alternar seleção
                                                                         function toggleModule(id: string) {
                                                                             setGlassConfigTenant((prev: any) => {
                                                                                 const modAtivos = Array.isArray(prev.modulos_ativos) ? [...prev.modulos_ativos] : [];
@@ -458,7 +457,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                             });
                                                                         }
                                                                         return mainMenus.map(mainMod => {
-                                                                            const isBasic = BASIC_MODULES.includes(mainMod.id);
+                                                                            const isBasic = GLASS_BASIC_MODULES.includes(mainMod.id);
                                                                             const isActive = Array.isArray(glassConfigTenant?.modulos_ativos) ? glassConfigTenant.modulos_ativos.includes(mainMod.id) : false;
                                                                             const hasSub = subMenus[mainMod.label]?.length > 0;
                                                                             return (
@@ -499,7 +498,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                                     {hasSub && expandedMenus[mainMod.label] && (
                                                                                         <div className="ml-7 flex flex-col gap-1 mt-1">
                                                                                             {subMenus[mainMod.label].map(subMod => {
-                                                                                                const isBasicSub = BASIC_MODULES.includes(subMod.id);
+                                                                                                const isBasicSub = GLASS_BASIC_MODULES.includes(subMod.id);
                                                                                                 const isActiveSub = Array.isArray(glassConfigTenant?.modulos_ativos) ? glassConfigTenant.modulos_ativos.includes(subMod.id) : false;
                                                                                                 return (
                                                                                                     <label key={subMod.id} className={cn(
