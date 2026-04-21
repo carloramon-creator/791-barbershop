@@ -247,6 +247,16 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                             <h3 className="text-sm font-black text-white group-hover:text-blue-400 transition-colors truncate tracking-tight uppercase">
                                                                                 {tenant.name}
                                                                             </h3>
+                                                                            {/* Tipo de Negócio Label */}
+                                                                            {tenant.business_type === 'glass' ? (
+                                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-900 text-blue-300 text-[8px] font-black uppercase tracking-widest border border-blue-700">
+                                                                                    <Scissors size={10} className="text-blue-400" /> Vidraçaria
+                                                                                </span>
+                                                                            ) : (
+                                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-900 text-amber-300 text-[8px] font-black uppercase tracking-widest border border-amber-700">
+                                                                                    <Sparkles size={10} className="text-amber-400" /> Barbearia
+                                                                                </span>
+                                                                            )}
                                                                             {/* WhatsApp Indicator */}
                                                                             <div
                                                                                 className={cn(
