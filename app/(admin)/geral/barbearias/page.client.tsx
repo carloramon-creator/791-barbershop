@@ -58,6 +58,9 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
         subscription_current_period_end: ''
     });
 
+    // Configuração Vidraçaria
+    const [glassConfigTenant, setGlassConfigTenant] = useState<any>(null);
+
     const [error, setError] = useState<string | null>(initialError);
 
     const loadTenants = async () => {
@@ -318,13 +321,22 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                             </div>
                                         </div>
                                         {/* Campos Glass em linha */}
-                                        <div className="flex flex-row flex-wrap gap-x-4 gap-y-1 items-center text-[12px] text-blue-200 font-bold min-w-[220px]">
+                                        <div className="flex flex-row flex-wrap gap-x-4 gap-y-1 items-center text-[14px] text-blue-200 font-bold min-w-[220px]">
                                             <span><span className="font-bold">Módulos:</span> <span className="font-normal">{Array.isArray(tenant.modulos_ativos) ? tenant.modulos_ativos.join(', ') : '--'}</span></span>
                                             <span><span className="font-bold">Usuários:</span> <span className="font-normal">{tenant.limite_usuarios ?? '--'}</span></span>
                                             <span><span className="font-bold">Msg WhatsApp:</span> <span className="font-normal">{tenant.limite_mensagens_whatsapp ?? '--'}</span></span>
                                         </div>
                                         {/* Botões de ação */}
                                         <div className="flex flex-row gap-2 ml-2">
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-9 w-9 border-slate-800 bg-slate-950 text-blue-400 hover:bg-blue-900 hover:text-white rounded-lg shadow-lg"
+                                                onClick={() => setGlassConfigTenant(tenant)}
+                                                title="Configurações Vidraçaria"
+                                            >
+                                                <Settings size={16} />
+                                            </Button>
                                             <Button
                                                 variant="outline"
                                                 size="icon"
@@ -382,6 +394,20 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                 <Trash2 size={16} />
                                             </Button>
                                         </div>
+                                                {/* Modal de Configuração Vidraçaria */}
+                                                <Dialog open={!!glassConfigTenant} onOpenChange={(open) => !open && setGlassConfigTenant(null)}>
+                                                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-md">
+                                                        <DialogHeader>
+                                                            <DialogTitle className="text-base font-black uppercase">Configurações da Vidraçaria</DialogTitle>
+                                                        </DialogHeader>
+                                                        <div className="py-4">
+                                                            <p className="text-sm text-slate-300">Configurações específicas para <span className="font-bold text-blue-400">{glassConfigTenant?.name}</span> (em breve...)</p>
+                                                        </div>
+                                                        <DialogFooter>
+                                                            <Button variant="ghost" onClick={() => setGlassConfigTenant(null)} className="text-[10px] uppercase font-bold">Fechar</Button>
+                                                        </DialogFooter>
+                                                    </DialogContent>
+                                                </Dialog>
                                     </div>
                                 ) : (
                                     // ...existing code for barbearia...
