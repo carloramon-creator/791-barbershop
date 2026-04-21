@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ALL_MODULES } from '../geral/barbearias/page.client';
+import { ALL_MODULES } from '@/lib/modules';
 
 export default function GlassPlansPage() {
   // Estado para valores dos módulos
@@ -29,9 +29,31 @@ export default function GlassPlansPage() {
   };
 
   const handleWhatsappChange = (field: string, value: string) => {
-    setModules(prev => prev.map(m =>
-      m.id === 'whatsapp' ? { ...m, whatsapp: { ...m.whatsapp, [field]: value } } : m
-    ));
+    setModules(prev => prev.map(m => {
+      if (m.id !== 'whatsapp') return m;
+      // Garante que todos os campos existem como string
+      const w = m.whatsapp || {
+        maxUsers: '',
+        pricePerUser: '',
+        maxMessages: '',
+        pricePerMessage: '',
+        planPrice: '',
+        planUsers: '',
+        planMessages: '',
+      };
+      return {
+        ...m,
+        whatsapp: {
+          maxUsers: field === 'maxUsers' ? value : w.maxUsers,
+          pricePerUser: field === 'pricePerUser' ? value : w.pricePerUser,
+          maxMessages: field === 'maxMessages' ? value : w.maxMessages,
+          pricePerMessage: field === 'pricePerMessage' ? value : w.pricePerMessage,
+          planPrice: field === 'planPrice' ? value : w.planPrice,
+          planUsers: field === 'planUsers' ? value : w.planUsers,
+          planMessages: field === 'planMessages' ? value : w.planMessages,
+        }
+      };
+    }));
   };
 
   const handleSave = () => {
