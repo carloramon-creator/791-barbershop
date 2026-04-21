@@ -404,7 +404,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                         </div>
                                                 {/* Modal de Configuração Vidraçaria */}
                                                 <Dialog open={!!glassConfigTenant} onOpenChange={(open) => !open && setGlassConfigTenant(null)}>
-                                                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-3xl max-h-[90vh] overflow-y-auto">
+                                                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-5xl w-[900px] max-h-[95vh] overflow-y-auto">
                                                         <DialogHeader>
                                                             <DialogTitle className="text-base font-black uppercase">Configurações da Vidraçaria</DialogTitle>
                                                         </DialogHeader>
@@ -436,7 +436,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                 <h4 className="text-xs font-black text-blue-300 uppercase mb-2 mt-4">Módulos do Sistema</h4>
                                                                 <div className="flex flex-col gap-1 w-full">
                                                                     {(() => {
-                                                                        // Usar apenas módulos do 791glass
+                                                                        // Usar apenas módulos do 791glass, agrupando submenus
                                                                         const mainMenus = GLASS_MODULES.filter(mod => !mod.label.includes('>'));
                                                                         const subMenus: { [key: string]: { id: string, label: string }[] } = {};
                                                                         GLASS_MODULES.forEach(mod => {
@@ -496,7 +496,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                                                                                         )}
                                                                                     </div>
                                                                                     {hasSub && expandedMenus[mainMod.label] && (
-                                                                                        <div className="ml-7 flex flex-col gap-1 mt-1">
+                                                                                        <div className="ml-7 grid grid-cols-1 md:grid-cols-2 gap-1 mt-1">
                                                                                             {subMenus[mainMod.label].map(subMod => {
                                                                                                 const isBasicSub = GLASS_BASIC_MODULES.includes(subMod.id);
                                                                                                 const isActiveSub = Array.isArray(glassConfigTenant?.modulos_ativos) ? glassConfigTenant.modulos_ativos.includes(subMod.id) : false;
