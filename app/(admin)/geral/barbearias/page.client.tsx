@@ -45,7 +45,7 @@ interface ClientPageProps {
 }
 
 
-                                                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 w-[100vw] max-w-none max-h-[98vh] overflow-y-auto p-0">
+
     const [tenants, setTenants] = useState<any[]>(initialTenants || []);
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
