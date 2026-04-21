@@ -26,7 +26,8 @@ import {
     ArrowDown,
     Clock,
     UserCheck,
-    Smartphone
+    Smartphone,
+    Settings
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
