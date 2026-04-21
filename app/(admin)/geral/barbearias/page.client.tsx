@@ -47,6 +47,7 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
     const [search, setSearch] = useState('');
     const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
     const [whatsappFilter, setWhatsappFilter] = useState<'all' | 'with' | 'without'>('all');
+    const [businessTypeFilter, setBusinessTypeFilter] = useState<'all' | 'barbershop' | 'glass'>('all');
 
     // Edit State
     const [editingTenant, setEditingTenant] = useState<any>(null);
@@ -118,7 +119,13 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                 ? t.has_whatsapp
                 : !t.has_whatsapp;
 
-        return matchesSearch && matchesWhatsapp;
+        const matchesBusinessType = businessTypeFilter === 'all'
+            ? true
+            : businessTypeFilter === 'barbershop'
+                ? t.business_type !== 'glass'
+                : t.business_type === 'glass';
+
+        return matchesSearch && matchesWhatsapp && matchesBusinessType;
     });
 
     const totals = tenants.reduce((acc, t) => ({
@@ -171,7 +178,31 @@ export default function TenantsPage({ initialTenants, initialError }: ClientPage
                     />
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                    {/* Filtro de Tipo de Negócio */}
+                    <Button
+                        variant={businessTypeFilter === 'all' ? 'default' : 'outline'}
+                        className={cn("h-11 px-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all", businessTypeFilter === 'all' ? "bg-blue-600" : "border-slate-800 bg-slate-900 text-slate-400")}
+                        onClick={() => setBusinessTypeFilter('all')}
+                    >
+                        Todos
+                    </Button>
+                    <Button
+                        variant={businessTypeFilter === 'barbershop' ? 'default' : 'outline'}
+                        className={cn("h-11 px-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-1", businessTypeFilter === 'barbershop' ? "bg-amber-700" : "border-slate-800 bg-slate-900 text-slate-400")}
+                        onClick={() => setBusinessTypeFilter('barbershop')}
+                    >
+                        <Sparkles size={12} className="text-amber-300" /> Barbearias
+                    </Button>
+                    <Button
+                        variant={businessTypeFilter === 'glass' ? 'default' : 'outline'}
+                        className={cn("h-11 px-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-1", businessTypeFilter === 'glass' ? "bg-blue-900" : "border-slate-800 bg-slate-900 text-slate-400")}
+                        onClick={() => setBusinessTypeFilter('glass')}
+                    >
+                        <Scissors size={12} className="text-blue-300" /> Vidraçarias
+                    </Button>
+
+                    {/* Filtro WhatsApp */}
                     <Select value={whatsappFilter} onValueChange={(v: any) => setWhatsappFilter(v)}>
                         <SelectTrigger className="w-[140px] h-11 bg-slate-900 border-slate-800 text-[10px] uppercase font-bold text-slate-400 rounded-xl">
                             <SelectValue placeholder="Filtro WhatsApp" />
