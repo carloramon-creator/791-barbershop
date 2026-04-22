@@ -104,12 +104,23 @@ export default function ClientPage({ initialTenants, initialError }: ClientPageP
         if (!editingTenant) return;
         setSaving(true);
         try {
-            await Api.updateSystemTenant(editingTenant.id, editForm);
+            // LOG: Veja o id e o payload enviados
+            console.log('Tentando atualizar vidracaria:', editingTenant.id, editForm);
+            const { supabaseClient } = await import('@/lib/supabase-client');
+            const { error, data } = await supabaseClient
+                .from('vidracarias')
+                .update(editForm)
+                .eq('id', editingTenant.id);
+            // LOG: Veja o resultado do update
+            console.log('Resultado do update:', { error, data });
+            if (error) throw error;
             setTenants(prev => prev.map(t => t.id === editingTenant.id ? { ...t, ...editForm } : t));
             setEditingTenant(null);
-            alert('Barbearia atualizada com sucesso!');
-        } catch (e: any) {
-            alert('Erro ao atualizar: ' + e.message);
+            alert('Vidraçaria atualizada com sucesso!');
+        } catch (e) {
+            // LOG: Veja o erro completo
+            console.error('Erro ao atualizar:', e);
+            alert('Erro ao atualizar: ' + (e.message || JSON.stringify(e)));
         } finally {
             setSaving(false);
         }
@@ -402,7 +413,7 @@ export default function ClientPage({ initialTenants, initialError }: ClientPageP
                                         </div>
                                                 {/* Modal de Configuração Vidraçaria */}
                                                 <Dialog open={!!glassConfigTenant} onOpenChange={(open) => !open && setGlassConfigTenant(null)}>
-                                                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-[1800px] w-[98vw] max-h-[95vh] overflow-y-auto">
+                                                    <DialogContent className="bg-slate-900 border-slate-800 text-slate-1100 max-w-[800px] w-[98vw] max-h-[95vh] overflow-y-auto">
                                                         <DialogHeader>
                                                             <DialogTitle className="text-base font-black uppercase">Configurações da Vidraçaria</DialogTitle>
                                                         </DialogHeader>
@@ -610,8 +621,33 @@ export default function ClientPage({ initialTenants, initialError }: ClientPageP
                                                             </div>
                                                         </div>
                                                         <DialogFooter className="flex flex-row gap-2 justify-end">
-                                                            <Button variant="outline" onClick={() => setGlassConfigTenant(null)} className="text-[10px] uppercase font-bold">Voltar</Button>
-                                                            <Button onClick={() => {/* Salvar lógica aqui */ setGlassConfigTenant(null);}} className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] uppercase font-bold">Salvar</Button>
+                                                            <Button variant="outline" onClick={() => setGlassConfigTenant(null)} className="text-black text-[10px] uppercase font-bold">Voltar</Button>
+                                                            <Button
+                                                                onClick={async () => {
+                                                                    if (!glassConfigTenant) return;
+                                                                    try {
+                                                                        const { error } = await import('@/lib/supabase-client').then(({ supabaseClient }) =>
+                                                                            supabaseClient
+                                                                                .from('vidracarias') // nome da tabela em minúsculo
+                                                                                .update({
+                                                                                    limite_usuarios: glassConfigTenant.limite_usuarios,
+                                                                                    limite_mensagens_whatsapp: glassConfigTenant.limite_mensagens_whatsapp,
+                                                                                    modulos_ativos: glassConfigTenant.modulos_ativos
+                                                                                })
+                                                                                .eq('id', glassConfigTenant.id)
+                                                                        );
+                                                                        if (error) throw error;
+                                                                        alert('Configurações salvas com sucesso!');
+                                                                        setGlassConfigTenant(null);
+                                                                        loadTenants();
+                                                                    } catch (e: any) {
+                                                                        alert('Erro ao salvar: ' + (e.message || e));
+                                                                    }
+                                                                }}
+                                                                className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] uppercase font-bold"
+                                                            >
+                                                                Salvar
+                                                            </Button>
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>

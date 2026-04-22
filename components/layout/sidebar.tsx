@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -164,6 +165,7 @@ export function Sidebar() {
                 { name: 'Barbearias', href: '/geral/barbearias', icon: Store, roles: ['owner'], adminPermission: 'manage_tenants' },
                 { name: 'Financeiro Holding', href: '/geral/financeiro', icon: CreditCard, roles: ['owner'], adminPermission: 'manage_finance' },
                 { name: 'Planos & Extras', href: '/geral/planos', icon: ShoppingBag, roles: ['owner'], adminPermission: 'manage_plans' },
+                { name: 'Planos Vidraçarias', href: '/planos/vidracarias', icon: Briefcase, roles: ['owner'], adminPermission: 'manage_plans' },
                 { name: 'Cupons', href: '/geral/cupons', icon: Ticket, roles: ['owner'], adminPermission: 'manage_coupons' },
                 { name: 'Configurações API', href: '/geral/configuracoes', icon: Database, roles: ['owner'], adminPermission: 'manage_settings' },
                 { name: 'Configuração Fiscal', href: '/geral/configuracoes/nfs-e', icon: FileText, roles: ['owner'], adminPermission: 'manage_settings' },

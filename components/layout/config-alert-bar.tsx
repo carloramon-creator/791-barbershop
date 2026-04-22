@@ -62,8 +62,6 @@ export function ConfigAlert() {
     const { tenant, isSystemAdmin } = useAuth();
     const [missingFields, setMissingFields] = useState<string[]>([]);
 
-    if (isSystemAdmin) return null;
-
     useEffect(() => {
         if (tenant) {
             const missing = [];
@@ -76,6 +74,7 @@ export function ConfigAlert() {
         }
     }, [tenant]);
 
+    if (isSystemAdmin) return null;
     if (missingFields.length === 0) return null;
 
     return (

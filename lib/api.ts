@@ -1,6 +1,7 @@
 import { supabaseClient } from './supabase-client';
 
-const BACKEND_URL = typeof window === 'undefined' ? (process.env.NEXT_PUBLIC_APP_URL || '') : '';
+// Sempre usa a URL de produção definida em NEXT_PUBLIC_APP_URL
+const BACKEND_URL = process.env.NEXT_PUBLIC_APP_URL || '';
 
 // Cache de sessão para evitar overhead de getSession() em chamadas rápidas
 let cachedToken: string | null = null;
@@ -38,9 +39,15 @@ async function apiFetch(path: string, options: RequestInit = {}) {
         clearTimeout(id);
 
         if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
-            // Lógica para retornar apenas a mensagem pura do servidor
-            const errorMessage = errorData.error || errorData.message || res.statusText;
+            let errorMessage = res.statusText;
+            const contentType = res.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                const errorData = await res.json().catch(() => ({}));
+                errorMessage = errorData.error || errorData.message || res.statusText;
+            } else {
+                const errorText = await res.text();
+                errorMessage = errorText || res.statusText;
+            }
             throw new Error(errorMessage);
         }
         return res.json();
