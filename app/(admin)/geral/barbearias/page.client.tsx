@@ -120,7 +120,13 @@ export default function ClientPage({ initialTenants, initialError }: ClientPageP
         } catch (e) {
             // LOG: Veja o erro completo
             console.error('Erro ao atualizar:', e);
-            alert('Erro ao atualizar: ' + (e.message || JSON.stringify(e)));
+            let msg = '';
+            if (e && typeof e === 'object' && 'message' in e) {
+                msg = (e as any).message;
+            } else {
+                msg = JSON.stringify(e);
+            }
+            alert('Erro ao atualizar: ' + msg);
         } finally {
             setSaving(false);
         }
