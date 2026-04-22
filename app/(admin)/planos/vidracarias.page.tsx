@@ -39,7 +39,7 @@ export default function VidracariasPlansPage() {
   const [couponDiscount, setCouponDiscount] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const handleModuleChange = (id, value) => {
+  const handleModuleChange = (id: string, value: string) => {
     setModules(prev => prev.map(m => m.id === id ? { ...m, price: value } : m));
   };
 
